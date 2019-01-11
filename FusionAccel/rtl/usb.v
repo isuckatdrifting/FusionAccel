@@ -5,7 +5,7 @@
 // 
 // Create Date:    13:03:38 08/14/2018 
 // Design Name: 
-// Module Name:    Transmit 
+// Module Name:    usb
 // Project Name: 
 // Target Devices: 
 // Tool versions: 
@@ -18,7 +18,7 @@
 // Additional Comments: 
 //
 //////////////////////////////////////////////////////////////////////////////////
-module Transmit(
+module usb(
 	input		wire 	[4:0]   	okUH,
 	output	wire 	[2:0]   	okHU,
 	inout		wire 	[31:0]  	okUHU,
@@ -55,7 +55,7 @@ always@(posedge clk, negedge reset_n) begin
 		else read_addrb <= 0;
 	end
 end
-			
+/*			
 // Three simple dual port rams, port A for writing, and port B for reading
 ram time_ram (
   .clka(clk), // input clka
@@ -89,7 +89,7 @@ ram cali2_ram (
   .addrb(read_addrb), // input [31 : 0] addrb
   .doutb(cali2_doutb) // output [31 : 0] doutb
 );
-
+*/
 
 wire [23:0] timeVal;
 wire [23:0] calibration1Val;
