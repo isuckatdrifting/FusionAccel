@@ -78,8 +78,8 @@ RTL-level Neural Network Accelerator Implementation on Xilinx Spartan6
 - Fully connected layers may be executed on host -- too many weights
 
 ## 6 Reference
-Lukas Cavigelli. Origami: A 803 GOp/s/W Convolutional Network Accelerator. 2015.
-Clement Farabet. NeuFlow: A Runtime Reconfigurable Dataflow Processor for Vision.
-Clement Farabet. CNP:AN FPGA-BASED PROCESSOR FOR CONVOLUTIONAL NETWORKS.
-Vinayak Gokhale. Nn-X - a hardware accerlerator for convolutional neural networks.
-Song Han. Efficient Methods and Hardware for Deep Learning.
+- Lukas Cavigelli. Origami: A 803 GOp/s/W Convolutional Network Accelerator. 2015.
+- Clement Farabet. NeuFlow: A Runtime Reconfigurable Dataflow Processor for Vision.
+- Clement Farabet. CNP:AN FPGA-BASED PROCESSOR FOR CONVOLUTIONAL NETWORKS.
+- Vinayak Gokhale. Nn-X - a hardware accerlerator for convolutional neural networks.
+- Song Han. Efficient Methods and Hardware for Deep Learning.
