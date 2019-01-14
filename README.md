@@ -88,3 +88,10 @@ RTL-level Neural Network Accelerator Implementation on Xilinx Spartan6
 Draw Network Flowcharts
 
 `sudo python3 ./draw_net.py ../../SqueezeNet/SqueezeNet_v1.1/deploy.prototxt ./squeezenet.png --rankdir=TB`
+
+Cannot use CHaiDNN INT8/INT6 or NVDLA INT16 inference, because it requires TensorRT or quantization, and cannot directly get weight from caffemodel.
+Can directly use pretrained FP32 models
+Architecture like NVDLA, but much simplified.
+No CPU Architecture means no DMA.
+
+Available SDRAM Resource = 1Gbit = 128MByte = 64MWord
