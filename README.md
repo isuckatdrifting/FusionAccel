@@ -83,3 +83,8 @@ RTL-level Neural Network Accelerator Implementation on Xilinx Spartan6
 - Clement Farabet. CNP:AN FPGA-BASED PROCESSOR FOR CONVOLUTIONAL NETWORKS.
 - Vinayak Gokhale. Nn-X - a hardware accerlerator for convolutional neural networks.
 - Song Han. Efficient Methods and Hardware for Deep Learning.
+
+## 7 NOTES
+Draw Network Flowcharts
+
+`sudo python3 ./draw_net.py ../../SqueezeNet/SqueezeNet_v1.1/deploy.prototxt ./squeezenet.png --rankdir=TB`
