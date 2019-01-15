@@ -18,7 +18,6 @@ module conv_3x3(
 
     wire [15:0] om_array [0:8];
     reg [15:0] om;
-    wire aclk;
     reg conv_valid;
 
     reg operation_nd_0, operation_nd_1, operation_nd_2, operation_nd_3, operation_nd_4, operation_nd_5, operation_nd_6, operation_nd_7, operation_nd_8;
@@ -170,20 +169,24 @@ always @ (posedge clk or negedge rst_n) begin
         conv_valid <= 0;
     end
     else begin
+        if(rdy_0) operation_nd_0 <= 0;
+        if(rdy_1) operation_nd_1 <= 0;
+        if(rdy_2) operation_nd_2 <= 0;
+        if(rdy_3) operation_nd_3 <= 0;
+        if(rdy_4) operation_nd_4 <= 0;
+        if(rdy_5) operation_nd_5 <= 0;
+        if(rdy_6) operation_nd_6 <= 0;
+        if(rdy_7) operation_nd_7 <= 0;
+        if(rdy_8) operation_nd_8 <= 0;
+        if(rdy_accum0) operation_nd_accum0 <= 0;
+        if(rdy_accum1) operation_nd_accum1 <= 0;
+        if(rdy_accum2) operation_nd_accum2 <= 0;
+        if(rdy_accum3) operation_nd_accum3 <= 0;
         case (curr_state)
             mult: begin
                 ce <= 1; operation_nd_0 <= 1; operation_nd_1 <= 1; operation_nd_2 <= 1;
                 operation_nd_3 <= 1; operation_nd_4 <= 1; operation_nd_5 <= 1; 
                 operation_nd_6 <= 1; operation_nd_7 <= 1; operation_nd_8 <= 1; 
-                if(rdy_0) operation_nd_0 <= 0;
-                if(rdy_1) operation_nd_1 <= 0;
-                if(rdy_2) operation_nd_2 <= 0;
-                if(rdy_3) operation_nd_3 <= 0;
-                if(rdy_4) operation_nd_4 <= 0;
-                if(rdy_5) operation_nd_5 <= 0;
-                if(rdy_6) operation_nd_6 <= 0;
-                if(rdy_7) operation_nd_7 <= 0;
-                if(rdy_8) operation_nd_8 <= 0;
             end
             accum1: begin
                 ce <= 1; operation_nd_accum0 <= 1; operation_nd_accum1 <= 1; operation_nd_accum2 <= 1; operation_nd_accum3 <= 1;
@@ -191,44 +194,20 @@ always @ (posedge clk or negedge rst_n) begin
                 a1 <= om_array[2]; b1 <= om_array[3]; 
                 a2 <= om_array[4]; b2 <= om_array[5]; 
                 a3 <= om_array[6]; b3 <= om_array[7];
-                if(rdy_accum0) begin
-                    operation_nd_accum0 <= 0;
-                end
-                if(rdy_accum1) begin
-                    operation_nd_accum1 <= 0;
-                end
-                if(rdy_accum2) begin 
-                    operation_nd_accum2 <= 0;
-                end
-                if(rdy_accum3) begin
-                    operation_nd_accum3 <= 0;
-                end
+                
             end
             accum2: begin
                 ce <= 1; operation_nd_accum0 <= 1; operation_nd_accum1 <= 1;
                 a0 <= o_buf0; b0 <= o_buf1; 
                 a1 <= o_buf2; b1 <= o_buf3; 
-                if(rdy_accum0) begin
-                    operation_nd_accum0 <= 0;
-                end
-                if(rdy_accum1) begin
-                    operation_nd_accum1 <= 0;
-                end
             end
             accum3: begin
                 ce <= 1; operation_nd_accum0 <= 1;
                 a0 <= o_buf0; b0 <= o_buf1; 
-                if(rdy_accum0) begin
-                    operation_nd_accum0 <= 0;
-                end
             end
             accum4: begin
                 ce <= 1; operation_nd_accum0 <= 1;
                 a0 <= o_buf0; b0 <= om_array[8]; 
-                if(rdy_accum0) begin
-                    operation_nd_accum0 <= 0;
-                    om <= o_buf0;
-                end
             end
             finish: begin
                 conv_valid <= 1;
