@@ -341,9 +341,13 @@ module pool_13x13 (
 );
 
     localparam div = 16'h5948; //169
+    reg [15:0] div_a;
+    reg operation_nd_div;
+    wire operation_rfd_div;
+    wire rdy_div;
 
-    divider div0(.a(a), .b(b), .operation_nd(operation_nd), .operation_rfd(operation_rfd),
-                .clk(clk), .sclr(sclr), .ce(ce), .result(result), .underflow(underflow), .overflow(overflow), .invalid_op(), .rdy(rdy));
+    divider div0(.a(div_a), .b(div), .operation_nd(operation_nd_div), .operation_rfd(operation_rfd_div),
+                .clk(clk), .sclr(sclr), .ce(ce), .result(result_div), .underflow(), .overflow(), .invalid_op(), .rdy(rdy_div));
 
     wire [15:0] im_array [0:168];
     `UNPACK_ARRAY(16, 9, im_array, im, unpk_idx_1)
@@ -373,7 +377,8 @@ module pool_13x13 (
     localparam accum8 = 4'b1000;
     localparam accum9 = 4'b1001;
     localparam accum10 = 4'b1010;
-    localparam finish = 4'b1011;
+    localparam division = 4'b1011;
+    localparam finish = 4'b1100;
 
     /*accum accum_0 (.a(a0), .b(b0), .operation_nd(operation_nd_accum0), .operation_rfd(operation_rfd_accum0), .clk(clk), 
     .sclr(sclr), .ce(ce), .result(o_buf0), .underflow(underflow_accum0), .overflow(overflow_accum0), .invalid_op(invalid_op_accum0), .rdy(rdy_accum0));*/
@@ -499,11 +504,21 @@ module pool_13x13 (
             end
             accum10: begin
                 if(rdy[0] == 1'b0) begin
-                    next_state = finish;
+                    next_state = division;
                     sclr = 1;
                 end
                 else begin
                     next_state = accum10;
+                    sclr = 0;
+                end
+            end
+            division: begin
+                if(rdy_div == 1'b0) begin
+                    next_state = finish;
+                    sclr = 1;
+                end
+                else begin
+                    next_state = division;
                     sclr = 0;
                 end
             end
@@ -765,8 +780,13 @@ always @ (posedge clk or negedge rst_n) begin
                 a[0] <= o_buf[0]; b[0] <= o_buf[2]; 
                 
             end
+            division: begin
+                ce <= 1; operation_nd_div <= 0;
+                div_a <= o_buf[0];  
+            end
             finish: begin
                 conv_valid <= 1;
+                om <= result_div;
             end
             default:    begin
                 ce <= 0;
