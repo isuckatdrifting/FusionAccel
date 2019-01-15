@@ -3,13 +3,13 @@
 `define UNPACK_ARRAY(PK_WIDTH,PK_LEN,PK_DEST,PK_SRC,unpk_idx)  genvar unpk_idx; generate for (unpk_idx=0; unpk_idx<(PK_LEN); unpk_idx=unpk_idx+1) begin; assign PK_DEST[unpk_idx][((PK_WIDTH)-1):0] = PK_SRC[((PK_WIDTH)*unpk_idx+(PK_WIDTH-1)):((PK_WIDTH)*unpk_idx)]; end; endgenerate
 
 module conv_3x3(
-    input [144 - 1:0] im,
-    input [144 - 1:0] iw,
     input clk,
     input rst_n,
+    input [144 - 1:0] im,
+    input [144 - 1:0] iw,
+    output [15:0] om,
     input conv_ready,
-    output conv_valid,
-    output [15:0] om
+    output conv_valid
 );
     wire [15:0] im_array [0:8];
     `UNPACK_ARRAY(16, 9, im_array, im, unpk_idx_0)
@@ -22,7 +22,7 @@ module conv_3x3(
     reg aresetn;
     reg conv_valid;
 
-    assign aclk = clk;
+    //assign aclk = clk;
     always@(posedge clk) begin
         aresetn <= rst_n & conv_ready;
     end
