@@ -340,4 +340,6 @@ module pool_13x13 (
 
 localparam div = 16'h5948; //169
 
+divider div0(.a(a), .b(b), .operation_nd(operation_nd), .operation_rfd(operation_rfd),
+                .clk(clk), .sclr(sclr), .ce(ce), .result(result), .underflow(underflow), .overflow(overflow), .invalid_op(), .rdy(rdy));
 endmodule

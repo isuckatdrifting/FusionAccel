@@ -70,7 +70,8 @@
 
   clockgen instance_name
    (// Clock in ports
-    .CLK_IN1(CLK_IN1),      // IN
+    .CLK_IN1_P(CLK_IN1_P),    // IN
+    .CLK_IN1_N(CLK_IN1_N),    // IN
     // Clock out ports
     .CLK_OUT1(CLK_OUT1),     // OUT
     .CLK_OUT2(CLK_OUT2),     // OUT
