@@ -1,40 +1,20 @@
-`timescale 1ns / 1ns
-//////////////////////////////////////////////////////////////////////////////////
-// Company: PhotonIC Technologies 
-// Engineer: Geralt Shi
-// 
-// Create Date:    13:03:38 08/14/2018 
-// Design Name: 
-// Module Name:    usb
-// Project Name: 
-// Target Devices: 
-// Tool versions: 
-// Description: 
-//
-// Dependencies: 
-//
-// Revision: 
-// Revision 0.01 - File Created
-// Additional Comments: 
-//
-//////////////////////////////////////////////////////////////////////////////////
 module usb(
-	input		wire 	[4:0]   	okUH,
-	output	wire 	[2:0]   	okHU,
-	inout		wire 	[31:0]  	okUHU,
-	inout		wire         	okAA,
-	input							clk,
-   input    wire    			reset_n,
-	input							transmit_en,
-	input							enable,
-	input				[23:0]	time1,
-	input				[23:0]	calib1,
-	input				[23:0]	calib2,
-   input          [23:0]  	b_htime,
-	input				[7:0] 	x_counter,
-	input				[7:0]		y_counter,
+	input	wire 	[4:0]   okUH,
+	output	wire 	[2:0]   okHU,
+	inout	wire 	[31:0]  okUHU,
+	inout	wire         	okAA,
+	input					clk,
+    input   wire    		reset_n,
+	input					transmit_en,
+	input					enable,
+	input			[23:0]	time1,
+	input			[23:0]	calib1,
+	input			[23:0]	calib2,
+    input          	[23:0]  b_htime,
+	input			[7:0] 	x_counter,
+	input			[7:0]	y_counter,
 	output	reg				done,
-   output 	wire 	[23:0] 	b_pulsewidth
+    output 	wire 	[23:0] 	b_pulsewidth
     );
 
 wire [31:0] addra;
@@ -55,41 +35,6 @@ always@(posedge clk, negedge reset_n) begin
 		else read_addrb <= 0;
 	end
 end
-/*			
-// Three simple dual port rams, port A for writing, and port B for reading
-ram time_ram (
-  .clka(clk), // input clka
-  .ena(1'b1), // input ena
-  .wea({4{transmit_en}}), // input [3 : 0] wea
-  .addra(addra), // input [31 : 0] addra
-  .dina({8'h00,time1}), // input [31 : 0] dina
-  .clkb(clk), // input clkb
-  .addrb(read_addrb), // input [31 : 0] addrb
-  .doutb(time1_doutb) // output [31 : 0] doutb);
-);
-
-ram cali1_ram (
-  .clka(clk), // input clka
-  .ena(1'b1), // input ena
-  .wea({4{transmit_en}}), // input [3 : 0] wea
-  .addra(addra), // input [31 : 0] addra
-  .dina({8'h00,calib1}), // input [31 : 0] dina
-  .clkb(clk), // input clkb
-  .addrb(read_addrb), // input [31 : 0] addrb
-  .doutb(cali1_doutb) // output [31 : 0] doutb
-);
-
-ram cali2_ram (
-  .clka(clk), // input clka
-  .ena(1'b1), // input ena
-  .wea({4{transmit_en}}), // input [3 : 0] wea
-  .addra(addra), // input [31 : 0] addra
-  .dina({8'h00,calib2}), // input [31 : 0] dina
-  .clkb(clk), // input clkb
-  .addrb(read_addrb), // input [31 : 0] addrb
-  .doutb(cali2_doutb) // output [31 : 0] doutb
-);
-*/
 
 wire [23:0] timeVal;
 wire [23:0] calibration1Val;

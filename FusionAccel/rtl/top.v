@@ -12,7 +12,17 @@ module top(
 );
 
 //------------------------Clock PLL and ODDR2------------------------------//
-
+clockgen clockgen_
+   (// Clock in ports
+    .CLK_IN1_P(sys_clkp),    // IN
+    .CLK_IN1_N(sys_clkn),    // IN
+    // Clock out ports
+    .CLK_OUT1(sys_clk),     // OUT
+	.CLK_OUT2(tx_clk),     // OUT
+    // Status and control signals
+    .RESET(1'b0),// IN
+    .LOCKED(LOCKED));      // OUT 
+ 
 //-------------------------LED Stage Monitor-------------------------------//
 
 //--------------v1, Minimum Hardware Cores for SqueezeNet------------------//
