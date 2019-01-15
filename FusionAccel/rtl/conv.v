@@ -31,13 +31,13 @@ module conv_3x3(
     wire [15:0] o_buf0, o_buf1, o_buf2, o_buf3;
     reg operation_nd_accum0, operation_nd_accum1, operation_nd_accum2, operation_nd_accum3;
 
-    localparam idle = 4'b0000;
-    localparam mult = 4'b0001;
-    localparam accum1 = 4'b0010;
-    localparam accum2 = 4'b0011;
-    localparam accum3 = 4'b0100;
-    localparam accum4 = 4'b0101;
-    localparam finish = 4'b0110;
+    localparam idle = 3'b000;
+    localparam mult = 3'b001;
+    localparam accum1 = 3'b010;
+    localparam accum2 = 3'b011;
+    localparam accum3 = 3'b100;
+    localparam accum4 = 3'b101;
+    localparam finish = 3'b110;
 
     multiplier mult0 (.a(im_array[0]), .b(iw_array[0]), .operation_nd(operation_nd_0), .operation_rfd(operation_rfd_0), .clk(clk), 
     .sclr(sclr), .ce(ce), .result(om_array[0]), .underflow(underflow_0), .overflow(overflow_0), .invalid_op(invalid_op_0), .rdy(rdy_0));
@@ -78,11 +78,9 @@ module conv_3x3(
     accum accum_3 (.a(a3), .b(b3), .operation_nd(operation_nd_accum3), .operation_rfd(operation_rfd_accum3), .clk(clk), 
     .sclr(sclr), .ce(ce), .result(o_buf3), .underflow(underflow_accum3), .overflow(overflow_accum3), .invalid_op(invalid_op_accum3), .rdy(rdy_accum3));
 
-
     reg [3:0] curr_state;
     reg [3:0] next_state;
     //    Current State，non-blocking
-
     always @ (posedge clk or negedge rst_n)    begin
         if (!rst_n)
             curr_state    <= idle;
@@ -168,7 +166,7 @@ always @ (posedge clk or negedge rst_n) begin
         operation_nd_3 <= 0; operation_nd_4 <= 0; operation_nd_5 <= 0; 
         operation_nd_6 <= 0; operation_nd_7 <= 0; operation_nd_8 <= 0; 
         operation_nd_accum0 <= 0; operation_nd_accum1 <= 0; operation_nd_accum2 <= 0; operation_nd_accum3 <= 0;
-        ce <= 0;
+        ce <= 0; om <= 0;
         conv_valid <= 0;
     end
     else begin
@@ -194,51 +192,46 @@ always @ (posedge clk or negedge rst_n) begin
                 a2 <= om_array[4]; b2 <= om_array[5]; 
                 a3 <= om_array[6]; b3 <= om_array[7];
                 if(rdy_accum0) begin
-                    operation_nd_0 <= 0;
+                    operation_nd_accum0 <= 0;
                 end
                 if(rdy_accum1) begin
-                    operation_nd_1 <= 0;
+                    operation_nd_accum1 <= 0;
                 end
                 if(rdy_accum2) begin 
-                    operation_nd_2 <= 0;
+                    operation_nd_accum2 <= 0;
                 end
                 if(rdy_accum3) begin
-                    operation_nd_3 <= 0;
+                    operation_nd_accum3 <= 0;
                 end
             end
-
             accum2: begin
                 ce <= 1; operation_nd_accum0 <= 1; operation_nd_accum1 <= 1;
                 a0 <= o_buf0; b0 <= o_buf1; 
                 a1 <= o_buf2; b1 <= o_buf3; 
                 if(rdy_accum0) begin
-                    operation_nd_0 <= 0;
+                    operation_nd_accum0 <= 0;
                 end
                 if(rdy_accum1) begin
-                    operation_nd_1 <= 0;
+                    operation_nd_accum1 <= 0;
                 end
             end
-
             accum3: begin
                 ce <= 1; operation_nd_accum0 <= 1;
                 a0 <= o_buf0; b0 <= o_buf1; 
                 if(rdy_accum0) begin
-                    operation_nd_0 <= 0;
+                    operation_nd_accum0 <= 0;
                 end
             end
-
             accum4: begin
                 ce <= 1; operation_nd_accum0 <= 1;
                 a0 <= o_buf0; b0 <= om_array[8]; 
                 if(rdy_accum0) begin
-                    operation_nd_0 <= 0;
+                    operation_nd_accum0 <= 0;
                     om <= o_buf0;
                 end
             end
-            
             finish: begin
                 conv_valid <= 1;
-                
             end
             default:    begin
                 ce <= 0;
@@ -246,6 +239,7 @@ always @ (posedge clk or negedge rst_n) begin
         endcase
     end
 end
-
     //TODO: Make Accum Pipelines
+
+    //TODO: Make ReLU Activation
 endmodule

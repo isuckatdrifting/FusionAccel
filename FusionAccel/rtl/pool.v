@@ -57,7 +57,6 @@ localparam finish = 4'b1000;
 reg [3:0] curr_state;
 reg [3:0] next_state;
 //    Current State，non-blocking
-
 always @ (posedge clk or negedge rst_n)    begin
     if (!rst_n)
         curr_state    <= idle;
@@ -161,7 +160,7 @@ always @ (posedge clk or negedge rst_n) begin
         a0 <= 0; a1 <= 0; a2 <= 0; a3 <= 0; b0 <= 0; b1 <= 0; b2 <= 0; b3 <= 0; 
         operation_0 <= 0; operation_1 <= 0; operation_2 <= 0; operation_3 <= 0;
         operation_nd_0 <= 0; operation_nd_1 <= 0; operation_nd_2 <= 0; operation_nd_3 <= 0;
-        ce <= 0;
+        ce <= 0; om <= 0;
         id_0 <= 0; id_1 <= 1; id_2 <= 2; id_3 <= 3; id_4 <= 4; id_5 <= 5; id_6 <= 6; id_7 <= 7;
         pool_valid <= 0;
     end
@@ -326,17 +325,19 @@ end
 
 endmodule
 
-//TODO: Bitonic Sort Logic for 13x13 pooling
+//TODO: Sum/Divide Logic for 13x13 pooling
 //Bitonic 13x13 = 128 + 32 + 4 + 1 --> 2-Stage Bitnoic
 //Bitonic 128 + 32 + 4 + 1 + 4 --> 
 //Maximum 64 Comparators
 module pool_13x13 (
     input clk,
     input rst_n,
-    input im,
-    input om,
+    input [169*16-1:0] im,
+    input [15:0] om,
     input pool_ready,
     output pool_valid
 );
+
+localparam div = 16'h5948; //169
 
 endmodule
