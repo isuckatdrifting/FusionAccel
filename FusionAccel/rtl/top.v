@@ -8,11 +8,22 @@ module top(
 	inout  wire         okAA,
 	input  wire         sys_clkp,
 	input  wire         sys_clkn,
-	output [7:0]   led
+	output      [7:0]   led
 );
 
 //------------------------Clock PLL and ODDR2------------------------------//
-
+clockgen clockgen_ (
+    // Clock in ports
+    .CLK_IN1_P(sys_clkp),   // IN
+    .CLK_IN1_N(sys_clkn),   // IN
+    // Clock out ports
+    .CLK_OUT1(sys_clk),     // OUT
+	.CLK_OUT2(tx_clk),      // OUT
+    // Status and control signals
+    .RESET(1'b0),           // IN
+    .LOCKED(LOCKED)         // OUT 
+);      
+ 
 //-------------------------LED Stage Monitor-------------------------------//
 
 //--------------v1, Minimum Hardware Cores for SqueezeNet------------------//
@@ -39,14 +50,23 @@ conv_3x3 conv_(
     .conv_valid(conv_valid)
 ); //Convolutional Core
 
-pool_3x3 pool_(
+pool_3x3 pool_3x3_(
     .clk(clk),
     .rst_n(rst_n),
     .im(pool_im),
     .om(pool_om),
     .pool_ready(pool_ready),
     .pool_valid(pool_valid)
-); //Pooling Core
+); //Max Pooling Core
+
+pool_13x13 pool_13x13_(
+    .clk(clk),
+    .rst_n(rst_n),
+    .im(),
+    .om(),
+    .pool_ready(),
+    .pool_valid()
+); //Average Pooling Core
 
 dma dma_(
     .clk(clk),
