@@ -30,16 +30,23 @@ csb csb_(
 ); //Control Bus for all cores
 
 conv_3x3 conv_(
-    .im(im),
-    .iw(iw),
     .clk(clk),
     .rst_n(rst_n),
+    .im(im),
+    .iw(iw),
+    .om(om),
     .conv_ready(conv_ready),
-    .conv_valid(conv_valid),
-    .om(om)
+    .conv_valid(conv_valid)
 ); //Convolutional Core
 
-pool pool_(); //Pooling Core
+pool_3x3 pool_(
+    .clk(clk),
+    .rst_n(rst_n),
+    .im(pool_im),
+    .om(pool_om),
+    .pool_ready(pool_ready),
+    .pool_valid(pool_valid)
+); //Pooling Core
 
 dma dma_(
     .clk(clk),
