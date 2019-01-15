@@ -161,7 +161,7 @@ always @ (posedge clk or negedge rst_n) begin
         a0 <= 0; a1 <= 0; a2 <= 0; a3 <= 0; b0 <= 0; b1 <= 0; b2 <= 0; b3 <= 0; 
         operation_0 <= 0; operation_1 <= 0; operation_2 <= 0; operation_3 <= 0;
         operation_nd_0 <= 0; operation_nd_1 <= 0; operation_nd_2 <= 0; operation_nd_3 <= 0;
-        sclr <= 0; ce <= 0;
+        ce <= 0;
         id_0 <= 0; id_1 <= 1; id_2 <= 2; id_3 <= 3; id_4 <= 4; id_5 <= 5; id_6 <= 6; id_7 <= 7;
         pool_valid <= 0;
     end
@@ -319,7 +319,6 @@ always @ (posedge clk or negedge rst_n) begin
             end
             default:    begin
                 ce <= 0;
-                sclr <= 1;
             end
         endcase
     end

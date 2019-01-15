@@ -30,7 +30,7 @@ initial begin
     iw = {16'h3c00, 16'h4000, 16'h4200, 16'h4400, 16'h4500, 16'h4600, 16'h4700, 16'h4800, 16'h4880};
     #10 rst_n = 1;
     #100 conv_ready = 1;
-    #1920 conv_ready = 0;
+    #510 conv_ready = 0;
 end
 
 endmodule

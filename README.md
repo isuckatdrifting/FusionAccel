@@ -96,7 +96,8 @@ No CPU Architecture means no DMA.
 
 Available SDRAM Resource = 1Gbit = 128MByte = 64MWord
 
-Use Select Sort for 3x3 Max Pooling
+3x3 Conv, Multiply Takes 9 Cycles, Accumulate Takes 42 Cycles, Totally Takes 51 Cycles, 65 FFs.
+Use Bitonic Sort for 3x3 Max Pooling, Takes 31 Cycles, 213 FFs.
 Use Bitonic Sort for 13x13 Average Pooling
 
 fp mult aresetn must be asserted for minimum 2 cycles, fp mult takes 7 cycles
