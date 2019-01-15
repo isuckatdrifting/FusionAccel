@@ -10,7 +10,7 @@
          </top_modules>
       </db_ref>
    </db_ref_list>
-   <WVObjectSize size="36" />
+   <WVObjectSize size="43" />
    <wvobject fp_name="/conv_3x3_tb/om" type="array" db_ref_id="1">
       <obj_property name="ElementShortName">om[15:0]</obj_property>
       <obj_property name="ObjectShortName">om[15:0]</obj_property>
@@ -145,9 +145,9 @@
       <obj_property name="BkColor">128 128 255</obj_property>
       <obj_property name="TextColor">230 230 230</obj_property>
    </wvobject>
-   <wvobject fp_name="/conv_3x3_tb/conv_3x3_i/count" type="array" db_ref_id="1">
-      <obj_property name="ElementShortName">count[3:0]</obj_property>
-      <obj_property name="ObjectShortName">count[3:0]</obj_property>
+   <wvobject fp_name="/conv_3x3_tb/conv_3x3_i/curr_state" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">curr_state[3:0]</obj_property>
+      <obj_property name="ObjectShortName">curr_state[3:0]</obj_property>
    </wvobject>
    <wvobject fp_name="/conv_3x3_tb/conv_3x3_i/accum_0/operation_nd" type="logic" db_ref_id="1">
       <obj_property name="ElementShortName">operation_nd</obj_property>
@@ -185,16 +185,6 @@
       <obj_property name="ElementShortName">rdy</obj_property>
       <obj_property name="ObjectShortName">rdy</obj_property>
    </wvobject>
-   <wvobject fp_name="/conv_3x3_tb/conv_3x3_i/i_buf_accum" type="array" db_ref_id="1">
-      <obj_property name="ElementShortName">i_buf_accum[15:0]</obj_property>
-      <obj_property name="ObjectShortName">i_buf_accum[15:0]</obj_property>
-      <obj_property name="Radix">HEXRADIX</obj_property>
-   </wvobject>
-   <wvobject fp_name="/conv_3x3_tb/conv_3x3_i/i_buf" type="array" db_ref_id="1">
-      <obj_property name="ElementShortName">i_buf[15:0]</obj_property>
-      <obj_property name="ObjectShortName">i_buf[15:0]</obj_property>
-      <obj_property name="Radix">HEXRADIX</obj_property>
-   </wvobject>
    <wvobject fp_name="/conv_3x3_tb/conv_3x3_i/accum_0/a" type="array" db_ref_id="1">
       <obj_property name="ElementShortName">a[15:0]</obj_property>
       <obj_property name="ObjectShortName">a[15:0]</obj_property>
@@ -206,6 +196,51 @@
       <obj_property name="Radix">HEXRADIX</obj_property>
    </wvobject>
    <wvobject fp_name="/conv_3x3_tb/conv_3x3_i/accum_0/result" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">result[15:0]</obj_property>
+      <obj_property name="ObjectShortName">result[15:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/conv_3x3_tb/conv_3x3_i/accum_1/a" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">a[15:0]</obj_property>
+      <obj_property name="ObjectShortName">a[15:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/conv_3x3_tb/conv_3x3_i/accum_1/b" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">b[15:0]</obj_property>
+      <obj_property name="ObjectShortName">b[15:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/conv_3x3_tb/conv_3x3_i/accum_1/result" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">result[15:0]</obj_property>
+      <obj_property name="ObjectShortName">result[15:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/conv_3x3_tb/conv_3x3_i/accum_2/a" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">a[15:0]</obj_property>
+      <obj_property name="ObjectShortName">a[15:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/conv_3x3_tb/conv_3x3_i/accum_2/b" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">b[15:0]</obj_property>
+      <obj_property name="ObjectShortName">b[15:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/conv_3x3_tb/conv_3x3_i/accum_2/result" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">result[15:0]</obj_property>
+      <obj_property name="ObjectShortName">result[15:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/conv_3x3_tb/conv_3x3_i/accum_3/a" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">a[15:0]</obj_property>
+      <obj_property name="ObjectShortName">a[15:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/conv_3x3_tb/conv_3x3_i/accum_3/b" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">b[15:0]</obj_property>
+      <obj_property name="ObjectShortName">b[15:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/conv_3x3_tb/conv_3x3_i/accum_3/result" type="array" db_ref_id="1">
       <obj_property name="ElementShortName">result[15:0]</obj_property>
       <obj_property name="ObjectShortName">result[15:0]</obj_property>
       <obj_property name="Radix">HEXRADIX</obj_property>
