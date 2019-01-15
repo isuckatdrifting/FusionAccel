@@ -68,3 +68,11 @@ _xmsgs/
 
 # exceptions
 !lib/*.ngc
+*.exe
+
+*.wdb
+/isim
+*.log
+*.cmd
+*.ini
+*.xmsgs

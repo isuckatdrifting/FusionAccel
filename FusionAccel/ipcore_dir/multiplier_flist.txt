@@ -1,0 +1,15 @@
+# Output products list for <multiplier>
+_xmsgs/pn_parser.xmsgs
+multiplier/doc/floating_point_ds335.pdf
+multiplier/doc/floating_point_v5_0_readme.txt
+multiplier/doc/floating_point_v5_0_vinfo.html
+multiplier.asy
+multiplier.gise
+multiplier.ngc
+multiplier.sym
+multiplier.v
+multiplier.veo
+multiplier.xco
+multiplier.xise
+multiplier_flist.txt
+multiplier_xmdf.tcl
