@@ -2,10 +2,6 @@
 
 `define UNPACK_ARRAY(PK_WIDTH,PK_LEN,PK_DEST,PK_SRC,unpk_idx)  genvar unpk_idx; generate for (unpk_idx=0; unpk_idx<(PK_LEN); unpk_idx=unpk_idx+1) begin; assign PK_DEST[unpk_idx][((PK_WIDTH)-1):0] = PK_SRC[((PK_WIDTH)*unpk_idx+(PK_WIDTH-1)):((PK_WIDTH)*unpk_idx)]; end; endgenerate
 
-`define OFFSET2 32
-`define OFFSET3 64
-`define OFFSET4 96
-
 module pool_3x3 (
     input clk,
     input rst_n,
@@ -329,22 +325,28 @@ end
 
 endmodule
 
+
 //TODO: Sum/Divide Logic for 13x13 pooling
 //Sum 13x13 = 64 + 64 + 41 --> 32 adder, pipeline
 module pool_13x13 (
     input clk,
     input rst_n,
     input [169*16-1:0] im,
-    input [15:0] om,
+    output [15:0] om,
     input pool_ready,
     output pool_valid
 );
 
     localparam div = 16'h5948; //169
+    localparam OFFSET2 = 32;
+    localparam OFFSET3 = 64;
+    localparam OFFSET4 = 96;
     reg [15:0] div_a;
     reg operation_nd_div;
     wire operation_rfd_div;
     wire rdy_div;
+    reg sclr;
+    reg ce;
 
     divider div0(.a(div_a), .b(div), .operation_nd(operation_nd_div), .operation_rfd(operation_rfd_div),
                 .clk(clk), .sclr(sclr), .ce(ce), .result(result_div), .underflow(), .overflow(), .invalid_op(), .rdy(rdy_div));
@@ -360,8 +362,6 @@ module pool_13x13 (
     wire [31:0] operation_rfd;
     wire [31:0] rdy;
 
-    reg sclr;
-    reg ce;
     reg [15:0] a [0:31];
     reg [15:0] b [0:31];
     wire [15:0] o_buf [0:31];
@@ -407,7 +407,7 @@ module pool_13x13 (
         case (curr_state)
             idle: begin
                 sclr = 1;
-                if(conv_ready)
+                if(pool_ready)
                     next_state = accum1;
                 else
                     next_state = idle;
@@ -533,13 +533,43 @@ module pool_13x13 (
 //    Output，blocking
 always @ (posedge clk or negedge rst_n) begin
     if (!rst_n) begin
-        a0 <= 0; a1 <= 0; a2 <= 0; a3 <= 0; b0 <= 0; b1 <= 0; b2 <= 0; b3 <= 0; 
-        operation_nd_0 <= 0; operation_nd_1 <= 0; operation_nd_2 <= 0; 
-        operation_nd_3 <= 0; operation_nd_4 <= 0; operation_nd_5 <= 0; 
-        operation_nd_6 <= 0; operation_nd_7 <= 0; operation_nd_8 <= 0; 
-        operation_nd_accum0 <= 0; operation_nd_accum1 <= 0; operation_nd_accum2 <= 0; operation_nd_accum3 <= 0;
+        a[0] <= 0; b[0] <= 0; 
+        a[1] <= 0; b[1] <= 0;
+        a[2] <= 0; b[2] <= 0;
+        a[3] <= 0; b[3] <= 0;
+        a[4] <= 0; b[4] <= 0;
+        a[5] <= 0; b[5] <= 0;
+        a[6] <= 0; b[6] <= 0;
+        a[7] <= 0; b[7] <= 0;
+        a[8] <= 0; b[8] <= 0; 
+        a[9] <= 0; b[9] <= 0;
+        a[10] <= 0; b[10] <= 0;
+        a[11] <= 0; b[11] <= 0;
+        a[12] <= 0; b[12] <= 0;
+        a[13] <= 0; b[13] <= 0;
+        a[14] <= 0; b[14] <= 0;
+        a[15] <= 0; b[15] <= 0;
+        a[16] <= 0; b[16] <= 0; 
+        a[17] <= 0; b[17] <= 0;
+        a[18] <= 0; b[18] <= 0;
+        a[19] <= 0; b[19] <= 0;
+        a[20] <= 0; b[20] <= 0;
+        a[21] <= 0; b[21] <= 0;
+        a[22] <= 0; b[22] <= 0;
+        a[23] <= 0; b[23] <= 0;
+        a[24] <= 0; b[24] <= 0; 
+        a[25] <= 0; b[25] <= 0;
+        a[26] <= 0; b[26] <= 0;
+        a[27] <= 0; b[27] <= 0;
+        a[28] <= 0; b[28] <= 0;
+        a[29] <= 0; b[29] <= 0;
+        a[30] <= 0; b[30] <= 0;
+        a[31] <= 0; b[31] <= 0;
+        div_a <= 0;
+        operation_nd_div <= 0;
+        operation_nd <= 32'h00000000;
         ce <= 0; om <= 0;
-        conv_valid <= 0;
+        pool_valid <= 0;
     end
     else begin
         if(rdy[0]) operation_nd[0] <= 0;
@@ -785,7 +815,7 @@ always @ (posedge clk or negedge rst_n) begin
                 div_a <= o_buf[0];  
             end
             finish: begin
-                conv_valid <= 1;
+                pool_valid <= 1;
                 om <= result_div;
             end
             default:    begin
