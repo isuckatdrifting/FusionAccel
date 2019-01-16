@@ -355,7 +355,7 @@ module pool_13x13 (
     wire ce_div;
     wire [15:0] result_div;
     divider div0(.a(div_a), .b(div), .operation_nd(operation_nd_div), .operation_rfd(operation_rfd_div),
-                .clk(clk), .sclr(sclr), .ce(ce), .result(result_div), .underflow(), .overflow(), .invalid_op(), .rdy(rdy_div));
+                .clk(clk), .sclr(sclr_div), .ce(ce_div), .result(result_div), .underflow(), .overflow(), .invalid_op(), .rdy(rdy_div));
 
     wire [15:0] im_array [0:168];
     `UNPACK_ARRAY(16, 169, im_array, im, unpk_idx_1)
@@ -549,8 +549,18 @@ always @ (posedge clk or negedge rst_n) begin
         div_a <= 0;
         operation_nd_div <= 0;
         operation_nd <= 32'h00000000;
-        ce <= 0; om <= 0;
+        om <= 0;
         pool_valid <= 0;
+        accum1_finish <= 0;
+        accum2_finish <= 0;
+        accum3_finish <= 0;
+        accum4_finish <= 0;
+        accum5_finish <= 0;
+        accum6_finish <= 0;
+        accum7_finish <= 0;
+        accum8_finish <= 0;
+        accum9_finish <= 0;
+        accum10_finish <= 0;
     end
     else begin
         case (curr_state)
@@ -735,7 +745,7 @@ always @ (posedge clk or negedge rst_n) begin
                 a[7] <= o_buf[14]; b[7] <= o_buf[15]; 
                 a[8] <= o_buf[16]; b[8] <= o_buf[17]; 
                 a[9] <= o_buf[18]; b[9] <= o_buf[19]; 
-                if(rdy[10] == 10'h3ff) begin operation_nd[9:0] <= 10'h000; accum6_finish <= 1; end
+                if(rdy[9:0] == 10'h3ff) begin operation_nd[9:0] <= 10'h000; accum6_finish <= 1; end
             end
             accum7: begin
                 if(operation_rfd[4:0] == 5'h1f) operation_nd[4:0] <= 5'h1f;
@@ -756,15 +766,15 @@ always @ (posedge clk or negedge rst_n) begin
             accum9: begin
                 if(operation_rfd[0] == 1'b1)  operation_nd[0] <= 1'b1;
                 a[0] <= o_buf[0]; b[0] <= o_buf[1]; 
-                if(rdy[0] == 1'b1) begin operation_nd[0] <= 1'b1; accum9_finish <= 1; end
+                if(rdy[0] == 1'b1) begin operation_nd[0] <= 1'b0; accum9_finish <= 1; end
             end
             accum10: begin
                 if(operation_rfd[0] == 1'b1) operation_nd[0] <= 1'b1;
                 a[0] <= o_buf[0]; b[0] <= o_buf[2]; 
-                if(rdy[0] == 1'b1) begin operation_nd[0] <= 1'b1; accum10_finish <= 1; end
+                if(rdy[0] == 1'b1) begin operation_nd[0] <= 1'b0; accum10_finish <= 1; end
             end
             division: begin
-                operation_nd_div <= 1;
+                if(operation_rfd_div) operation_nd_div <= 1;
                 div_a <= o_buf[0]; 
                 if(rdy_div) begin operation_nd_div <= 0; pool_valid <= 1; om <= result_div; end
             end
