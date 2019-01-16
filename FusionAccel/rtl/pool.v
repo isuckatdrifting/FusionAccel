@@ -355,7 +355,7 @@ module pool_13x13 (
     wire ce_div;
     wire [15:0] result_div;
     divider div0(.a(div_a), .b(div), .operation_nd(operation_nd_div), .operation_rfd(operation_rfd_div),
-                .clk(clk), .sclr(sclr), .ce(ce), .result(result_div), .underflow(), .overflow(), .invalid_op(), .rdy(rdy_div));
+                .clk(clk), .sclr(sclr_div), .ce(ce_div), .result(result_div), .underflow(), .overflow(), .invalid_op(), .rdy(rdy_div));
 
     wire [15:0] im_array [0:168];
     `UNPACK_ARRAY(16, 169, im_array, im, unpk_idx_1)
@@ -396,7 +396,22 @@ module pool_13x13 (
     assign sclr_div = rdy_div;
     assign ce_div = ~rdy_div;
 
-    reg accum1_finish, accum2_finish, accum3_finish, accum4_finish, accum5_finish, accum6_finish, accum7_finish, accum8_finish, accum9_finish, accum10_finish;
+    wire accum1_finish, accum2_finish, accum3_finish, accum4_finish, accum5_finish, accum6_finish, accum7_finish, accum8_finish, accum9_finish, accum10_finish;
+
+    assign accum1_finish = (rdy == 32'hffffffff)?1:0;
+    assign accum2_finish = (rdy == 32'hffffffff)?1:0;
+    assign accum3_finish = (rdy == 32'hffffffff)?1:0; 
+    assign accum4_finish = (rdy == 32'hffffffff)?1:0;
+    assign accum5_finish = (rdy[19:0] == 20'hfffff)?1:0;
+    assign accum6_finish = (rdy[9:0] == 10'h3ff)?1:0;
+    assign accum7_finish = (rdy[4:0] == 5'h1f)?1:0;
+    assign accum8_finish = (rdy[2:0] == 3'h7)?1:0;
+    assign accum9_finish = (rdy[0] == 5'h1)?1:0;
+    assign accum10_finish = (rdy[0] == 5'h1)?1:0;
+    assign accum__finish = (rdy != 32'h00000000)?1:0;
+    assign operation__rfd = (~operation_rfd == 32'h00000000)?1:0;
+    assign data_permit = accum__finish ^ operation__rfd;
+
 
     reg [3:0] curr_state;
     reg [3:0] next_state;
@@ -549,13 +564,14 @@ always @ (posedge clk or negedge rst_n) begin
         div_a <= 0;
         operation_nd_div <= 0;
         operation_nd <= 32'h00000000;
-        ce <= 0; om <= 0;
+        om <= 0;
         pool_valid <= 0;
     end
     else begin
         case (curr_state)
             accum1: begin
                 if(operation_rfd == 32'hffffffff) operation_nd <= 32'hffffffff;
+                if(data_permit) begin
                 a[0] <= im_array[0]; b[0] <= im_array[1]; 
                 a[1] <= im_array[2]; b[1] <= im_array[3]; 
                 a[2] <= im_array[4]; b[2] <= im_array[5]; 
@@ -587,11 +603,13 @@ always @ (posedge clk or negedge rst_n) begin
                 a[28] <= im_array[56]; b[28] <= im_array[57]; 
                 a[29] <= im_array[58]; b[29] <= im_array[59]; 
                 a[30] <= im_array[60]; b[30] <= im_array[61]; 
-                a[31] <= im_array[62]; b[31] <= im_array[63]; 
-                if(rdy == 32'hffffffff) begin operation_nd <= 32'h00000000; accum1_finish <= 1; end
+                a[31] <= im_array[62]; b[31] <= im_array[63];  
+                end;
+                if(rdy == 32'hffffffff) begin operation_nd <= 32'h00000000; end
             end
             accum2: begin
                 if(operation_rfd == 32'hffffffff) operation_nd <= 32'hffffffff;
+                if(data_permit) begin
                 a[0] <= o_buf[0]; b[0] <= o_buf[1]; 
                 a[1] <= o_buf[2]; b[1] <= o_buf[3]; 
                 a[2] <= o_buf[4]; b[2] <= o_buf[5]; 
@@ -623,11 +641,13 @@ always @ (posedge clk or negedge rst_n) begin
                 a[28] <= im_array[56+OFFSET2]; b[28] <= im_array[57+OFFSET2]; 
                 a[29] <= im_array[58+OFFSET2]; b[29] <= im_array[59+OFFSET2]; 
                 a[30] <= im_array[60+OFFSET2]; b[30] <= im_array[61+OFFSET2]; 
-                a[31] <= im_array[62+OFFSET2]; b[31] <= im_array[63+OFFSET2]; 
-                if(rdy == 32'hffffffff) begin operation_nd <= 32'h00000000; accum2_finish <= 1; end
+                a[31] <= im_array[62+OFFSET2]; b[31] <= im_array[63+OFFSET2];  
+                end;
+                if(rdy == 32'hffffffff) begin operation_nd <= 32'h00000000; end
             end
             accum3: begin
                 if(operation_rfd == 32'hffffffff)  operation_nd <= 32'hffffffff;
+                if(data_permit) begin
                 a[0] <= o_buf[0]; b[0] <= o_buf[1]; 
                 a[1] <= o_buf[2]; b[1] <= o_buf[3]; 
                 a[2] <= o_buf[4]; b[2] <= o_buf[5]; 
@@ -659,11 +679,13 @@ always @ (posedge clk or negedge rst_n) begin
                 a[28] <= im_array[56+OFFSET3]; b[28] <= im_array[57+OFFSET3]; 
                 a[29] <= im_array[58+OFFSET3]; b[29] <= im_array[59+OFFSET3]; 
                 a[30] <= im_array[60+OFFSET3]; b[30] <= im_array[61+OFFSET3]; 
-                a[31] <= im_array[62+OFFSET3]; b[31] <= im_array[63+OFFSET3];
-                if(rdy == 32'hffffffff) begin operation_nd <= 32'h00000000; accum3_finish <= 1; end
+                a[31] <= im_array[62+OFFSET3]; b[31] <= im_array[63+OFFSET3]; 
+                end;
+                if(rdy == 32'hffffffff) begin operation_nd <= 32'h00000000; end
             end
             accum4: begin
                 if(operation_rfd == 32'hffffffff) operation_nd <= 32'hffffffff;
+                if(data_permit) begin
                 a[0] <= o_buf[0]; b[0] <= o_buf[1]; 
                 a[1] <= o_buf[2]; b[1] <= o_buf[3]; 
                 a[2] <= o_buf[4]; b[2] <= o_buf[5]; 
@@ -695,12 +717,14 @@ always @ (posedge clk or negedge rst_n) begin
                 a[28] <= im_array[56+OFFSET4]; b[28] <= im_array[57+OFFSET4]; 
                 a[29] <= im_array[58+OFFSET4]; b[29] <= im_array[59+OFFSET4]; 
                 a[30] <= im_array[60+OFFSET4]; b[30] <= im_array[61+OFFSET4]; 
-                a[31] <= im_array[62+OFFSET4]; b[31] <= im_array[63+OFFSET4]; 
-                if(rdy == 32'hffffffff) begin operation_nd <= 32'h00000000; accum4_finish <= 1; end
+                a[31] <= im_array[62+OFFSET4]; b[31] <= im_array[63+OFFSET4];  
+                end;
+                if(rdy == 32'hffffffff) begin operation_nd <= 32'h00000000; end
             end
 /////////////////////////REMAINING 9 INPUTS////////////////////////
             accum5: begin
                 if(operation_rfd[19:0] == 20'hfffff) operation_nd[19:0] <= 20'hfffff;
+                if(data_permit) begin
                 a[0] <= o_buf[0]; b[0] <= o_buf[1]; 
                 a[1] <= o_buf[2]; b[1] <= o_buf[3]; 
                 a[2] <= o_buf[4]; b[2] <= o_buf[5]; 
@@ -721,10 +745,12 @@ always @ (posedge clk or negedge rst_n) begin
                 a[17] <= im_array[162]; b[17] <= im_array[163]; 
                 a[18] <= im_array[164]; b[18] <= im_array[165]; 
                 a[19] <= im_array[166]; b[19] <= im_array[167]; 
-                if(rdy[19:0] == 20'hfffff) begin operation_nd[19:0] <= 20'h00000; accum5_finish <= 1; end
+                end; 
+                if(rdy[19:0] == 20'hfffff) begin operation_nd[19:0] <= 20'h00000; end
             end
             accum6: begin
                 if(operation_rfd[9:0] == 10'h3ff) operation_nd[9:0] <= 10'h3ff;
+                if(data_permit) begin
                 a[0] <= o_buf[0]; b[0] <= o_buf[1]; 
                 a[1] <= o_buf[2]; b[1] <= o_buf[3]; 
                 a[2] <= o_buf[4]; b[2] <= o_buf[5]; 
@@ -734,37 +760,46 @@ always @ (posedge clk or negedge rst_n) begin
                 a[6] <= o_buf[12]; b[6] <= o_buf[13]; 
                 a[7] <= o_buf[14]; b[7] <= o_buf[15]; 
                 a[8] <= o_buf[16]; b[8] <= o_buf[17]; 
-                a[9] <= o_buf[18]; b[9] <= o_buf[19]; 
-                if(rdy[10] == 10'h3ff) begin operation_nd[9:0] <= 10'h000; accum6_finish <= 1; end
+                a[9] <= o_buf[18]; b[9] <= o_buf[19];  
+                end;
+                if(rdy[9:0] == 10'h3ff) begin operation_nd[9:0] <= 10'h000; end
             end
             accum7: begin
                 if(operation_rfd[4:0] == 5'h1f) operation_nd[4:0] <= 5'h1f;
+                if(data_permit) begin
                 a[0] <= o_buf[2]; b[0] <= o_buf[3]; 
                 a[1] <= o_buf[4]; b[1] <= o_buf[5]; 
                 a[2] <= o_buf[6]; b[2] <= o_buf[7]; 
                 a[3] <= o_buf[8]; b[3] <= o_buf[9]; 
-                a[4] <= o_buf[0]; b[4] <= o_buf[1]; 
-                if(rdy[4:0] == 5'h1f) begin operation_nd[4:0] <= 5'h00; accum7_finish <= 1; end
+                a[4] <= o_buf[0]; b[4] <= o_buf[1];  
+                end;
+                if(rdy[4:0] == 5'h1f) begin operation_nd[4:0] <= 5'h00; end
             end
             accum8: begin
                 if(operation_rfd[2:0] == 3'h7)  operation_nd[2:0] <= 3'h7;
+                if(data_permit) begin
                 a[0] <= o_buf[1]; b[0] <= o_buf[2]; 
                 a[1] <= o_buf[0]; b[1] <= o_buf[3]; 
-                a[2] <= o_buf[4]; b[2] <= im_array[168];
-                if(rdy[2:0] == 3'h7) begin operation_nd[2:0] <= 3'h0; accum8_finish <= 1; end 
+                a[2] <= o_buf[4]; b[2] <= im_array[168]; 
+                end;
+                if(rdy[2:0] == 3'h7) begin operation_nd[2:0] <= 3'h0; end 
             end
             accum9: begin
                 if(operation_rfd[0] == 1'b1)  operation_nd[0] <= 1'b1;
-                a[0] <= o_buf[0]; b[0] <= o_buf[1]; 
-                if(rdy[0] == 1'b1) begin operation_nd[0] <= 1'b1; accum9_finish <= 1; end
+                if(data_permit) begin
+                a[0] <= o_buf[0]; b[0] <= o_buf[1];  
+                end;
+                if(rdy[0] == 1'b1) begin operation_nd[0] <= 1'b0; end
             end
             accum10: begin
                 if(operation_rfd[0] == 1'b1) operation_nd[0] <= 1'b1;
+                if(data_permit) begin
                 a[0] <= o_buf[0]; b[0] <= o_buf[2]; 
-                if(rdy[0] == 1'b1) begin operation_nd[0] <= 1'b1; accum10_finish <= 1; end
+                end;
+                if(rdy[0] == 1'b1) begin operation_nd[0] <= 1'b0; end
             end
             division: begin
-                operation_nd_div <= 1;
+                if(operation_rfd_div) operation_nd_div <= 1;
                 div_a <= o_buf[0]; 
                 if(rdy_div) begin operation_nd_div <= 0; pool_valid <= 1; om <= result_div; end
             end
