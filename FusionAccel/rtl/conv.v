@@ -89,8 +89,8 @@ module conv_3x3(
     accum accum_3 (.a(a3), .b(b3), .operation_nd(operation_nd_accum[3]), .operation_rfd(operation_rfd_accum[3]), .clk(clk), 
     .sclr(sclr_accum[3]), .ce(ce_accum[3]), .result(o_buf3), .underflow(underflow_accum3), .overflow(overflow_accum3), .invalid_op(invalid_op_accum3), .rdy(rdy_accum[3]));
 
-    reg [3:0] curr_state;
-    reg [3:0] next_state;
+    reg [2:0] curr_state;
+    reg [2:0] next_state;
     //    Current State，non-blocking
     always @ (posedge clk or negedge rst_n)    begin
         if (!rst_n)
@@ -167,13 +167,85 @@ always @ (posedge clk or negedge rst_n) begin
             end
             accum4: begin
                 if(operation_rfd_accum[0] == 1'b1) begin operation_nd_accum[0] <= 1'b1; a0 <= o_buf0; b0 <= om_array[8];end
-                if(rdy_accum[0] == 1'b1)  begin operation_nd_accum[0] <= 1'b0; conv_valid <= 1; end
+                if(rdy_accum[0] == 1'b1)  begin operation_nd_accum[0] <= 1'b0; om <= o_buf0; conv_valid <= 1; end
             end
             default:  ;
         endcase
     end
 end
     //TODO: Make Accum Pipelines
-    //TODO: om
     //TODO: Make ReLU Activation
+endmodule
+
+module conv_1x1(
+    input clk,
+    input rst_n,
+    input [15:0] im,
+    input [15:0] iw,
+    output [15:0] om,
+    input conv_ready,
+    output conv_valid
+);
+    reg [15:0] om;
+    reg conv_valid;
+
+    reg operation_nd;
+    wire operation_rfd;
+    wire rdy_mult;
+    wire sclr_mult;
+    wire ce_mult;
+
+    assign ce_mult = ~rdy_mult;
+    assign sclr_mult = rdy_mult;
+    
+    localparam idle = 3'b000;
+    localparam mult = 3'b001;
+
+    multiplier mult0 (.a(im), .b(iw), .operation_nd(operation_nd), .operation_rfd(operation_rfd), .clk(clk), 
+    .sclr(sclr_mult), .ce(ce_mult), .result(om), .underflow(underflow_0), .overflow(overflow_0), .invalid_op(invalid_op_0), .rdy(rdy_mult));
+
+    reg [3:0] curr_state;
+    reg [3:0] next_state;
+    //    Current State，non-blocking
+    always @ (posedge clk or negedge rst_n)    begin
+        if (!rst_n)
+            curr_state    <= idle;
+        else
+            curr_state    <= next_state;
+    end
+
+    //    Status Jump，blocking
+    always @ (*) begin
+        next_state = idle;    //    Initialize
+        case (curr_state)
+            idle: begin
+                if(conv_ready) next_state = mult;
+                else next_state = idle;
+            end
+            mult: begin
+                if(rdy_mult) next_state = idle;
+                else next_state = mult;
+            end
+            default:
+                next_state = idle;
+        endcase
+    end
+
+//    Output，blocking
+always @ (posedge clk or negedge rst_n) begin
+    if (!rst_n) begin
+        operation_nd <= 1'h0;
+        om <= 0;
+        conv_valid <= 0;
+    end
+    else begin
+        case (curr_state)
+            mult: begin
+                if(operation_rfd == 1'b1) operation_nd <= 1'b1;
+                if(rdy_mult == 1'b1) begin operation_nd <= 1'b0; end
+            end
+            default:  ;
+        endcase
+    end
+end
 endmodule
