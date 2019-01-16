@@ -10,7 +10,7 @@
          </top_modules>
       </db_ref>
    </db_ref_list>
-   <WVObjectSize size="49" />
+   <WVObjectSize size="46" />
    <wvobject fp_name="/conv_3x3_tb/om" type="array" db_ref_id="1">
       <obj_property name="ElementShortName">om[15:0]</obj_property>
       <obj_property name="ObjectShortName">om[15:0]</obj_property>
@@ -157,6 +157,10 @@
       <obj_property name="BkColor">128 128 255</obj_property>
       <obj_property name="TextColor">230 230 230</obj_property>
    </wvobject>
+   <wvobject fp_name="/conv_3x3_tb/conv_3x3_i/rdy_accum" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">rdy_accum[3:0]</obj_property>
+      <obj_property name="ObjectShortName">rdy_accum[3:0]</obj_property>
+   </wvobject>
    <wvobject fp_name="/conv_3x3_tb/conv_3x3_i/accum_0/operation_nd" type="logic" db_ref_id="1">
       <obj_property name="ElementShortName">operation_nd</obj_property>
       <obj_property name="ObjectShortName">operation_nd</obj_property>
@@ -192,22 +196,6 @@
    <wvobject fp_name="/conv_3x3_tb/conv_3x3_i/accum_0/rdy" type="logic" db_ref_id="1">
       <obj_property name="ElementShortName">rdy</obj_property>
       <obj_property name="ObjectShortName">rdy</obj_property>
-   </wvobject>
-   <wvobject fp_name="/conv_3x3_tb/conv_3x3_i/accum1_finish" type="logic" db_ref_id="1">
-      <obj_property name="ElementShortName">accum1_finish</obj_property>
-      <obj_property name="ObjectShortName">accum1_finish</obj_property>
-   </wvobject>
-   <wvobject fp_name="/conv_3x3_tb/conv_3x3_i/accum2_finish" type="logic" db_ref_id="1">
-      <obj_property name="ElementShortName">accum2_finish</obj_property>
-      <obj_property name="ObjectShortName">accum2_finish</obj_property>
-   </wvobject>
-   <wvobject fp_name="/conv_3x3_tb/conv_3x3_i/accum3_finish" type="logic" db_ref_id="1">
-      <obj_property name="ElementShortName">accum3_finish</obj_property>
-      <obj_property name="ObjectShortName">accum3_finish</obj_property>
-   </wvobject>
-   <wvobject fp_name="/conv_3x3_tb/conv_3x3_i/accum4_finish" type="logic" db_ref_id="1">
-      <obj_property name="ElementShortName">accum4_finish</obj_property>
-      <obj_property name="ObjectShortName">accum4_finish</obj_property>
    </wvobject>
    <wvobject fp_name="/conv_3x3_tb/conv_3x3_i/accum_0/a" type="array" db_ref_id="1">
       <obj_property name="ElementShortName">a[15:0]</obj_property>
