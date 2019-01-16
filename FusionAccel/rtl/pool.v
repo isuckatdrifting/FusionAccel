@@ -19,12 +19,19 @@ wire [15:0] im_array [0:8];
 reg [15:0] om;
 reg [15:0] a0,b0,a1,b1,a2,b2,a3,b3;
 reg [5:0] operation_0, operation_1, operation_2, operation_3;
-reg operation_nd_0, operation_nd_1, operation_nd_2, operation_nd_3;
-wire operation_rfd_0, operation_rfd_1, operation_rfd_2, operation_rfd_3;
-wire rdy_0, rdy_1, rdy_2, rdy_3;
-wire rdy;
-reg sclr;
-reg ce;
+reg [3:0] operation_nd;
+wire [3:0] operation_rfd;
+wire [3:0] rdy;
+wire [3:0] sclr;
+wire [3:0] ce;
+
+assign sclr = rdy;
+assign ce = ~rdy;
+
+assign cmp__finish = (rdy != 4'h0)?1:0;
+assign operation__rfd = (~operation_rfd == 4'h0)?1:0;
+assign data_permit = cmp__finish ^ operation__rfd;
+
 wire result_0, result_1, result_2, result_3;
 reg pool_valid;
 
@@ -35,14 +42,14 @@ reg pool_valid;
 //Greater Than          100100
 //Not Equal             101100
 //Greater Than or Equal 110100
-comparator cmp_0(.a(a0), .b(b0), .operation(operation_0), .operation_nd(operation_nd_0), .operation_rfd(operation_rfd_0), 
-                .clk(clk), .sclr(sclr), .ce(ce), .result(result_0), .invalid_op(), .rdy(rdy_0));
-comparator cmp_1(.a(a1), .b(b1), .operation(operation_1), .operation_nd(operation_nd_1), .operation_rfd(operation_rfd_1), 
-                .clk(clk), .sclr(sclr), .ce(ce), .result(result_1), .invalid_op(), .rdy(rdy_1));
-comparator cmp_2(.a(a2), .b(b2), .operation(operation_2), .operation_nd(operation_nd_2), .operation_rfd(operation_rfd_2), 
-                .clk(clk), .sclr(sclr), .ce(ce), .result(result_2), .invalid_op(), .rdy(rdy_2));
-comparator cmp_3(.a(a3), .b(b3), .operation(operation_3), .operation_nd(operation_nd_3), .operation_rfd(operation_rfd_3), 
-                .clk(clk), .sclr(sclr), .ce(ce), .result(result_3), .invalid_op(), .rdy(rdy_3));
+comparator cmp_0(.a(a0), .b(b0), .operation(operation_0), .operation_nd(operation_nd[0]), .operation_rfd(operation_rfd[0]), 
+                .clk(clk), .sclr(sclr[0]), .ce(ce[0]), .result(result_0), .invalid_op(), .rdy(rdy[0]));
+comparator cmp_1(.a(a1), .b(b1), .operation(operation_1), .operation_nd(operation_nd[1]), .operation_rfd(operation_rfd[1]), 
+                .clk(clk), .sclr(sclr[1]), .ce(ce[1]), .result(result_1), .invalid_op(), .rdy(rdy[1]));
+comparator cmp_2(.a(a2), .b(b2), .operation(operation_2), .operation_nd(operation_nd[2]), .operation_rfd(operation_rfd[2]), 
+                .clk(clk), .sclr(sclr[2]), .ce(ce[2]), .result(result_2), .invalid_op(), .rdy(rdy[2]));
+comparator cmp_3(.a(a3), .b(b3), .operation(operation_3), .operation_nd(operation_nd[3]), .operation_rfd(operation_rfd[3]), 
+                .clk(clk), .sclr(sclr[3]), .ce(ce[3]), .result(result_3), .invalid_op(), .rdy(rdy[3]));
 
 localparam idle = 4'b0000;
 localparam bt1 = 4'b0001;
@@ -69,85 +76,82 @@ always @ (*) begin
     next_state = idle;    //    Initialize
     case (curr_state)
         idle: begin
-            sclr = 1;
+            //sclr = 1;
             if(pool_ready)
                 next_state = bt1;
             else
                 next_state = idle;
         end
         bt1: begin
-            if(rdy_0 & rdy_1 & rdy_2 & rdy_3) begin
+            if(cmp__finish) begin
                 next_state = bt2;
-                sclr = 1;
+                //sclr = 1;
             end
             else begin
                 next_state = bt1;
-                sclr = 0;
+                //sclr = 0;
             end
         end
         bt2: begin 
-            if(rdy_0 & rdy_1 & rdy_2 & rdy_3) begin
+            if(cmp__finish) begin
                 next_state = bt3;
-                sclr = 1;
+                //sclr = 1;
             end
             else begin
                 next_state = bt2;
-                sclr = 0;
+                //sclr = 0;
             end
         end
         bt3: begin
-            if(rdy_0 & rdy_1 & rdy_2 & rdy_3) begin
+            if(cmp__finish) begin
                 next_state = bt4;
-                sclr = 1;
+                //sclr = 1;
             end
             else begin
                 next_state = bt3;
-                sclr = 0;
+                //sclr = 0;
             end
         end
         bt4: begin
-            if(rdy_0 & rdy_1 & rdy_2 & rdy_3) begin
+            if(cmp__finish) begin
                 next_state = bt5;
-                sclr = 1;
+                //sclr = 1;
             end
             else begin
                 next_state = bt4;
-                sclr = 0;
+                //sclr = 0;
             end
         end
         bt5: begin
-            if(rdy_0 & rdy_1 & rdy_2 & rdy_3) begin
+            if(cmp__finish) begin
                 next_state = bt6;
-                sclr = 1;
+                //sclr = 1;
             end
             else begin
                 next_state = bt5;
-                sclr = 0;
+                //sclr = 0;
             end
         end
         bt6: begin
-            if(rdy_0 & rdy_1 & rdy_2 & rdy_3) begin
-                sclr = 1;
+            if(cmp__finish) begin
+                //sclr = 1;
                 next_state = bt7;
             end
             else begin
                 next_state = bt6;
-                sclr = 0;
+                //sclr = 0;
             end
             
         end
         bt7: begin
-            if(rdy_0) begin
-                sclr = 1;
-                next_state = finish;
+            if(cmp__finish) begin
+                //sclr = 1;
+                next_state = idle;
             end
             else begin
                 next_state = bt7;
-                sclr = 0;
+                //sclr = 0;
             end
-        end
-        finish: begin
-            next_state = idle;
         end
         default:
             next_state = idle;
@@ -160,166 +164,162 @@ always @ (posedge clk or negedge rst_n) begin
     if (!rst_n) begin
         a0 <= 0; a1 <= 0; a2 <= 0; a3 <= 0; b0 <= 0; b1 <= 0; b2 <= 0; b3 <= 0; 
         operation_0 <= 0; operation_1 <= 0; operation_2 <= 0; operation_3 <= 0;
-        operation_nd_0 <= 0; operation_nd_1 <= 0; operation_nd_2 <= 0; operation_nd_3 <= 0;
-        ce <= 0; om <= 0;
+        operation_nd <= 4'h0;
+        om <= 0;
         id_0 <= 0; id_1 <= 1; id_2 <= 2; id_3 <= 3; id_4 <= 4; id_5 <= 5; id_6 <= 6; id_7 <= 7;
         pool_valid <= 0;
     end
     else begin
         case (curr_state)
             bt1: begin
-                ce <= 1; operation_nd_0 <= 1; operation_nd_1 <= 1; operation_nd_2 <= 1; operation_nd_3 <= 1;
+                if(operation_rfd == 4'hf) operation_nd <= 4'hf;
                 a0 <= im_array[id_0]; b0 <= im_array[id_1]; operation_0 <= 6'b100100;//GT
                 a1 <= im_array[id_2]; b1 <= im_array[id_3]; operation_1 <= 6'b001100;//LT
                 a2 <= im_array[id_4]; b2 <= im_array[id_5]; operation_2 <= 6'b100100;//GT
                 a3 <= im_array[id_6]; b3 <= im_array[id_7]; operation_3 <= 6'b001100;//LT
-                if(rdy_0) begin
-                    operation_nd_0 <= 0;
+                if(rdy[0]) begin
+                    operation_nd[0] <= 0;
                     if(result_0) begin id_0 <= id_1; id_1 <= id_0; end
                 end
-                if(rdy_1) begin
-                    operation_nd_1 <= 0;
+                if(rdy[1]) begin
+                    operation_nd[1] <= 0;
                     if(result_1) begin id_2 <= id_3; id_3 <= id_2; end
                 end
-                if(rdy_2) begin 
-                    operation_nd_2 <= 0;
+                if(rdy[2]) begin 
+                    operation_nd[2] <= 0;
                     if(result_2) begin id_4 <= id_5; id_5 <= id_4; end
                 end
-                if(rdy_3) begin
-                    operation_nd_3 <= 0;
+                if(rdy[3]) begin
+                    operation_nd[3] <= 0;
                     if(result_3) begin id_6 <= id_7; id_7 <= id_6; end
                 end
             end
             bt2: begin
-                ce <= 1; operation_nd_0 <= 1; operation_nd_1 <= 1; operation_nd_2 <= 1; operation_nd_3 <= 1;
+                if(operation_rfd == 4'hf) operation_nd <= 4'hf;
                 a0 <= im_array[id_0]; b0 <= im_array[id_2]; operation_0 <= 6'b100100;//GT
                 a1 <= im_array[id_1]; b1 <= im_array[id_3]; operation_1 <= 6'b100100;//GT
                 a2 <= im_array[id_4]; b2 <= im_array[id_6]; operation_2 <= 6'b001100;//LT
                 a3 <= im_array[id_5]; b3 <= im_array[id_7]; operation_3 <= 6'b001100;//LT
-                if(rdy_0) begin
-                    operation_nd_0 <= 0;
+                if(rdy[0]) begin
+                    operation_nd[0] <= 0;
                     if(result_0) begin id_0 <= id_2; id_2 <= id_0; end
                 end
-                if(rdy_1) begin
-                    operation_nd_1 <= 0;
+                if(rdy[1]) begin
+                    operation_nd[1] <= 0;
                     if(result_1) begin id_1 <= id_3; id_3 <= id_1; end
                 end
-                if(rdy_2) begin 
-                    operation_nd_2 <= 0;
+                if(rdy[2]) begin 
+                    operation_nd[2] <= 0;
                     if(result_2) begin id_4 <= id_6; id_6 <= id_4; end
                 end
-                if(rdy_3) begin
-                    operation_nd_3 <= 0;
+                if(rdy[3]) begin
+                    operation_nd[3] <= 0;
                     if(result_3) begin id_5 <= id_7; id_7 <= id_5; end
                 end
             end
             bt3: begin
-                ce <= 1; operation_nd_0 <= 1; operation_nd_1 <= 1; operation_nd_2 <= 1; operation_nd_3 <= 1;
+                if(operation_rfd == 4'hf) operation_nd <= 4'hf;
                 a0 <= im_array[id_0]; b0 <= im_array[id_1]; operation_0 <= 6'b100100;//GT
                 a1 <= im_array[id_2]; b1 <= im_array[id_3]; operation_1 <= 6'b100100;//GT
                 a2 <= im_array[id_4]; b2 <= im_array[id_5]; operation_2 <= 6'b001100;//LT
                 a3 <= im_array[id_6]; b3 <= im_array[id_7]; operation_3 <= 6'b001100;//LT
-                if(rdy_0) begin
-                    operation_nd_0 <= 0;
+                if(rdy[0]) begin
+                    operation_nd[0] <= 0;
                     if(result_0) begin id_0 <= id_1; id_1 <= id_0; end
                 end
-                if(rdy_1) begin
-                    operation_nd_1 <= 0;
+                if(rdy[1]) begin
+                    operation_nd[1] <= 0;
                     if(result_1) begin id_2 <= id_3; id_3 <= id_2; end
                 end
-                if(rdy_2) begin 
-                    operation_nd_2 <= 0;
+                if(rdy[2]) begin 
+                    operation_nd[2] <= 0;
                     if(result_2) begin id_4 <= id_5; id_5 <= id_4; end
                 end
-                if(rdy_3) begin
-                    operation_nd_3 <= 0;
+                if(rdy[3]) begin
+                    operation_nd[3] <= 0;
                     if(result_3) begin id_6 <= id_7; id_7 <= id_6; end
                 end
             end
             bt4: begin
-                ce <= 1; operation_nd_0 <= 1; operation_nd_1 <= 1; operation_nd_2 <= 1; operation_nd_3 <= 1;
+                if(operation_rfd == 4'hf) operation_nd <= 4'hf;
                 a0 <= im_array[id_0]; b0 <= im_array[id_4]; operation_0 <= 6'b100100;//GT
                 a1 <= im_array[id_1]; b1 <= im_array[id_5]; operation_1 <= 6'b100100;//GT
                 a2 <= im_array[id_2]; b2 <= im_array[id_6]; operation_2 <= 6'b100100;//GT
                 a3 <= im_array[id_3]; b3 <= im_array[id_7]; operation_3 <= 6'b100100;//GT
-                if(rdy_0) begin
-                    operation_nd_0 <= 0;
+                if(rdy[0]) begin
+                    operation_nd[0] <= 0;
                     if(result_0) begin id_0 <= id_4; id_4 <= id_0; end
                 end
-                if(rdy_1) begin
-                    operation_nd_1 <= 0;
+                if(rdy[1]) begin
+                    operation_nd[1] <= 0;
                     if(result_1) begin id_1 <= id_5; id_5 <= id_1; end
                 end
-                if(rdy_2) begin 
-                    operation_nd_2 <= 0;
+                if(rdy[2]) begin 
+                    operation_nd[2] <= 0;
                     if(result_2) begin id_2 <= id_6; id_6 <= id_2; end
                 end
-                if(rdy_3) begin
-                    operation_nd_3 <= 0;
+                if(rdy[3]) begin
+                    operation_nd[3] <= 0;
                     if(result_3) begin id_3 <= id_7; id_7 <= id_3; end
                 end
             end
             bt5: begin
-                ce <= 1; operation_nd_0 <= 1; operation_nd_1 <= 1; operation_nd_2 <= 1; operation_nd_3 <= 1;
+                if(operation_rfd == 4'hf) operation_nd <= 4'hf;
                 a0 <= im_array[id_0]; b0 <= im_array[id_2]; operation_0 <= 6'b100100;//GT
                 a1 <= im_array[id_1]; b1 <= im_array[id_3]; operation_1 <= 6'b100100;//GT
                 a2 <= im_array[id_4]; b2 <= im_array[id_6]; operation_2 <= 6'b100100;//GT
                 a3 <= im_array[id_5]; b3 <= im_array[id_7]; operation_3 <= 6'b100100;//GT
-                if(rdy_0) begin
-                    operation_nd_0 <= 0;
+                if(rdy[0]) begin
+                    operation_nd[0] <= 0;
                     if(result_0) begin id_0 <= id_2; id_2 <= id_0; end
                 end
-                if(rdy_1) begin
-                    operation_nd_1 <= 0;
+                if(rdy[1]) begin
+                    operation_nd[1] <= 0;
                     if(result_1) begin id_1 <= id_3; id_3 <= id_1; end
                 end
-                if(rdy_2) begin 
-                    operation_nd_2 <= 0;
+                if(rdy[2]) begin 
+                    operation_nd[2] <= 0;
                     if(result_2) begin id_4 <= id_6; id_6 <= id_4; end
                 end
-                if(rdy_3) begin
-                    operation_nd_3 <= 0;
+                if(rdy[3]) begin
+                    operation_nd[3] <= 0;
                     if(result_3) begin id_5 <= id_7; id_7 <= id_5; end
                 end
             end
             bt6: begin
-                ce <= 1; operation_nd_0 <= 1; operation_nd_1 <= 1; operation_nd_2 <= 1; operation_nd_3 <= 1;
+                if(operation_rfd == 4'hf) operation_nd <= 4'hf;
                 a0 <= im_array[id_0]; b0 <= im_array[id_1]; operation_0 <= 6'b100100;//GT
                 a1 <= im_array[id_2]; b1 <= im_array[id_3]; operation_1 <= 6'b100100;//GT
                 a2 <= im_array[id_4]; b2 <= im_array[id_5]; operation_2 <= 6'b100100;//GT
                 a3 <= im_array[id_6]; b3 <= im_array[id_7]; operation_3 <= 6'b100100;//GT
-                if(rdy_0) begin
-                    operation_nd_0 <= 0;
+                if(rdy[0]) begin
+                    operation_nd[0] <= 0;
                     if(result_0) begin id_0 <= id_1; id_1 <= id_0; end
                 end
-                if(rdy_1) begin
-                    operation_nd_1 <= 0;
+                if(rdy[1]) begin
+                    operation_nd[1] <= 0;
                     if(result_1) begin id_2 <= id_3; id_3 <= id_2; end
                 end
-                if(rdy_2) begin 
-                    operation_nd_2 <= 0;
+                if(rdy[2]) begin 
+                    operation_nd[2] <= 0;
                     if(result_2) begin id_4 <= id_5; id_5 <= id_4; end
                 end
-                if(rdy_3) begin
-                    operation_nd_3 <= 0;
+                if(rdy[3]) begin
+                    operation_nd[3] <= 0;
                     if(result_3) begin id_6 <= id_7; id_7 <= id_6; end
                 end
             end
             bt7: begin
-                ce <= 1; operation_nd_0 <= 1;
+                if(operation_rfd[0] == 1'b1) operation_nd[0] <= 1'b1;
                 a0 <= im_array[id_7]; b0 <= im_array[8]; operation_0 <= 6'b100100;//GT
-                if(rdy_0) begin
-                    operation_nd_0 <= 0;
+                if(rdy[0]) begin
+                    operation_nd[0] <= 0;
+                    pool_valid <= 1;
                     if(result_0) begin om <= im_array[id_7]; end
                     else om <= im_array[8];
                 end
             end
-            finish: begin
-                pool_valid <= 1;
-            end
-            default:    begin
-                ce <= 0;
-            end
+            default: ;
         endcase
     end
 end
@@ -391,23 +391,11 @@ module pool_13x13 (
         end 
     endgenerate
 
-    assign sclr = rdy;
-    assign ce = ~rdy;
+    assign sclr = rdy;//(rdy != 32'h00000000)?1:0;
+    assign ce = ~rdy;//(rdy != 32'h00000000)?0:1;
     assign sclr_div = rdy_div;
     assign ce_div = ~rdy_div;
 
-    wire accum1_finish, accum2_finish, accum3_finish, accum4_finish, accum5_finish, accum6_finish, accum7_finish, accum8_finish, accum9_finish, accum10_finish;
-
-    assign accum1_finish = (rdy == 32'hffffffff)?1:0;
-    assign accum2_finish = (rdy == 32'hffffffff)?1:0;
-    assign accum3_finish = (rdy == 32'hffffffff)?1:0; 
-    assign accum4_finish = (rdy == 32'hffffffff)?1:0;
-    assign accum5_finish = (rdy[19:0] == 20'hfffff)?1:0;
-    assign accum6_finish = (rdy[9:0] == 10'h3ff)?1:0;
-    assign accum7_finish = (rdy[4:0] == 5'h1f)?1:0;
-    assign accum8_finish = (rdy[2:0] == 3'h7)?1:0;
-    assign accum9_finish = (rdy[0] == 5'h1)?1:0;
-    assign accum10_finish = (rdy[0] == 5'h1)?1:0;
     assign accum__finish = (rdy != 32'h00000000)?1:0;
     assign operation__rfd = (~operation_rfd == 32'h00000000)?1:0;
     assign data_permit = accum__finish ^ operation__rfd;
@@ -434,7 +422,7 @@ module pool_13x13 (
                     next_state = idle;
             end
             accum1: begin
-                if(accum1_finish) begin
+                if(accum__finish) begin
                     next_state = accum2;
                 end
                 else begin
@@ -442,7 +430,7 @@ module pool_13x13 (
                 end
             end
             accum2: begin 
-                if(accum2_finish) begin
+                if(accum__finish) begin
                     next_state = accum3;
                 end
                 else begin
@@ -450,7 +438,7 @@ module pool_13x13 (
                 end
             end
             accum3: begin
-                if(accum3_finish) begin
+                if(accum__finish) begin
                     next_state = accum4;
                 end
                 else begin
@@ -458,7 +446,7 @@ module pool_13x13 (
                 end
             end
             accum4: begin
-                if(accum4_finish) begin
+                if(accum__finish) begin
                     next_state = accum5;
                 end
                 else begin
@@ -466,7 +454,7 @@ module pool_13x13 (
                 end
             end
             accum5: begin
-                if(accum5_finish) begin
+                if(accum__finish) begin
                     next_state = accum6;
                 end
                 else begin
@@ -474,7 +462,7 @@ module pool_13x13 (
                 end
             end
             accum6: begin
-                if(accum6_finish) begin
+                if(accum__finish) begin
                     next_state = accum7;
                 end
                 else begin
@@ -482,7 +470,7 @@ module pool_13x13 (
                 end
             end
             accum7: begin
-                if(accum7_finish) begin
+                if(accum__finish) begin
                     next_state = accum8;
                 end
                 else begin
@@ -490,7 +478,7 @@ module pool_13x13 (
                 end
             end
             accum8: begin
-                if(accum8_finish) begin
+                if(accum__finish) begin
                     next_state = accum9;
                 end
                 else begin
@@ -498,7 +486,7 @@ module pool_13x13 (
                 end
             end
             accum9: begin
-                if(accum9_finish) begin
+                if(accum__finish) begin
                     next_state = accum10;
                 end
                 else begin
@@ -506,7 +494,7 @@ module pool_13x13 (
                 end
             end
             accum10: begin
-                if(accum10_finish) begin
+                if(accum__finish) begin
                     next_state = division;
                 end
                 else begin
