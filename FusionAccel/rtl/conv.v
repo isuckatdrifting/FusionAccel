@@ -120,8 +120,6 @@ module conv_3x3(
                 if(accum4_finish) next_state = idle;
                 else next_state = accum4;
             end
-            //finish:
-                //next_state = idle;
             default:
                 next_state = idle;
         endcase
