@@ -61,7 +61,8 @@ module clockgen_exdes
   parameter TCQ = 100
   )
  (// Clock in ports
-  input         CLK_IN1,
+  input         CLK_IN1_P,
+  input         CLK_IN1_N,
   // Reset that only drives logic in example design
   input         COUNTER_RESET,
   output [2:1]  CLK_OUT,
@@ -97,7 +98,8 @@ module clockgen_exdes
   //--------------------------------------
   clockgen clknetwork
    (// Clock in ports
-    .CLK_IN1            (CLK_IN1),
+    .CLK_IN1_P          (CLK_IN1_P),
+    .CLK_IN1_N          (CLK_IN1_N),
     // Clock out ports
     .CLK_OUT1           (clk_int[1]),
     .CLK_OUT2           (clk_int[2]),

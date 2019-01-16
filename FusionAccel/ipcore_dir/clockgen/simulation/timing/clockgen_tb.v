@@ -77,6 +77,8 @@ module clockgen_tb ();
 
   // Declare the input clock signals
   reg         CLK_IN1     = 1;
+  wire        CLK_IN1_P   =  CLK_IN1;
+  wire        CLK_IN1_N   = ~CLK_IN1;
 
   // The high bits of the sampling counters
   wire [2:1]  COUNT;
@@ -141,7 +143,8 @@ wire [2:1] CLK_OUT;
   clockgen_exdes 
     dut
    (// Clock in ports
-    .CLK_IN1            (CLK_IN1),
+    .CLK_IN1_P          (CLK_IN1_P),
+    .CLK_IN1_N          (CLK_IN1_N),
     // Reset for logic in example design
     .COUNTER_RESET      (COUNTER_RESET),
     .CLK_OUT            (CLK_OUT),

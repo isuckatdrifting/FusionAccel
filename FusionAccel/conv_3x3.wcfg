@@ -3,14 +3,14 @@
    <wave_state>
    </wave_state>
    <db_ref_list>
-      <db_ref path="/mnt/c/Users/shish/source/repos/FusionAccel/FusionAccel/conv_3x3_tb_isim_beh.wdb" id="1" type="auto">
+      <db_ref path="C:/Users/shish/source/repos/FusionAccel/FusionAccel/conv_3x3_tb_isim_beh.wdb" id="1" type="auto">
          <top_modules>
             <top_module name="conv_3x3_tb" />
             <top_module name="glbl" />
          </top_modules>
       </db_ref>
    </db_ref_list>
-   <WVObjectSize size="43" />
+   <WVObjectSize size="48" />
    <wvobject fp_name="/conv_3x3_tb/om" type="array" db_ref_id="1">
       <obj_property name="ElementShortName">om[15:0]</obj_property>
       <obj_property name="ObjectShortName">om[15:0]</obj_property>
@@ -40,6 +40,22 @@
       <obj_property name="ElementShortName">conv_ready</obj_property>
       <obj_property name="ObjectShortName">conv_ready</obj_property>
    </wvobject>
+   <wvobject fp_name="/conv_3x3_tb/conv_3x3_i/rdy" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">rdy[8:0]</obj_property>
+      <obj_property name="ObjectShortName">rdy[8:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/conv_3x3_tb/conv_3x3_i/curr_state" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">curr_state[3:0]</obj_property>
+      <obj_property name="ObjectShortName">curr_state[3:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/conv_3x3_tb/conv_3x3_i/operation_rfd" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">operation_rfd[8:0]</obj_property>
+      <obj_property name="ObjectShortName">operation_rfd[8:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/conv_3x3_tb/conv_3x3_i/accum__finish" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">accum__finish</obj_property>
+      <obj_property name="ObjectShortName">accum__finish</obj_property>
+   </wvobject>
    <wvobject fp_name="divider9" type="divider">
       <obj_property name="label">MULT</obj_property>
       <obj_property name="DisplayName">label</obj_property>
@@ -54,9 +70,13 @@
       <obj_property name="ElementShortName">operation_rfd</obj_property>
       <obj_property name="ObjectShortName">operation_rfd</obj_property>
    </wvobject>
-   <wvobject fp_name="/conv_3x3_tb/conv_3x3_i/sclr" type="logic" db_ref_id="1">
+   <wvobject fp_name="/conv_3x3_tb/conv_3x3_i/mult0/sclr" type="logic" db_ref_id="1">
       <obj_property name="ElementShortName">sclr</obj_property>
       <obj_property name="ObjectShortName">sclr</obj_property>
+   </wvobject>
+   <wvobject fp_name="/conv_3x3_tb/conv_3x3_i/mult0/ce" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">ce</obj_property>
+      <obj_property name="ObjectShortName">ce</obj_property>
    </wvobject>
    <wvobject fp_name="/conv_3x3_tb/conv_3x3_i/mult0/a" type="array" db_ref_id="1">
       <obj_property name="ElementShortName">a[15:0]</obj_property>
@@ -85,10 +105,6 @@
    <wvobject fp_name="/conv_3x3_tb/conv_3x3_i/mult0/invalid_op" type="logic" db_ref_id="1">
       <obj_property name="ElementShortName">invalid_op</obj_property>
       <obj_property name="ObjectShortName">invalid_op</obj_property>
-   </wvobject>
-   <wvobject fp_name="/conv_3x3_tb/conv_3x3_i/mult0/rdy" type="logic" db_ref_id="1">
-      <obj_property name="ElementShortName">rdy</obj_property>
-      <obj_property name="ObjectShortName">rdy</obj_property>
    </wvobject>
    <wvobject fp_name="/conv_3x3_tb/conv_3x3_i/om_array" type="array" db_ref_id="1">
       <obj_property name="ElementShortName">om_array[0:8,15:0]</obj_property>
@@ -139,19 +155,27 @@
          <obj_property name="Radix">HEXRADIX</obj_property>
       </wvobject>
    </wvobject>
+   <wvobject fp_name="/conv_3x3_tb/conv_3x3_i/rdy" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">rdy[8:0]</obj_property>
+      <obj_property name="ObjectShortName">rdy[8:0]</obj_property>
+   </wvobject>
    <wvobject fp_name="divider27" type="divider">
       <obj_property name="label">ACCUM</obj_property>
       <obj_property name="DisplayName">label</obj_property>
       <obj_property name="BkColor">128 128 255</obj_property>
       <obj_property name="TextColor">230 230 230</obj_property>
    </wvobject>
-   <wvobject fp_name="/conv_3x3_tb/conv_3x3_i/curr_state" type="array" db_ref_id="1">
-      <obj_property name="ElementShortName">curr_state[3:0]</obj_property>
-      <obj_property name="ObjectShortName">curr_state[3:0]</obj_property>
+   <wvobject fp_name="/conv_3x3_tb/conv_3x3_i/rdy_accum" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">rdy_accum[3:0]</obj_property>
+      <obj_property name="ObjectShortName">rdy_accum[3:0]</obj_property>
    </wvobject>
    <wvobject fp_name="/conv_3x3_tb/conv_3x3_i/accum_0/operation_nd" type="logic" db_ref_id="1">
       <obj_property name="ElementShortName">operation_nd</obj_property>
       <obj_property name="ObjectShortName">operation_nd</obj_property>
+   </wvobject>
+   <wvobject fp_name="/conv_3x3_tb/conv_3x3_i/accum_0/operation_rfd" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">operation_rfd</obj_property>
+      <obj_property name="ObjectShortName">operation_rfd</obj_property>
    </wvobject>
    <wvobject fp_name="/conv_3x3_tb/conv_3x3_i/accum_0/clk" type="logic" db_ref_id="1">
       <obj_property name="ElementShortName">clk</obj_property>
@@ -164,10 +188,6 @@
    <wvobject fp_name="/conv_3x3_tb/conv_3x3_i/accum_0/ce" type="logic" db_ref_id="1">
       <obj_property name="ElementShortName">ce</obj_property>
       <obj_property name="ObjectShortName">ce</obj_property>
-   </wvobject>
-   <wvobject fp_name="/conv_3x3_tb/conv_3x3_i/accum_0/operation_rfd" type="logic" db_ref_id="1">
-      <obj_property name="ElementShortName">operation_rfd</obj_property>
-      <obj_property name="ObjectShortName">operation_rfd</obj_property>
    </wvobject>
    <wvobject fp_name="/conv_3x3_tb/conv_3x3_i/accum_0/underflow" type="logic" db_ref_id="1">
       <obj_property name="ElementShortName">underflow</obj_property>
