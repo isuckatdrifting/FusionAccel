@@ -69,6 +69,7 @@ always @ (*) begin
     next_state = idle;    //    Initialize
     case (curr_state)
         idle: begin
+            sclr = 1;
             if(pool_ready)
                 next_state = bt1;
             else
@@ -354,7 +355,6 @@ module pool_13x13 (
     wire [15:0] im_array [0:168];
     `UNPACK_ARRAY(16, 9, im_array, im, unpk_idx_1)
 
-    wire [15:0] im_array [0:8];
     reg [15:0] om;
     reg pool_valid;
 
@@ -572,38 +572,6 @@ always @ (posedge clk or negedge rst_n) begin
         pool_valid <= 0;
     end
     else begin
-        if(rdy[0]) operation_nd[0] <= 0;
-        if(rdy[1]) operation_nd[1] <= 0;
-        if(rdy[2]) operation_nd[2] <= 0;
-        if(rdy[3]) operation_nd[3] <= 0;
-        if(rdy[4]) operation_nd[4] <= 0;
-        if(rdy[5]) operation_nd[5] <= 0;
-        if(rdy[6]) operation_nd[6] <= 0;
-        if(rdy[7]) operation_nd[7] <= 0;
-        if(rdy[8]) operation_nd[8] <= 0;
-        if(rdy[9]) operation_nd[9] <= 0;
-        if(rdy[10]) operation_nd[10] <= 0;
-        if(rdy[11]) operation_nd[11] <= 0;
-        if(rdy[12]) operation_nd[12] <= 0;
-        if(rdy[13]) operation_nd[13] <= 0;
-        if(rdy[14]) operation_nd[14] <= 0;
-        if(rdy[15]) operation_nd[15] <= 0;
-        if(rdy[16]) operation_nd[16] <= 0;
-        if(rdy[17]) operation_nd[17] <= 0;
-        if(rdy[18]) operation_nd[18] <= 0;
-        if(rdy[19]) operation_nd[19] <= 0;
-        if(rdy[20]) operation_nd[20] <= 0;
-        if(rdy[21]) operation_nd[21] <= 0;
-        if(rdy[22]) operation_nd[22] <= 0;
-        if(rdy[23]) operation_nd[23] <= 0;
-        if(rdy[24]) operation_nd[24] <= 0;
-        if(rdy[25]) operation_nd[25] <= 0;
-        if(rdy[26]) operation_nd[26] <= 0;
-        if(rdy[27]) operation_nd[27] <= 0;
-        if(rdy[28]) operation_nd[28] <= 0;
-        if(rdy[29]) operation_nd[29] <= 0;
-        if(rdy[30]) operation_nd[30] <= 0;
-        if(rdy[31]) operation_nd[31] <= 0;
         case (curr_state)
             accum1: begin
                 ce <= 1; operation_nd <= 32'h00000000;
@@ -639,6 +607,38 @@ always @ (posedge clk or negedge rst_n) begin
                 a[29] <= im_array[58]; b[29] <= im_array[59]; 
                 a[30] <= im_array[60]; b[30] <= im_array[61]; 
                 a[31] <= im_array[62]; b[31] <= im_array[63]; 
+                if(rdy[0]) operation_nd[0] <= 0;
+                if(rdy[1]) operation_nd[1] <= 0;
+                if(rdy[2]) operation_nd[2] <= 0;
+                if(rdy[3]) operation_nd[3] <= 0;
+                if(rdy[4]) operation_nd[4] <= 0;
+                if(rdy[5]) operation_nd[5] <= 0;
+                if(rdy[6]) operation_nd[6] <= 0;
+                if(rdy[7]) operation_nd[7] <= 0;
+                if(rdy[8]) operation_nd[8] <= 0;
+                if(rdy[9]) operation_nd[9] <= 0;
+                if(rdy[10]) operation_nd[10] <= 0;
+                if(rdy[11]) operation_nd[11] <= 0;
+                if(rdy[12]) operation_nd[12] <= 0;
+                if(rdy[13]) operation_nd[13] <= 0;
+                if(rdy[14]) operation_nd[14] <= 0;
+                if(rdy[15]) operation_nd[15] <= 0;
+                if(rdy[16]) operation_nd[16] <= 0;
+                if(rdy[17]) operation_nd[17] <= 0;
+                if(rdy[18]) operation_nd[18] <= 0;
+                if(rdy[19]) operation_nd[19] <= 0;
+                if(rdy[20]) operation_nd[20] <= 0;
+                if(rdy[21]) operation_nd[21] <= 0;
+                if(rdy[22]) operation_nd[22] <= 0;
+                if(rdy[23]) operation_nd[23] <= 0;
+                if(rdy[24]) operation_nd[24] <= 0;
+                if(rdy[25]) operation_nd[25] <= 0;
+                if(rdy[26]) operation_nd[26] <= 0;
+                if(rdy[27]) operation_nd[27] <= 0;
+                if(rdy[28]) operation_nd[28] <= 0;
+                if(rdy[29]) operation_nd[29] <= 0;
+                if(rdy[30]) operation_nd[30] <= 0;
+                if(rdy[31]) operation_nd[31] <= 0;
             end
             accum2: begin
                 ce <= 1; operation_nd <= 32'h00000000;
@@ -674,6 +674,38 @@ always @ (posedge clk or negedge rst_n) begin
                 a[29] <= im_array[58+OFFSET2]; b[29] <= im_array[59+OFFSET2]; 
                 a[30] <= im_array[60+OFFSET2]; b[30] <= im_array[61+OFFSET2]; 
                 a[31] <= im_array[62+OFFSET2]; b[31] <= im_array[63+OFFSET2]; 
+                if(rdy[0]) operation_nd[0] <= 0;
+                if(rdy[1]) operation_nd[1] <= 0;
+                if(rdy[2]) operation_nd[2] <= 0;
+                if(rdy[3]) operation_nd[3] <= 0;
+                if(rdy[4]) operation_nd[4] <= 0;
+                if(rdy[5]) operation_nd[5] <= 0;
+                if(rdy[6]) operation_nd[6] <= 0;
+                if(rdy[7]) operation_nd[7] <= 0;
+                if(rdy[8]) operation_nd[8] <= 0;
+                if(rdy[9]) operation_nd[9] <= 0;
+                if(rdy[10]) operation_nd[10] <= 0;
+                if(rdy[11]) operation_nd[11] <= 0;
+                if(rdy[12]) operation_nd[12] <= 0;
+                if(rdy[13]) operation_nd[13] <= 0;
+                if(rdy[14]) operation_nd[14] <= 0;
+                if(rdy[15]) operation_nd[15] <= 0;
+                if(rdy[16]) operation_nd[16] <= 0;
+                if(rdy[17]) operation_nd[17] <= 0;
+                if(rdy[18]) operation_nd[18] <= 0;
+                if(rdy[19]) operation_nd[19] <= 0;
+                if(rdy[20]) operation_nd[20] <= 0;
+                if(rdy[21]) operation_nd[21] <= 0;
+                if(rdy[22]) operation_nd[22] <= 0;
+                if(rdy[23]) operation_nd[23] <= 0;
+                if(rdy[24]) operation_nd[24] <= 0;
+                if(rdy[25]) operation_nd[25] <= 0;
+                if(rdy[26]) operation_nd[26] <= 0;
+                if(rdy[27]) operation_nd[27] <= 0;
+                if(rdy[28]) operation_nd[28] <= 0;
+                if(rdy[29]) operation_nd[29] <= 0;
+                if(rdy[30]) operation_nd[30] <= 0;
+                if(rdy[31]) operation_nd[31] <= 0;
             end
             accum3: begin
                 ce <= 1; operation_nd <= 32'h00000000;
@@ -709,6 +741,38 @@ always @ (posedge clk or negedge rst_n) begin
                 a[29] <= im_array[58+OFFSET3]; b[29] <= im_array[59+OFFSET3]; 
                 a[30] <= im_array[60+OFFSET3]; b[30] <= im_array[61+OFFSET3]; 
                 a[31] <= im_array[62+OFFSET3]; b[31] <= im_array[63+OFFSET3]; 
+                if(rdy[0]) operation_nd[0] <= 0;
+                if(rdy[1]) operation_nd[1] <= 0;
+                if(rdy[2]) operation_nd[2] <= 0;
+                if(rdy[3]) operation_nd[3] <= 0;
+                if(rdy[4]) operation_nd[4] <= 0;
+                if(rdy[5]) operation_nd[5] <= 0;
+                if(rdy[6]) operation_nd[6] <= 0;
+                if(rdy[7]) operation_nd[7] <= 0;
+                if(rdy[8]) operation_nd[8] <= 0;
+                if(rdy[9]) operation_nd[9] <= 0;
+                if(rdy[10]) operation_nd[10] <= 0;
+                if(rdy[11]) operation_nd[11] <= 0;
+                if(rdy[12]) operation_nd[12] <= 0;
+                if(rdy[13]) operation_nd[13] <= 0;
+                if(rdy[14]) operation_nd[14] <= 0;
+                if(rdy[15]) operation_nd[15] <= 0;
+                if(rdy[16]) operation_nd[16] <= 0;
+                if(rdy[17]) operation_nd[17] <= 0;
+                if(rdy[18]) operation_nd[18] <= 0;
+                if(rdy[19]) operation_nd[19] <= 0;
+                if(rdy[20]) operation_nd[20] <= 0;
+                if(rdy[21]) operation_nd[21] <= 0;
+                if(rdy[22]) operation_nd[22] <= 0;
+                if(rdy[23]) operation_nd[23] <= 0;
+                if(rdy[24]) operation_nd[24] <= 0;
+                if(rdy[25]) operation_nd[25] <= 0;
+                if(rdy[26]) operation_nd[26] <= 0;
+                if(rdy[27]) operation_nd[27] <= 0;
+                if(rdy[28]) operation_nd[28] <= 0;
+                if(rdy[29]) operation_nd[29] <= 0;
+                if(rdy[30]) operation_nd[30] <= 0;
+                if(rdy[31]) operation_nd[31] <= 0;
             end
             accum4: begin
                 ce <= 1; operation_nd <= 32'h00000000;
@@ -744,6 +808,38 @@ always @ (posedge clk or negedge rst_n) begin
                 a[29] <= im_array[58+OFFSET4]; b[29] <= im_array[59+OFFSET4]; 
                 a[30] <= im_array[60+OFFSET4]; b[30] <= im_array[61+OFFSET4]; 
                 a[31] <= im_array[62+OFFSET4]; b[31] <= im_array[63+OFFSET4]; 
+                if(rdy[0]) operation_nd[0] <= 0;
+                if(rdy[1]) operation_nd[1] <= 0;
+                if(rdy[2]) operation_nd[2] <= 0;
+                if(rdy[3]) operation_nd[3] <= 0;
+                if(rdy[4]) operation_nd[4] <= 0;
+                if(rdy[5]) operation_nd[5] <= 0;
+                if(rdy[6]) operation_nd[6] <= 0;
+                if(rdy[7]) operation_nd[7] <= 0;
+                if(rdy[8]) operation_nd[8] <= 0;
+                if(rdy[9]) operation_nd[9] <= 0;
+                if(rdy[10]) operation_nd[10] <= 0;
+                if(rdy[11]) operation_nd[11] <= 0;
+                if(rdy[12]) operation_nd[12] <= 0;
+                if(rdy[13]) operation_nd[13] <= 0;
+                if(rdy[14]) operation_nd[14] <= 0;
+                if(rdy[15]) operation_nd[15] <= 0;
+                if(rdy[16]) operation_nd[16] <= 0;
+                if(rdy[17]) operation_nd[17] <= 0;
+                if(rdy[18]) operation_nd[18] <= 0;
+                if(rdy[19]) operation_nd[19] <= 0;
+                if(rdy[20]) operation_nd[20] <= 0;
+                if(rdy[21]) operation_nd[21] <= 0;
+                if(rdy[22]) operation_nd[22] <= 0;
+                if(rdy[23]) operation_nd[23] <= 0;
+                if(rdy[24]) operation_nd[24] <= 0;
+                if(rdy[25]) operation_nd[25] <= 0;
+                if(rdy[26]) operation_nd[26] <= 0;
+                if(rdy[27]) operation_nd[27] <= 0;
+                if(rdy[28]) operation_nd[28] <= 0;
+                if(rdy[29]) operation_nd[29] <= 0;
+                if(rdy[30]) operation_nd[30] <= 0;
+                if(rdy[31]) operation_nd[31] <= 0;
             end
 /////////////////////////REMAINING 9 INPUTS////////////////////////
             accum5: begin
@@ -768,7 +864,26 @@ always @ (posedge clk or negedge rst_n) begin
                 a[17] <= im_array[162]; b[17] <= im_array[163]; 
                 a[18] <= im_array[164]; b[18] <= im_array[165]; 
                 a[19] <= im_array[166]; b[19] <= im_array[167]; 
-                 
+                if(rdy[0]) operation_nd[0] <= 0;
+                if(rdy[1]) operation_nd[1] <= 0;
+                if(rdy[2]) operation_nd[2] <= 0;
+                if(rdy[3]) operation_nd[3] <= 0;
+                if(rdy[4]) operation_nd[4] <= 0;
+                if(rdy[5]) operation_nd[5] <= 0;
+                if(rdy[6]) operation_nd[6] <= 0;
+                if(rdy[7]) operation_nd[7] <= 0;
+                if(rdy[8]) operation_nd[8] <= 0;
+                if(rdy[9]) operation_nd[9] <= 0;
+                if(rdy[10]) operation_nd[10] <= 0;
+                if(rdy[11]) operation_nd[11] <= 0;
+                if(rdy[12]) operation_nd[12] <= 0;
+                if(rdy[13]) operation_nd[13] <= 0;
+                if(rdy[14]) operation_nd[14] <= 0;
+                if(rdy[15]) operation_nd[15] <= 0;
+                if(rdy[16]) operation_nd[16] <= 0;
+                if(rdy[17]) operation_nd[17] <= 0;
+                if(rdy[18]) operation_nd[18] <= 0;
+                if(rdy[19]) operation_nd[19] <= 0;       
             end
             accum6: begin
                 ce <= 1; operation_nd <= 32'h00000000;
@@ -782,7 +897,16 @@ always @ (posedge clk or negedge rst_n) begin
                 a[7] <= o_buf[14]; b[7] <= o_buf[15]; 
                 a[8] <= o_buf[16]; b[8] <= o_buf[17]; 
                 a[9] <= o_buf[18]; b[9] <= o_buf[19]; 
-
+                if(rdy[0]) operation_nd[0] <= 0;
+                if(rdy[1]) operation_nd[1] <= 0;
+                if(rdy[2]) operation_nd[2] <= 0;
+                if(rdy[3]) operation_nd[3] <= 0;
+                if(rdy[4]) operation_nd[4] <= 0;
+                if(rdy[5]) operation_nd[5] <= 0;
+                if(rdy[6]) operation_nd[6] <= 0;
+                if(rdy[7]) operation_nd[7] <= 0;
+                if(rdy[8]) operation_nd[8] <= 0;
+                if(rdy[9]) operation_nd[9] <= 0;
             end
             accum7: begin
                 ce <= 1; operation_nd <= 32'h00000000;
@@ -791,24 +915,30 @@ always @ (posedge clk or negedge rst_n) begin
                 a[2] <= o_buf[6]; b[2] <= o_buf[7]; 
                 a[3] <= o_buf[8]; b[3] <= o_buf[9]; 
                 a[4] <= o_buf[0]; b[4] <= o_buf[1]; 
-                
+                if(rdy[0]) operation_nd[0] <= 0;
+                if(rdy[1]) operation_nd[1] <= 0;
+                if(rdy[2]) operation_nd[2] <= 0;
+                if(rdy[3]) operation_nd[3] <= 0;
+                if(rdy[4]) operation_nd[4] <= 0;
             end
             accum8: begin
                 ce <= 1; operation_nd <= 32'h00000000;
                 a[0] <= o_buf[1]; b[0] <= o_buf[2]; 
                 a[1] <= o_buf[0]; b[1] <= o_buf[3]; 
                 a[2] <= o_buf[4]; b[2] <= im_array[168]; 
-                
+                if(rdy[0]) operation_nd[0] <= 0;
+                if(rdy[1]) operation_nd[1] <= 0;
+                if(rdy[2]) operation_nd[2] <= 0;
             end
             accum9: begin
                 ce <= 1; operation_nd <= 32'h00000000;
                 a[0] <= o_buf[0]; b[0] <= o_buf[1]; 
-                
+                if(rdy[0]) operation_nd[0] <= 0;
             end
             accum10: begin
                 ce <= 1; operation_nd <= 32'h00000000;
                 a[0] <= o_buf[0]; b[0] <= o_buf[2]; 
-                
+                if(rdy[0]) operation_nd[0] <= 0;
             end
             division: begin
                 ce <= 1; operation_nd_div <= 0;
