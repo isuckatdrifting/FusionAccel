@@ -10,7 +10,7 @@
          </top_modules>
       </db_ref>
    </db_ref_list>
-   <WVObjectSize size="61" />
+   <WVObjectSize size="46" />
    <wvobject fp_name="/pool_13x13_tb/om" type="array" db_ref_id="1">
       <obj_property name="ElementShortName">om[15:0]</obj_property>
       <obj_property name="ObjectShortName">om[15:0]</obj_property>
@@ -213,86 +213,22 @@
       <obj_property name="ElementShortName">rdy[31:0]</obj_property>
       <obj_property name="ObjectShortName">rdy[31:0]</obj_property>
    </wvobject>
-   <wvobject fp_name="/pool_13x13_tb/pool_13x13_i/accum1_finish" type="logic" db_ref_id="1">
-      <obj_property name="ElementShortName">accum1_finish</obj_property>
-      <obj_property name="ObjectShortName">accum1_finish</obj_property>
+   <wvobject fp_name="/pool_13x13_tb/pool_13x13_i/data_permit" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">data_permit</obj_property>
+      <obj_property name="ObjectShortName">data_permit</obj_property>
    </wvobject>
-   <wvobject fp_name="/pool_13x13_tb/pool_13x13_i/accum2_finish" type="logic" db_ref_id="1">
-      <obj_property name="ElementShortName">accum2_finish</obj_property>
-      <obj_property name="ObjectShortName">accum2_finish</obj_property>
+   <wvobject fp_name="/pool_13x13_tb/pool_13x13_i/accum__finish" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">accum__finish</obj_property>
+      <obj_property name="ObjectShortName">accum__finish</obj_property>
    </wvobject>
-   <wvobject fp_name="/pool_13x13_tb/pool_13x13_i/accum3_finish" type="logic" db_ref_id="1">
-      <obj_property name="ElementShortName">accum3_finish</obj_property>
-      <obj_property name="ObjectShortName">accum3_finish</obj_property>
-   </wvobject>
-   <wvobject fp_name="/pool_13x13_tb/pool_13x13_i/accum4_finish" type="logic" db_ref_id="1">
-      <obj_property name="ElementShortName">accum4_finish</obj_property>
-      <obj_property name="ObjectShortName">accum4_finish</obj_property>
-   </wvobject>
-   <wvobject fp_name="/pool_13x13_tb/pool_13x13_i/accum5_finish" type="logic" db_ref_id="1">
-      <obj_property name="ElementShortName">accum5_finish</obj_property>
-      <obj_property name="ObjectShortName">accum5_finish</obj_property>
-   </wvobject>
-   <wvobject fp_name="/pool_13x13_tb/pool_13x13_i/accum6_finish" type="logic" db_ref_id="1">
-      <obj_property name="ElementShortName">accum6_finish</obj_property>
-      <obj_property name="ObjectShortName">accum6_finish</obj_property>
-   </wvobject>
-   <wvobject fp_name="/pool_13x13_tb/pool_13x13_i/accum7_finish" type="logic" db_ref_id="1">
-      <obj_property name="ElementShortName">accum7_finish</obj_property>
-      <obj_property name="ObjectShortName">accum7_finish</obj_property>
-   </wvobject>
-   <wvobject fp_name="/pool_13x13_tb/pool_13x13_i/accum8_finish" type="logic" db_ref_id="1">
-      <obj_property name="ElementShortName">accum8_finish</obj_property>
-      <obj_property name="ObjectShortName">accum8_finish</obj_property>
-   </wvobject>
-   <wvobject fp_name="/pool_13x13_tb/pool_13x13_i/accum9_finish" type="logic" db_ref_id="1">
-      <obj_property name="ElementShortName">accum9_finish</obj_property>
-      <obj_property name="ObjectShortName">accum9_finish</obj_property>
-   </wvobject>
-   <wvobject fp_name="/pool_13x13_tb/pool_13x13_i/accum10_finish" type="logic" db_ref_id="1">
-      <obj_property name="ElementShortName">accum10_finish</obj_property>
-      <obj_property name="ObjectShortName">accum10_finish</obj_property>
-   </wvobject>
-   <wvobject fp_name="divider9" type="divider">
-      <obj_property name="label">ACCUM_0</obj_property>
-      <obj_property name="DisplayName">label</obj_property>
-      <obj_property name="BkColor">128 128 255</obj_property>
-      <obj_property name="TextColor">230 230 230</obj_property>
-   </wvobject>
-   <wvobject fp_name="/pool_13x13_tb/pool_13x13_i/\[0].accum_0 /operation_nd" type="logic" db_ref_id="1">
-      <obj_property name="ElementShortName">operation_nd</obj_property>
-      <obj_property name="ObjectShortName">operation_nd</obj_property>
-   </wvobject>
-   <wvobject fp_name="/pool_13x13_tb/pool_13x13_i/\[0].accum_0 /operation_rfd" type="logic" db_ref_id="1">
-      <obj_property name="ElementShortName">operation_rfd</obj_property>
-      <obj_property name="ObjectShortName">operation_rfd</obj_property>
-   </wvobject>
-   <wvobject fp_name="/pool_13x13_tb/pool_13x13_i/\[0].accum_0 /sclr" type="logic" db_ref_id="1">
-      <obj_property name="ElementShortName">sclr</obj_property>
-      <obj_property name="ObjectShortName">sclr</obj_property>
-   </wvobject>
-   <wvobject fp_name="/pool_13x13_tb/pool_13x13_i/\[0].accum_0 /ce" type="logic" db_ref_id="1">
-      <obj_property name="ElementShortName">ce</obj_property>
-      <obj_property name="ObjectShortName">ce</obj_property>
-   </wvobject>
-   <wvobject fp_name="/pool_13x13_tb/pool_13x13_i/\[0].accum_0 /rdy" type="logic" db_ref_id="1">
-      <obj_property name="ElementShortName">rdy</obj_property>
-      <obj_property name="ObjectShortName">rdy</obj_property>
-   </wvobject>
-   <wvobject fp_name="/pool_13x13_tb/pool_13x13_i/\[0].accum_0 /a" type="array" db_ref_id="1">
-      <obj_property name="ElementShortName">a[15:0]</obj_property>
-      <obj_property name="ObjectShortName">a[15:0]</obj_property>
+   <wvobject fp_name="/pool_13x13_tb/pool_13x13_i/operation_rfd" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">operation_rfd[31:0]</obj_property>
+      <obj_property name="ObjectShortName">operation_rfd[31:0]</obj_property>
       <obj_property name="Radix">HEXRADIX</obj_property>
    </wvobject>
-   <wvobject fp_name="/pool_13x13_tb/pool_13x13_i/\[0].accum_0 /b" type="array" db_ref_id="1">
-      <obj_property name="ElementShortName">b[15:0]</obj_property>
-      <obj_property name="ObjectShortName">b[15:0]</obj_property>
-      <obj_property name="Radix">HEXRADIX</obj_property>
-   </wvobject>
-   <wvobject fp_name="/pool_13x13_tb/pool_13x13_i/\[0].accum_0 /result" type="array" db_ref_id="1">
-      <obj_property name="ElementShortName">result[15:0]</obj_property>
-      <obj_property name="ObjectShortName">result[15:0]</obj_property>
-      <obj_property name="Radix">HEXRADIX</obj_property>
+   <wvobject fp_name="/pool_13x13_tb/pool_13x13_i/operation__rfd" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">operation__rfd</obj_property>
+      <obj_property name="ObjectShortName">operation__rfd</obj_property>
    </wvobject>
    <wvobject fp_name="divider30" type="divider">
       <obj_property name="label">ACCUM_0</obj_property>
