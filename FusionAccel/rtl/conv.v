@@ -22,7 +22,7 @@ module conv_3x3(
 
     reg [8:0] operation_nd;
     wire [8:0] operation_rfd;
-    wire [8:0] rdy;
+    wire [8:0] rdy_mult;
     wire [8:0] sclr_mult;
     wire [8:0] ce_mult;
 
@@ -31,10 +31,17 @@ module conv_3x3(
     reg [3:0] operation_nd_accum;
     wire [3:0] operation_rfd_accum;
     wire [3:0] rdy_accum;
-    wire [3:0] sclr;
-    wire [3:0] ce;
+    wire [3:0] sclr_accum;
+    wire [3:0] ce_accum;
 
-    reg accum1_finish, accum2_finish, accum3_finish, accum4_finish;
+    assign ce_accum = ~rdy_accum;
+    assign sclr_accum = rdy_accum;
+    assign ce_mult = ~rdy_mult;
+    assign sclr_mult = rdy_mult;
+
+    assign accum__finish = (rdy_accum != 4'h0)?1:0;
+    assign operation__rfd = (~operation_rfd_accum == 4'h0)?1:0;
+    assign data_permit = accum__finish ^ operation__rfd;
     
     localparam idle = 3'b000;
     localparam mult = 3'b001;
@@ -44,43 +51,43 @@ module conv_3x3(
     localparam accum4 = 3'b101;
 
     multiplier mult0 (.a(im_array[0]), .b(iw_array[0]), .operation_nd(operation_nd[0]), .operation_rfd(operation_rfd[0]), .clk(clk), 
-    .sclr(sclr_mult[0]), .ce(ce_mult[0]), .result(om_array[0]), .underflow(underflow_0), .overflow(overflow_0), .invalid_op(invalid_op_0), .rdy(rdy[0]));
+    .sclr(sclr_mult[0]), .ce(ce_mult[0]), .result(om_array[0]), .underflow(underflow_0), .overflow(overflow_0), .invalid_op(invalid_op_0), .rdy(rdy_mult[0]));
     
     multiplier mult1 (.a(im_array[1]), .b(iw_array[1]), .operation_nd(operation_nd[1]), .operation_rfd(operation_rfd[1]), .clk(clk), 
-    .sclr(sclr_mult[1]), .ce(ce_mult[1]), .result(om_array[1]), .underflow(underflow_1), .overflow(overflow_1), .invalid_op(invalid_op_1), .rdy(rdy[1]));
+    .sclr(sclr_mult[1]), .ce(ce_mult[1]), .result(om_array[1]), .underflow(underflow_1), .overflow(overflow_1), .invalid_op(invalid_op_1), .rdy(rdy_mult[1]));
     
     multiplier mult2 (.a(im_array[2]), .b(iw_array[2]), .operation_nd(operation_nd[2]), .operation_rfd(operation_rfd[2]), .clk(clk), 
-    .sclr(sclr_mult[2]), .ce(ce_mult[2]), .result(om_array[2]), .underflow(underflow_2), .overflow(overflow_2), .invalid_op(invalid_op_2), .rdy(rdy[2]));
+    .sclr(sclr_mult[2]), .ce(ce_mult[2]), .result(om_array[2]), .underflow(underflow_2), .overflow(overflow_2), .invalid_op(invalid_op_2), .rdy(rdy_mult[2]));
 
     multiplier mult3 (.a(im_array[3]), .b(iw_array[3]), .operation_nd(operation_nd[3]), .operation_rfd(operation_rfd[3]), .clk(clk), 
-    .sclr(sclr_mult[3]), .ce(ce_mult[3]), .result(om_array[3]), .underflow(underflow_3), .overflow(overflow_3), .invalid_op(invalid_op_3), .rdy(rdy[3]));
+    .sclr(sclr_mult[3]), .ce(ce_mult[3]), .result(om_array[3]), .underflow(underflow_3), .overflow(overflow_3), .invalid_op(invalid_op_3), .rdy(rdy_mult[3]));
 
     multiplier mult4 (.a(im_array[4]), .b(iw_array[4]), .operation_nd(operation_nd[4]), .operation_rfd(operation_rfd[4]), .clk(clk), 
-    .sclr(sclr_mult[4]), .ce(ce_mult[4]), .result(om_array[4]), .underflow(underflow_4), .overflow(overflow_4), .invalid_op(invalid_op_4), .rdy(rdy[4]));
+    .sclr(sclr_mult[4]), .ce(ce_mult[4]), .result(om_array[4]), .underflow(underflow_4), .overflow(overflow_4), .invalid_op(invalid_op_4), .rdy(rdy_mult[4]));
 
     multiplier mult5 (.a(im_array[5]), .b(iw_array[5]), .operation_nd(operation_nd[5]), .operation_rfd(operation_rfd[5]), .clk(clk), 
-    .sclr(sclr_mult[5]), .ce(ce_mult[5]), .result(om_array[5]), .underflow(underflow_5), .overflow(overflow_5), .invalid_op(invalid_op_5), .rdy(rdy[5]));
+    .sclr(sclr_mult[5]), .ce(ce_mult[5]), .result(om_array[5]), .underflow(underflow_5), .overflow(overflow_5), .invalid_op(invalid_op_5), .rdy(rdy_mult[5]));
 
     multiplier mult6 (.a(im_array[6]), .b(iw_array[6]), .operation_nd(operation_nd[6]), .operation_rfd(operation_rfd[6]), .clk(clk), 
-    .sclr(sclr_mult[6]), .ce(ce_mult[6]), .result(om_array[6]), .underflow(underflow_6), .overflow(overflow_6), .invalid_op(invalid_op_6), .rdy(rdy[6]));
+    .sclr(sclr_mult[6]), .ce(ce_mult[6]), .result(om_array[6]), .underflow(underflow_6), .overflow(overflow_6), .invalid_op(invalid_op_6), .rdy(rdy_mult[6]));
 
     multiplier mult7 (.a(im_array[7]), .b(iw_array[7]), .operation_nd(operation_nd[7]), .operation_rfd(operation_rfd[7]), .clk(clk), 
-    .sclr(sclr_mult[7]), .ce(ce_mult[7]), .result(om_array[7]), .underflow(underflow_7), .overflow(overflow_7), .invalid_op(invalid_op_7), .rdy(rdy[7]));
+    .sclr(sclr_mult[7]), .ce(ce_mult[7]), .result(om_array[7]), .underflow(underflow_7), .overflow(overflow_7), .invalid_op(invalid_op_7), .rdy(rdy_mult[7]));
 
     multiplier mult8 (.a(im_array[8]), .b(iw_array[8]), .operation_nd(operation_nd[8]), .operation_rfd(operation_rfd[8]), .clk(clk), 
-    .sclr(sclr_mult[8]), .ce(ce_mult[8]), .result(om_array[8]), .underflow(underflow_8), .overflow(overflow_8), .invalid_op(invalid_op_8), .rdy(rdy[8]));
+    .sclr(sclr_mult[8]), .ce(ce_mult[8]), .result(om_array[8]), .underflow(underflow_8), .overflow(overflow_8), .invalid_op(invalid_op_8), .rdy(rdy_mult[8]));
 
     accum accum_0 (.a(a0), .b(b0), .operation_nd(operation_nd_accum[0]), .operation_rfd(operation_rfd_accum[0]), .clk(clk), 
-    .sclr(sclr[0]), .ce(ce[0]), .result(o_buf0), .underflow(underflow_accum0), .overflow(overflow_accum0), .invalid_op(invalid_op_accum0), .rdy(rdy_accum[0]));
+    .sclr(sclr_accum[0]), .ce(ce_accum[0]), .result(o_buf0), .underflow(underflow_accum0), .overflow(overflow_accum0), .invalid_op(invalid_op_accum0), .rdy(rdy_accum[0]));
 
     accum accum_1 (.a(a1), .b(b1), .operation_nd(operation_nd_accum[1]), .operation_rfd(operation_rfd_accum[1]), .clk(clk), 
-    .sclr(sclr[1]), .ce(ce[1]), .result(o_buf1), .underflow(underflow_accum1), .overflow(overflow_accum1), .invalid_op(invalid_op_accum1), .rdy(rdy_accum[1]));
+    .sclr(sclr_accum[1]), .ce(ce_accum[1]), .result(o_buf1), .underflow(underflow_accum1), .overflow(overflow_accum1), .invalid_op(invalid_op_accum1), .rdy(rdy_accum[1]));
 
     accum accum_2 (.a(a2), .b(b2), .operation_nd(operation_nd_accum[2]), .operation_rfd(operation_rfd_accum[2]), .clk(clk), 
-    .sclr(sclr[2]), .ce(ce[2]), .result(o_buf2), .underflow(underflow_accum2), .overflow(overflow_accum2), .invalid_op(invalid_op_accum2), .rdy(rdy_accum[2]));
+    .sclr(sclr_accum[2]), .ce(ce_accum[2]), .result(o_buf2), .underflow(underflow_accum2), .overflow(overflow_accum2), .invalid_op(invalid_op_accum2), .rdy(rdy_accum[2]));
 
     accum accum_3 (.a(a3), .b(b3), .operation_nd(operation_nd_accum[3]), .operation_rfd(operation_rfd_accum[3]), .clk(clk), 
-    .sclr(sclr[3]), .ce(ce[3]), .result(o_buf3), .underflow(underflow_accum3), .overflow(overflow_accum3), .invalid_op(invalid_op_accum3), .rdy(rdy_accum[3]));
+    .sclr(sclr_accum[3]), .ce(ce_accum[3]), .result(o_buf3), .underflow(underflow_accum3), .overflow(overflow_accum3), .invalid_op(invalid_op_accum3), .rdy(rdy_accum[3]));
 
     reg [3:0] curr_state;
     reg [3:0] next_state;
@@ -101,23 +108,23 @@ module conv_3x3(
                 else next_state = idle;
             end
             mult: begin
-                if(rdy == 9'h1ff) next_state = accum1;
+                if(rdy_mult == 9'h1ff) next_state = accum1;
                 else next_state = mult;
             end
             accum1: begin
-                if(accum1_finish) next_state = accum2;
+                if(accum__finish) next_state = accum2;
                 else next_state = accum1;
             end
             accum2: begin 
-                if(accum2_finish) next_state = accum3;
+                if(accum__finish) next_state = accum3;
                 else next_state = accum2;
             end
             accum3: begin
-                if(accum3_finish) next_state = accum4;
+                if(accum__finish) next_state = accum4;
                 else next_state = accum3;
             end
             accum4: begin
-                if(accum4_finish) next_state = idle;
+                if(accum__finish) next_state = idle;
                 else next_state = accum4;
             end
             default:
@@ -133,13 +140,12 @@ always @ (posedge clk or negedge rst_n) begin
         operation_nd_accum <= 4'h0;
         om <= 0;
         conv_valid <= 0;
-        accum1_finish <= 0; accum2_finish <= 0; accum3_finish <= 0; accum4_finish <= 0;
     end
     else begin
         case (curr_state)
             mult: begin
                 if(operation_rfd == 9'h1ff) operation_nd <= 9'h1ff;
-                if(rdy == 9'h1ff) begin operation_nd <= 9'h000; end
+                if(rdy_mult == 9'h1ff) begin operation_nd <= 9'h000; end
             end
             accum1: begin
                 if(operation_rfd_accum == 4'hf) begin operation_nd_accum <= 4'hf; 
@@ -148,31 +154,25 @@ always @ (posedge clk or negedge rst_n) begin
                                                     a2 <= om_array[4]; b2 <= om_array[5];
                                                     a3 <= om_array[6]; b3 <= om_array[7];
                                                     end
-                if(rdy_accum == 4'hf) begin operation_nd_accum <= 4'h0; accum1_finish <= 1; end
+                if(rdy_accum == 4'hf) begin operation_nd_accum <= 4'h0; end
             end
             accum2: begin
                 if(operation_rfd_accum[1:0] == 2'b11) begin operation_nd_accum[1:0] <= 2'b11; a0 <= o_buf0; b0 <= o_buf1;
                                                         a1 <= o_buf2; b1 <= o_buf3; end
-                if(rdy_accum[1:0] == 2'b11)  begin operation_nd_accum[1:0] <= 2'b00; accum2_finish <= 1; end
+                if(rdy_accum[1:0] == 2'b11)  begin operation_nd_accum[1:0] <= 2'b00; end
             end
             accum3: begin
                 if(operation_rfd_accum[0] == 1'b1) begin operation_nd_accum[0] <= 1'b1; a0 <= o_buf0; b0 <= o_buf1;end
-                if(rdy_accum[0] == 1'b1)  begin operation_nd_accum[0] <= 1'b0; accum3_finish <= 1; end
+                if(rdy_accum[0] == 1'b1)  begin operation_nd_accum[0] <= 1'b0; end
             end
             accum4: begin
                 if(operation_rfd_accum[0] == 1'b1) begin operation_nd_accum[0] <= 1'b1; a0 <= o_buf0; b0 <= om_array[8];end
-                if(rdy_accum[0] == 1'b1)  begin operation_nd_accum[0] <= 1'b0; accum4_finish <= 1; conv_valid <= 1; end
+                if(rdy_accum[0] == 1'b1)  begin operation_nd_accum[0] <= 1'b0; conv_valid <= 1; end
             end
-            default:    begin
-            end
+            default:  ;
         endcase
     end
 end
-
-assign ce = ~rdy_accum;
-assign sclr = rdy_accum;
-assign ce_mult = ~rdy;
-assign sclr_mult = rdy;
     //TODO: Make Accum Pipelines
     //TODO: om
     //TODO: Make ReLU Activation
