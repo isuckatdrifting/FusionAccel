@@ -1,1 +1,0 @@
-sudo python3 extract.py --model=/mnt/c/Users/shish/source/repos/SqueezeNet/SqueezeNet_v1.1/deploy.prototxt --weights=/mnt/c/Users/shish/source/repos/SqueezeNet/SqueezeNet_v1.1/squeezenet_v1.1.caffemodel --output=/mnt/c/Users/shish/source/repos/FusionAccel/demo/tmp

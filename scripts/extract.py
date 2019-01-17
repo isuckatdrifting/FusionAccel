@@ -1,6 +1,6 @@
 import caffe
 import numpy as np
-import argparse
+#import argparse
 import os
 
 def extract_caffe_model(model, weights, output_path):
@@ -32,9 +32,13 @@ def extract_caffe_model(model, weights, output_path):
         num += 1
 
 if __name__ == '__main__':
-  parser = argparse.ArgumentParser()
-  parser.add_argument("--model", help="model prototxt path .prototxt")
-  parser.add_argument("--weights", help="caffe model weights path .caffemodel")
-  parser.add_argument("--output", help="output path")
-  args = parser.parse_args()
-  extract_caffe_model(args.model, args.weights, args.output)
+  #parser = argparse.ArgumentParser()
+  #parser.add_argument("--model", help="model prototxt path .prototxt")
+  #parser.add_argument("--weights", help="caffe model weights path .caffemodel")
+  #parser.add_argument("--output", help="output path")
+  #args = parser.parse_args()
+  #extract_caffe_model(args.model, args.weights, args.output)
+  model = 'C:/Users/shish/source/repos/SqueezeNet/SqueezeNet_v1.1/deploy.prototxt'
+  weights = 'C:/Users/shish/source/repos/SqueezeNet/SqueezeNet_v1.1/squeezenet_v1.1.caffemodel'
+  output_path = 'C:/Users/shish/source/repos/FusionAccel/demo/tmp'
+  extract_caffe_model(model, weights, output_path)
