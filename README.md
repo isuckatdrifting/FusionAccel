@@ -101,3 +101,5 @@ Use Bitonic Sort for 3x3 Max Pooling, Takes 31 Cycles, 213 FFs.
 Use Sum/Divide for 13x13 Average Pooling. fp sum calc takes 11 cycles. Takes 110 Cycles totally. Divider takes 26 cycles. Totally takes 136 Cycles, 600FFs.
 
 fp mult aresetn must be asserted for minimum 2 cycles, fp mult takes 7 cycles.
+
+Maybe RCB or CRB is better than BRC or BCR, since it stores different channels on different banks
