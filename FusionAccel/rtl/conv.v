@@ -252,3 +252,4 @@ end
 endmodule
 
 //TODO: Use local rst_n rather than global rst_n, because of repetitive calling
+//TODO: Add Convolution bias after accumulations

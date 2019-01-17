@@ -24,10 +24,11 @@ def extract_caffe_model(model, weights, output_path):
 
     num = 0
     for p in net.params[name]:
-        f = open(output_path + '/' + str(name).replace('/', '_') + '_' + str(num) + '.txt', "w")
+        #f = open(output_path + '/' + str(name).replace('/', '_') + '_' + str(num) + '.txt', "w")
         #np.save(output_path + '/' + str(name) + '_' + str(num), p.data)
-        f.write(str(p.data.tolist()))
-        f.close()
+        #f.write(str(p.data.tolist()))
+        #f.close()
+        print("layer %d, size = %d" % (num, p.data.size))
         num += 1
 
 if __name__ == '__main__':
