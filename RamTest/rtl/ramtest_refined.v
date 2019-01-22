@@ -26,15 +26,7 @@ module ramtest  #(
 	parameter C3_P0_MASK_SIZE           = 4,
 	parameter C3_P0_DATA_PORT_SIZE      = 32,
 	parameter C3_P1_MASK_SIZE           = 4,
-	parameter C3_P1_DATA_PORT_SIZE      = 32,
-	//parameter DEBUG_EN                  = 0,       
-	//parameter C3_MEMCLK_PERIOD          = 3200,    //312.5 MHz       
-	//parameter C3_CALIB_SOFT_IP          = "TRUE",       
-	//parameter C3_SIMULATION             = "FALSE",       
-	//parameter C3_HW_TESTING             = "FALSE",       
-	//parameter C3_RST_ACT_LOW            = 0,       
-	//parameter C3_INPUT_CLK_TYPE         = "DIFFERENTIAL",       
-	//parameter C3_MEM_ADDR_ORDER         = "ROW_BANK_COLUMN",       
+	parameter C3_P1_DATA_PORT_SIZE      = 32,    
 	parameter C3_NUM_DQ_PINS            = 16,       
 	parameter C3_MEM_ADDR_WIDTH         = 13,       
 	parameter C3_MEM_BANKADDR_WIDTH     = 3        
@@ -121,7 +113,6 @@ module ramtest  #(
 	//wire                              selfrefresh_enter;          
 	//wire                              selfrefresh_mode; 
 
-
 	// Front Panel
 
 	// Target interface bus:
@@ -158,12 +149,8 @@ module ramtest  #(
 
 	assign led = ~{pipe_in_full, pipe_in_empty, pipe_out_full, pipe_out_empty, c3_p0_wr_full,ep00wire[1],c3_calib_done,c3_pll_lock};
 	
-	assign c3_sys_clk     = 1'b0;
+	assign c3_sys_clk = 1'b0;
 	assign ddr2_cs_n = 1'b0;
-	
-	/*assign i2c_sda    = 1'bz;
-	assign i2c_scl    = 1'bz;
-	assign hi_muxsel  = 1'b0;*/
 	
 	//MIG Infrastructure Reset
 	reg [3:0] rst_cnt;
@@ -178,8 +165,7 @@ module ramtest  #(
 		end
 	end
 
-
- memc3 # (
+memc3 # (
     .C3_P0_MASK_SIZE(4),
     .C3_P0_DATA_PORT_SIZE(32),
     .C3_P1_MASK_SIZE(4),
@@ -197,87 +183,83 @@ module ramtest  #(
 )
 memc3_inst (
 
-    .sys_clkp           (sys_clkp),
-  .sys_clkn           (sys_clkn),
-  .c3_sys_rst_n           (c3_sys_rst_n),                        
+	.sys_clkp          		(sys_clkp),
+	.sys_clkn          		(sys_clkn),
+	.c3_sys_rst_n      		(c3_sys_rst_n),                        
 
-  .ddr2_dq           (ddr2_dq),  
-  .ddr2_a            (ddr2_a),  
-  .ddr2_ba           (ddr2_ba),
-  .ddr2_ras_n        (ddr2_ras_n),                        
-  .ddr2_cas_n        (ddr2_cas_n),                        
-  .ddr2_we_n         (ddr2_we_n),                          
-  .ddr2_odt          (ddr2_odt),
-  .ddr2_cke          (ddr2_cke),                          
-  .ddr2_ck           (ddr2_ck),                          
-  .ddr2_ck_n         (ddr2_ck_n),       
-  .ddr2_dqs          (ddr2_dqs),                          
-  .ddr2_dqs_n        (ddr2_dqs_n),
-  .ddr2_udqs         (ddr2_udqs),    // for X16 parts                        
-  .ddr2_udqs_n       (ddr2_udqs_n),  // for X16 parts
-  .ddr2_udm          (ddr2_udm),     // for X16 parts
-  .ddr2_dm           (ddr2_dm),
-    .c3_clk0		        (c3_clk0),
-  .c3_rst0		        (c3_rst0),
-	
- 
-  .c3_calib_done          (c3_calib_done),
-     .ddr2_rzq               (ddr2_rzq),
-               
-     .ddr2_zio               (ddr2_zio),
-               
-     .c3_p0_cmd_clk                          (c3_clk0),
-   .c3_p0_cmd_en                           (c3_p0_cmd_en),
-   .c3_p0_cmd_instr                        (c3_p0_cmd_instr),
-   .c3_p0_cmd_bl                           (c3_p0_cmd_bl),
-   .c3_p0_cmd_byte_addr                    (c3_p0_cmd_byte_addr),
-   .c3_p0_cmd_empty                        (c3_p0_cmd_empty),
-   .c3_p0_cmd_full                         (c3_p0_cmd_full),
-   .c3_p0_wr_clk                           (c3_clk0),
-   .c3_p0_wr_en                            (c3_p0_wr_en),
-   .c3_p0_wr_mask                          (c3_p0_wr_mask),
-   .c3_p0_wr_data                          (c3_p0_wr_data),
-   .c3_p0_wr_full                          (c3_p0_wr_full),
-   .c3_p0_wr_empty                         (c3_p0_wr_empty),
-   .c3_p0_wr_count                         (c3_p0_wr_count),
-   .c3_p0_wr_underrun                      (c3_p0_wr_underrun),
-   .c3_p0_wr_error                         (c3_p0_wr_error),
-   .c3_p0_rd_clk                           (c3_clk0),
-   .c3_p0_rd_en                            (c3_p0_rd_en),
-   .c3_p0_rd_data                          (c3_p0_rd_data),
-   .c3_p0_rd_full                          (c3_p0_rd_full),
-   .c3_p0_rd_empty                         (c3_p0_rd_empty),
-   .c3_p0_rd_count                         (c3_p0_rd_count),
-   .c3_p0_rd_overflow                      (c3_p0_rd_overflow),
-   .c3_p0_rd_error                         (c3_p0_rd_error)/*,
-   .c3_p1_cmd_clk                          (c3_p1_cmd_clk),
-   .c3_p1_cmd_en                           (c3_p1_cmd_en),
-   .c3_p1_cmd_instr                        (c3_p1_cmd_instr),
-   .c3_p1_cmd_bl                           (c3_p1_cmd_bl),
-   .c3_p1_cmd_byte_addr                    (c3_p1_cmd_byte_addr),
-   .c3_p1_cmd_empty                        (c3_p1_cmd_empty),
-   .c3_p1_cmd_full                         (c3_p1_cmd_full),
-   .c3_p1_wr_clk                           (c3_p1_wr_clk),
-   .c3_p1_wr_en                            (c3_p1_wr_en),
-   .c3_p1_wr_mask                          (c3_p1_wr_mask),
-   .c3_p1_wr_data                          (c3_p1_wr_data),
-   .c3_p1_wr_full                          (c3_p1_wr_full),
-   .c3_p1_wr_empty                         (c3_p1_wr_empty),
-   .c3_p1_wr_count                         (c3_p1_wr_count),
-   .c3_p1_wr_underrun                      (c3_p1_wr_underrun),
-   .c3_p1_wr_error                         (c3_p1_wr_error),
-   .c3_p1_rd_clk                           (c3_p1_rd_clk),
-   .c3_p1_rd_en                            (c3_p1_rd_en),
-   .c3_p1_rd_data                          (c3_p1_rd_data),
-   .c3_p1_rd_full                          (c3_p1_rd_full),
-   .c3_p1_rd_empty                         (c3_p1_rd_empty),
-   .c3_p1_rd_count                         (c3_p1_rd_count),
-   .c3_p1_rd_overflow                      (c3_p1_rd_overflow),
-   .c3_p1_rd_error                         (c3_p1_rd_error)*/
-);
+	.ddr2_dq           		(ddr2_dq),  
+	.ddr2_a            		(ddr2_a),  
+	.ddr2_ba           		(ddr2_ba),
+	.ddr2_ras_n        		(ddr2_ras_n),                        
+	.ddr2_cas_n        		(ddr2_cas_n),                        
+	.ddr2_we_n         		(ddr2_we_n),                          
+	.ddr2_odt          		(ddr2_odt),
+	.ddr2_cke          		(ddr2_cke),                          
+	.ddr2_ck           		(ddr2_ck),                          
+	.ddr2_ck_n         		(ddr2_ck_n),       
+	.ddr2_dqs          		(ddr2_dqs),                          
+	.ddr2_dqs_n        		(ddr2_dqs_n),
+	.ddr2_udqs         		(ddr2_udqs),    // for X16 parts                        
+	.ddr2_udqs_n       		(ddr2_udqs_n),  // for X16 parts
+	.ddr2_udm          		(ddr2_udm),     // for X16 parts
+	.ddr2_dm           		(ddr2_dm),
+	.c3_clk0		     	(c3_clk0),
+	.c3_rst0		     	(c3_rst0),
+	.c3_calib_done     		(c3_calib_done),
+	.ddr2_rzq          		(ddr2_rzq),        
+	.ddr2_zio               (ddr2_zio),     
+	.c3_p0_cmd_clk			(c3_clk0),
+	.c3_p0_cmd_en           (c3_p0_cmd_en),
+	.c3_p0_cmd_instr        (c3_p0_cmd_instr),
+	.c3_p0_cmd_bl           (c3_p0_cmd_bl),
+	.c3_p0_cmd_byte_addr    (c3_p0_cmd_byte_addr),
+	.c3_p0_cmd_empty        (c3_p0_cmd_empty),
+	.c3_p0_cmd_full         (c3_p0_cmd_full),
+	.c3_p0_wr_clk           (c3_clk0),
+	.c3_p0_wr_en            (c3_p0_wr_en),
+	.c3_p0_wr_mask          (c3_p0_wr_mask),
+	.c3_p0_wr_data          (c3_p0_wr_data),
+	.c3_p0_wr_full          (c3_p0_wr_full),
+	.c3_p0_wr_empty         (c3_p0_wr_empty),
+	.c3_p0_wr_count         (c3_p0_wr_count),
+	.c3_p0_wr_underrun      (c3_p0_wr_underrun),
+	.c3_p0_wr_error         (c3_p0_wr_error),
+	.c3_p0_rd_clk           (c3_clk0),
+	.c3_p0_rd_en            (c3_p0_rd_en),
+	.c3_p0_rd_data          (c3_p0_rd_data),
+	.c3_p0_rd_full          (c3_p0_rd_full),
+	.c3_p0_rd_empty         (c3_p0_rd_empty),
+	.c3_p0_rd_count         (c3_p0_rd_count),
+	.c3_p0_rd_overflow      (c3_p0_rd_overflow),
+	.c3_p0_rd_error         (c3_p0_rd_error)/*,
+	.c3_p1_cmd_clk          (c3_p1_cmd_clk),
+	.c3_p1_cmd_en           (c3_p1_cmd_en),
+	.c3_p1_cmd_instr        (c3_p1_cmd_instr),
+	.c3_p1_cmd_bl           (c3_p1_cmd_bl),
+	.c3_p1_cmd_byte_addr    (c3_p1_cmd_byte_addr),
+	.c3_p1_cmd_empty        (c3_p1_cmd_empty),
+	.c3_p1_cmd_full         (c3_p1_cmd_full),
+	.c3_p1_wr_clk           (c3_p1_wr_clk),
+	.c3_p1_wr_en            (c3_p1_wr_en),
+	.c3_p1_wr_mask          (c3_p1_wr_mask),
+	.c3_p1_wr_data          (c3_p1_wr_data),
+	.c3_p1_wr_full          (c3_p1_wr_full),
+	.c3_p1_wr_empty         (c3_p1_wr_empty),
+	.c3_p1_wr_count         (c3_p1_wr_count),
+	.c3_p1_wr_underrun      (c3_p1_wr_underrun),
+	.c3_p1_wr_error         (c3_p1_wr_error),
+	.c3_p1_rd_clk           (c3_p1_rd_clk),
+	.c3_p1_rd_en            (c3_p1_rd_en),
+	.c3_p1_rd_data          (c3_p1_rd_data),
+	.c3_p1_rd_full          (c3_p1_rd_full),
+	.c3_p1_rd_empty         (c3_p1_rd_empty),
+	.c3_p1_rd_count         (c3_p1_rd_count),
+	.c3_p1_rd_overflow      (c3_p1_rd_overflow),
+	.c3_p1_rd_error         (c3_p1_rd_error)*/
+	);
 
 
- ddr2_test ddr2_tb
+	ddr2_test ddr2_tb
 	(
 	.clk(c3_clk0),
 	.reset(ep00wire[2] | c3_rst0), 
@@ -290,21 +272,21 @@ memc3_inst (
 	.ib_count(pipe_in_rd_count),
 	.ib_valid(pipe_in_valid),
 	.ib_empty(pipe_in_empty),
-	
+
 	.ob_we(pipe_out_write),
 	.ob_data(pipe_out_data),
 	.ob_count(pipe_out_wr_count),
-	
+
 	.p0_rd_en_o(c3_p0_rd_en),  
 	.p0_rd_empty(c3_p0_rd_empty), 
 	.p0_rd_data(c3_p0_rd_data), 
-	
+
 	.p0_cmd_en(c3_p0_cmd_en),
 	.p0_cmd_full(c3_p0_cmd_full), 
 	.p0_cmd_instr(c3_p0_cmd_instr),
 	.p0_cmd_byte_addr(c3_p0_cmd_byte_addr), 
 	.p0_cmd_bl_o(c3_p0_cmd_bl), 
-	
+
 	.p0_wr_en(c3_p0_wr_en),
 	.p0_wr_full(c3_p0_wr_full), 
 	.p0_wr_data(c3_p0_wr_data), 
@@ -331,7 +313,6 @@ always @(posedge okClk) begin
 	end
 	
 end
-	
 
 // Instantiate the okHost and connect endpoints.
 wire [65*2-1:0]  okEHx;
