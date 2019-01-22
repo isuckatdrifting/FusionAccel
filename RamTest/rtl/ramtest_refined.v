@@ -75,20 +75,8 @@ module ramtest  #(
 	wire                              c3_clk0;
 	reg                               c3_sys_rst_n;
 	wire                              c3_rst0;
-	wire                              c3_async_rst;
-	wire                              c3_sysclk_2x;
-	wire                              c3_sysclk_2x_180;
-	wire                              c3_pll_ce_0;
-	wire                              c3_pll_ce_90;
 	wire                              c3_pll_lock;
-	wire                              c3_mcb_drp_clk;
-	wire                              c3_cmp_error;
-	wire                              c3_cmp_data_valid;
-	wire                              c3_vio_modify_enable;
-	wire  [127:0]                     c3_error_status;
-	wire  [2:0]                       c3_vio_data_mode_value;
-	wire  [2:0]                       c3_vio_addr_mode_value;
-	wire  [31:0]                      c3_cmp_data;
+
 	wire                              c3_p0_cmd_en;
 	wire [2:0]                        c3_p0_cmd_instr;
 	wire [5:0]                        c3_p0_cmd_bl;
