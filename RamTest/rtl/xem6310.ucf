@@ -167,11 +167,11 @@ CONFIG MCB_PERFORMANCE= STANDARD;
 # Timing Ignore constraints for paths crossing the clock domain 
 ##################################################################################
 NET "memc?_wrapper_inst/memc?_mcb_raw_wrapper_inst/selfrefresh_mcb_mode" TIG;
-#NET "c?_pll_lock" TIG;
-NET "memc?_wrapper_inst/memc?_mcb_raw_wrapper_inst/gen_term_calib.mcb_soft_calibration_top_inst/mcb_soft_calibration_inst/CKE_Train" TIG;
+NET "c?_pll_lock" TIG;
+NET "memc3_wrapper_inst/memc?_mcb_raw_wrapper_inst/gen_term_calib.mcb_soft_calibration_top_inst/mcb_soft_calibration_inst/CKE_Train" TIG;
      
 ############################################################################
 ## Clock constraints                                                        
 ############################################################################
-NET "memc3_infrastructure_inst/sys_clk_ibufg" TNM_NET = "SYS_CLK3";
+NET "memc?_infrastructure_inst/sys_clk_ibufg" TNM_NET = "SYS_CLK3";
 TIMESPEC "TS_SYS_CLK3" = PERIOD "SYS_CLK3"  10  ns HIGH 50 %;

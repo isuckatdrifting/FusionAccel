@@ -14,6 +14,7 @@
    <wvobject fp_name="/conv_1x1_tb/om" type="array" db_ref_id="1">
       <obj_property name="ElementShortName">om[15:0]</obj_property>
       <obj_property name="ObjectShortName">om[15:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
    </wvobject>
    <wvobject fp_name="/conv_1x1_tb/conv_valid" type="logic" db_ref_id="1">
       <obj_property name="ElementShortName">conv_valid</obj_property>
@@ -154,13 +155,16 @@
    <wvobject fp_name="/conv_1x1_tb/conv_1x1_i/mult0/a" type="array" db_ref_id="1">
       <obj_property name="ElementShortName">a[15:0]</obj_property>
       <obj_property name="ObjectShortName">a[15:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
    </wvobject>
    <wvobject fp_name="/conv_1x1_tb/conv_1x1_i/mult0/b" type="array" db_ref_id="1">
       <obj_property name="ElementShortName">b[15:0]</obj_property>
       <obj_property name="ObjectShortName">b[15:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
    </wvobject>
    <wvobject fp_name="/conv_1x1_tb/conv_1x1_i/mult0/result" type="array" db_ref_id="1">
       <obj_property name="ElementShortName">result[15:0]</obj_property>
       <obj_property name="ObjectShortName">result[15:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
    </wvobject>
 </wave_config>
