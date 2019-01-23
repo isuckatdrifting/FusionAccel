@@ -80,27 +80,7 @@ dma dma_(
 //------------------------------------------------
 // Send to PC using Front Panel(TM)
 //------------------------------------------------
-usb usb_(
-    //USB3.0 Bus
-    .okUH(okUH), 
-    .okHU(okHU), 
-    .okUHU(okUHU), 
-    .okAA(okAA), 
-    .clk(sys_clk),
-    .reset_n(reset_n), 
-	.transmit_en(transmit_valid),
-    .enable(transmit_valid),
-    //Data bus
-    //TODO: Define CSB and Data path buses
-    .time1(time1), 
-    .calib1(calib1), 
-    .calib2(calib2),
-    .b_htime(b_htime), 
-    .done(transmit_done),
-    .b_pulsewidth(b_pulsewidth),
-	.y_counter(y_counter),
-	.x_counter(x_counter)
-); //USB Slave
+
 
 //--------------v2, More complicate Cores for Other Function and Networks--//
 //reshape reshape_(); //Memory Reshape and Concatenation Core
