@@ -117,16 +117,6 @@ pool_13x13 pool_13x13_(
     .pool_ready(pool_ready_13x13),
     .pool_valid(pool_valid_13x13));
 
-/*
-dma dma_(
-    .clk(clk),
-    .rst_n(rst_n),
-    .addr(addr),
-    .dma_ready(dma_ready),
-    .dma_valid(dma_valid),
-    .data(data)
-); //Direct Memory Access Core*/
-
 //------------------------------------------------
 // Memory Control Block
 //------------------------------------------------
@@ -308,7 +298,7 @@ memc3_inst (
 	.c3_p1_rd_overflow      (c3_p1_rd_overflow),
 	.c3_p1_rd_error         (c3_p1_rd_error));
 
-ddr2_test ddr2_tb (
+dma dma_ (
 	.clk(c3_clk0),
 	.reset(ep00wire[2] | c3_rst0), 
 	.reads_en(ep00wire[0]),
