@@ -7,6 +7,7 @@ module conv_3x3(
     input rst_n,
     input [144 - 1:0] im,
     input [144 - 1:0] iw,
+    input [15:0] ib,
     output [15:0] om,
     input conv_ready,
     output conv_valid
@@ -157,8 +158,10 @@ always @ (posedge clk or negedge rst_n) begin
                 if(rdy_accum == 4'hf) begin operation_nd_accum <= 4'h0; end
             end
             accum2: begin
-                if(operation_rfd_accum[1:0] == 2'b11) begin operation_nd_accum[1:0] <= 2'b11; a0 <= o_buf0; b0 <= o_buf1;
-                                                        a1 <= o_buf2; b1 <= o_buf3; end
+                if(operation_rfd_accum[2:0] == 3'b111) begin operation_nd_accum[1:0] <= 2'b11; 
+                                                        a0 <= o_buf0; b0 <= o_buf1;
+                                                        a1 <= o_buf2; b1 <= o_buf3; 
+                                                        a3 <= om_array[9]; b3 <= ib; end
                 if(rdy_accum[1:0] == 2'b11)  begin operation_nd_accum[1:0] <= 2'b00; end
             end
             accum3: begin
@@ -166,15 +169,15 @@ always @ (posedge clk or negedge rst_n) begin
                 if(rdy_accum[0] == 1'b1)  begin operation_nd_accum[0] <= 1'b0; end
             end
             accum4: begin
-                if(operation_rfd_accum[0] == 1'b1) begin operation_nd_accum[0] <= 1'b1; a0 <= o_buf0; b0 <= om_array[8];end
-                if(rdy_accum[0] == 1'b1)  begin operation_nd_accum[0] <= 1'b0; om <= o_buf0; conv_valid <= 1; end
+                if(operation_rfd_accum[0] == 1'b1) begin operation_nd_accum[0] <= 1'b1; a0 <= o_buf0; b0 <= o_buf2;end
+                if(rdy_accum[0] == 1'b1)  begin operation_nd_accum[0] <= 1'b0; om <= o_buf0[15]?16'h0000:o_buf0; conv_valid <= 1; end
             end
             default:  ;
         endcase
     end
 end
     //TODO: Make Accum Pipelines
-    //TODO: Make ReLU Activation
+    
 endmodule
 
 module conv_1x1(
@@ -182,6 +185,7 @@ module conv_1x1(
     input rst_n,
     input [15:0] im,
     input [15:0] iw,
+    input [15:0] ib,
     output [15:0] om,
     input conv_ready,
     output conv_valid
@@ -201,9 +205,13 @@ module conv_1x1(
     
     localparam idle = 3'b000;
     localparam mult = 3'b001;
+    localparam accum = 3'b010;
 
     multiplier mult0 (.a(im), .b(iw), .operation_nd(operation_nd), .operation_rfd(operation_rfd), .clk(clk), 
     .sclr(sclr_mult), .ce(ce_mult), .result(result), .underflow(underflow_0), .overflow(overflow_0), .invalid_op(invalid_op_0), .rdy(rdy_mult));
+
+    accum accum_0 (.a(a0), .b(b0), .operation_nd(operation_nd_accum), .operation_rfd(operation_rfd_accum), .clk(clk), 
+    .sclr(sclr_accum), .ce(ce_accum), .result(o_buf0), .underflow(underflow_accum0), .overflow(overflow_accum0), .invalid_op(invalid_op_accum0), .rdy(rdy_accum));
 
     reg [3:0] curr_state;
     reg [3:0] next_state;
@@ -224,8 +232,12 @@ module conv_1x1(
                 else next_state = idle;
             end
             mult: begin
-                if(rdy_mult) next_state = idle;
+                if(rdy_mult) next_state = accum;
                 else next_state = mult;
+            end
+            accum: begin
+                if(rdy_accum) next_state = idle;
+                else next_state = accum;
             end
             default:
                 next_state = idle;
@@ -243,8 +255,13 @@ always @ (posedge clk or negedge rst_n) begin
         case (curr_state)
             mult: begin
                 if(operation_rfd) operation_nd <= 1'b1;
-                if(rdy_mult) begin operation_nd <= 1'b0; om <= result; conv_valid <= 1'b1; end
+                if(rdy_mult) begin operation_nd <= 1'b0; end
             end
+            accum: begin
+                if(operation_rfd_accum) begin operation_nd_accum <= 1'b1;
+                                        a0 <= result; b0 <= ib;
+                                        end
+                if(rdy_accum) begin operation_nd_accum <= 1'b0; om <= o_buf0[15]?16'h0000:o_buf0; conv_valid <= 1'b1; end
             default:  ;
         endcase
     end
@@ -252,4 +269,3 @@ end
 endmodule
 
 //TODO: Use local rst_n rather than global rst_n, because of repetitive calling
-//TODO: Add Convolution bias after accumulations

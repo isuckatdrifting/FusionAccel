@@ -57,7 +57,7 @@ clockgen clockgen_ (
 //--------------v1, Minimum Hardware Cores for SqueezeNet------------------//
 
 //------------------------------------------------
-// Control Signal Bus for all cores
+// Control Signal Block for all cores
 //------------------------------------------------
 csb csb_(
     .clk(clk),
