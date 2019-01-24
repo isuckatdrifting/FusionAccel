@@ -33,6 +33,14 @@ module csb(
 );
 
     //TODO: Command Queue & Translation in PIPEIN_FIFO
+    //|MEM-Block|---------Address---------|---Space--|---Used Space---|
+    //|---------|-------------------------|----------|----------------|
+    //|   Cmd   | 0x000_0000 - 0x000_007f |    128   |                |
+    //|  Weight | 0x000_1000 - 0x028_0FFF |1280k x 2 |1231552+CONVBIAS|
+    //|  Image  | 0x029_0000 - 0x02d_9800 | 147k x 2 |     150528     |
+    //|  Outbuf | 0x02e_0000 - 0x7ff_ffff | 125M-128 |    3071416     |
+    //|---------|-------------------------|----------|----------------|
+
     reg conv_ready, pool_ready, dma_ready;
 
     always@ (posedge clk, negedge rst_n) begin
