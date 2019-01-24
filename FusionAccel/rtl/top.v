@@ -44,14 +44,14 @@ module top #(
 //-----------------------------Clock PLL-----------------------------------//
 clockgen clockgen_ (
     // Clock in ports
-    .CLK_IN1_P(sys_clkp),   // IN
-    .CLK_IN1_N(sys_clkn),   // IN
+    .CLK_IN1_P				(sys_clkp),   // IN
+    .CLK_IN1_N				(sys_clkn),   // IN
     // Clock out ports
-    .CLK_OUT1(sys_clk),     // OUT
-	.CLK_OUT2(tx_clk),      // OUT
+    .CLK_OUT1				(sys_clk),     // OUT
+	.CLK_OUT2				(),      	// OUT
     // Status and control signals
-    .RESET(1'b0),           // IN
-    .LOCKED(LOCKED)         // OUT 
+    .RESET					(1'b0),           // IN
+    .LOCKED					(LOCKED)         // OUT 
 );      
 
 //--------------v1, Minimum Hardware Cores for SqueezeNet------------------//
@@ -60,62 +60,75 @@ clockgen clockgen_ (
 // Control Signal Block for all cores
 //------------------------------------------------
 csb csb_(
-    .clk(clk),
-    .rst_n(rst_n),
-    .op_type(op_type),
-    .conv_valid(conv_valid),
-    .pool_valid(pool_valid),
-    .dma_valid(dma_valid),
-    .conv_ready(conv_ready),
-    .pool_ready(pool_ready),
-    .dma_ready(dma_ready),
-    .irq(irq));
+    .clk				(sys_clk),
+    .rst_n				(ep00wire[2]),
+    .op_type			(op_type),
+    .op_issue			(op_issue),
+
+    .conv_valid_1x1		(conv_valid_1x1), 
+	.conv_ready_1x1		(conv_ready_1x1),
+    .conv_valid_3x3		(conv_valid_3x3),
+    .conv_ready_3z3		(conv_ready_3x3),
+    .pool_valid_3x3		(pool_valid_3x3),
+    .pool_ready_3x3		(pool_ready_3x3),
+    .pool_valid_13x13	(pool_valid_13x13),
+    .pool_ready_13x13	(pool_ready_13x13),
+
+    .dma_we				(dma_we),          //Weight, Image & CONV1x1
+    .dma_re				(dma_re),          //Weight, Image & CONV1x1
+    .dma_aux_we			(dma_aux_we),      //CONV3x3, POOL3x3 & POOL13x13
+    .dma_aux_re			(dma_aux_re),      //CONV3x3, POOL3x3 & POOL13x13
+
+    .r_addr				(r_addr),
+    .r_len				(r_len),
+    .w_addr				(w_addr),
+    .irq				());
 
 //------------------------------------------------
 // Simple 1x1 Convolution Core
 //------------------------------------------------
 conv_1x1 conv_1x1_(
-    .clk(clk),
-    .rst_n(rst_n),
-    .im(),
-    .iw(),
-    .om(),
-    .conv_ready(conv_ready),
-    .conv_valid(conv_valid_1x1));
+    .clk		(sys_clk),
+    .rst_n		(ep00wire[2]),
+    .im			(),
+    .iw			(),
+    .om			(),
+    .conv_ready	(conv_ready_1x1),
+    .conv_valid	(conv_valid_1x1));
 
 //------------------------------------------------
 // Pipeline 3x3 Convolution Core
 //------------------------------------------------
 conv_3x3 conv_3x3_(
-    .clk(clk),
-    .rst_n(rst_n),
-    .im(im),
-    .iw(iw),
-    .om(om),
-    .conv_ready(conv_ready),
-    .conv_valid(conv_valid_3x3));
+    .clk		(sys_clk),
+    .rst_n		(ep00wire[2]),
+    .im			(im),
+    .iw			(iw),
+    .om			(om),
+    .conv_ready	(conv_ready_3x3),
+    .conv_valid	(conv_valid_3x3));
 
 //------------------------------------------------
 // Bitonic 3x3 Max Pooling Core
 //------------------------------------------------
 pool_3x3 pool_3x3_(
-    .clk(clk),
-    .rst_n(rst_n),
-    .im(pool_im),
-    .om(pool_om),
-    .pool_ready(pool_ready_3x3),
-    .pool_valid(pool_valid_3x3));
+    .clk		(sys_clk),
+    .rst_n		(ep00wire[2]),
+    .im			(pool_im),
+    .om			(pool_om),
+    .pool_ready	(pool_ready_3x3),
+    .pool_valid	(pool_valid_3x3));
 
 //------------------------------------------------
 // Pipeline 13x13 Average Pooling Core
 //------------------------------------------------
 pool_13x13 pool_13x13_(
-    .clk(clk),
-    .rst_n(rst_n),
-    .im(),
-    .om(),
-    .pool_ready(pool_ready_13x13),
-    .pool_valid(pool_valid_13x13));
+    .clk		(sys_clk),
+    .rst_n		(ep00wire[2]),
+    .im			(),
+    .om			(),
+    .pool_ready	(pool_ready_13x13),
+    .pool_valid	(pool_valid_13x13));
 
 //------------------------------------------------
 // Memory Control Block

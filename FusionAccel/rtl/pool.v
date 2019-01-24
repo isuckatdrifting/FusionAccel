@@ -326,8 +326,6 @@ end
 
 endmodule
 
-
-//TODO: Sum/Divide Logic for 13x13 pooling
 //Sum 13x13 = 64 + 64 + 41 --> 32 adder, pipeline
 module pool_13x13 (
     input clk,

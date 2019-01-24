@@ -176,7 +176,6 @@ always @ (posedge clk or negedge rst_n) begin
         endcase
     end
 end
-    //TODO: Make Accum Pipelines
     
 endmodule
 
@@ -267,5 +266,3 @@ always @ (posedge clk or negedge rst_n) begin
     end
 end
 endmodule
-
-//TODO: Use local rst_n rather than global rst_n, because of repetitive calling
