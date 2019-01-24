@@ -1,34 +1,33 @@
-
 module memc3 #(
     parameter C3_P0_MASK_SIZE           = 4,
-   parameter C3_P0_DATA_PORT_SIZE      = 32,
-   parameter C3_P1_MASK_SIZE           = 4,
-   parameter C3_P1_DATA_PORT_SIZE      = 32,
-   parameter DEBUG_EN                = 0,       
+   	parameter C3_P0_DATA_PORT_SIZE      = 32,
+   	parameter C3_P1_MASK_SIZE           = 4,
+   	parameter C3_P1_DATA_PORT_SIZE      = 32,
+   	parameter DEBUG_EN                = 0,       
                                        // # = 1, Enable debug signals/controls,
                                        //   = 0, Disable debug signals/controls.
-   parameter C3_MEMCLK_PERIOD        = 3200,       
+   	parameter C3_MEMCLK_PERIOD        = 3200,       
                                        // Memory data transfer clock period
-   parameter C3_CALIB_SOFT_IP        = "TRUE",       
+   	parameter C3_CALIB_SOFT_IP        = "TRUE",       
                                        // # = TRUE, Enables the soft calibration logic,
                                        // # = FALSE, Disables the soft calibration logic.
-   parameter C3_SIMULATION           = "FALSE",       
+   	parameter C3_SIMULATION           = "FALSE",       
                                        // # = TRUE, Simulating the design. Useful to reduce the simulation time,
                                        // # = FALSE, Implementing the design.
-   parameter C3_HW_TESTING             = "FALSE",  
-   parameter C3_RST_ACT_LOW          = 0,       
+   	parameter C3_HW_TESTING             = "FALSE",  
+   	parameter C3_RST_ACT_LOW          = 0,       
                                        // # = 1 for active low reset,
                                        // # = 0 for active high reset.
-   parameter C3_INPUT_CLK_TYPE       = "DIFFERENTIAL",       
+   	parameter C3_INPUT_CLK_TYPE       = "DIFFERENTIAL",       
                                        // input clock type DIFFERENTIAL or SINGLE_ENDED
-   parameter C3_MEM_ADDR_ORDER       = "ROW_BANK_COLUMN",       
+   	parameter C3_MEM_ADDR_ORDER       = "ROW_BANK_COLUMN",       
                                        // The order in which user address is provided to the memory controller,
                                        // ROW_BANK_COLUMN or BANK_ROW_COLUMN
-   parameter C3_NUM_DQ_PINS          = 16,       
+   	parameter C3_NUM_DQ_PINS          = 16,       
                                        // External memory data width
-   parameter C3_MEM_ADDR_WIDTH       = 13,       
+   	parameter C3_MEM_ADDR_WIDTH       = 13,       
                                        // External memory address width
-   parameter C3_MEM_BANKADDR_WIDTH   = 3        
+   	parameter C3_MEM_BANKADDR_WIDTH   = 3        
                                        // External memory bank address width
 )
 (
@@ -36,77 +35,79 @@ module memc3 #(
 	input  wire         sys_clkn,
     input  wire         c3_sys_rst_n,
     inout  [C3_NUM_DQ_PINS-1:0]                      ddr2_dq,
-   output [C3_MEM_ADDR_WIDTH-1:0]                   ddr2_a,
-   output [C3_MEM_BANKADDR_WIDTH-1:0]               ddr2_ba,
-   output                                           ddr2_ras_n,
-   output                                           ddr2_cas_n,
-   output                                           ddr2_we_n,
-   output                                           ddr2_odt,
-   output                                           ddr2_cke,
-   output                                           ddr2_dm,
-   inout                                            ddr2_udqs,
-   inout                                            ddr2_udqs_n,
-   inout                                            ddr2_rzq,
-   inout                                            ddr2_zio,
-   output                                           ddr2_udm,
-   input                                            c3_sys_clk_p,
-   input                                            c3_sys_clk_n,
-   input                                            c3_sys_rst_i,
-   output                                           c3_calib_done,
-   output                                           c3_clk0,
-   output                                           c3_rst0,
-   inout                                            ddr2_dqs,
-   inout                                            ddr2_dqs_n,
-   output                                           ddr2_ck,
-   output                                           ddr2_ck_n,
-      //input		c3_p0_cmd_clk,
-      input		c3_p0_cmd_en,
-      input [2:0]	c3_p0_cmd_instr,
-      input [5:0]	c3_p0_cmd_bl,
-      input [29:0]	c3_p0_cmd_byte_addr,
-      output		c3_p0_cmd_empty,
-      output		c3_p0_cmd_full,
-      //input		c3_p0_wr_clk,
-      input		c3_p0_wr_en,
-      input [C3_P0_MASK_SIZE - 1:0]	c3_p0_wr_mask,
-      input [C3_P0_DATA_PORT_SIZE - 1:0]	c3_p0_wr_data,
-      output		c3_p0_wr_full,
-      output		c3_p0_wr_empty,
-      output [6:0]	c3_p0_wr_count,
-      output		c3_p0_wr_underrun,
-      output		c3_p0_wr_error,
-      //input		c3_p0_rd_clk,
-      input		c3_p0_rd_en,
-      output [C3_P0_DATA_PORT_SIZE - 1:0]	c3_p0_rd_data,
-      output		c3_p0_rd_full,
-      output		c3_p0_rd_empty,
-      output [6:0]	c3_p0_rd_count,
-      output		c3_p0_rd_overflow,
-      output		c3_p0_rd_error,
-      //input		c3_p1_cmd_clk,
-      input		c3_p1_cmd_en,
-      input [2:0]	c3_p1_cmd_instr,
-      input [5:0]	c3_p1_cmd_bl,
-      input [29:0]	c3_p1_cmd_byte_addr,
-      output		c3_p1_cmd_empty,
-      output		c3_p1_cmd_full,
-      //input		c3_p1_wr_clk,
-      input		c3_p1_wr_en,
-      input [C3_P1_MASK_SIZE - 1:0]	c3_p1_wr_mask,
-      input [C3_P1_DATA_PORT_SIZE - 1:0]	c3_p1_wr_data,
-      output		c3_p1_wr_full,
-      output		c3_p1_wr_empty,
-      output [6:0]	c3_p1_wr_count,
-      output		c3_p1_wr_underrun,
-      output		c3_p1_wr_error,
-      //input		c3_p1_rd_clk,
-      input		c3_p1_rd_en,
-      output [C3_P1_DATA_PORT_SIZE - 1:0]	c3_p1_rd_data,
-      output		c3_p1_rd_full,
-      output		c3_p1_rd_empty,
-      output [6:0]	c3_p1_rd_count,
-      output		c3_p1_rd_overflow,
-      output		c3_p1_rd_error
+   	output [C3_MEM_ADDR_WIDTH-1:0]                   ddr2_a,
+   	output [C3_MEM_BANKADDR_WIDTH-1:0]               ddr2_ba,
+   	output                                           ddr2_ras_n,
+   	output                                           ddr2_cas_n,
+   	output                                           ddr2_we_n,
+   	output                                           ddr2_odt,
+   	output                                           ddr2_cke,
+   	output                                           ddr2_dm,
+   	inout                                            ddr2_udqs,
+   	inout                                            ddr2_udqs_n,
+   	inout                                            ddr2_rzq,
+   	inout                                            ddr2_zio,
+   	output                                           ddr2_udm,
+   	input                                            c3_sys_clk_p,
+   	input                                            c3_sys_clk_n,
+   	input                                            c3_sys_rst_i,
+   	output                                           c3_calib_done,
+   	output                                           c3_clk0,
+   	output                                           c3_rst0,
+   	inout                                            ddr2_dqs,
+   	inout                                            ddr2_dqs_n,
+   	output                                           ddr2_ck,
+   	output                                           ddr2_ck_n,
+
+	// Port 0
+    input		c3_p0_cmd_en,
+    input [2:0]	c3_p0_cmd_instr,
+    input [5:0]	c3_p0_cmd_bl,
+    input [29:0]	c3_p0_cmd_byte_addr,
+    output		c3_p0_cmd_empty,
+    output		c3_p0_cmd_full,
+
+    input		c3_p0_wr_en,
+    input [C3_P0_MASK_SIZE - 1:0]	c3_p0_wr_mask,
+    input [C3_P0_DATA_PORT_SIZE - 1:0]	c3_p0_wr_data,
+    output		c3_p0_wr_full,
+    output		c3_p0_wr_empty,
+    output [6:0]	c3_p0_wr_count,
+    output		c3_p0_wr_underrun,
+    output		c3_p0_wr_error,
+
+    input		c3_p0_rd_en,
+    output [C3_P0_DATA_PORT_SIZE - 1:0]	c3_p0_rd_data,
+    output		c3_p0_rd_full,
+    output		c3_p0_rd_empty,
+    output [6:0]	c3_p0_rd_count,
+    output		c3_p0_rd_overflow,
+    output		c3_p0_rd_error,
+
+	// Port 1
+    input		c3_p1_cmd_en,
+    input [2:0]	c3_p1_cmd_instr,
+    input [5:0]	c3_p1_cmd_bl,
+    input [29:0]	c3_p1_cmd_byte_addr,
+    output		c3_p1_cmd_empty,
+    output		c3_p1_cmd_full,
+
+    input		c3_p1_wr_en,
+    input [C3_P1_MASK_SIZE - 1:0]	c3_p1_wr_mask,
+    input [C3_P1_DATA_PORT_SIZE - 1:0]	c3_p1_wr_data,
+    output		c3_p1_wr_full,
+    output		c3_p1_wr_empty,
+    output [6:0]	c3_p1_wr_count,
+    output		c3_p1_wr_underrun,
+    output		c3_p1_wr_error,
+
+    input		c3_p1_rd_en,
+    output [C3_P1_DATA_PORT_SIZE - 1:0]	c3_p1_rd_data,
+    output		c3_p1_rd_full,
+    output		c3_p1_rd_empty,
+    output [6:0]	c3_p1_rd_count,
+    output		c3_p1_rd_overflow,
+    output		c3_p1_rd_error
 );
 
 wire c3_pll_lock;
@@ -204,8 +205,7 @@ localparam C3_INCLK_PERIOD         = 10000; // 10000ps -> 10ns -> 100Mhz
 	localparam C3_p0_END_ADDRESS                     = (C3_HW_TESTING == "TRUE") ? 32'h02ffffff:32'h000002ff;
 	localparam C3_p0_PRBS_EADDR_MASK_POS             = (C3_HW_TESTING == "TRUE") ? 32'hfc000000:32'hfffffc00;
 	localparam C3_p0_PRBS_SADDR_MASK_POS             = (C3_HW_TESTING == "TRUE") ? 32'h01000000:32'h00000100;
-
-    
+   
 memc3_infrastructure #
 	(
 		.C_MEMCLK_PERIOD                  (C3_INCLK_PERIOD),
@@ -236,7 +236,7 @@ memc3_infrastructure_inst
 	);
 
 // wrapper instantiation
- memc3_wrapper #
+memc3_wrapper #
 	(
 		.C_MEMCLK_PERIOD                  (C3_MEMCLK_PERIOD),
 		.C_CALIB_SOFT_IP                  (C3_CALIB_SOFT_IP),
@@ -391,4 +391,4 @@ memc3_wrapper_inst
 		.p1_rd_error                         (c3_p1_rd_error)
 	);
 	
-	endmodule
+endmodule

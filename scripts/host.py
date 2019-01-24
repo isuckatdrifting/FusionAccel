@@ -121,8 +121,7 @@ def extract_caffe_model(model, weights, output_path):
 	model: path of '.prototxt'
 	weights: path of '.caffemodel'
 	output_path: output path of numpy params 
-	Returns:
-	None
+	Returns: None
 	"""
 	net = caffe.Net(model, caffe.TEST)
 	net.copy_from(weights)
