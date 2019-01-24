@@ -194,6 +194,7 @@ module conv_1x1(
     wire rdy_mult;
     wire sclr_mult;
     wire ce_mult;
+    wire [15:0] result;
 
     assign ce_mult = ~rdy_mult;
     assign sclr_mult = rdy_mult;
@@ -202,7 +203,7 @@ module conv_1x1(
     localparam mult = 3'b001;
 
     multiplier mult0 (.a(im), .b(iw), .operation_nd(operation_nd), .operation_rfd(operation_rfd), .clk(clk), 
-    .sclr(sclr_mult), .ce(ce_mult), .result(om), .underflow(underflow_0), .overflow(overflow_0), .invalid_op(invalid_op_0), .rdy(rdy_mult));
+    .sclr(sclr_mult), .ce(ce_mult), .result(result), .underflow(underflow_0), .overflow(overflow_0), .invalid_op(invalid_op_0), .rdy(rdy_mult));
 
     reg [3:0] curr_state;
     reg [3:0] next_state;
@@ -234,18 +235,21 @@ module conv_1x1(
 //    Output，blocking
 always @ (posedge clk or negedge rst_n) begin
     if (!rst_n) begin
-        operation_nd <= 1'h0;
+        operation_nd <= 1'b0;
         om <= 0;
         conv_valid <= 0;
     end
     else begin
         case (curr_state)
             mult: begin
-                if(operation_rfd == 1'b1) operation_nd <= 1'b1;
-                if(rdy_mult == 1'b1) begin operation_nd <= 1'b0; end
+                if(operation_rfd) operation_nd <= 1'b1;
+                if(rdy_mult) begin operation_nd <= 1'b0; om <= result; conv_valid <= 1'b1; end
             end
             default:  ;
         endcase
     end
 end
 endmodule
+
+//TODO: Use local rst_n rather than global rst_n, because of repetitive calling
+//TODO: Add Convolution bias after accumulations

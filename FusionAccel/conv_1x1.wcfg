@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wave_config>
+   <wave_state>
+   </wave_state>
+   <db_ref_list>
+      <db_ref path="C:/Users/shish/source/repos/FusionAccel/FusionAccel/conv_1x1_tb_isim_beh.wdb" id="1" type="auto">
+         <top_modules>
+            <top_module name="conv_1x1_tb" />
+            <top_module name="glbl" />
+         </top_modules>
+      </db_ref>
+   </db_ref_list>
+   <WVObjectSize size="38" />
+   <wvobject fp_name="/conv_1x1_tb/om" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">om[15:0]</obj_property>
+      <obj_property name="ObjectShortName">om[15:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/conv_1x1_tb/conv_valid" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">conv_valid</obj_property>
+      <obj_property name="ObjectShortName">conv_valid</obj_property>
+   </wvobject>
+   <wvobject fp_name="/conv_1x1_tb/im" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">im[15:0]</obj_property>
+      <obj_property name="ObjectShortName">im[15:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/conv_1x1_tb/iw" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">iw[15:0]</obj_property>
+      <obj_property name="ObjectShortName">iw[15:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/conv_1x1_tb/clk" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">clk</obj_property>
+      <obj_property name="ObjectShortName">clk</obj_property>
+   </wvobject>
+   <wvobject fp_name="/conv_1x1_tb/rst_n" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">rst_n</obj_property>
+      <obj_property name="ObjectShortName">rst_n</obj_property>
+   </wvobject>
+   <wvobject fp_name="/conv_1x1_tb/conv_ready" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">conv_ready</obj_property>
+      <obj_property name="ObjectShortName">conv_ready</obj_property>
+   </wvobject>
+   <wvobject fp_name="/conv_1x1_tb/conv_1x1_i/clk" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">clk</obj_property>
+      <obj_property name="ObjectShortName">clk</obj_property>
+   </wvobject>
+   <wvobject fp_name="/conv_1x1_tb/conv_1x1_i/rst_n" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">rst_n</obj_property>
+      <obj_property name="ObjectShortName">rst_n</obj_property>
+   </wvobject>
+   <wvobject fp_name="/conv_1x1_tb/conv_1x1_i/im" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">im[15:0]</obj_property>
+      <obj_property name="ObjectShortName">im[15:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/conv_1x1_tb/conv_1x1_i/iw" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">iw[15:0]</obj_property>
+      <obj_property name="ObjectShortName">iw[15:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/conv_1x1_tb/conv_1x1_i/conv_ready" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">conv_ready</obj_property>
+      <obj_property name="ObjectShortName">conv_ready</obj_property>
+   </wvobject>
+   <wvobject fp_name="/conv_1x1_tb/conv_1x1_i/operation_rfd" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">operation_rfd</obj_property>
+      <obj_property name="ObjectShortName">operation_rfd</obj_property>
+   </wvobject>
+   <wvobject fp_name="/conv_1x1_tb/conv_1x1_i/rdy_mult" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">rdy_mult</obj_property>
+      <obj_property name="ObjectShortName">rdy_mult</obj_property>
+   </wvobject>
+   <wvobject fp_name="/conv_1x1_tb/conv_1x1_i/sclr_mult" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">sclr_mult</obj_property>
+      <obj_property name="ObjectShortName">sclr_mult</obj_property>
+   </wvobject>
+   <wvobject fp_name="/conv_1x1_tb/conv_1x1_i/ce_mult" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">ce_mult</obj_property>
+      <obj_property name="ObjectShortName">ce_mult</obj_property>
+   </wvobject>
+   <wvobject fp_name="/conv_1x1_tb/conv_1x1_i/underflow_0" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">underflow_0</obj_property>
+      <obj_property name="ObjectShortName">underflow_0</obj_property>
+   </wvobject>
+   <wvobject fp_name="/conv_1x1_tb/conv_1x1_i/overflow_0" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">overflow_0</obj_property>
+      <obj_property name="ObjectShortName">overflow_0</obj_property>
+   </wvobject>
+   <wvobject fp_name="/conv_1x1_tb/conv_1x1_i/invalid_op_0" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">invalid_op_0</obj_property>
+      <obj_property name="ObjectShortName">invalid_op_0</obj_property>
+   </wvobject>
+   <wvobject fp_name="/conv_1x1_tb/conv_1x1_i/om" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">om[15:0]</obj_property>
+      <obj_property name="ObjectShortName">om[15:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/conv_1x1_tb/conv_1x1_i/conv_valid" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">conv_valid</obj_property>
+      <obj_property name="ObjectShortName">conv_valid</obj_property>
+   </wvobject>
+   <wvobject fp_name="/conv_1x1_tb/conv_1x1_i/operation_nd" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">operation_nd</obj_property>
+      <obj_property name="ObjectShortName">operation_nd</obj_property>
+   </wvobject>
+   <wvobject fp_name="/conv_1x1_tb/conv_1x1_i/curr_state" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">curr_state[3:0]</obj_property>
+      <obj_property name="ObjectShortName">curr_state[3:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/conv_1x1_tb/conv_1x1_i/next_state" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">next_state[3:0]</obj_property>
+      <obj_property name="ObjectShortName">next_state[3:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/conv_1x1_tb/conv_1x1_i/idle" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">idle[2:0]</obj_property>
+      <obj_property name="ObjectShortName">idle[2:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/conv_1x1_tb/conv_1x1_i/mult" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">mult[2:0]</obj_property>
+      <obj_property name="ObjectShortName">mult[2:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/conv_1x1_tb/conv_1x1_i/mult0/operation_nd" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">operation_nd</obj_property>
+      <obj_property name="ObjectShortName">operation_nd</obj_property>
+   </wvobject>
+   <wvobject fp_name="/conv_1x1_tb/conv_1x1_i/mult0/clk" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">clk</obj_property>
+      <obj_property name="ObjectShortName">clk</obj_property>
+   </wvobject>
+   <wvobject fp_name="/conv_1x1_tb/conv_1x1_i/mult0/sclr" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">sclr</obj_property>
+      <obj_property name="ObjectShortName">sclr</obj_property>
+   </wvobject>
+   <wvobject fp_name="/conv_1x1_tb/conv_1x1_i/mult0/ce" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">ce</obj_property>
+      <obj_property name="ObjectShortName">ce</obj_property>
+   </wvobject>
+   <wvobject fp_name="/conv_1x1_tb/conv_1x1_i/mult0/operation_rfd" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">operation_rfd</obj_property>
+      <obj_property name="ObjectShortName">operation_rfd</obj_property>
+   </wvobject>
+   <wvobject fp_name="/conv_1x1_tb/conv_1x1_i/mult0/underflow" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">underflow</obj_property>
+      <obj_property name="ObjectShortName">underflow</obj_property>
+   </wvobject>
+   <wvobject fp_name="/conv_1x1_tb/conv_1x1_i/mult0/overflow" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">overflow</obj_property>
+      <obj_property name="ObjectShortName">overflow</obj_property>
+   </wvobject>
+   <wvobject fp_name="/conv_1x1_tb/conv_1x1_i/mult0/invalid_op" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">invalid_op</obj_property>
+      <obj_property name="ObjectShortName">invalid_op</obj_property>
+   </wvobject>
+   <wvobject fp_name="/conv_1x1_tb/conv_1x1_i/mult0/rdy" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">rdy</obj_property>
+      <obj_property name="ObjectShortName">rdy</obj_property>
+   </wvobject>
+   <wvobject fp_name="/conv_1x1_tb/conv_1x1_i/mult0/a" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">a[15:0]</obj_property>
+      <obj_property name="ObjectShortName">a[15:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/conv_1x1_tb/conv_1x1_i/mult0/b" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">b[15:0]</obj_property>
+      <obj_property name="ObjectShortName">b[15:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/conv_1x1_tb/conv_1x1_i/mult0/result" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">result[15:0]</obj_property>
+      <obj_property name="ObjectShortName">result[15:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+</wave_config>
