@@ -41,7 +41,7 @@ module top #(
 	output wire                              ddr2_cs_n
 );
 
-//------------------------Clock PLL and ODDR2------------------------------//
+//-----------------------------Clock PLL-----------------------------------//
 clockgen clockgen_ (
     // Clock in ports
     .CLK_IN1_P(sys_clkp),   // IN
@@ -53,10 +53,12 @@ clockgen clockgen_ (
     .RESET(1'b0),           // IN
     .LOCKED(LOCKED)         // OUT 
 );      
- 
-//-------------------------LED Stage Monitor-------------------------------//
 
 //--------------v1, Minimum Hardware Cores for SqueezeNet------------------//
+
+//------------------------------------------------
+// Control Signal Bus for all cores
+//------------------------------------------------
 csb csb_(
     .clk(clk),
     .rst_n(rst_n),
@@ -67,9 +69,11 @@ csb csb_(
     .conv_ready(conv_ready),
     .pool_ready(pool_ready),
     .dma_ready(dma_ready),
-    .irq(irq)
-); //Control Bus for all cores
+    .irq(irq));
 
+//------------------------------------------------
+// Simple 1x1 Convolution Core
+//------------------------------------------------
 conv_1x1 conv_1x1_(
     .clk(clk),
     .rst_n(rst_n),
@@ -77,9 +81,11 @@ conv_1x1 conv_1x1_(
     .iw(),
     .om(),
     .conv_ready(conv_ready),
-    .conv_valid(conv_valid_1x1)
-); //Convolutional Core
+    .conv_valid(conv_valid_1x1));
 
+//------------------------------------------------
+// Pipeline 3x3 Convolution Core
+//------------------------------------------------
 conv_3x3 conv_3x3_(
     .clk(clk),
     .rst_n(rst_n),
@@ -87,26 +93,29 @@ conv_3x3 conv_3x3_(
     .iw(iw),
     .om(om),
     .conv_ready(conv_ready),
-    .conv_valid(conv_valid_3x3)
-); //Convolutional Core
+    .conv_valid(conv_valid_3x3));
 
+//------------------------------------------------
+// Bitonic 3x3 Max Pooling Core
+//------------------------------------------------
 pool_3x3 pool_3x3_(
     .clk(clk),
     .rst_n(rst_n),
     .im(pool_im),
     .om(pool_om),
     .pool_ready(pool_ready_3x3),
-    .pool_valid(pool_valid_3x3)
-); //Max Pooling Core
+    .pool_valid(pool_valid_3x3));
 
+//------------------------------------------------
+// Pipeline 13x13 Average Pooling Core
+//------------------------------------------------
 pool_13x13 pool_13x13_(
     .clk(clk),
     .rst_n(rst_n),
     .im(),
     .om(),
     .pool_ready(pool_ready_13x13),
-    .pool_valid(pool_valid_13x13)
-); //Average Pooling Core
+    .pool_valid(pool_valid_13x13));
 
 /*
 dma dma_(
@@ -119,7 +128,7 @@ dma dma_(
 ); //Direct Memory Access Core*/
 
 //------------------------------------------------
-// Send to PC using Front Panel(TM)
+// Memory Control Block
 //------------------------------------------------
 localparam BLOCK_SIZE      = 128;   // 512 bytes / 4 byte per word;
 localparam FIFO_SIZE       = 1023;  // note that Xilinx does not allow use of the full 1024 words
@@ -189,6 +198,7 @@ reg         pipe_out_ready;
 wire        pi0_ep_write, po0_ep_read;
 wire [31:0] pi0_ep_dataout, po0_ep_datain;
 
+//-------------------------LED Stage Monitor-------------------------------//
 assign led = ~{pipe_in_full, pipe_in_empty, pipe_out_full, pipe_out_empty, c3_p0_wr_full,ep00wire[1],c3_calib_done,c3_pll_lock};
 
 assign c3_sys_clk = 1'b0;
@@ -350,6 +360,10 @@ always @(posedge okClk) begin
 	end
 	
 end
+
+//------------------------------------------------
+// PC Communication using Front Panel(TM)
+//------------------------------------------------
 
 // Instantiate the okHost and connect endpoints.
 wire [65*2-1:0]  okEHx;
