@@ -241,7 +241,7 @@ memc3_inst (
 	.c3_p1_rd_overflow      (c3_p1_rd_overflow),
 	.c3_p1_rd_error         (c3_p1_rd_error));
 
-ddr2_test ddr2_tb (
+dma dma_ (
 	.clk(c3_clk0),
 	.reset(ep00wire[2] | c3_rst0), 
 	.reads_en(ep00wire[0]),
