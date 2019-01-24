@@ -22,7 +22,7 @@ def parse_args():
     return args
 '''
 
-#import caffe
+import caffe
 import numpy as np
 import os
 import ok
@@ -37,7 +37,7 @@ class host:
 		self.readsize = 8 * 1024 * 1024
 		self.numtests = 10
 		self.num_of_rams = 1
-		self.buf = bytearray(os.urandom(self.memsize))
+		self.buf = bytearray(self.memsize)
 		self.rbuf = bytearray(self.readsize)
 		return
 
@@ -45,13 +45,13 @@ class host:
 		# Open the first device we find.
 		self.xem = ok.okCFrontPanel()
 		if (self.xem.NoError != self.xem.OpenBySerial("")):
-			print ("A device could not be opened.  Is one connected?")
+			print("A device could not be opened.  Is one connected?")
 			return(False)
 
 		# Get some general information about the device.
 		self.devInfo = ok.okTDeviceInfo()
 		if (self.xem.NoError != self.xem.GetDeviceInfo(self.devInfo)):
-			print ("Unable to retrieve device information.")
+			print("Unable to retrieve device information.")
 			return(False)
 		print("         Product: " + self.devInfo.productName)
 		print("Firmware version: %d.%d" % (self.devInfo.deviceMajorVersion, self.devInfo.deviceMinorVersion))
@@ -70,7 +70,7 @@ class host:
 			print ("FrontPanel support is not available.")
 			return(False)
 		
-		print ("FrontPanel support is available.")
+		print("FrontPanel support is available.")
 		return(True)
 	
 	def reset_fifo(self):
@@ -90,17 +90,17 @@ class host:
 
 
 	def testSDRAM(self, mem):
-		self.reset_fifo();
+		self.reset_fifo()
 		self.xem.SetWireInValue(0x00, 0x0001)
 		self.xem.UpdateWireIns()
 		print("Reading from memory(%d)..." % mem)
 		passed = True
-		for i in range(0,self.memsize,self.readsize):
+		for i in range(0, self.memsize, self.readsize):
 			self.xem.ReadFromBlockPipeOut(0xa0 + mem, self.blocksize, self.rbuf)
 			for j in range(0, self.blocksize):
 				#print("%d %d %d" %(j, self.blocksize, mem))
 				if self.buf[i+j] != self.rbuf[j]:
-					for k in range(0,8):
+					for k in range(0, 8):
 						print("[0x%X = 0x%02X / 0x%02X // 0x%02X\n" %(
 					       i+j+k,
 						   self.buf[i+j+k],
@@ -108,29 +108,57 @@ class host:
 						   self.buf[i+j+k] ^ self.rbuf[j+k]))
 					passed = False
 		return passed
-    
+     
 def extract_caffe_model(model, weights, output_path):
-    pass
+	"""extract caffe model's parameters to numpy array, and write them to files
+	Args:
+	model: path of '.prototxt'
+	weights: path of '.caffemodel'
+	output_path: output path of numpy params 
+	Returns:
+	None
+	"""
+	net = caffe.Net(model, caffe.TEST)
+	net.copy_from(weights)
+
+	if not os.path.exists(output_path):
+		os.makedirs(output_path)
+
+	for item in net.params.items():
+		name, layer = item
+		print('convert layer: ' + name)
+
+	num = 0
+	for p in net.params[name]:
+		#f = open(output_path + '/' + str(name).replace('/', '_') + '_' + str(num) + '.txt', "w")
+		#np.save(output_path + '/' + str(name) + '_' + str(num), p.data)
+		#f.write(str(p.data.tolist()))
+        #f.close()
+		print("layer %d, size = %d" % (num, p.data.size))
+		num += 1
+
 
 def main():
     #args = parse_args()
-    #model = 'C:/Users/shish/source/repos/SqueezeNet/SqueezeNet_v1.1/deploy.prototxt'
-    #weights = 'C:/Users/shish/source/repos/SqueezeNet/SqueezeNet_v1.1/squeezenet_v1.1.caffemodel'
-    #output_path = 'C:/Users/shish/source/repos/FusionAccel/demo/tmp'
-    #extract_caffe_model(model, weights, output_path)
-	h = host()
-	if (False == h.InitializeDevice()):
+	model = 'C:/Users/shish/source/repos/SqueezeNet/SqueezeNet_v1.1/deploy.prototxt'
+	weights = 'C:/Users/shish/source/repos/SqueezeNet/SqueezeNet_v1.1/squeezenet_v1.1.caffemodel'
+	output_path = 'C:/Users/shish/source/repos/FusionAccel/demo/tmp'
+	extract_caffe_model(model, weights, output_path)
+	dev = host()
+	if (False == dev.InitializeDevice()):
 		exit
-	pass_num = 0
-	fail_num = 0
-	for i in range(0, h.numtests):
-		for j in range(0, h.num_of_rams):
-			h.writeSDRAM(j)
-			if True == h.testSDRAM(j):
-				pass_num += 1
-			else:
-				fail_num += 1
-			print("Passed: %d  Failed: %d\n" % (pass_num, fail_num))
+	else:
+		pass_num = 0
+		fail_num = 0
+		for i in range(0, dev.numtests):
+			for j in range(0, dev.num_of_rams):
+				dev.buf = bytearray(os.urandom(dev.memsize))
+				dev.writeSDRAM(j)
+				if True == dev.testSDRAM(j):
+					pass_num += 1
+				else:
+					fail_num += 1
+				print("Passed: %d  Failed: %d\n" % (pass_num, fail_num))
 
 if __name__ == '__main__':
     main()
