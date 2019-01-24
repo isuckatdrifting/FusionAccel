@@ -2,18 +2,34 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
 VisualStudioVersion = 15.0.28307.168
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "RAMTester", ".\Cxx\RAMTester.vcxproj", "{1D6C645C-6E50-4022-A494-E246B8197E71}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "RAMTester", "Cxx\RAMTester.vcxproj", "{1D6C645C-6E50-4022-A494-E246B8197E71}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Host", "Cxx_Host\Host.vcxproj", "{BD5B5F26-64FF-42DE-A785-173DBFA7DCA3}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Win32 = Debug|Win32
+		Debug|x64 = Debug|x64
 		Release|Win32 = Release|Win32
 		Release|x64 = Release|x64
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{1D6C645C-6E50-4022-A494-E246B8197E71}.Debug|Win32.ActiveCfg = Release|Win32
+		{1D6C645C-6E50-4022-A494-E246B8197E71}.Debug|Win32.Build.0 = Release|Win32
+		{1D6C645C-6E50-4022-A494-E246B8197E71}.Debug|x64.ActiveCfg = Release|x64
+		{1D6C645C-6E50-4022-A494-E246B8197E71}.Debug|x64.Build.0 = Release|x64
 		{1D6C645C-6E50-4022-A494-E246B8197E71}.Release|Win32.ActiveCfg = Release|Win32
 		{1D6C645C-6E50-4022-A494-E246B8197E71}.Release|Win32.Build.0 = Release|Win32
 		{1D6C645C-6E50-4022-A494-E246B8197E71}.Release|x64.ActiveCfg = Release|x64
 		{1D6C645C-6E50-4022-A494-E246B8197E71}.Release|x64.Build.0 = Release|x64
+		{BD5B5F26-64FF-42DE-A785-173DBFA7DCA3}.Debug|Win32.ActiveCfg = Release|Win32
+		{BD5B5F26-64FF-42DE-A785-173DBFA7DCA3}.Debug|Win32.Build.0 = Release|Win32
+		{BD5B5F26-64FF-42DE-A785-173DBFA7DCA3}.Debug|x64.ActiveCfg = Release|x64
+		{BD5B5F26-64FF-42DE-A785-173DBFA7DCA3}.Debug|x64.Build.0 = Release|x64
+		{BD5B5F26-64FF-42DE-A785-173DBFA7DCA3}.Release|Win32.ActiveCfg = Release|Win32
+		{BD5B5F26-64FF-42DE-A785-173DBFA7DCA3}.Release|Win32.Build.0 = Release|Win32
+		{BD5B5F26-64FF-42DE-A785-173DBFA7DCA3}.Release|x64.ActiveCfg = Release|x64
+		{BD5B5F26-64FF-42DE-A785-173DBFA7DCA3}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
