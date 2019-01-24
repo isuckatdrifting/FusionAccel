@@ -1,34 +1,33 @@
-
 module memc3 #(
     parameter C3_P0_MASK_SIZE           = 4,
-   parameter C3_P0_DATA_PORT_SIZE      = 32,
-   parameter C3_P1_MASK_SIZE           = 4,
-   parameter C3_P1_DATA_PORT_SIZE      = 32,
-   parameter DEBUG_EN                = 0,       
+   	parameter C3_P0_DATA_PORT_SIZE      = 32,
+   	parameter C3_P1_MASK_SIZE           = 4,
+   	parameter C3_P1_DATA_PORT_SIZE      = 32,
+   	parameter DEBUG_EN                = 0,       
                                        // # = 1, Enable debug signals/controls,
                                        //   = 0, Disable debug signals/controls.
-   parameter C3_MEMCLK_PERIOD        = 3200,       
+   	parameter C3_MEMCLK_PERIOD        = 3200,       
                                        // Memory data transfer clock period
-   parameter C3_CALIB_SOFT_IP        = "TRUE",       
+   	parameter C3_CALIB_SOFT_IP        = "TRUE",       
                                        // # = TRUE, Enables the soft calibration logic,
                                        // # = FALSE, Disables the soft calibration logic.
-   parameter C3_SIMULATION           = "FALSE",       
+   	parameter C3_SIMULATION           = "FALSE",       
                                        // # = TRUE, Simulating the design. Useful to reduce the simulation time,
                                        // # = FALSE, Implementing the design.
-   parameter C3_HW_TESTING             = "FALSE",  
-   parameter C3_RST_ACT_LOW          = 0,       
+   	parameter C3_HW_TESTING             = "FALSE",  
+   	parameter C3_RST_ACT_LOW          = 0,       
                                        // # = 1 for active low reset,
                                        // # = 0 for active high reset.
-   parameter C3_INPUT_CLK_TYPE       = "DIFFERENTIAL",       
+   	parameter C3_INPUT_CLK_TYPE       = "DIFFERENTIAL",       
                                        // input clock type DIFFERENTIAL or SINGLE_ENDED
-   parameter C3_MEM_ADDR_ORDER       = "ROW_BANK_COLUMN",       
+   	parameter C3_MEM_ADDR_ORDER       = "ROW_BANK_COLUMN",       
                                        // The order in which user address is provided to the memory controller,
                                        // ROW_BANK_COLUMN or BANK_ROW_COLUMN
-   parameter C3_NUM_DQ_PINS          = 16,       
+   	parameter C3_NUM_DQ_PINS          = 16,       
                                        // External memory data width
-   parameter C3_MEM_ADDR_WIDTH       = 13,       
+   	parameter C3_MEM_ADDR_WIDTH       = 13,       
                                        // External memory address width
-   parameter C3_MEM_BANKADDR_WIDTH   = 3        
+   	parameter C3_MEM_BANKADDR_WIDTH   = 3        
                                        // External memory bank address width
 )
 (
@@ -36,77 +35,79 @@ module memc3 #(
 	input  wire         sys_clkn,
     input  wire         c3_sys_rst_n,
     inout  [C3_NUM_DQ_PINS-1:0]                      ddr2_dq,
-   output [C3_MEM_ADDR_WIDTH-1:0]                   ddr2_a,
-   output [C3_MEM_BANKADDR_WIDTH-1:0]               ddr2_ba,
-   output                                           ddr2_ras_n,
-   output                                           ddr2_cas_n,
-   output                                           ddr2_we_n,
-   output                                           ddr2_odt,
-   output                                           ddr2_cke,
-   output                                           ddr2_dm,
-   inout                                            ddr2_udqs,
-   inout                                            ddr2_udqs_n,
-   inout                                            ddr2_rzq,
-   inout                                            ddr2_zio,
-   output                                           ddr2_udm,
-   input                                            c3_sys_clk_p,
-   input                                            c3_sys_clk_n,
-   input                                            c3_sys_rst_i,
-   output                                           c3_calib_done,
-   output                                           c3_clk0,
-   output                                           c3_rst0,
-   inout                                            ddr2_dqs,
-   inout                                            ddr2_dqs_n,
-   output                                           ddr2_ck,
-   output                                           ddr2_ck_n,
-      input		c3_p0_cmd_clk,
-      input		c3_p0_cmd_en,
-      input [2:0]	c3_p0_cmd_instr,
-      input [5:0]	c3_p0_cmd_bl,
-      input [29:0]	c3_p0_cmd_byte_addr,
-      output		c3_p0_cmd_empty,
-      output		c3_p0_cmd_full,
-      input		c3_p0_wr_clk,
-      input		c3_p0_wr_en,
-      input [C3_P0_MASK_SIZE - 1:0]	c3_p0_wr_mask,
-      input [C3_P0_DATA_PORT_SIZE - 1:0]	c3_p0_wr_data,
-      output		c3_p0_wr_full,
-      output		c3_p0_wr_empty,
-      output [6:0]	c3_p0_wr_count,
-      output		c3_p0_wr_underrun,
-      output		c3_p0_wr_error,
-      input		c3_p0_rd_clk,
-      input		c3_p0_rd_en,
-      output [C3_P0_DATA_PORT_SIZE - 1:0]	c3_p0_rd_data,
-      output		c3_p0_rd_full,
-      output		c3_p0_rd_empty,
-      output [6:0]	c3_p0_rd_count,
-      output		c3_p0_rd_overflow,
-      output		c3_p0_rd_error/*,
-      input		c3_p1_cmd_clk,
-      input		c3_p1_cmd_en,
-      input [2:0]	c3_p1_cmd_instr,
-      input [5:0]	c3_p1_cmd_bl,
-      input [29:0]	c3_p1_cmd_byte_addr,
-      output		c3_p1_cmd_empty,
-      output		c3_p1_cmd_full,
-      input		c3_p1_wr_clk,
-      input		c3_p1_wr_en,
-      input [C3_P1_MASK_SIZE - 1:0]	c3_p1_wr_mask,
-      input [C3_P1_DATA_PORT_SIZE - 1:0]	c3_p1_wr_data,
-      output		c3_p1_wr_full,
-      output		c3_p1_wr_empty,
-      output [6:0]	c3_p1_wr_count,
-      output		c3_p1_wr_underrun,
-      output		c3_p1_wr_error,
-      input		c3_p1_rd_clk,
-      input		c3_p1_rd_en,
-      output [C3_P1_DATA_PORT_SIZE - 1:0]	c3_p1_rd_data,
-      output		c3_p1_rd_full,
-      output		c3_p1_rd_empty,
-      output [6:0]	c3_p1_rd_count,
-      output		c3_p1_rd_overflow,
-      output		c3_p1_rd_error*/
+   	output [C3_MEM_ADDR_WIDTH-1:0]                   ddr2_a,
+   	output [C3_MEM_BANKADDR_WIDTH-1:0]               ddr2_ba,
+   	output                                           ddr2_ras_n,
+   	output                                           ddr2_cas_n,
+   	output                                           ddr2_we_n,
+   	output                                           ddr2_odt,
+   	output                                           ddr2_cke,
+   	output                                           ddr2_dm,
+   	inout                                            ddr2_udqs,
+   	inout                                            ddr2_udqs_n,
+   	inout                                            ddr2_rzq,
+   	inout                                            ddr2_zio,
+   	output                                           ddr2_udm,
+   	input                                            c3_sys_clk_p,
+   	input                                            c3_sys_clk_n,
+   	input                                            c3_sys_rst_i,
+   	output                                           c3_calib_done,
+   	output                                           c3_clk0,
+   	output                                           c3_rst0,
+   	inout                                            ddr2_dqs,
+   	inout                                            ddr2_dqs_n,
+   	output                                           ddr2_ck,
+   	output                                           ddr2_ck_n,
+
+	// Port 0
+    input		c3_p0_cmd_en,
+    input [2:0]	c3_p0_cmd_instr,
+    input [5:0]	c3_p0_cmd_bl,
+    input [29:0]	c3_p0_cmd_byte_addr,
+    output		c3_p0_cmd_empty,
+    output		c3_p0_cmd_full,
+
+    input		c3_p0_wr_en,
+    input [C3_P0_MASK_SIZE - 1:0]	c3_p0_wr_mask,
+    input [C3_P0_DATA_PORT_SIZE - 1:0]	c3_p0_wr_data,
+    output		c3_p0_wr_full,
+    output		c3_p0_wr_empty,
+    output [6:0]	c3_p0_wr_count,
+    output		c3_p0_wr_underrun,
+    output		c3_p0_wr_error,
+
+    input		c3_p0_rd_en,
+    output [C3_P0_DATA_PORT_SIZE - 1:0]	c3_p0_rd_data,
+    output		c3_p0_rd_full,
+    output		c3_p0_rd_empty,
+    output [6:0]	c3_p0_rd_count,
+    output		c3_p0_rd_overflow,
+    output		c3_p0_rd_error,
+
+	// Port 1
+    input		c3_p1_cmd_en,
+    input [2:0]	c3_p1_cmd_instr,
+    input [5:0]	c3_p1_cmd_bl,
+    input [29:0]	c3_p1_cmd_byte_addr,
+    output		c3_p1_cmd_empty,
+    output		c3_p1_cmd_full,
+
+    input		c3_p1_wr_en,
+    input [C3_P1_MASK_SIZE - 1:0]	c3_p1_wr_mask,
+    input [C3_P1_DATA_PORT_SIZE - 1:0]	c3_p1_wr_data,
+    output		c3_p1_wr_full,
+    output		c3_p1_wr_empty,
+    output [6:0]	c3_p1_wr_count,
+    output		c3_p1_wr_underrun,
+    output		c3_p1_wr_error,
+
+    input		c3_p1_rd_en,
+    output [C3_P1_DATA_PORT_SIZE - 1:0]	c3_p1_rd_data,
+    output		c3_p1_rd_full,
+    output		c3_p1_rd_empty,
+    output [6:0]	c3_p1_rd_count,
+    output		c3_p1_rd_overflow,
+    output		c3_p1_rd_error
 );
 
 wire c3_pll_lock;
@@ -129,83 +130,82 @@ wire  [2:0] c3_vio_addr_mode_value;
 wire  [31:0] c3_cmp_data;
 
 localparam C3_INCLK_PERIOD         = 10000; // 10000ps -> 10ns -> 100Mhz
-	localparam C3_CLKOUT0_DIVIDE       = 1;     // 625 MHz system clock      
-	localparam C3_CLKOUT1_DIVIDE       = 1;     // 625 MHz system clock (180 deg)      
-	localparam C3_CLKOUT2_DIVIDE       = 4;     // 156.256 MHz test bench clock      
-	localparam C3_CLKOUT3_DIVIDE       = 8;     // 78.125 MHz calibration clock      
-	localparam C3_CLKFBOUT_MULT        = 25;    // 25MHz x 25 = 625 MHz system clock       
-	localparam C3_DIVCLK_DIVIDE        = 4;     // 100MHz/4 = 25 Mhz       
-	localparam C3_ARB_NUM_TIME_SLOTS   = 12;       
-	localparam C3_ARB_TIME_SLOT_0      = 3'o0;       
-	localparam C3_ARB_TIME_SLOT_1      = 3'o0;       
-	localparam C3_ARB_TIME_SLOT_2      = 3'o0;       
-	localparam C3_ARB_TIME_SLOT_3      = 3'o0;       
-	localparam C3_ARB_TIME_SLOT_4      = 3'o0;       
-	localparam C3_ARB_TIME_SLOT_5      = 3'o0;       
-	localparam C3_ARB_TIME_SLOT_6      = 3'o0;       
-	localparam C3_ARB_TIME_SLOT_7      = 3'o0;       
-	localparam C3_ARB_TIME_SLOT_8      = 3'o0;       
-	localparam C3_ARB_TIME_SLOT_9      = 3'o0;       
-	localparam C3_ARB_TIME_SLOT_10     = 3'o0;       
-	localparam C3_ARB_TIME_SLOT_11     = 3'o0;       
-	localparam C3_MEM_TRAS             = 40000;       
-	localparam C3_MEM_TRCD             = 15000;       
-	localparam C3_MEM_TREFI            = 7800000;       
-	localparam C3_MEM_TRFC             = 127500;       
-	localparam C3_MEM_TRP              = 15000;       
-	localparam C3_MEM_TWR              = 15000;       
-	localparam C3_MEM_TRTP             = 7500;       
-	localparam C3_MEM_TWTR             = 7500;       
-	localparam C3_MEM_TYPE             = "DDR2";       
-	localparam C3_MEM_DENSITY          = "1Gb";       
-	localparam C3_MEM_BURST_LEN        = 4;       
-	localparam C3_MEM_CAS_LATENCY      = 5;       
-	localparam C3_MEM_NUM_COL_BITS     = 10;       
-	localparam C3_MEM_DDR1_2_ODS       = "FULL";       
-	localparam C3_MEM_DDR2_RTT         = "50OHMS";       
-	localparam C3_MEM_DDR2_DIFF_DQS_EN  = "YES";       
-	localparam C3_MEM_DDR2_3_PA_SR     = "FULL";       
-	localparam C3_MEM_DDR2_3_HIGH_TEMP_SR  = "NORMAL";       
-	localparam C3_MEM_DDR3_CAS_LATENCY  = 6;       
-	localparam C3_MEM_DDR3_ODS         = "DIV6";       
-	localparam C3_MEM_DDR3_RTT         = "DIV2";       
-	localparam C3_MEM_DDR3_CAS_WR_LATENCY  = 5;       
-	localparam C3_MEM_DDR3_AUTO_SR     = "ENABLED";       
-	localparam C3_MEM_DDR3_DYN_WRT_ODT  = "OFF";       
-	localparam C3_MEM_MOBILE_PA_SR     = "FULL";       
-	localparam C3_MEM_MDDR_ODS         = "FULL";       
-	localparam C3_MC_CALIB_BYPASS      = "NO";       
-	localparam C3_MC_CALIBRATION_MODE  = "CALIBRATION";       
-	localparam C3_MC_CALIBRATION_DELAY  = "HALF";       
-	localparam C3_SKIP_IN_TERM_CAL     = 0;       
-	localparam C3_SKIP_DYNAMIC_CAL     = 0;       
-	localparam C3_LDQSP_TAP_DELAY_VAL  = 0;       
-	localparam C3_LDQSN_TAP_DELAY_VAL  = 0;       
-	localparam C3_UDQSP_TAP_DELAY_VAL  = 0;       
-	localparam C3_UDQSN_TAP_DELAY_VAL  = 0;       
-	localparam C3_DQ0_TAP_DELAY_VAL    = 0;       
-	localparam C3_DQ1_TAP_DELAY_VAL    = 0;       
-	localparam C3_DQ2_TAP_DELAY_VAL    = 0;       
-	localparam C3_DQ3_TAP_DELAY_VAL    = 0;       
-	localparam C3_DQ4_TAP_DELAY_VAL    = 0;       
-	localparam C3_DQ5_TAP_DELAY_VAL    = 0;       
-	localparam C3_DQ6_TAP_DELAY_VAL    = 0;       
-	localparam C3_DQ7_TAP_DELAY_VAL    = 0;       
-	localparam C3_DQ8_TAP_DELAY_VAL    = 0;       
-	localparam C3_DQ9_TAP_DELAY_VAL    = 0;       
-	localparam C3_DQ10_TAP_DELAY_VAL   = 0;       
-	localparam C3_DQ11_TAP_DELAY_VAL   = 0;       
-	localparam C3_DQ12_TAP_DELAY_VAL   = 0;       
-	localparam C3_DQ13_TAP_DELAY_VAL   = 0;       
-	localparam C3_DQ14_TAP_DELAY_VAL   = 0;       
-	localparam C3_DQ15_TAP_DELAY_VAL   = 0;       
-	localparam C3_p0_BEGIN_ADDRESS                   = (C3_HW_TESTING == "TRUE") ? 32'h01000000:32'h00000100;
-	localparam C3_p0_DATA_MODE                       = 4'b0010;
-	localparam C3_p0_END_ADDRESS                     = (C3_HW_TESTING == "TRUE") ? 32'h02ffffff:32'h000002ff;
-	localparam C3_p0_PRBS_EADDR_MASK_POS             = (C3_HW_TESTING == "TRUE") ? 32'hfc000000:32'hfffffc00;
-	localparam C3_p0_PRBS_SADDR_MASK_POS             = (C3_HW_TESTING == "TRUE") ? 32'h01000000:32'h00000100;
-
-    
+localparam C3_CLKOUT0_DIVIDE       = 1;     // 625 MHz system clock      
+localparam C3_CLKOUT1_DIVIDE       = 1;     // 625 MHz system clock (180 deg)      
+localparam C3_CLKOUT2_DIVIDE       = 4;     // 156.256 MHz test bench clock      
+localparam C3_CLKOUT3_DIVIDE       = 8;     // 78.125 MHz calibration clock      
+localparam C3_CLKFBOUT_MULT        = 25;    // 25MHz x 25 = 625 MHz system clock       
+localparam C3_DIVCLK_DIVIDE        = 4;     // 100MHz/4 = 25 Mhz       
+localparam C3_ARB_NUM_TIME_SLOTS   = 12;       
+localparam C3_ARB_TIME_SLOT_0      = 3'o0;       
+localparam C3_ARB_TIME_SLOT_1      = 3'o0;       
+localparam C3_ARB_TIME_SLOT_2      = 3'o0;       
+localparam C3_ARB_TIME_SLOT_3      = 3'o0;       
+localparam C3_ARB_TIME_SLOT_4      = 3'o0;       
+localparam C3_ARB_TIME_SLOT_5      = 3'o0;       
+localparam C3_ARB_TIME_SLOT_6      = 3'o0;       
+localparam C3_ARB_TIME_SLOT_7      = 3'o0;       
+localparam C3_ARB_TIME_SLOT_8      = 3'o0;       
+localparam C3_ARB_TIME_SLOT_9      = 3'o0;       
+localparam C3_ARB_TIME_SLOT_10     = 3'o0;       
+localparam C3_ARB_TIME_SLOT_11     = 3'o0;       
+localparam C3_MEM_TRAS             = 40000;       
+localparam C3_MEM_TRCD             = 15000;       
+localparam C3_MEM_TREFI            = 7800000;       
+localparam C3_MEM_TRFC             = 127500;       
+localparam C3_MEM_TRP              = 15000;       
+localparam C3_MEM_TWR              = 15000;       
+localparam C3_MEM_TRTP             = 7500;       
+localparam C3_MEM_TWTR             = 7500;       
+localparam C3_MEM_TYPE             = "DDR2";       
+localparam C3_MEM_DENSITY          = "1Gb";       
+localparam C3_MEM_BURST_LEN        = 4;       
+localparam C3_MEM_CAS_LATENCY      = 5;       
+localparam C3_MEM_NUM_COL_BITS     = 10;       
+localparam C3_MEM_DDR1_2_ODS       = "FULL";       
+localparam C3_MEM_DDR2_RTT         = "50OHMS";       
+localparam C3_MEM_DDR2_DIFF_DQS_EN  = "YES";       
+localparam C3_MEM_DDR2_3_PA_SR     = "FULL";       
+localparam C3_MEM_DDR2_3_HIGH_TEMP_SR  = "NORMAL";       
+localparam C3_MEM_DDR3_CAS_LATENCY  = 6;       
+localparam C3_MEM_DDR3_ODS         = "DIV6";       
+localparam C3_MEM_DDR3_RTT         = "DIV2";       
+localparam C3_MEM_DDR3_CAS_WR_LATENCY  = 5;       
+localparam C3_MEM_DDR3_AUTO_SR     = "ENABLED";       
+localparam C3_MEM_DDR3_DYN_WRT_ODT  = "OFF";       
+localparam C3_MEM_MOBILE_PA_SR     = "FULL";       
+localparam C3_MEM_MDDR_ODS         = "FULL";       
+localparam C3_MC_CALIB_BYPASS      = "NO";       
+localparam C3_MC_CALIBRATION_MODE  = "CALIBRATION";       
+localparam C3_MC_CALIBRATION_DELAY  = "HALF";       
+localparam C3_SKIP_IN_TERM_CAL     = 0;       
+localparam C3_SKIP_DYNAMIC_CAL     = 0;       
+localparam C3_LDQSP_TAP_DELAY_VAL  = 0;       
+localparam C3_LDQSN_TAP_DELAY_VAL  = 0;       
+localparam C3_UDQSP_TAP_DELAY_VAL  = 0;       
+localparam C3_UDQSN_TAP_DELAY_VAL  = 0;       
+localparam C3_DQ0_TAP_DELAY_VAL    = 0;       
+localparam C3_DQ1_TAP_DELAY_VAL    = 0;       
+localparam C3_DQ2_TAP_DELAY_VAL    = 0;       
+localparam C3_DQ3_TAP_DELAY_VAL    = 0;       
+localparam C3_DQ4_TAP_DELAY_VAL    = 0;       
+localparam C3_DQ5_TAP_DELAY_VAL    = 0;       
+localparam C3_DQ6_TAP_DELAY_VAL    = 0;       
+localparam C3_DQ7_TAP_DELAY_VAL    = 0;       
+localparam C3_DQ8_TAP_DELAY_VAL    = 0;       
+localparam C3_DQ9_TAP_DELAY_VAL    = 0;       
+localparam C3_DQ10_TAP_DELAY_VAL   = 0;       
+localparam C3_DQ11_TAP_DELAY_VAL   = 0;       
+localparam C3_DQ12_TAP_DELAY_VAL   = 0;       
+localparam C3_DQ13_TAP_DELAY_VAL   = 0;       
+localparam C3_DQ14_TAP_DELAY_VAL   = 0;       
+localparam C3_DQ15_TAP_DELAY_VAL   = 0;       
+localparam C3_p0_BEGIN_ADDRESS                   = (C3_HW_TESTING == "TRUE") ? 32'h01000000:32'h00000100;
+localparam C3_p0_DATA_MODE                       = 4'b0010;
+localparam C3_p0_END_ADDRESS                     = (C3_HW_TESTING == "TRUE") ? 32'h02ffffff:32'h000002ff;
+localparam C3_p0_PRBS_EADDR_MASK_POS             = (C3_HW_TESTING == "TRUE") ? 32'hfc000000:32'hfffffc00;
+localparam C3_p0_PRBS_SADDR_MASK_POS             = (C3_HW_TESTING == "TRUE") ? 32'h01000000:32'h00000100;
+   
 memc3_infrastructure #
 	(
 		.C_MEMCLK_PERIOD                  (C3_INCLK_PERIOD),
@@ -236,7 +236,7 @@ memc3_infrastructure_inst
 	);
 
 // wrapper instantiation
- memc3_wrapper #
+memc3_wrapper #
 	(
 		.C_MEMCLK_PERIOD                  (C3_MEMCLK_PERIOD),
 		.C_CALIB_SOFT_IP                  (C3_CALIB_SOFT_IP),
@@ -363,7 +363,32 @@ memc3_wrapper_inst
 		.p0_rd_overflow                      (c3_p0_rd_overflow),
 		.p0_rd_error                         (c3_p0_rd_error),
 		.selfrefresh_enter                   (selfrefresh_enter),
-		.selfrefresh_mode                    (selfrefresh_mode)
+		.selfrefresh_mode                    (selfrefresh_mode),
+		
+		.p1_cmd_clk                          (c3_clk0),
+		.p1_cmd_en                           (c3_p1_cmd_en),
+		.p1_cmd_instr                        (c3_p1_cmd_instr),
+		.p1_cmd_bl                           (c3_p1_cmd_bl),
+		.p1_cmd_byte_addr                    (c3_p1_cmd_byte_addr),
+		.p1_cmd_empty                        (c3_p1_cmd_empty),
+		.p1_cmd_full                         (c3_p1_cmd_full),
+		.p1_wr_clk                           (c3_clk0),
+		.p1_wr_en                            (c3_p1_wr_en),
+		.p1_wr_mask                          (c3_p1_wr_mask),
+		.p1_wr_data                          (c3_p1_wr_data),
+		.p1_wr_full                          (c3_p1_wr_full),
+		.p1_wr_empty                         (c3_p1_wr_empty),
+		.p1_wr_count                         (c3_p1_wr_count),
+		.p1_wr_underrun                      (c3_p1_wr_underrun),
+		.p1_wr_error                         (c3_p1_wr_error),
+		.p1_rd_clk                           (c3_clk0),
+		.p1_rd_en                            (c3_p1_rd_en),
+		.p1_rd_data                          (c3_p1_rd_data),
+		.p1_rd_full                          (c3_p1_rd_full),
+		.p1_rd_empty                         (c3_p1_rd_empty),
+		.p1_rd_count                         (c3_p1_rd_count),
+		.p1_rd_overflow                      (c3_p1_rd_overflow),
+		.p1_rd_error                         (c3_p1_rd_error)
 	);
 	
-	endmodule
+endmodule

@@ -109,14 +109,19 @@ class host:
 					passed = False
 		return passed
 
+	def loadModel(self):
+		self.reset_fifo()
+	
+	def readOutput(self):
+		self.reset_fifo()
+
 def extract_caffe_model(model, weights, output_path):
 	"""extract caffe model's parameters to numpy array, and write them to files
 	Args:
 	model: path of '.prototxt'
 	weights: path of '.caffemodel'
 	output_path: output path of numpy params 
-	Returns:
-	None
+	Returns: None
 	"""
 	net = caffe.Net(model, caffe.TEST)
 	net.copy_from(weights)

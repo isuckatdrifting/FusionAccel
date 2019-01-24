@@ -40,7 +40,7 @@ csb csb_(
     .irq(irq)
 ); //Control Bus for all cores
 
-conv_1x1 conv_(
+conv_1x1 conv_1x1_(
     .clk(clk),
     .rst_n(rst_n),
     .im(),
@@ -50,7 +50,7 @@ conv_1x1 conv_(
     .conv_valid(conv_valid)
 ); //Convolutional Core
 
-conv_3x3 conv_(
+conv_3x3 conv_3x3_(
     .clk(clk),
     .rst_n(rst_n),
     .im(im),
