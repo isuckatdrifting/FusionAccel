@@ -46,14 +46,12 @@ reg         write_mode;
 reg         read_mode;
 reg         reset_d;
 
-
 assign p0_cmd_bl_o = BURST_LEN - 1;
 assign p0_wr_mask = 4'b0000;
 
 always @(posedge clk) write_mode <= writes_en;
 always @(posedge clk) read_mode <= reads_en;
 always @(posedge clk) reset_d <= reset;
-
 
 integer state;
 localparam s_idle  = 0,
