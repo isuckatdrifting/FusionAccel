@@ -26,6 +26,7 @@ import caffe
 import numpy as np
 import os
 import ok
+import struct
 
 bit_directory = 'C:/Users/shish/source/repos/FusionAccel/scripts/ramtest.bit'
 
@@ -62,31 +63,31 @@ class host:
 
 		# Download the configuration file.
 		if (self.xem.NoError != self.xem.ConfigureFPGA(bit_directory)):
-			print ("FPGA configuration failed.")
+			print("FPGA configuration failed.")
 			return(False)
 
 		# Check for FrontPanel support in the FPGA configuration.
 		if (False == self.xem.IsFrontPanelEnabled()):
-			print ("FrontPanel support is not available.")
+			print("FrontPanel support is not available.")
 			return(False)
 		
 		print("FrontPanel support is available.")
 		return(True)
 	
 	def reset_fifo(self):
-		self.xem.SetWireInValue(0x00, 0x0004);
-		self.xem.UpdateWireIns();
-		self.xem.SetWireInValue(0x00, 0x0000);
-		self.xem.UpdateWireIns();
+		self.xem.SetWireInValue(0x00, 0x0004)
+		self.xem.UpdateWireIns()
+		self.xem.SetWireInValue(0x00, 0x0000)
+		self.xem.UpdateWireIns()
 	
 	def writeSDRAM(self, mem):
-		self.reset_fifo();
-		self.xem.SetWireInValue(0x00, 0x0002);
-		self.xem.UpdateWireIns();
+		self.reset_fifo()
+		self.xem.SetWireInValue(0x00, 0x0002)
+		self.xem.UpdateWireIns()
 		print("Writing to memory(%d)..." % mem)
 		for i in range(0, int(self.memsize/self.writesize)):
 			self.xem.WriteToBlockPipeIn(0x80 + mem, self.blocksize, self.buf[i*self.writesize:(i+1)*self.writesize])
-		self.xem.UpdateWireOuts();
+		self.xem.UpdateWireOuts()
 
 
 	def testSDRAM(self, mem):
@@ -98,7 +99,6 @@ class host:
 		for i in range(0, self.memsize, self.readsize):
 			self.xem.ReadFromBlockPipeOut(0xa0 + mem, self.blocksize, self.rbuf)
 			for j in range(0, self.blocksize):
-				#print("%d %d %d" %(j, self.blocksize, mem))
 				if self.buf[i+j] != self.rbuf[j]:
 					for k in range(0, 8):
 						print("[0x%X = 0x%02X / 0x%02X // 0x%02X\n" %(
@@ -108,7 +108,7 @@ class host:
 						   self.buf[i+j+k] ^ self.rbuf[j+k]))
 					passed = False
 		return passed
-     
+
 def extract_caffe_model(model, weights, output_path):
 	"""extract caffe model's parameters to numpy array, and write them to files
 	Args:
@@ -128,21 +128,23 @@ def extract_caffe_model(model, weights, output_path):
 		name, layer = item
 		print('convert layer: ' + name)
 
-	num = 0
-	for p in net.params[name]:
-		#f = open(output_path + '/' + str(name).replace('/', '_') + '_' + str(num) + '.txt', "w")
-		#np.save(output_path + '/' + str(name) + '_' + str(num), p.data)
-		#f.write(str(p.data.tolist()))
-        #f.close()
-		print("layer %d, size = %d" % (num, p.data.size))
-		num += 1
+		num = 0
+		for p in net.params[name]:
+			f = open(output_path + '/' + str(name).replace('/', '_') + '_' + str(num) + '.txt', "w")
+			dat = p.data.astype(dtype=np.float16).reshape(1, -1)
+			for i in dat:
+				for j in i:
+					f.write(str(hex(struct.unpack('<H', j)[0]))+', ') #Little-endian
+			f.close()
+			print("layer %d, size = %d" % (num, p.data.size))
+			num += 1
 
 
 def main():
     #args = parse_args()
 	model = 'C:/Users/shish/source/repos/SqueezeNet/SqueezeNet_v1.1/deploy.prototxt'
 	weights = 'C:/Users/shish/source/repos/SqueezeNet/SqueezeNet_v1.1/squeezenet_v1.1.caffemodel'
-	output_path = 'C:/Users/shish/source/repos/FusionAccel/demo/tmp'
+	output_path = 'C:/Users/shish/source/repos/FusionAccel/scripts/tmp'
 	extract_caffe_model(model, weights, output_path)
 	dev = host()
 	if (False == dev.InitializeDevice()):
