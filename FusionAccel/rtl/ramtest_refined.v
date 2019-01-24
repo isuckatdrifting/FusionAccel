@@ -43,7 +43,6 @@ module ramtest  #(
 	
 	output wire [7:0]   led,
 	
-
 	inout  wire [C3_NUM_DQ_PINS-1:0]         ddr2_dq,
 	output wire [C3_MEM_ADDR_WIDTH-1:0]      ddr2_a,
 	output wire [C3_MEM_BANKADDR_WIDTH-1:0]  ddr2_ba,
@@ -63,7 +62,7 @@ module ramtest  #(
 	output wire                              ddr2_ck,
 	output wire                              ddr2_ck_n,
 	output wire                              ddr2_cs_n
-	);
+);
 
 	localparam BLOCK_SIZE      = 128;   // 512 bytes / 4 byte per word;
 	localparam FIFO_SIZE       = 1023;  // note that Xilinx does not allow use of the full 1024 words
@@ -98,8 +97,6 @@ module ramtest  #(
 	wire [6:0]                        c3_p0_rd_count;
 	wire                              c3_p0_rd_overflow;
 	wire                              c3_p0_rd_error;
-	//wire                              selfrefresh_enter;          
-	//wire                              selfrefresh_mode; 
 
 	// Front Panel
 
@@ -170,7 +167,6 @@ memc3 # (
     .C3_MEM_BANKADDR_WIDTH(3)
 )
 memc3_inst (
-
 	.sys_clkp          		(sys_clkp),
 	.sys_clkn          		(sys_clkn),
 	.c3_sys_rst_n      		(c3_sys_rst_n),                        
@@ -243,12 +239,9 @@ memc3_inst (
 	.c3_p1_rd_empty         (c3_p1_rd_empty),
 	.c3_p1_rd_count         (c3_p1_rd_count),
 	.c3_p1_rd_overflow      (c3_p1_rd_overflow),
-	.c3_p1_rd_error         (c3_p1_rd_error)
-	);
+	.c3_p1_rd_error         (c3_p1_rd_error));
 
-
-	ddr2_test ddr2_tb
-	(
+ddr2_test ddr2_tb (
 	.clk(c3_clk0),
 	.reset(ep00wire[2] | c3_rst0), 
 	.reads_en(ep00wire[0]),
@@ -278,8 +271,7 @@ memc3_inst (
 	.p0_wr_en(c3_p0_wr_en),
 	.p0_wr_full(c3_p0_wr_full), 
 	.p0_wr_data(c3_p0_wr_data), 
-	.p0_wr_mask(c3_p0_wr_mask) 
-	);
+	.p0_wr_mask(c3_p0_wr_mask));
 	
 //Block Throttle
 always @(posedge okClk) begin
