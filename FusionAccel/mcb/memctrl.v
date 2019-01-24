@@ -130,81 +130,81 @@ wire  [2:0] c3_vio_addr_mode_value;
 wire  [31:0] c3_cmp_data;
 
 localparam C3_INCLK_PERIOD         = 10000; // 10000ps -> 10ns -> 100Mhz
-	localparam C3_CLKOUT0_DIVIDE       = 1;     // 625 MHz system clock      
-	localparam C3_CLKOUT1_DIVIDE       = 1;     // 625 MHz system clock (180 deg)      
-	localparam C3_CLKOUT2_DIVIDE       = 4;     // 156.256 MHz test bench clock      
-	localparam C3_CLKOUT3_DIVIDE       = 8;     // 78.125 MHz calibration clock      
-	localparam C3_CLKFBOUT_MULT        = 25;    // 25MHz x 25 = 625 MHz system clock       
-	localparam C3_DIVCLK_DIVIDE        = 4;     // 100MHz/4 = 25 Mhz       
-	localparam C3_ARB_NUM_TIME_SLOTS   = 12;       
-	localparam C3_ARB_TIME_SLOT_0      = 3'o0;       
-	localparam C3_ARB_TIME_SLOT_1      = 3'o0;       
-	localparam C3_ARB_TIME_SLOT_2      = 3'o0;       
-	localparam C3_ARB_TIME_SLOT_3      = 3'o0;       
-	localparam C3_ARB_TIME_SLOT_4      = 3'o0;       
-	localparam C3_ARB_TIME_SLOT_5      = 3'o0;       
-	localparam C3_ARB_TIME_SLOT_6      = 3'o0;       
-	localparam C3_ARB_TIME_SLOT_7      = 3'o0;       
-	localparam C3_ARB_TIME_SLOT_8      = 3'o0;       
-	localparam C3_ARB_TIME_SLOT_9      = 3'o0;       
-	localparam C3_ARB_TIME_SLOT_10     = 3'o0;       
-	localparam C3_ARB_TIME_SLOT_11     = 3'o0;       
-	localparam C3_MEM_TRAS             = 40000;       
-	localparam C3_MEM_TRCD             = 15000;       
-	localparam C3_MEM_TREFI            = 7800000;       
-	localparam C3_MEM_TRFC             = 127500;       
-	localparam C3_MEM_TRP              = 15000;       
-	localparam C3_MEM_TWR              = 15000;       
-	localparam C3_MEM_TRTP             = 7500;       
-	localparam C3_MEM_TWTR             = 7500;       
-	localparam C3_MEM_TYPE             = "DDR2";       
-	localparam C3_MEM_DENSITY          = "1Gb";       
-	localparam C3_MEM_BURST_LEN        = 4;       
-	localparam C3_MEM_CAS_LATENCY      = 5;       
-	localparam C3_MEM_NUM_COL_BITS     = 10;       
-	localparam C3_MEM_DDR1_2_ODS       = "FULL";       
-	localparam C3_MEM_DDR2_RTT         = "50OHMS";       
-	localparam C3_MEM_DDR2_DIFF_DQS_EN  = "YES";       
-	localparam C3_MEM_DDR2_3_PA_SR     = "FULL";       
-	localparam C3_MEM_DDR2_3_HIGH_TEMP_SR  = "NORMAL";       
-	localparam C3_MEM_DDR3_CAS_LATENCY  = 6;       
-	localparam C3_MEM_DDR3_ODS         = "DIV6";       
-	localparam C3_MEM_DDR3_RTT         = "DIV2";       
-	localparam C3_MEM_DDR3_CAS_WR_LATENCY  = 5;       
-	localparam C3_MEM_DDR3_AUTO_SR     = "ENABLED";       
-	localparam C3_MEM_DDR3_DYN_WRT_ODT  = "OFF";       
-	localparam C3_MEM_MOBILE_PA_SR     = "FULL";       
-	localparam C3_MEM_MDDR_ODS         = "FULL";       
-	localparam C3_MC_CALIB_BYPASS      = "NO";       
-	localparam C3_MC_CALIBRATION_MODE  = "CALIBRATION";       
-	localparam C3_MC_CALIBRATION_DELAY  = "HALF";       
-	localparam C3_SKIP_IN_TERM_CAL     = 0;       
-	localparam C3_SKIP_DYNAMIC_CAL     = 0;       
-	localparam C3_LDQSP_TAP_DELAY_VAL  = 0;       
-	localparam C3_LDQSN_TAP_DELAY_VAL  = 0;       
-	localparam C3_UDQSP_TAP_DELAY_VAL  = 0;       
-	localparam C3_UDQSN_TAP_DELAY_VAL  = 0;       
-	localparam C3_DQ0_TAP_DELAY_VAL    = 0;       
-	localparam C3_DQ1_TAP_DELAY_VAL    = 0;       
-	localparam C3_DQ2_TAP_DELAY_VAL    = 0;       
-	localparam C3_DQ3_TAP_DELAY_VAL    = 0;       
-	localparam C3_DQ4_TAP_DELAY_VAL    = 0;       
-	localparam C3_DQ5_TAP_DELAY_VAL    = 0;       
-	localparam C3_DQ6_TAP_DELAY_VAL    = 0;       
-	localparam C3_DQ7_TAP_DELAY_VAL    = 0;       
-	localparam C3_DQ8_TAP_DELAY_VAL    = 0;       
-	localparam C3_DQ9_TAP_DELAY_VAL    = 0;       
-	localparam C3_DQ10_TAP_DELAY_VAL   = 0;       
-	localparam C3_DQ11_TAP_DELAY_VAL   = 0;       
-	localparam C3_DQ12_TAP_DELAY_VAL   = 0;       
-	localparam C3_DQ13_TAP_DELAY_VAL   = 0;       
-	localparam C3_DQ14_TAP_DELAY_VAL   = 0;       
-	localparam C3_DQ15_TAP_DELAY_VAL   = 0;       
-	localparam C3_p0_BEGIN_ADDRESS                   = (C3_HW_TESTING == "TRUE") ? 32'h01000000:32'h00000100;
-	localparam C3_p0_DATA_MODE                       = 4'b0010;
-	localparam C3_p0_END_ADDRESS                     = (C3_HW_TESTING == "TRUE") ? 32'h02ffffff:32'h000002ff;
-	localparam C3_p0_PRBS_EADDR_MASK_POS             = (C3_HW_TESTING == "TRUE") ? 32'hfc000000:32'hfffffc00;
-	localparam C3_p0_PRBS_SADDR_MASK_POS             = (C3_HW_TESTING == "TRUE") ? 32'h01000000:32'h00000100;
+localparam C3_CLKOUT0_DIVIDE       = 1;     // 625 MHz system clock      
+localparam C3_CLKOUT1_DIVIDE       = 1;     // 625 MHz system clock (180 deg)      
+localparam C3_CLKOUT2_DIVIDE       = 4;     // 156.256 MHz test bench clock      
+localparam C3_CLKOUT3_DIVIDE       = 8;     // 78.125 MHz calibration clock      
+localparam C3_CLKFBOUT_MULT        = 25;    // 25MHz x 25 = 625 MHz system clock       
+localparam C3_DIVCLK_DIVIDE        = 4;     // 100MHz/4 = 25 Mhz       
+localparam C3_ARB_NUM_TIME_SLOTS   = 12;       
+localparam C3_ARB_TIME_SLOT_0      = 3'o0;       
+localparam C3_ARB_TIME_SLOT_1      = 3'o0;       
+localparam C3_ARB_TIME_SLOT_2      = 3'o0;       
+localparam C3_ARB_TIME_SLOT_3      = 3'o0;       
+localparam C3_ARB_TIME_SLOT_4      = 3'o0;       
+localparam C3_ARB_TIME_SLOT_5      = 3'o0;       
+localparam C3_ARB_TIME_SLOT_6      = 3'o0;       
+localparam C3_ARB_TIME_SLOT_7      = 3'o0;       
+localparam C3_ARB_TIME_SLOT_8      = 3'o0;       
+localparam C3_ARB_TIME_SLOT_9      = 3'o0;       
+localparam C3_ARB_TIME_SLOT_10     = 3'o0;       
+localparam C3_ARB_TIME_SLOT_11     = 3'o0;       
+localparam C3_MEM_TRAS             = 40000;       
+localparam C3_MEM_TRCD             = 15000;       
+localparam C3_MEM_TREFI            = 7800000;       
+localparam C3_MEM_TRFC             = 127500;       
+localparam C3_MEM_TRP              = 15000;       
+localparam C3_MEM_TWR              = 15000;       
+localparam C3_MEM_TRTP             = 7500;       
+localparam C3_MEM_TWTR             = 7500;       
+localparam C3_MEM_TYPE             = "DDR2";       
+localparam C3_MEM_DENSITY          = "1Gb";       
+localparam C3_MEM_BURST_LEN        = 4;       
+localparam C3_MEM_CAS_LATENCY      = 5;       
+localparam C3_MEM_NUM_COL_BITS     = 10;       
+localparam C3_MEM_DDR1_2_ODS       = "FULL";       
+localparam C3_MEM_DDR2_RTT         = "50OHMS";       
+localparam C3_MEM_DDR2_DIFF_DQS_EN  = "YES";       
+localparam C3_MEM_DDR2_3_PA_SR     = "FULL";       
+localparam C3_MEM_DDR2_3_HIGH_TEMP_SR  = "NORMAL";       
+localparam C3_MEM_DDR3_CAS_LATENCY  = 6;       
+localparam C3_MEM_DDR3_ODS         = "DIV6";       
+localparam C3_MEM_DDR3_RTT         = "DIV2";       
+localparam C3_MEM_DDR3_CAS_WR_LATENCY  = 5;       
+localparam C3_MEM_DDR3_AUTO_SR     = "ENABLED";       
+localparam C3_MEM_DDR3_DYN_WRT_ODT  = "OFF";       
+localparam C3_MEM_MOBILE_PA_SR     = "FULL";       
+localparam C3_MEM_MDDR_ODS         = "FULL";       
+localparam C3_MC_CALIB_BYPASS      = "NO";       
+localparam C3_MC_CALIBRATION_MODE  = "CALIBRATION";       
+localparam C3_MC_CALIBRATION_DELAY  = "HALF";       
+localparam C3_SKIP_IN_TERM_CAL     = 0;       
+localparam C3_SKIP_DYNAMIC_CAL     = 0;       
+localparam C3_LDQSP_TAP_DELAY_VAL  = 0;       
+localparam C3_LDQSN_TAP_DELAY_VAL  = 0;       
+localparam C3_UDQSP_TAP_DELAY_VAL  = 0;       
+localparam C3_UDQSN_TAP_DELAY_VAL  = 0;       
+localparam C3_DQ0_TAP_DELAY_VAL    = 0;       
+localparam C3_DQ1_TAP_DELAY_VAL    = 0;       
+localparam C3_DQ2_TAP_DELAY_VAL    = 0;       
+localparam C3_DQ3_TAP_DELAY_VAL    = 0;       
+localparam C3_DQ4_TAP_DELAY_VAL    = 0;       
+localparam C3_DQ5_TAP_DELAY_VAL    = 0;       
+localparam C3_DQ6_TAP_DELAY_VAL    = 0;       
+localparam C3_DQ7_TAP_DELAY_VAL    = 0;       
+localparam C3_DQ8_TAP_DELAY_VAL    = 0;       
+localparam C3_DQ9_TAP_DELAY_VAL    = 0;       
+localparam C3_DQ10_TAP_DELAY_VAL   = 0;       
+localparam C3_DQ11_TAP_DELAY_VAL   = 0;       
+localparam C3_DQ12_TAP_DELAY_VAL   = 0;       
+localparam C3_DQ13_TAP_DELAY_VAL   = 0;       
+localparam C3_DQ14_TAP_DELAY_VAL   = 0;       
+localparam C3_DQ15_TAP_DELAY_VAL   = 0;       
+localparam C3_p0_BEGIN_ADDRESS                   = (C3_HW_TESTING == "TRUE") ? 32'h01000000:32'h00000100;
+localparam C3_p0_DATA_MODE                       = 4'b0010;
+localparam C3_p0_END_ADDRESS                     = (C3_HW_TESTING == "TRUE") ? 32'h02ffffff:32'h000002ff;
+localparam C3_p0_PRBS_EADDR_MASK_POS             = (C3_HW_TESTING == "TRUE") ? 32'hfc000000:32'hfffffc00;
+localparam C3_p0_PRBS_SADDR_MASK_POS             = (C3_HW_TESTING == "TRUE") ? 32'h01000000:32'h00000100;
    
 memc3_infrastructure #
 	(
