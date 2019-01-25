@@ -47,11 +47,11 @@ clockgen clockgen_ (
     .CLK_IN1_P				(sys_clkp),   // IN
     .CLK_IN1_N				(sys_clkn),   // IN
     // Clock out ports
-    .CLK_OUT1				(sys_clk),     // OUT
-	.CLK_OUT2				(),      	// OUT
+    .CLK_OUT1				(sys_clk),    // OUT
+	.CLK_OUT2				(),           // OUT
     // Status and control signals
-    .RESET					(1'b0),           // IN
-    .LOCKED					(LOCKED)         // OUT 
+    .RESET					(1'b0),       // IN
+    .LOCKED					(LOCKED)      // OUT 
 );      
 
 //--------------v1, Minimum Hardware Cores for SqueezeNet------------------//
@@ -90,9 +90,10 @@ csb csb_(
 conv_1x1 conv_1x1_(
     .clk		(sys_clk),
     .rst_n		(ep00wire[2]),
-    .im			(),
-    .iw			(),
-    .om			(),
+    .im			(),					//Input Matrix 1x1 [15:0]
+    .iw			(),					//Input Weight 1x1 [15:0]
+	.ib			(),					//Input Bias 1x1   [15:0]
+    .om			(),					//Output Weight 1x1[15:0]
     .conv_ready	(conv_ready_1x1),
     .conv_valid	(conv_valid_1x1));
 
@@ -102,9 +103,10 @@ conv_1x1 conv_1x1_(
 conv_3x3 conv_3x3_(
     .clk		(sys_clk),
     .rst_n		(ep00wire[2]),
-    .im			(im),
-    .iw			(iw),
-    .om			(om),
+    .im			(im),				//Input Matrix 3x3 [143:0]
+    .iw			(iw),				//Input Weight 3x3 [143:0]
+	.ib			(ib),				//Input Bias 1x1   [15:0]
+    .om			(om),				//Output Weight 1x1[15:0]
     .conv_ready	(conv_ready_3x3),
     .conv_valid	(conv_valid_3x3));
 
@@ -114,8 +116,8 @@ conv_3x3 conv_3x3_(
 pool_3x3 pool_3x3_(
     .clk		(sys_clk),
     .rst_n		(ep00wire[2]),
-    .im			(pool_im),
-    .om			(pool_om),
+    .im			(pool_im),			//Input Matrix 3x3 [143:0]
+    .om			(pool_om),			//Output Matrix 1x1[15:0]
     .pool_ready	(pool_ready_3x3),
     .pool_valid	(pool_valid_3x3));
 
@@ -125,8 +127,8 @@ pool_3x3 pool_3x3_(
 pool_13x13 pool_13x13_(
     .clk		(sys_clk),
     .rst_n		(ep00wire[2]),
-    .im			(),
-    .om			(),
+    .im			(),					//Input Matrix 13x13[2703:0]
+    .om			(),					//Output Matrix 1x1 [15:0]
     .pool_ready	(pool_ready_13x13),
     .pool_valid	(pool_valid_13x13));
 
