@@ -63,7 +63,7 @@ localparam finish = 4'b1000;
 
 reg [3:0] curr_state;
 reg [3:0] next_state;
-//    Current State，non-blocking
+//    Current State, non-blocking
 always @ (posedge clk or negedge rst_n)    begin
     if (!rst_n)
         curr_state    <= idle;
@@ -71,7 +71,7 @@ always @ (posedge clk or negedge rst_n)    begin
         curr_state    <= next_state;
 end
 
-//    Status Jump，blocking
+//    Status Jump, blocking
 always @ (*) begin
     next_state = idle;    //    Initialize
     case (curr_state)
@@ -159,7 +159,7 @@ always @ (*) begin
 end
 
 reg [3:0] id_0, id_1, id_2, id_3, id_4, id_5, id_6, id_7;
-//    Output，blocking
+//    Output, non-blocking
 always @ (posedge clk or negedge rst_n) begin
     if (!rst_n) begin
         a0 <= 0; a1 <= 0; a2 <= 0; a3 <= 0; b0 <= 0; b1 <= 0; b2 <= 0; b3 <= 0; 
@@ -401,7 +401,7 @@ module pool_13x13 (
 
     reg [3:0] curr_state;
     reg [3:0] next_state;
-    //    Current State，non-blocking
+    //    Current State, non-blocking
     always @ (posedge clk or negedge rst_n)    begin
         if (!rst_n)
             curr_state    <= idle;
@@ -409,7 +409,7 @@ module pool_13x13 (
             curr_state    <= next_state;
     end
 
-    //    Status Jump，blocking
+    //    Status Jump, blocking
     always @ (*) begin
         next_state = idle;    //    Initialize
         case (curr_state)
@@ -512,7 +512,7 @@ module pool_13x13 (
         endcase
     end
 
-//    Output，blocking
+//    Output, non-blocking
 always @ (posedge clk or negedge rst_n) begin
     if (!rst_n) begin
         a[0] <= 0; b[0] <= 0; 

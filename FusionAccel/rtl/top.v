@@ -62,8 +62,7 @@ clockgen clockgen_ (
 csb csb_(
     .clk				(sys_clk),
     .rst_n				(ep00wire[2]),
-    .op_type			(op_type),
-    .op_issue			(op_issue),
+	.op_en				(),
 
     .conv_valid_1x1		(conv_valid_1x1), 
 	.conv_ready_1x1		(conv_ready_1x1),
@@ -74,13 +73,13 @@ csb csb_(
     .pool_valid_13x13	(pool_valid_13x13),
     .pool_ready_13x13	(pool_ready_13x13),
 
-    .dma_we				(dma_we),          //Weight, Image & CONV1x1
-    .dma_re				(dma_re),          //Weight, Image & CONV1x1
-    .dma_aux_we			(dma_aux_we),      //CONV3x3, POOL3x3 & POOL13x13
-    .dma_aux_re			(dma_aux_re),      //CONV3x3, POOL3x3 & POOL13x13
+    .dma_aux_we			(dma_aux_we),      //P0: CSB & CONV1x1. P1: CONV3x3, POOL3x3 & POOL13x13
+    .dma_aux_re			(dma_aux_re),      //P0: CSB & CONV1x1. P1: CONV3x3, POOL3x3 & POOL13x13
+
+	.cmd				(),
+	.cmd_size			(),
 
     .r_addr				(r_addr),
-    .r_len				(r_len),
     .w_addr				(w_addr),
     .irq				());
 
@@ -365,6 +364,8 @@ always @(posedge okClk) begin
 	end
 	
 end
+
+//TODO: MUX for Port0 of MCB
 
 //------------------------------------------------
 // PC Communication using Front Panel(TM)

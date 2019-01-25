@@ -92,7 +92,7 @@ module conv_3x3(
 
     reg [2:0] curr_state;
     reg [2:0] next_state;
-    //    Current State，non-blocking
+    //    Current State, non-blocking
     always @ (posedge clk or negedge rst_n)    begin
         if (!rst_n)
             curr_state    <= idle;
@@ -100,7 +100,7 @@ module conv_3x3(
             curr_state    <= next_state;
     end
 
-    //    Status Jump，blocking
+    //    Status Jump, blocking
     always @ (*) begin
         next_state = idle;    //    Initialize
         case (curr_state)
@@ -133,7 +133,7 @@ module conv_3x3(
         endcase
     end
 
-//    Output，blocking
+//    Output, non-blocking
 always @ (posedge clk or negedge rst_n) begin
     if (!rst_n) begin
         a0 <= 0; a1 <= 0; a2 <= 0; a3 <= 0; b0 <= 0; b1 <= 0; b2 <= 0; b3 <= 0; 
@@ -213,9 +213,9 @@ module conv_1x1(
     accum accum_0 (.a(a0), .b(b0), .operation_nd(operation_nd_accum), .operation_rfd(operation_rfd_accum), .clk(clk), 
     .sclr(sclr_accum), .ce(ce_accum), .result(o_buf0), .underflow(underflow_accum0), .overflow(overflow_accum0), .invalid_op(invalid_op_accum0), .rdy(rdy_accum));
 
-    reg [3:0] curr_state;
-    reg [3:0] next_state;
-    //    Current State，non-blocking
+    reg [2:0] curr_state;
+    reg [2:0] next_state;
+    //    Current State, non-blocking
     always @ (posedge clk or negedge rst_n)    begin
         if (!rst_n)
             curr_state    <= idle;
@@ -223,7 +223,7 @@ module conv_1x1(
             curr_state    <= next_state;
     end
 
-    //    Status Jump，blocking
+    //    Status Jump, blocking
     always @ (*) begin
         next_state = idle;    //    Initialize
         case (curr_state)
@@ -244,7 +244,7 @@ module conv_1x1(
         endcase
     end
 
-//    Output，blocking
+//    Output, non-blocking
 always @ (posedge clk or negedge rst_n) begin
     if (!rst_n) begin
         operation_nd_mult <= 1'b0;
