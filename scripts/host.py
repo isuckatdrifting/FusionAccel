@@ -29,6 +29,7 @@ import ok
 import struct
 
 bit_directory = 'C:/Users/shish/source/repos/FusionAccel/scripts/ramtest.bit'
+bypass_caffemodel = 1
 
 class host:
 	def __init__(self):
@@ -147,10 +148,11 @@ def extract_caffe_model(model, weights, output_path):
 
 def main():
     #args = parse_args()
-	model = 'C:/Users/shish/source/repos/SqueezeNet/SqueezeNet_v1.1/deploy.prototxt'
-	weights = 'C:/Users/shish/source/repos/SqueezeNet/SqueezeNet_v1.1/squeezenet_v1.1.caffemodel'
-	output_path = 'C:/Users/shish/source/repos/FusionAccel/scripts/tmp'
-	extract_caffe_model(model, weights, output_path)
+	if not bypass_caffemodel:
+		model = 'C:/Users/shish/source/repos/SqueezeNet/SqueezeNet_v1.1/deploy.prototxt'
+		weights = 'C:/Users/shish/source/repos/SqueezeNet/SqueezeNet_v1.1/squeezenet_v1.1.caffemodel'
+		output_path = 'C:/Users/shish/source/repos/FusionAccel/scripts/tmp'
+		extract_caffe_model(model, weights, output_path)
 	dev = host()
 	if (False == dev.InitializeDevice()):
 		exit

@@ -22,11 +22,11 @@
 *     devices, or systems.  Use in such applications are expressly             *
 *     prohibited.                                                              *
 *                                                                              *
-*     (c) Copyright 1995-2012 Xilinx, Inc.                                     *
+*     (c) Copyright 1995-2019 Xilinx, Inc.                                     *
 *     All rights reserved.                                                     *
 *******************************************************************************/
-// You must compile the wrapper file fifo_w32_1024_r32_1024.v when simulating
-// the core, fifo_w32_1024_r32_1024. When compiling the wrapper file, be sure to
+// You must compile the wrapper file fifo_w16_256_r16_256.v when simulating
+// the core, fifo_w16_256_r16_256. When compiling the wrapper file, be sure to
 // reference the XilinxCoreLib Verilog simulation library. For detailed
 // instructions, please refer to the "CORE Generator Help".
 
@@ -36,7 +36,7 @@
 
 `timescale 1ns/1ps
 
-module fifo_w32_1024_r32_1024(
+module fifo_w16_256_r16_256(
   rst,
   wr_clk,
   rd_clk,
@@ -54,19 +54,19 @@ module fifo_w32_1024_r32_1024(
 input rst;
 input wr_clk;
 input rd_clk;
-input [31 : 0] din;
+input [15 : 0] din;
 input wr_en;
 input rd_en;
-output [31 : 0] dout;
+output [15 : 0] dout;
 output full;
 output empty;
 output valid;
-output [9 : 0] rd_data_count;
-output [9 : 0] wr_data_count;
+output [7 : 0] rd_data_count;
+output [7 : 0] wr_data_count;
 
 // synthesis translate_off
 
-  FIFO_GENERATOR_V8_3 #(
+  FIFO_GENERATOR_V9_3 #(
     .C_ADD_NGC_CONSTRAINT(0),
     .C_APPLICATION_TYPE_AXIS(0),
     .C_APPLICATION_TYPE_RACH(0),
@@ -92,9 +92,9 @@ output [9 : 0] wr_data_count;
     .C_AXIS_TYPE(0),
     .C_COMMON_CLOCK(0),
     .C_COUNT_TYPE(0),
-    .C_DATA_COUNT_WIDTH(10),
+    .C_DATA_COUNT_WIDTH(8),
     .C_DEFAULT_VALUE("BlankString"),
-    .C_DIN_WIDTH(32),
+    .C_DIN_WIDTH(16),
     .C_DIN_WIDTH_AXIS(1),
     .C_DIN_WIDTH_RACH(32),
     .C_DIN_WIDTH_RDCH(64),
@@ -102,7 +102,7 @@ output [9 : 0] wr_data_count;
     .C_DIN_WIDTH_WDCH(64),
     .C_DIN_WIDTH_WRCH(2),
     .C_DOUT_RST_VAL("0"),
-    .C_DOUT_WIDTH(32),
+    .C_DOUT_WIDTH(16),
     .C_ENABLE_RLOCS(0),
     .C_ENABLE_RST_SYNC(1),
     .C_ERROR_INJECTION_TYPE(0),
@@ -175,7 +175,7 @@ output [9 : 0] wr_data_count;
     .C_OVERFLOW_LOW(0),
     .C_PRELOAD_LATENCY(1),
     .C_PRELOAD_REGS(0),
-    .C_PRIM_FIFO_TYPE("1kx36"),
+    .C_PRIM_FIFO_TYPE("512x36"),
     .C_PROG_EMPTY_THRESH_ASSERT_VAL(2),
     .C_PROG_EMPTY_THRESH_ASSERT_VAL_AXIS(1022),
     .C_PROG_EMPTY_THRESH_ASSERT_VAL_RACH(1022),
@@ -185,32 +185,32 @@ output [9 : 0] wr_data_count;
     .C_PROG_EMPTY_THRESH_ASSERT_VAL_WRCH(1022),
     .C_PROG_EMPTY_THRESH_NEGATE_VAL(3),
     .C_PROG_EMPTY_TYPE(0),
-    .C_PROG_EMPTY_TYPE_AXIS(5),
-    .C_PROG_EMPTY_TYPE_RACH(5),
-    .C_PROG_EMPTY_TYPE_RDCH(5),
-    .C_PROG_EMPTY_TYPE_WACH(5),
-    .C_PROG_EMPTY_TYPE_WDCH(5),
-    .C_PROG_EMPTY_TYPE_WRCH(5),
-    .C_PROG_FULL_THRESH_ASSERT_VAL(1021),
+    .C_PROG_EMPTY_TYPE_AXIS(0),
+    .C_PROG_EMPTY_TYPE_RACH(0),
+    .C_PROG_EMPTY_TYPE_RDCH(0),
+    .C_PROG_EMPTY_TYPE_WACH(0),
+    .C_PROG_EMPTY_TYPE_WDCH(0),
+    .C_PROG_EMPTY_TYPE_WRCH(0),
+    .C_PROG_FULL_THRESH_ASSERT_VAL(253),
     .C_PROG_FULL_THRESH_ASSERT_VAL_AXIS(1023),
     .C_PROG_FULL_THRESH_ASSERT_VAL_RACH(1023),
     .C_PROG_FULL_THRESH_ASSERT_VAL_RDCH(1023),
     .C_PROG_FULL_THRESH_ASSERT_VAL_WACH(1023),
     .C_PROG_FULL_THRESH_ASSERT_VAL_WDCH(1023),
     .C_PROG_FULL_THRESH_ASSERT_VAL_WRCH(1023),
-    .C_PROG_FULL_THRESH_NEGATE_VAL(1020),
+    .C_PROG_FULL_THRESH_NEGATE_VAL(252),
     .C_PROG_FULL_TYPE(0),
-    .C_PROG_FULL_TYPE_AXIS(5),
-    .C_PROG_FULL_TYPE_RACH(5),
-    .C_PROG_FULL_TYPE_RDCH(5),
-    .C_PROG_FULL_TYPE_WACH(5),
-    .C_PROG_FULL_TYPE_WDCH(5),
-    .C_PROG_FULL_TYPE_WRCH(5),
+    .C_PROG_FULL_TYPE_AXIS(0),
+    .C_PROG_FULL_TYPE_RACH(0),
+    .C_PROG_FULL_TYPE_RDCH(0),
+    .C_PROG_FULL_TYPE_WACH(0),
+    .C_PROG_FULL_TYPE_WDCH(0),
+    .C_PROG_FULL_TYPE_WRCH(0),
     .C_RACH_TYPE(0),
-    .C_RD_DATA_COUNT_WIDTH(10),
-    .C_RD_DEPTH(1024),
+    .C_RD_DATA_COUNT_WIDTH(8),
+    .C_RD_DEPTH(256),
     .C_RD_FREQ(1),
-    .C_RD_PNTR_WIDTH(10),
+    .C_RD_PNTR_WIDTH(8),
     .C_RDCH_TYPE(0),
     .C_REG_SLICE_MODE_AXIS(0),
     .C_REG_SLICE_MODE_RACH(0),
@@ -218,6 +218,7 @@ output [9 : 0] wr_data_count;
     .C_REG_SLICE_MODE_WACH(0),
     .C_REG_SLICE_MODE_WDCH(0),
     .C_REG_SLICE_MODE_WRCH(0),
+    .C_SYNCHRONIZER_STAGE(2),
     .C_UNDERFLOW_LOW(0),
     .C_USE_COMMON_OVERFLOW(0),
     .C_USE_COMMON_UNDERFLOW(0),
@@ -237,8 +238,8 @@ output [9 : 0] wr_data_count;
     .C_WACH_TYPE(0),
     .C_WDCH_TYPE(0),
     .C_WR_ACK_LOW(0),
-    .C_WR_DATA_COUNT_WIDTH(10),
-    .C_WR_DEPTH(1024),
+    .C_WR_DATA_COUNT_WIDTH(8),
+    .C_WR_DEPTH(256),
     .C_WR_DEPTH_AXIS(1024),
     .C_WR_DEPTH_RACH(16),
     .C_WR_DEPTH_RDCH(1024),
@@ -246,7 +247,7 @@ output [9 : 0] wr_data_count;
     .C_WR_DEPTH_WDCH(1024),
     .C_WR_DEPTH_WRCH(16),
     .C_WR_FREQ(1),
-    .C_WR_PNTR_WIDTH(10),
+    .C_WR_PNTR_WIDTH(8),
     .C_WR_PNTR_WIDTH_AXIS(10),
     .C_WR_PNTR_WIDTH_RACH(4),
     .C_WR_PNTR_WIDTH_RDCH(10),
@@ -418,6 +419,8 @@ output [9 : 0] wr_data_count;
     .AXI_AW_DBITERR(),
     .AXI_AW_OVERFLOW(),
     .AXI_AW_UNDERFLOW(),
+    .AXI_AW_PROG_FULL(),
+    .AXI_AW_PROG_EMPTY(),
     .AXI_W_INJECTSBITERR(),
     .AXI_W_INJECTDBITERR(),
     .AXI_W_PROG_FULL_THRESH(),
@@ -430,6 +433,8 @@ output [9 : 0] wr_data_count;
     .AXI_W_OVERFLOW(),
     .AXI_W_UNDERFLOW(),
     .AXI_B_INJECTSBITERR(),
+    .AXI_W_PROG_FULL(),
+    .AXI_W_PROG_EMPTY(),
     .AXI_B_INJECTDBITERR(),
     .AXI_B_PROG_FULL_THRESH(),
     .AXI_B_PROG_EMPTY_THRESH(),
@@ -441,6 +446,8 @@ output [9 : 0] wr_data_count;
     .AXI_B_OVERFLOW(),
     .AXI_B_UNDERFLOW(),
     .AXI_AR_INJECTSBITERR(),
+    .AXI_B_PROG_FULL(),
+    .AXI_B_PROG_EMPTY(),
     .AXI_AR_INJECTDBITERR(),
     .AXI_AR_PROG_FULL_THRESH(),
     .AXI_AR_PROG_EMPTY_THRESH(),
@@ -451,6 +458,8 @@ output [9 : 0] wr_data_count;
     .AXI_AR_DBITERR(),
     .AXI_AR_OVERFLOW(),
     .AXI_AR_UNDERFLOW(),
+    .AXI_AR_PROG_FULL(),
+    .AXI_AR_PROG_EMPTY(),
     .AXI_R_INJECTSBITERR(),
     .AXI_R_INJECTDBITERR(),
     .AXI_R_PROG_FULL_THRESH(),
@@ -463,6 +472,8 @@ output [9 : 0] wr_data_count;
     .AXI_R_OVERFLOW(),
     .AXI_R_UNDERFLOW(),
     .AXIS_INJECTSBITERR(),
+    .AXI_R_PROG_FULL(),
+    .AXI_R_PROG_EMPTY(),
     .AXIS_INJECTDBITERR(),
     .AXIS_PROG_FULL_THRESH(),
     .AXIS_PROG_EMPTY_THRESH(),
@@ -472,7 +483,9 @@ output [9 : 0] wr_data_count;
     .AXIS_SBITERR(),
     .AXIS_DBITERR(),
     .AXIS_OVERFLOW(),
-    .AXIS_UNDERFLOW()
+    .AXIS_UNDERFLOW(),
+    .AXIS_PROG_FULL(),
+    .AXIS_PROG_EMPTY()
   );
 
 // synthesis translate_on

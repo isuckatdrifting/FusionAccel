@@ -34,7 +34,7 @@ module csb(
 );
 
     //TODO: Command Queue (FIFO) & Translation in PIPEIN_FIFO
-    //TODO: Multiple Channel Management, Little Endian, Jump Read
+    //TODO: Multiple Channel Management, Little Endian, Jump Read --> Conv Buffer and Pooling Buffer
     //TODO: Use ep00wire to reset csb
     //TODO: Use csb to reset submodules
     //TODO: CONV3x3 CONV 1x1 Parallelism
