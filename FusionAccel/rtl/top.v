@@ -62,8 +62,6 @@ clockgen clockgen_ (
 csb csb_(
     .clk				(sys_clk),
     .rst_n				(ep00wire[2]),
-    .op_type			(op_type),
-    .op_issue			(op_issue),
 
     .conv_valid_1x1		(conv_valid_1x1), 
 	.conv_ready_1x1		(conv_ready_1x1),
@@ -80,7 +78,6 @@ csb csb_(
     .dma_aux_re			(dma_aux_re),      //CONV3x3, POOL3x3 & POOL13x13
 
     .r_addr				(r_addr),
-    .r_len				(r_len),
     .w_addr				(w_addr),
     .irq				());
 
