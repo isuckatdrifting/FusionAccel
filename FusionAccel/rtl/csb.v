@@ -49,7 +49,7 @@ module csb(
     //|  Outbuf | 0x02e_0000 - 0x7ff_ffff | 125M-128 |    3071416     |
     //|---------|-------------------------|----------|----------------|
 
-    reg conv_ready_1x1, conv_ready_3x3, pool_ready_3x3, pool_ready13x13;
+    reg conv_ready_1x1, conv_ready_3x3, pool_ready_3x3, pool_ready_13x13;
     reg dma_we, dma_re, dma_aux_we, dma_aux_re;
     reg [31:0] r_addr, w_addr;
     reg [7:0] r_len;
@@ -65,7 +65,7 @@ module csb(
             w_addr <= 32'h0000_0000;
         end else begin
             if(op_type == 3'b001) conv_ready_3x3 <= 1;
-            if(op_type == 3'b010) begin conv_ready_3x3 <= 1; conv_ready_1x1 <= 1;
+            if(op_type == 3'b010) begin conv_ready_3x3 <= 1; conv_ready_1x1 <= 1; end
             if(conv_valid_3x3) conv_ready_3x3 <= 0;
             if(conv_valid_1x1) conv_ready_1x1 <= 0;
             if(op_type == 3'b011) pool_ready_3x3 <= 1;

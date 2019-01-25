@@ -68,7 +68,7 @@ csb csb_(
     .conv_valid_1x1		(conv_valid_1x1), 
 	.conv_ready_1x1		(conv_ready_1x1),
     .conv_valid_3x3		(conv_valid_3x3),
-    .conv_ready_3z3		(conv_ready_3x3),
+    .conv_ready_3x3		(conv_ready_3x3),
     .pool_valid_3x3		(pool_valid_3x3),
     .pool_ready_3x3		(pool_ready_3x3),
     .pool_valid_13x13	(pool_valid_13x13),

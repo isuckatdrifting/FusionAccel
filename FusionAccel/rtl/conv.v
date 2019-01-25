@@ -161,7 +161,7 @@ always @ (posedge clk or negedge rst_n) begin
                 if(operation_rfd_accum[2:0] == 3'b111) begin operation_nd_accum[1:0] <= 2'b11; 
                                                         a0 <= o_buf0; b0 <= o_buf1;
                                                         a1 <= o_buf2; b1 <= o_buf3; 
-                                                        a3 <= om_array[9]; b3 <= ib; end
+                                                        a3 <= om_array[8]; b3 <= ib; end
                 if(rdy_accum[1:0] == 2'b11)  begin operation_nd_accum[1:0] <= 2'b00; end
             end
             accum3: begin
@@ -192,12 +192,13 @@ module conv_1x1(
     reg [15:0] om;
     reg conv_valid;
 
-    reg operation_nd;
-    wire operation_rfd;
-    wire rdy_mult;
-    wire sclr_mult;
-    wire ce_mult;
-    wire [15:0] result;
+    reg operation_nd_mult, operation_nd_accum;
+    reg [15:0] a0, b0;
+    wire operation_rfd_mult, operation_rfd_accum;
+    wire rdy_mult, rdy_accum;
+    wire sclr_mult, sclr_accum;
+    wire ce_mult, ce_accum;
+    wire [15:0] result, o_buf0;
 
     assign ce_mult = ~rdy_mult;
     assign sclr_mult = rdy_mult;
@@ -206,7 +207,7 @@ module conv_1x1(
     localparam mult = 3'b001;
     localparam accum = 3'b010;
 
-    multiplier mult0 (.a(im), .b(iw), .operation_nd(operation_nd), .operation_rfd(operation_rfd), .clk(clk), 
+    multiplier mult0 (.a(im), .b(iw), .operation_nd(operation_nd_mult), .operation_rfd(operation_rfd_mult), .clk(clk), 
     .sclr(sclr_mult), .ce(ce_mult), .result(result), .underflow(underflow_0), .overflow(overflow_0), .invalid_op(invalid_op_0), .rdy(rdy_mult));
 
     accum accum_0 (.a(a0), .b(b0), .operation_nd(operation_nd_accum), .operation_rfd(operation_rfd_accum), .clk(clk), 
@@ -246,21 +247,23 @@ module conv_1x1(
 //    Output，blocking
 always @ (posedge clk or negedge rst_n) begin
     if (!rst_n) begin
-        operation_nd <= 1'b0;
+        operation_nd_mult <= 1'b0;
+        operation_nd_accum <= 1'b0;
         om <= 0;
         conv_valid <= 0;
     end
     else begin
         case (curr_state)
             mult: begin
-                if(operation_rfd) operation_nd <= 1'b1;
-                if(rdy_mult) begin operation_nd <= 1'b0; end
+                if(operation_rfd_mult) operation_nd_mult <= 1'b1;
+                if(rdy_mult) begin operation_nd_mult <= 1'b0; end
             end
             accum: begin
                 if(operation_rfd_accum) begin operation_nd_accum <= 1'b1;
                                         a0 <= result; b0 <= ib;
                                         end
                 if(rdy_accum) begin operation_nd_accum <= 1'b0; om <= o_buf0[15]?16'h0000:o_buf0; conv_valid <= 1'b1; end
+            end
             default:  ;
         endcase
     end
