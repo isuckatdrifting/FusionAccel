@@ -54,7 +54,9 @@ csb csb_(
     .dma_aux_we			(dma_aux_we),      //P0: CSB & CONV1x1. P1: CONV3x3, POOL3x3 & POOL13x13
     .dma_aux_re			(dma_aux_re),      //P0: CSB & CONV1x1. P1: CONV3x3, POOL3x3 & POOL13x13
 
+    .cmd_fifo_rd_en     (cmd_fifo_rd_en),
 	.cmd				(cmd),
+    .cmd_fifo_empty     (cmd_fifo_empty),
 	.cmd_size			(cmd_size),
 
 	.im_fifo_rd_en		(im_fifo_rd_en),
@@ -65,20 +67,31 @@ csb csb_(
     .iw_1x1				(iw_1x1),
     .im_3x3				(im_3x3),
     .iw_3x3				(iw_3x3),
-    .ib					(ib),
+    .ib_1x1				(ib_1x1),
+    .ib_3x3				(ib_3x3),
     .im_13x13			(im_13x13),
 
     .r_addr				(r_addr),
     .w_addr				(w_addr),
-    .irq				());
+    .irq				(irq));
 
 always #5 clk = ~clk;
 
 initial begin
     rst_n = 0;
     clk = 0;
+    cmd = 32'h0;
+    data = 32'h0;
+    weightbias = 32'h0;
+    conv_valid_1x1 = 0;
+    conv_valid_3x3 = 0;
+    pool_valid_3x3 = 0;
+    pool_valid_13x13 = 0;
+    op_en = 0;
+    cmd_fifo_empty = 0;
 
     #10 rst_n = 1;
+    #10 op_en = 1;
     // Command
     #10 cmd = 32'hc400_e0_01; // Stride2, Stride1, op_type
     #10 cmd = 32'h0040_0003;  // Output Channel Size, Input Channel Size
@@ -86,8 +99,16 @@ initial begin
     #10 cmd = 32'h0029_0000;  // Data start address
     #10 cmd = 32'h002e_0000;  // Write back address
     // Weight and data
-
+    #10
+    #10 data = {16'h3c00, 16'h4000}; weightbias = {16'h3c00, 16'h4000};
+    #10 data = {16'h4200, 16'h4400}; weightbias = {16'h4200, 16'h4400};
+    #10 data = {16'h4500, 16'h4600}; weightbias = {16'h4500, 16'h4600};
+    #10 data = {16'h4700, 16'h4800}; weightbias = {16'h4700, 16'h4800};
+    #10 data = {16'h0000, 16'h4880}; weightbias = {16'h0000, 16'h4880};
+    #10 weightbias = {16'h0000, 16'h3c00};
+    
     // Valid signal from submodules
+    #500 conv_valid_3x3 = 1;
 end
 
 endmodule

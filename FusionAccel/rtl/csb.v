@@ -92,6 +92,7 @@ module csb(
     //Command Parsing
     localparam CMD_BURST_LEN = 5;
     localparam stride_0 = 1;
+    reg cmd_fifo_rd_en;
     reg [2:0] cmd_burst_count;
     reg [7:0] op_type; //Actually use 3bits
     reg [7:0] stride_1;
@@ -163,7 +164,7 @@ module csb(
                     if(cmd_fifo_empty) next_state = finish;
                     else next_state = cmd_collect;
                 end
-                else next_state = finish;
+                else next_state = wait_op;
             end
             finish: begin
 
@@ -176,6 +177,7 @@ module csb(
     //    Output, non-blocking, Command issue and dma access throttle
     always @ (posedge clk or negedge rst_n) begin
         if (!rst_n) begin
+            cmd_fifo_rd_en <= 0;
             cmd_burst_count <= 3'd0;
             op_type <= 8'h00;
             stride_1 <= 8'h00;
@@ -195,6 +197,10 @@ module csb(
             pool_ready_3x3 <= 0;
             pool_ready_13x13 <= 0;
 
+            cmd_collect_done <= 0;
+            cmd_issue_done <= 0;
+            op_done <= 0;
+
             data_3x3_burst_count <= 4'd0;
             wb_3x3_burst_count <= 4'd0;
             data_3x3_p_burst_count <= 4'd0;
@@ -210,6 +216,8 @@ module csb(
             ib_1x1 <= 16'h0000;
             ib_3x3 <= 16'h0000;
             im_13x13 <= 2704'd0;
+
+            irq <= 0;
         end
         else begin
             case (curr_state)
@@ -225,8 +233,9 @@ module csb(
                     //TODO: fifo logic
                     //Split cmds from fifo into separate attributes
                     cmd_burst_count <= cmd_burst_count - 1;
+                    op_done <= 0;
                     case (cmd_burst_count)
-                        5: begin op_type <= cmd[7:0]; stride_1 <= cmd[15:8]; stride_2 <= cmd[31:0]; end
+                        5: begin op_type <= cmd[7:0]; stride_1 <= cmd[15:8]; stride_2 <= cmd[31:16]; end
                         4: begin ich_size <= cmd[15:0]; och_size <= cmd[31:16]; end
                         3: begin weight_start_addr <= cmd; end
                         2: begin data_start_addr <= cmd; end
@@ -236,21 +245,22 @@ module csb(
                 end
                 cmd_issue: begin
                     cmd_burst_count <= CMD_BURST_LEN;
+                    cmd_collect_done <= 0;
                     //TODO: Send out dma access signals to get data to submodules, then send out ready signals
                     case (op_type)
                         1: begin //CONV3x3
                             data_3x3_burst_count <= data_3x3_burst_count - 1;
                             wb_3x3_burst_count <= wb_3x3_burst_count - 1;
                             //Load data
-                            case (data_3x3_p_burst_count)
-                                5,4,3,2: im_3x3 <= im_3x3 << 32 + data;
-                                1: im_3x3 <= im_3x3 << 16 + data[15:0];
+                            case (data_3x3_burst_count)
+                                5,4,3,2: im_3x3 <= {im_3x3[143-32:0], data};
+                                1: im_3x3 <= {im_3x3[143-16:0], data[15:0]};
                                 default:;
                             endcase
                             //Load weight
-                            case (wb_3x3_p_burst_count)
-                                6,5,4,3: iw_3x3 <= iw_3x3 << 32 + weightbias;
-                                2: iw_3x3 <= im_3x3 << 16 + weightbias[15:0];
+                            case (wb_3x3_burst_count)
+                                6,5,4,3: iw_3x3 <= {iw_3x3[143-32:0], weightbias};
+                                2: iw_3x3 <= {iw_3x3[143-16:0], weightbias[15:0]};
                                 1: ib_3x3 <= weightbias[15:0];
                                 default:;
                             endcase
@@ -264,15 +274,15 @@ module csb(
                             wb_3x3_p_burst_count <= wb_3x3_p_burst_count - 1;
                             //Load data
                             case (data_3x3_p_burst_count)
-                                6,5,4,3: im_3x3 <= im_3x3 << 32 + data;
-                                2: im_3x3 <= im_3x3 << 16 + data[15:0];
+                                6,5,4,3: im_3x3 <= {im_3x3[143-32:0], data};
+                                2: im_3x3 <= {im_3x3[143-16:0], data[15:0]};
                                 1: im_1x1 <= data[15:0];
                                 default:;
                             endcase
                             //Load weight
                             case (wb_3x3_p_burst_count)
-                                8,7,6,5: iw_3x3 <= iw_3x3 << 32 + weightbias;
-                                4: iw_3x3 <= iw_3x3 << 16 + weightbias[15:0];
+                                8,7,6,5: iw_3x3 <= {iw_3x3[143-32:0], weightbias};
+                                4: iw_3x3 <= {iw_3x3[143-16:0], weightbias[15:0]};
                                 3: iw_1x1 <= weightbias[15:0];
                                 2: ib_3x3 <= weightbias[15:0];
                                 1: ib_1x1 <= weightbias[15:0];
@@ -287,9 +297,9 @@ module csb(
                         3: begin //POOLING_3x3_MAX
                             data_3x3_burst_count <= data_3x3_burst_count - 1;
                             if(data_3x3_burst_count > 1) begin
-                                im_3x3 <= im_3x3 << 32 + data;
+                                im_3x3 <= {im_3x3[143-32:0], data};
                             end else if(data_3x3_burst_count == 1) begin
-                                im_3x3 <= im_3x3 << 16 + data[15:0];
+                                im_3x3 <= {im_3x3[143-16:0], data[15:0]};
                             end
                             if(data_3x3_burst_count == 0) begin
                                 pool_ready_3x3 <= 1;
@@ -299,9 +309,9 @@ module csb(
                         4: begin //POOLING_13x13_AVERAGE
                             data_13x13_burst_count <= data_13x13_burst_count - 1;
                             if(data_13x13_burst_count > 1) begin
-                                im_13x13 <= im_13x13 << 32 + data;
+                                im_13x13 <= {im_13x13[143-32:0], data};
                             end else if(data_13x13_burst_count == 1) begin
-                                im_13x13 <= im_13x13 << 16 + data[15:0];
+                                im_13x13 <= {im_13x13[143-16:0], data[15:0]};
                             end
                             if(data_13x13_burst_count == 0) begin
                                 pool_ready_13x13 <= 1;
@@ -311,6 +321,7 @@ module csb(
                     endcase
                 end
                 wait_op: begin
+                    cmd_issue_done <= 0;
                     data_3x3_burst_count <= DATA_3x3_BURST_LEN;
                     wb_3x3_burst_count <= WB_3x3_BURST_LEN;
                     data_3x3_p_burst_count <= DATA_3x3_P_BURST_LEN;
@@ -323,6 +334,7 @@ module csb(
                     if(pool_valid_13x13) begin pool_ready_13x13 <= 0; op_done <= 1; end
                 end
                 finish: begin
+                    op_done <= 0;
                     irq <= 1;
                 end
                 default:  ;

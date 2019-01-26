@@ -87,7 +87,8 @@ csb csb_(
     .iw_1x1				(iw_1x1),
     .im_3x3				(im_3x3),
     .iw_3x3				(iw_3x3),
-    .ib					(ib),
+    .ib_1x1				(ib_1x1),
+	.ib_3x3				(ib_3x3),
     .im_13x13			(im_13x13),
 
     .r_addr				(r_addr),
