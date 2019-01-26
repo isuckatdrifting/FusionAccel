@@ -48,9 +48,10 @@ module csb(
     //|       stride_2: 16Bit      | Max surface size = image size = 224*224 = 50176 < 65536
     //|  input channel size: 16Bit |
     //| output channel size: 16Bit |
-    //|  read_address_start: 32Bit |
+    //|   weight_start_addr: 32Bit |
+    //|     data_start_addr: 32Bit |
     //|  write_back_address: 32Bit |
-    //|----------------------------| Totally 128Bit
+    //|----------------------------| Totally 160Bit
 
     //TODO: Command Translation from SDRAM --> FIFO i_port exposed to top, o_port called inside
     //TODO: Padding = 1
@@ -89,7 +90,7 @@ module csb(
     reg op_done;
 
     //Command Parsing
-    localparam CMD_BURST_LEN = 4;
+    localparam CMD_BURST_LEN = 5;
     localparam stride_0 = 1;
     reg [2:0] cmd_burst_count;
     reg [7:0] op_type; //Actually use 3bits
@@ -97,7 +98,8 @@ module csb(
     reg [15:0] stride_2;
     reg [15:0] ich_size;
     reg [15:0] och_size;
-    reg [31:0] start_addr;
+    reg [31:0] data_start_addr;
+    reg [31:0] weight_start_addr;
 
     //Translated Address Access Sequence
     reg dma_aux_re, dma_aux_we;
@@ -127,6 +129,8 @@ module csb(
 
     //Handshake signals to submodules
     reg conv_ready_1x1, conv_ready_3x3, pool_ready_3x3, pool_ready_13x13;
+
+    reg irq;
 
     reg [2:0] curr_state;
     reg [2:0] next_state;
@@ -178,7 +182,8 @@ module csb(
             stride_2 <= 16'h0000;
             ich_size <= 16'h0000;
             och_size <= 16'h0000;
-            start_addr <= 32'h0000_0000;
+            data_start_addr <= 32'h0000_0000;
+            weight_start_addr <= 32'h0000_0000;
 
             r_addr <= 32'h0000_0000;
             w_addr <= 32'h0000_0000;
@@ -221,9 +226,10 @@ module csb(
                     //Split cmds from fifo into separate attributes
                     cmd_burst_count <= cmd_burst_count - 1;
                     case (cmd_burst_count)
-                        4: begin op_type <= cmd[7:0]; stride_1 <= cmd[15:8]; stride_2 <= cmd[31:0]; end
-                        3: begin ich_size <= cmd[15:0]; och_size <= cmd[31:16]; end
-                        2: begin start_addr <= cmd; end
+                        5: begin op_type <= cmd[7:0]; stride_1 <= cmd[15:8]; stride_2 <= cmd[31:0]; end
+                        4: begin ich_size <= cmd[15:0]; och_size <= cmd[31:16]; end
+                        3: begin weight_start_addr <= cmd; end
+                        2: begin data_start_addr <= cmd; end
                         1: begin w_addr <= cmd; cmd_collect_done <= 1; end
                         default: ;
                     endcase 
@@ -317,7 +323,7 @@ module csb(
                     if(pool_valid_13x13) begin pool_ready_13x13 <= 0; op_done <= 1; end
                 end
                 finish: begin
-
+                    irq <= 1;
                 end
                 default:  ;
             endcase

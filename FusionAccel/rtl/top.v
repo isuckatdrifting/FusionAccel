@@ -79,6 +79,10 @@ csb csb_(
 	.cmd				(),
 	.cmd_size			(),
 
+	.im_fifo_rd_en		(),
+	.iwb_fifo_rd_en		(),
+	.data				(),
+	.weightbias			(),
 	.im_1x1				(im_1x1),
     .iw_1x1				(iw_1x1),
     .im_3x3				(im_3x3),

@@ -32,7 +32,7 @@ module dma_aux
 	input  wire          p0_wr_full,
 	output reg           p0_wr_en,
 	output reg  [31:0]   p0_wr_data,
-	output wire [3:0]    p0_wr_mask
+	output wire [3:0]    p0_wr_mask,
 
     output reg           p1_rd_en_o, 
 	input  wire          p1_rd_empty,
