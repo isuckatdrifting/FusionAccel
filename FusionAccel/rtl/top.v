@@ -99,6 +99,12 @@ csb csb_(
 
     .r_addr				(r_addr),
     .w_addr				(w_addr),
+
+	.p0_reads_en		(p0_reads_en),
+    .p0_writes_en		(p0_writes_en),
+    .p1_reads_en		(p1_reads_en),
+    .p1_writes_en		(p1_writes_en),
+    .cmd_fifo_wr_count	(cmd_fifo_wr_count),
     .irq				(irq));
 
 //------------------------------------------------
@@ -331,36 +337,36 @@ memc3_inst (
 	.c3_p1_rd_error         (c3_p1_rd_error));
 
 dma dma_ (
-	.clk(c3_clk0),
-	.reset(ep00wire[2] | c3_rst0), 
-	.reads_en(ep00wire[0]),
-	.writes_en(ep00wire[1]),
-	.calib_done(c3_calib_done), 
+	.clk				(c3_clk0),
+	.reset				(ep00wire[2] | c3_rst0), 
+	.reads_en			(ep00wire[0]),
+	.writes_en			(ep00wire[1]),
+	.calib_done			(c3_calib_done), 
 
-	.ib_re(pipe_in_read),
-	.ib_data(pipe_in_data),
-	.ib_count(pipe_in_rd_count),
-	.ib_valid(pipe_in_valid),
-	.ib_empty(pipe_in_empty),
+	.ib_re				(pipe_in_read),
+	.ib_data			(pipe_in_data),
+	.ib_count			(pipe_in_rd_count),
+	.ib_valid			(pipe_in_valid),
+	.ib_empty			(pipe_in_empty),
 
-	.ob_we(pipe_out_write),
-	.ob_data(pipe_out_data),
-	.ob_count(pipe_out_wr_count),
+	.ob_we				(pipe_out_write),
+	.ob_data			(pipe_out_data),
+	.ob_count			(pipe_out_wr_count),
 
-	.p0_rd_en_o(c3_p0_rd_en),  
-	.p0_rd_empty(c3_p0_rd_empty), 
-	.p0_rd_data(c3_p0_rd_data), 
+	.p0_rd_en_o			(c3_p0_rd_en),  
+	.p0_rd_empty		(c3_p0_rd_empty), 
+	.p0_rd_data			(c3_p0_rd_data), 
 
-	.p0_cmd_en(c3_p0_cmd_en),
-	.p0_cmd_full(c3_p0_cmd_full), 
-	.p0_cmd_instr(c3_p0_cmd_instr),
-	.p0_cmd_byte_addr(c3_p0_cmd_byte_addr), 
-	.p0_cmd_bl_o(c3_p0_cmd_bl), 
+	.p0_cmd_en			(c3_p0_cmd_en),
+	.p0_cmd_full		(c3_p0_cmd_full), 
+	.p0_cmd_instr		(c3_p0_cmd_instr),
+	.p0_cmd_byte_addr	(c3_p0_cmd_byte_addr), 
+	.p0_cmd_bl_o		(c3_p0_cmd_bl), 
 
-	.p0_wr_en(c3_p0_wr_en),
-	.p0_wr_full(c3_p0_wr_full), 
-	.p0_wr_data(c3_p0_wr_data), 
-	.p0_wr_mask(c3_p0_wr_mask));
+	.p0_wr_en			(c3_p0_wr_en),
+	.p0_wr_full			(c3_p0_wr_full), 
+	.p0_wr_data			(c3_p0_wr_data), 
+	.p0_wr_mask			(c3_p0_wr_mask));
 	
 //Block Throttle
 always @(posedge okClk) begin
@@ -385,51 +391,65 @@ end
 
 //TODO: MUX for Port0 of MCB
 dma_aux dma_aux_ (
-	.clk(c3_clk0),
-	.reset(ep00wire[2] | c3_rst0), 
-	.reads_en(),
-	.writes_en(),
-	.calib_done(c3_calib_done), 
-
-	.ib_re(),
-	.ib_data(),
-	.ib_count(),
-	.ib_valid(),
-	.ib_empty(),
-
-	.ob_we(),
-	.ob_data(),
-	.ob_count(),
-
-	.p0_rd_en_o(),  
-	.p0_rd_empty(), 
-	.p0_rd_data(), 
-
-	.p0_cmd_en(),
-	.p0_cmd_full(), 
-	.p0_cmd_instr(),
-	.p0_cmd_byte_addr(), 
-	.p0_cmd_bl_o(), 
-
-	.p1_wr_en(),
-	.p1_wr_full(), 
-	.p1_wr_data(), 
-	.p1_wr_mask(),
+	.clk				(c3clk0),
+	.reset				(ep00wire[3] | c3_rst0),
+    .calib_done			(c3_calib_done), 
+    //----------------------------------------------------------------------------------------------
+    //Port 0: get csb command, get data, set output result
+	.p0_writes_en		(p0_writes_en),
+	.p0_reads_en		(p0_reads_en),
+	//DDR Input Buffer (ib_) write mac calculation result back to ddr2
+	.p0_ib_re			(),
+	.p0_ib_data			(), //[31:0]
+	.p0_ib_count		(), //[9:0]
+	.p0_ib_valid		(),
+	.p0_ib_empty		(),
+	//DDR Output Buffer (ob_) get data from ddr2
+	.p0_ob_we			(),
+	.p0_ob_data			(),
+	.p0_ob_count		(),
 	
-	.p1_rd_en_o(),  
-	.p1_rd_empty(), 
-	.p1_rd_data(), 
-
-	.p1_cmd_en(),
-	.p1_cmd_full(), 
-	.p1_cmd_instr(),
-	.p1_cmd_byte_addr(), 
-	.p1_cmd_bl_o(), 
-
-	.p1_wr_en(),
-	.p1_wr_full(), 
-	.p1_wr_data(), 
-	.p1_wr_mask());
+	.p0_rd_en_o			(), 
+	.p0_rd_empty		(),
+	.p0_rd_data			(),
+	
+	.p0_cmd_full		(),
+	.p0_cmd_en			(),
+	.p0_cmd_instr		(),
+	.p0_cmd_byte_addr	(),
+	.p0_cmd_bl_o		(), 
+	.p0_wr_full			(),
+	.p0_wr_en			(),
+	.p0_wr_data			(),
+	.p0_wr_mask			(),
+    //----------------------------------------------------------------------------------------------
+    //Port 1: get weight
+    .p1_writes_en		(p1_writes_en),
+    .p1_reads_en		(p1_reads_en),
+    //DDR Input Buffer (ib_) write mac calculation result back to ddr2
+	.p1_ib_re			(),
+	.p1_ib_data			(),
+	.p1_ib_count		(),
+	.p1_ib_valid		(),
+	.p1_ib_empty		(),
+	//DDR Output Buffer (ob_) get weight and bias from ddr2
+	.p1_ob_we			(),
+	.p1_ob_data			(),
+	.p1_ob_count		(),
+    
+    .p1_rd_en_o			(), 
+	.p1_rd_empty		(),
+	.p1_rd_data			(),
+	
+	.p1_cmd_full		(),
+	.p1_cmd_en			(),
+	.p1_cmd_instr		(),
+	.p1_cmd_byte_addr	(),
+	.p1_cmd_bl_o		(), 
+	.p1_wr_full			(),
+	.p1_wr_en			(),
+	.p1_wr_data			(),
+	.p1_wr_mask			());
 //------------------------------------------------
 // PC Communication using Front Panel(TM)
 //------------------------------------------------
@@ -493,11 +513,12 @@ fifo_w32_1024_r32_1024 csb_cmd_fifo (
 	.empty(cmd_fifo_empty),
 	.valid(),
 	.rd_data_count(), // Bus [9 : 0] 
-	.wr_data_count()); // Bus [9 : 0] 
+	.wr_data_count(cmd_fifo_wr_count)); // Bus [9 : 0] 
 
 //NOTES: always use port0 and port1 for conv3x3. When doing conv3x3&1x1, port0 and port1 reads out additional 1 data.
 //TODO: Update estimated delay of dma access
 //FIFO for: CONV3x3, CONV3x3 & CONV1x1, MAXPOOL3x3
+//TODO: Use non-symmetric aspect ratio of read and write port of fifo.
 fifo_w32_16_r32_16 csb_data_fifo (
 	.rst(ep00wire[3]),
 	.wr_clk(c3_clk0),

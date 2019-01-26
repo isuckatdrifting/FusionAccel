@@ -14,7 +14,7 @@ module csb(
 
     output dma_aux_we,      //P0: CSB & CONV1x1. P1: CONV3x3, POOL3x3 & POOL13x13
     output dma_aux_re,      //P0: CSB & CONV1x1. P1: CONV3x3, POOL3x3 & POOL13x13
-
+    //FIFO Interface
     input [31:0] cmd,
     output cmd_fifo_rd_en,
     input cmd_fifo_empty,
@@ -38,6 +38,12 @@ module csb(
 
     output [31:0] r_addr,
     output [31:0] w_addr,
+
+    output p0_reads_en,
+    output p0_writes_en,
+    output p1_reads_en,
+    output p1_writes_en,
+    input cmd_fifo_wr_count,
     output irq
 );
 
@@ -47,7 +53,8 @@ module csb(
 
     //Compressed Commands from SDRAM
     //|----------CMD TYPE----------|
-    //|     op_type: 3Bit(8Bit)    | 5Bit remained space
+    //|        op_type: 3Bit       | 
+    //|    padding = 1: 1Bit       | 4Bit remained space
     //|       stride_1: 8bit       | Max line size = 224 < 256
     //|       stride_2: 16Bit      | Max surface size = image size = 224*224 = 50176 < 65536
     //|  input channel size: 16Bit |
@@ -57,7 +64,9 @@ module csb(
     //|  write_back_address: 32Bit |
     //|----------------------------| Totally 160Bit
 
-    //TODO: Command Translation from SDRAM --> FIFO i_port exposed to top, o_port called inside
+    //TODO: Command Translation from SDRAM --> Command Buffer
+    //TODO: Use Img2col Convolution
+    //TODO: Bias Operation in Conv is incorrect. Add bias after conv all channels.!!!!
     //TODO: Padding = 1
     //TODO: Multiple Channel Management, Little Endian, Jump Read --> Conv Buffer and Pooling Buffer
     //TODO: Use csb to reset submodules
@@ -69,17 +78,18 @@ module csb(
     //|MEM-Block|---------Address---------|---Space--|---Used-Space---|
     //|---------|-------------------------|----------|----------------|
     //|   Cmd   | 0x000_0000 - 0x000_007f |    128   |                |
-    //|  Weight | 0x000_1000 - 0x028_0FFF |1280k x 2 |1231552+CONVBIAS|
-    //|  Image  | 0x029_0000 - 0x02d_9800 | 147k x 2 |     150528     |
-    //|  Outbuf | 0x02e_0000 - 0x7ff_ffff | 125M-128 |    3071416     |
+    //|  Weight | 0x000_1000 - 0x009_D3FF |1280k / 2 |1231552+CONVBIAS|
+    //|  Image  | 0x00A_0000 - 0x00B_1F1B | 147k / 2 |                |
+    //|  Outbuf | 0x00C_0000 - 0x7ff_ffff | 125M-128 |    3071416     |
     //|---------|-------------------------|----------|----------------|
 
     //|---------------------type------------------------|----op_type----|
     //|IDLE                                             |      000      |
-    //|CONV3x3 + ReLU Activation                        |      001      |
-    //|CONV3x3(with padding) & CONV1x1 + ReLU Activation|      010      |
-    //|POOLING_3x3_MAX                                  |      011      |
-    //|POOLING_13x13_AVERAGE                            |      100      |
+    //|CONV1x1 + ReLU Activation                        |      001      |
+    //|CONV3x3 + ReLU Activation                        |      010      |
+    //|CONV3x3(with padding) & CONV1x1 + ReLU Activation|      011      |
+    //|POOLING_3x3_MAX                                  |      100      |
+    //|POOLING_13x13_AVERAGE                            |      101      |
     //|-------------------------------------------------|---------------| 
 
     //State Machine
@@ -98,24 +108,30 @@ module csb(
     localparam stride_0 = 1;
     reg cmd_fifo_rd_en;
     reg [2:0] cmd_burst_count;
-    reg [7:0] op_type; //Actually use 3bits
+    reg [2:0] op_type; //Actually use 3bits
+    reg padding;
     reg [7:0] stride_1;
     reg [15:0] stride_2;
     reg [15:0] ich_size;
     reg [15:0] och_size;
     reg [31:0] data_start_addr;
     reg [31:0] weight_start_addr;
+    reg [19:0] op_num; //0-1048576, Max op num = 512000 @ conv10
 
     //Translated Address Access Sequence
     reg dma_aux_re, dma_aux_we;
     reg [31:0] r_addr;
     reg [31:0] w_addr;
 
+    localparam DATA_1x1_BURST_LEN = 1;
+    localparam WEIGHT_1x1_BUTST_LEN = 1;
     localparam DATA_3x3_BURST_LEN = 5;
-    localparam WB_3x3_BURST_LEN = 6;
+    localparam WB_3x3_BURST_LEN = 5;
     localparam DATA_3x3_P_BURST_LEN = 6;
-    localparam WB_3x3_P_BURST_LEN = 8;
+    localparam WB_3x3_P_BURST_LEN = 6;
     localparam DATA_13x13_BURST_LEN = 85;
+    reg [3:0] data_1x1_burst_count;
+    reg [3:0] wb_1x1_burst_count;
     reg [3:0] data_3x3_burst_count;
     reg [3:0] wb_3x3_burst_count;
     reg [3:0] data_3x3_p_burst_count;
@@ -179,12 +195,32 @@ module csb(
         endcase
     end
 
-    //    Output, non-blocking, Command issue and dma access throttle
+    //DMA Accesss commands
+    always @ (posedge clk or negedge rst_n) begin
+        if(!rst_n) begin
+            p0_reads_en <= 0;
+            p1_reads_en <= 0;
+        end else begin
+            //Fifo logic: reads_en --> ob_we --> din->fifo --> fifo_rd_en
+            if(op_en) p0_reads_en <= 1; //Assert to DMA readout, DMA writing data to FIFO
+            if(p0_wr_data_count == cmd_size * 5) begin
+                p0_reads_en <= 0;       //Read command
+            end
+            if(cmd_collect_done) begin
+                p0_reads_en <= 1;   //Read data
+                if(op_type == 3'd1 || op_type == 3'd2) begin p1_reads_en <= 1; end  //Read weight
+                //TODO: reset p0_reads_en
+            end
+
+        end
+    end
+
+    //    Output, non-blocking, Command issue, Interface with FIFO
     always @ (posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             cmd_fifo_rd_en <= 0;
             cmd_burst_count <= 3'd0;
-            op_type <= 8'h00;
+            op_type <= 3'd0;
             stride_1 <= 8'h00;
             stride_2 <= 16'h0000;
             ich_size <= 16'h0000;
@@ -236,16 +272,16 @@ module csb(
                     data_13x13_burst_count <= DATA_13x13_BURST_LEN;
                 end
                 cmd_collect: begin
-                    //TODO: fifo logic
+                    cmd_fifo_rd_en <= 1; //Assert to FIFO, CSB reading data from FIFO            
                     //Split cmds from fifo into separate attributes
                     cmd_burst_count <= cmd_burst_count - 1;
                     op_done <= 0;
                     case (cmd_burst_count)
-                        5: begin op_type <= cmd[7:0]; stride_1 <= cmd[15:8]; stride_2 <= cmd[31:16]; end
+                        5: begin op_type <= cmd[2:0]; padding <= cmd[3]; stride_1 <= cmd[15:8]; stride_2 <= cmd[31:16]; end
                         4: begin ich_size <= cmd[15:0]; och_size <= cmd[31:16]; end
                         3: begin weight_start_addr <= cmd; end
                         2: begin data_start_addr <= cmd; end
-                        1: begin w_addr <= cmd; cmd_collect_done <= 1; end
+                        1: begin w_addr <= cmd; cmd_collect_done <= 1; cmd_fifo_rd_en <= 0; end
                         default: ;
                     endcase 
                 end
@@ -254,7 +290,27 @@ module csb(
                     cmd_collect_done <= 0;
                     //TODO: Send out dma access signals to get data to submodules, then send out ready signals
                     case (op_type)
-                        1: begin //CONV3x3
+                        1: begin
+                            data_fifo_rd_en <= 1;
+                            weight_fifo_rd_en <= 1;
+                            data_1x1_burst_count <= data_1x1_burst_count - 1;
+                            wb_1x1_burst_count <= wb_1x1_burst_count - 1;
+                            case (data_1x1_burst_count)
+                                1: im_1x1 <= data[15:0];
+                                default:;
+                            endcase
+                            case (wb_1x1_burst_count)
+                                1: iw_1x1 <= weightbias[15:0];
+                                default:;
+                            endcase
+                            if(wb_1x1_burst_count == 0) begin
+                                conv_ready_1x1 <= 1;
+                                cmd_issue_done <= 1;
+                            end
+                        end
+                        2: begin //CONV3x3
+                            data_fifo_rd_en <= 1;  //TODO: Check if FIFO Timing is correct
+                            weight_fifo_rd_en <= 1;
                             data_3x3_burst_count <= data_3x3_burst_count - 1;
                             wb_3x3_burst_count <= wb_3x3_burst_count - 1;
                             //Load data
@@ -265,9 +321,8 @@ module csb(
                             endcase
                             //Load weight
                             case (wb_3x3_burst_count)
-                                6,5,4,3: iw_3x3 <= {iw_3x3[143-32:0], weightbias};
-                                2: iw_3x3 <= {iw_3x3[143-16:0], weightbias[15:0]};
-                                1: ib_3x3 <= weightbias[15:0];
+                                5,4,3,2: iw_3x3 <= {iw_3x3[143-32:0], weightbias};
+                                1: iw_3x3 <= {iw_3x3[143-16:0], weightbias[15:0]};
                                 default:;
                             endcase
                             if(wb_3x3_burst_count == 0) begin
@@ -275,7 +330,9 @@ module csb(
                                 cmd_issue_done <= 1;
                             end
                         end
-                        2: begin //CONV3x3(with padding) & CONV1x1
+                        3: begin //CONV3x3(with padding) & CONV1x1
+                            data_fifo_rd_en <= 1;
+                            weight_fifo_rd_en <= 1;
                             data_3x3_p_burst_count <= data_3x3_p_burst_count - 1;
                             wb_3x3_p_burst_count <= wb_3x3_p_burst_count - 1;
                             //Load data
@@ -287,11 +344,9 @@ module csb(
                             endcase
                             //Load weight
                             case (wb_3x3_p_burst_count)
-                                8,7,6,5: iw_3x3 <= {iw_3x3[143-32:0], weightbias};
-                                4: iw_3x3 <= {iw_3x3[143-16:0], weightbias[15:0]};
-                                3: iw_1x1 <= weightbias[15:0];
-                                2: ib_3x3 <= weightbias[15:0];
-                                1: ib_1x1 <= weightbias[15:0];
+                                6,5,4,3: iw_3x3 <= {iw_3x3[143-32:0], weightbias};
+                                2: iw_3x3 <= {iw_3x3[143-16:0], weightbias[15:0]};
+                                1: iw_1x1 <= weightbias[15:0];
                                 default:;
                             endcase
                             if(wb_3x3_p_burst_count == 0) begin
@@ -300,7 +355,8 @@ module csb(
                                 cmd_issue_done <= 1;
                             end 
                         end
-                        3: begin //POOLING_3x3_MAX
+                        4: begin //POOLING_3x3_MAX
+                            data_fifo_rd_en <= 1;
                             data_3x3_burst_count <= data_3x3_burst_count - 1;
                             if(data_3x3_burst_count > 1) begin
                                 im_3x3 <= {im_3x3[143-32:0], data};
@@ -312,7 +368,8 @@ module csb(
                                 cmd_issue_done <= 1;
                             end 
                         end
-                        4: begin //POOLING_13x13_AVERAGE
+                        5: begin //POOLING_13x13_AVERAGE
+                            avep_fifo_rd_en <= 1;
                             data_13x13_burst_count <= data_13x13_burst_count - 1;
                             if(data_13x13_burst_count > 1) begin
                                 im_13x13 <= {im_13x13[143-32:0], avep};
