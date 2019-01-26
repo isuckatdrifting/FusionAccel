@@ -248,7 +248,10 @@ module csb(
                                 1: ib_3x3 <= weightbias[15:0];
                                 default:;
                             endcase
-                            if(wb_3x3_burst_count == 0) conv_ready_3x3 <= 1; //TODO: Think about a better way to count weightbias number
+                            if(wb_3x3_burst_count == 0) begin
+                                conv_ready_3x3 <= 1;
+                                cmd_issue_done <= 1;
+                            end
                         end
                         2: begin //CONV3x3(with padding) & CONV1x1
                             data_3x3_p_burst_count <= data_3x3_p_burst_count - 1;
@@ -272,6 +275,7 @@ module csb(
                             if(wb_3x3_p_burst_count == 0) begin
                                 conv_ready_3x3 <= 1; 
                                 conv_ready_1x1 <= 1;
+                                cmd_issue_done <= 1;
                             end 
                         end
                         3: begin //POOLING_3x3_MAX
@@ -281,7 +285,10 @@ module csb(
                             end else if(data_3x3_burst_count == 1) begin
                                 im_3x3 <= im_3x3 << 16 + data[15:0];
                             end
-                            if(data_3x3_burst_count == 0) pool_ready_3x3 <= 1; 
+                            if(data_3x3_burst_count == 0) begin
+                                pool_ready_3x3 <= 1;
+                                cmd_issue_done <= 1;
+                            end 
                         end
                         4: begin //POOLING_13x13_AVERAGE
                             data_13x13_burst_count <= data_13x13_burst_count - 1;
@@ -290,7 +297,10 @@ module csb(
                             end else if(data_13x13_burst_count == 1) begin
                                 im_13x13 <= im_13x13 << 16 + data[15:0];
                             end
-                            if(data_13x13_burst_count == 0) pool_ready_13x13 <= 1;
+                            if(data_13x13_burst_count == 0) begin
+                                pool_ready_13x13 <= 1;
+                                cmd_issue_done <= 1;
+                            end
                         end
                     endcase
                 end
