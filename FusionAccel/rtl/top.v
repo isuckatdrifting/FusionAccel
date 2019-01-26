@@ -76,24 +76,30 @@ csb csb_(
     .dma_aux_we			(dma_aux_we),      //P0: CSB & CONV1x1. P1: CONV3x3, POOL3x3 & POOL13x13
     .dma_aux_re			(dma_aux_re),      //P0: CSB & CONV1x1. P1: CONV3x3, POOL3x3 & POOL13x13
 
-	.cmd				(),
+	.cmd				(cmd),
+	.cmd_fifo_rd_en		(cmd_fifo_rd_en),
+	.cmd_fifo_empty		(cmd_fifo_empty),
 	.cmd_size			(),
 
-	.im_fifo_rd_en		(),
-	.iwb_fifo_rd_en		(),
-	.data				(),
-	.weightbias			(),
+	.data				(data),
+	.data_fifo_rd_en	(data_fifo_rd_en),
 	.im_1x1				(im_1x1),
-    .iw_1x1				(iw_1x1),
     .im_3x3				(im_3x3),
+
+	.weightbias			(weightbias),
+	.weight_fifo_rd_en	(weight_fifo_rd_en),
+    .iw_1x1				(iw_1x1),
     .iw_3x3				(iw_3x3),
     .ib_1x1				(ib_1x1),
 	.ib_3x3				(ib_3x3),
+
+	.avep				(avep),
+	.avep_fifo_rd_en	(avep_fifo_rd_en),
     .im_13x13			(im_13x13),
 
     .r_addr				(r_addr),
     .w_addr				(w_addr),
-    .irq				());
+    .irq				(irq));
 
 //------------------------------------------------
 // Simple 1x1 Convolution Core
@@ -103,7 +109,7 @@ conv_1x1 conv_1x1_(
     .rst_n		(ep00wire[2]),
     .im			(im_1x1),			//Input Matrix 1x1 [15:0]
     .iw			(iw_1x1),			//Input Weight 1x1 [15:0]
-	.ib			(ib),				//Input Bias 1x1   [15:0]
+	.ib			(ib_1x1),			//Input Bias 1x1   [15:0]
     .om			(),					//Output Weight 1x1[15:0]
     .conv_ready	(conv_ready_1x1),
     .conv_valid	(conv_valid_1x1));
@@ -116,7 +122,7 @@ conv_3x3 conv_3x3_(
     .rst_n		(ep00wire[2]),
     .im			(im_3x3),			//Input Matrix 3x3 [143:0]
     .iw			(iw_3x3),			//Input Weight 3x3 [143:0]
-	.ib			(ib),				//Input Bias 1x1   [15:0]
+	.ib			(ib_3x3),			//Input Bias 1x1   [15:0]
     .om			(),					//Output Weight 1x1[15:0]
     .conv_ready	(conv_ready_3x3),
     .conv_valid	(conv_valid_3x3));
@@ -475,16 +481,16 @@ fifo_w32_1024_r32_1024 okPipeOut_fifo (
 	.wr_data_count(pipe_out_wr_count)); // Bus [9 : 0] 
 
 //FIFO for: CSB Command
-fifo_w32_1024_r32_1024 csbcmd_fifo (
+fifo_w32_1024_r32_1024 csb_cmd_fifo (
 	.rst(ep00wire[3]),
 	.wr_clk(c3_clk0),
 	.rd_clk(sys_clk),
 	.din(), // Bus [31 : 0] 
 	.wr_en(),
-	.rd_en(),
-	.dout(), // Bus [31 : 0] 
+	.rd_en(cmd_fifo_rd_en),
+	.dout(cmd), // Bus [31 : 0] 
 	.full(),
-	.empty(),
+	.empty(cmd_fifo_empty),
 	.valid(),
 	.rd_data_count(), // Bus [9 : 0] 
 	.wr_data_count()); // Bus [9 : 0] 
@@ -492,28 +498,28 @@ fifo_w32_1024_r32_1024 csbcmd_fifo (
 //NOTES: always use port0 and port1 for conv3x3. When doing conv3x3&1x1, port0 and port1 reads out additional 1 data.
 //TODO: Update estimated delay of dma access
 //FIFO for: CONV3x3, CONV3x3 & CONV1x1, MAXPOOL3x3
-fifo_w32_16_r32_16 csb_im_fifo (
+fifo_w32_16_r32_16 csb_data_fifo (
 	.rst(ep00wire[3]),
 	.wr_clk(c3_clk0),
 	.rd_clk(sys_clk),
 	.din(), // Bus [31 : 0] 
 	.wr_en(),
-	.rd_en(),
-	.dout(), // Bus [31 : 0] 
+	.rd_en(data_fifo_rd_en),
+	.dout(data), // Bus [31 : 0] 
 	.full(),
 	.empty(),
 	.valid(),
 	.rd_data_count(), // Bus [9 : 0] 
 	.wr_data_count()); // Bus [9 : 0] 
 
-fifo_w32_16_r32_16 csb_iwb_fifo (
+fifo_w32_16_r32_16 csb_weight_fifo (
 	.rst(ep00wire[3]),
 	.wr_clk(c3_clk0),
 	.rd_clk(sys_clk),
 	.din(), // Bus [31 : 0] 
 	.wr_en(),
-	.rd_en(),
-	.dout(), // Bus [31 : 0] 
+	.rd_en(weight_fifo_rd_en),
+	.dout(weightbias), // Bus [31 : 0] 
 	.full(),
 	.empty(),
 	.valid(),
@@ -527,8 +533,8 @@ fifo_w32_128_r32_128 csb_avep_fifo (
 	.rd_clk(sys_clk),
 	.din(), // Bus [31 : 0] 
 	.wr_en(),
-	.rd_en(),
-	.dout(), // Bus [31 : 0] 
+	.rd_en(avep_fifo_rd_en),
+	.dout(avep), // Bus [31 : 0] 
 	.full(),
 	.empty(),
 	.valid(),

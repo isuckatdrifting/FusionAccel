@@ -15,21 +15,25 @@ module csb(
     output dma_aux_we,      //P0: CSB & CONV1x1. P1: CONV3x3, POOL3x3 & POOL13x13
     output dma_aux_re,      //P0: CSB & CONV1x1. P1: CONV3x3, POOL3x3 & POOL13x13
 
-    output cmd_fifo_rd_en,
     input [31:0] cmd,
+    output cmd_fifo_rd_en,
     input cmd_fifo_empty,
     input [6:0] cmd_size,   //total command size received from okHost after loading memory.
 
-    output im_fifo_rd_en,
-    output iwb_fifo_rd_en,
     input [31:0] data,
-    input [31:0] weightbias,
+    output data_fifo_rd_en,
     output [15:0] im_1x1,
-    output [15:0] iw_1x1,
     output [143:0] im_3x3,
+    
+    input [31:0] weightbias,
+    output weight_fifo_rd_en,
+    output [15:0] iw_1x1,
     output [143:0] iw_3x3,
     output [15:0] ib_1x1,
     output [15:0] ib_3x3,
+
+    input [31:0] avep,
+    output avep_fifo_rd_en,
     output [2703:0] im_13x13,
 
     output [31:0] r_addr,
@@ -118,14 +122,15 @@ module csb(
     reg [3:0] wb_3x3_p_burst_count;
     reg [7:0] data_13x13_burst_count;
     
-    reg im_fifo_rd_en;
-    reg iwb_fifo_rd_en;
+    reg data_fifo_rd_en;
+    reg weight_fifo_rd_en;
     reg [15:0] im_1x1;
     reg [15:0] iw_1x1;
     reg [143:0] im_3x3;
     reg [143:0] iw_3x3;
     reg [15:0] ib_1x1;
     reg [15:0] ib_3x3;
+    reg avep_fifo_rd_en;
     reg [2703:0] im_13x13;
 
     //Handshake signals to submodules
@@ -207,14 +212,15 @@ module csb(
             wb_3x3_p_burst_count <= 4'd0;
             data_13x13_burst_count <= 8'd0;
 
-            im_fifo_rd_en <= 0;
-            iwb_fifo_rd_en <= 0;
+            data_fifo_rd_en <= 0;
+            weight_fifo_rd_en <= 0;
             im_1x1 <= 16'h0000;
             iw_1x1 <= 16'h0000;
             im_3x3 <= 144'h0000__0000_0000_0000_0000__0000_0000_0000_0000;
             iw_3x3 <= 144'h0000__0000_0000_0000_0000__0000_0000_0000_0000;
             ib_1x1 <= 16'h0000;
             ib_3x3 <= 16'h0000;
+            avep_fifo_rd_en <= 0;
             im_13x13 <= 2704'd0;
 
             irq <= 0;
@@ -309,9 +315,9 @@ module csb(
                         4: begin //POOLING_13x13_AVERAGE
                             data_13x13_burst_count <= data_13x13_burst_count - 1;
                             if(data_13x13_burst_count > 1) begin
-                                im_13x13 <= {im_13x13[143-32:0], data};
+                                im_13x13 <= {im_13x13[143-32:0], avep};
                             end else if(data_13x13_burst_count == 1) begin
-                                im_13x13 <= {im_13x13[143-16:0], data[15:0]};
+                                im_13x13 <= {im_13x13[143-16:0], avep[15:0]};
                             end
                             if(data_13x13_burst_count == 0) begin
                                 pool_ready_13x13 <= 1;
