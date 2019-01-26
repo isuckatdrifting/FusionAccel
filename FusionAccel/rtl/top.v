@@ -373,7 +373,52 @@ always @(posedge okClk) begin
 end
 
 //TODO: MUX for Port0 of MCB
+dma_aux dma_aux_ (
+	.clk(c3_clk0),
+	.reset(ep00wire[2] | c3_rst0), 
+	.reads_en(),
+	.writes_en(),
+	.calib_done(c3_calib_done), 
 
+	.ib_re(),
+	.ib_data(),
+	.ib_count(),
+	.ib_valid(),
+	.ib_empty(),
+
+	.ob_we(),
+	.ob_data(),
+	.ob_count(),
+
+	.p0_rd_en_o(),  
+	.p0_rd_empty(), 
+	.p0_rd_data(), 
+
+	.p0_cmd_en(),
+	.p0_cmd_full(), 
+	.p0_cmd_instr(),
+	.p0_cmd_byte_addr(), 
+	.p0_cmd_bl_o(), 
+
+	.p1_wr_en(),
+	.p1_wr_full(), 
+	.p1_wr_data(), 
+	.p1_wr_mask(),
+	
+	.p1_rd_en_o(),  
+	.p1_rd_empty(), 
+	.p1_rd_data(), 
+
+	.p1_cmd_en(),
+	.p1_cmd_full(), 
+	.p1_cmd_instr(),
+	.p1_cmd_byte_addr(), 
+	.p1_cmd_bl_o(), 
+
+	.p1_wr_en(),
+	.p1_wr_full(), 
+	.p1_wr_data(), 
+	.p1_wr_mask());
 //------------------------------------------------
 // PC Communication using Front Panel(TM)
 //------------------------------------------------
