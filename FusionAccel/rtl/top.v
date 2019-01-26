@@ -442,7 +442,7 @@ fifo_w32_1024_r32_1024 csbcmd_fifo (
 //NOTES: always use port0 and port1 for conv3x3. When doing conv3x3&1x1, port0 and port1 reads out additional 1 data.
 //TODO: Update estimated delay of dma access
 //FIFO for: CONV3x3, CONV3x3 & CONV1x1, MAXPOOL3x3
-fifo_w16_16_r16_16 csb_im_fifo (
+fifo_w32_16_r32_16 csb_im_fifo (
 	.rst(ep00wire[3]),
 	.wr_clk(c3_clk0),
 	.rd_clk(sys_clk),
@@ -456,7 +456,7 @@ fifo_w16_16_r16_16 csb_im_fifo (
 	.rd_data_count(), // Bus [9 : 0] 
 	.wr_data_count()); // Bus [9 : 0] 
 
-fifo_w16_16_r16_16 csb_iwb_fifo (
+fifo_w32_16_r32_16 csb_iwb_fifo (
 	.rst(ep00wire[3]),
 	.wr_clk(c3_clk0),
 	.rd_clk(sys_clk),
@@ -471,7 +471,7 @@ fifo_w16_16_r16_16 csb_iwb_fifo (
 	.wr_data_count()); // Bus [9 : 0] 
 
 //FIFO for: AVEPOOL13x13
-fifo_w16_256_r16_256 csb_avep_fifo (
+fifo_w32_128_r32_128 csb_avep_fifo (
 	.rst(ep00wire[3]),
 	.wr_clk(c3_clk0),
 	.rd_clk(sys_clk),
