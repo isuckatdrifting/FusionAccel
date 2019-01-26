@@ -1,0 +1,277 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wave_config>
+   <wave_state>
+   </wave_state>
+   <db_ref_list>
+      <db_ref path="C:/Users/shish/source/repos/FusionAccel/FusionAccel/csb_tb_isim_beh.wdb" id="1" type="auto">
+         <top_modules>
+            <top_module name="csb_tb" />
+            <top_module name="glbl" />
+         </top_modules>
+      </db_ref>
+   </db_ref_list>
+   <WVObjectSize size="57" />
+   <wvobject fp_name="/csb_tb/conv_ready_1x1" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">conv_ready_1x1</obj_property>
+      <obj_property name="ObjectShortName">conv_ready_1x1</obj_property>
+   </wvobject>
+   <wvobject fp_name="/csb_tb/conv_ready_3x3" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">conv_ready_3x3</obj_property>
+      <obj_property name="ObjectShortName">conv_ready_3x3</obj_property>
+   </wvobject>
+   <wvobject fp_name="/csb_tb/pool_ready_3x3" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">pool_ready_3x3</obj_property>
+      <obj_property name="ObjectShortName">pool_ready_3x3</obj_property>
+   </wvobject>
+   <wvobject fp_name="/csb_tb/pool_ready_13x13" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">pool_ready_13x13</obj_property>
+      <obj_property name="ObjectShortName">pool_ready_13x13</obj_property>
+   </wvobject>
+   <wvobject fp_name="/csb_tb/dma_aux_we" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">dma_aux_we</obj_property>
+      <obj_property name="ObjectShortName">dma_aux_we</obj_property>
+   </wvobject>
+   <wvobject fp_name="/csb_tb/dma_aux_re" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">dma_aux_re</obj_property>
+      <obj_property name="ObjectShortName">dma_aux_re</obj_property>
+   </wvobject>
+   <wvobject fp_name="/csb_tb/cmd_fifo_rd_en" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">cmd_fifo_rd_en</obj_property>
+      <obj_property name="ObjectShortName">cmd_fifo_rd_en</obj_property>
+   </wvobject>
+   <wvobject fp_name="/csb_tb/im_fifo_rd_en" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">im_fifo_rd_en</obj_property>
+      <obj_property name="ObjectShortName">im_fifo_rd_en</obj_property>
+   </wvobject>
+   <wvobject fp_name="/csb_tb/iwb_fifo_rd_en" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">iwb_fifo_rd_en</obj_property>
+      <obj_property name="ObjectShortName">iwb_fifo_rd_en</obj_property>
+   </wvobject>
+   <wvobject fp_name="/csb_tb/im_1x1" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">im_1x1[15:0]</obj_property>
+      <obj_property name="ObjectShortName">im_1x1[15:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/csb_tb/iw_1x1" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">iw_1x1[15:0]</obj_property>
+      <obj_property name="ObjectShortName">iw_1x1[15:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/csb_tb/im_3x3" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">im_3x3[143:0]</obj_property>
+      <obj_property name="ObjectShortName">im_3x3[143:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/csb_tb/iw_3x3" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">iw_3x3[143:0]</obj_property>
+      <obj_property name="ObjectShortName">iw_3x3[143:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/csb_tb/ib_1x1" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">ib_1x1[15:0]</obj_property>
+      <obj_property name="ObjectShortName">ib_1x1[15:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/csb_tb/ib_3x3" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">ib_3x3[15:0]</obj_property>
+      <obj_property name="ObjectShortName">ib_3x3[15:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/csb_tb/im_13x13" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">im_13x13[2703:0]</obj_property>
+      <obj_property name="ObjectShortName">im_13x13[2703:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/csb_tb/r_addr" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">r_addr[31:0]</obj_property>
+      <obj_property name="ObjectShortName">r_addr[31:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/csb_tb/w_addr" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">w_addr[31:0]</obj_property>
+      <obj_property name="ObjectShortName">w_addr[31:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/csb_tb/irq" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">irq</obj_property>
+      <obj_property name="ObjectShortName">irq</obj_property>
+   </wvobject>
+   <wvobject fp_name="/csb_tb/clk" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">clk</obj_property>
+      <obj_property name="ObjectShortName">clk</obj_property>
+   </wvobject>
+   <wvobject fp_name="/csb_tb/rst_n" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">rst_n</obj_property>
+      <obj_property name="ObjectShortName">rst_n</obj_property>
+   </wvobject>
+   <wvobject fp_name="/csb_tb/op_en" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">op_en</obj_property>
+      <obj_property name="ObjectShortName">op_en</obj_property>
+   </wvobject>
+   <wvobject fp_name="/csb_tb/conv_valid_1x1" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">conv_valid_1x1</obj_property>
+      <obj_property name="ObjectShortName">conv_valid_1x1</obj_property>
+   </wvobject>
+   <wvobject fp_name="/csb_tb/conv_valid_3x3" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">conv_valid_3x3</obj_property>
+      <obj_property name="ObjectShortName">conv_valid_3x3</obj_property>
+   </wvobject>
+   <wvobject fp_name="/csb_tb/pool_valid_3x3" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">pool_valid_3x3</obj_property>
+      <obj_property name="ObjectShortName">pool_valid_3x3</obj_property>
+   </wvobject>
+   <wvobject fp_name="/csb_tb/pool_valid_13x13" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">pool_valid_13x13</obj_property>
+      <obj_property name="ObjectShortName">pool_valid_13x13</obj_property>
+   </wvobject>
+   <wvobject fp_name="/csb_tb/cmd" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">cmd[31:0]</obj_property>
+      <obj_property name="ObjectShortName">cmd[31:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/csb_tb/cmd_fifo_empty" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">cmd_fifo_empty</obj_property>
+      <obj_property name="ObjectShortName">cmd_fifo_empty</obj_property>
+   </wvobject>
+   <wvobject fp_name="/csb_tb/cmd_size" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">cmd_size[6:0]</obj_property>
+      <obj_property name="ObjectShortName">cmd_size[6:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/csb_tb/data" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">data[31:0]</obj_property>
+      <obj_property name="ObjectShortName">data[31:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/csb_tb/weightbias" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">weightbias[31:0]</obj_property>
+      <obj_property name="ObjectShortName">weightbias[31:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="divider34" type="divider">
+      <obj_property name="label">State Machine</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <obj_property name="BkColor">128 128 255</obj_property>
+      <obj_property name="TextColor">230 230 230</obj_property>
+   </wvobject>
+   <wvobject fp_name="/csb_tb/csb_/curr_state" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">curr_state[2:0]</obj_property>
+      <obj_property name="ObjectShortName">curr_state[2:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/csb_tb/csb_/op_en" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">op_en</obj_property>
+      <obj_property name="ObjectShortName">op_en</obj_property>
+   </wvobject>
+   <wvobject fp_name="/csb_tb/csb_/cmd_collect_done" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">cmd_collect_done</obj_property>
+      <obj_property name="ObjectShortName">cmd_collect_done</obj_property>
+   </wvobject>
+   <wvobject fp_name="/csb_tb/csb_/cmd_issue_done" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">cmd_issue_done</obj_property>
+      <obj_property name="ObjectShortName">cmd_issue_done</obj_property>
+   </wvobject>
+   <wvobject fp_name="/csb_tb/csb_/op_done" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">op_done</obj_property>
+      <obj_property name="ObjectShortName">op_done</obj_property>
+   </wvobject>
+   <wvobject fp_name="/csb_tb/csb_/cmd_burst_count" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">cmd_burst_count[2:0]</obj_property>
+      <obj_property name="ObjectShortName">cmd_burst_count[2:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/csb_tb/csb_/data_3x3_burst_count" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">data_3x3_burst_count[3:0]</obj_property>
+      <obj_property name="ObjectShortName">data_3x3_burst_count[3:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/csb_tb/csb_/wb_3x3_burst_count" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">wb_3x3_burst_count[3:0]</obj_property>
+      <obj_property name="ObjectShortName">wb_3x3_burst_count[3:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/csb_tb/csb_/data_3x3_p_burst_count" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">data_3x3_p_burst_count[3:0]</obj_property>
+      <obj_property name="ObjectShortName">data_3x3_p_burst_count[3:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/csb_tb/csb_/wb_3x3_p_burst_count" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">wb_3x3_p_burst_count[3:0]</obj_property>
+      <obj_property name="ObjectShortName">wb_3x3_p_burst_count[3:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/csb_tb/csb_/data_13x13_burst_count" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">data_13x13_burst_count[7:0]</obj_property>
+      <obj_property name="ObjectShortName">data_13x13_burst_count[7:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="divider46" type="divider">
+      <obj_property name="label">Command</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <obj_property name="BkColor">128 128 255</obj_property>
+      <obj_property name="TextColor">230 230 230</obj_property>
+   </wvobject>
+   <wvobject fp_name="/csb_tb/csb_/op_type" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">op_type[7:0]</obj_property>
+      <obj_property name="ObjectShortName">op_type[7:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/csb_tb/csb_/stride_1" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">stride_1[7:0]</obj_property>
+      <obj_property name="ObjectShortName">stride_1[7:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/csb_tb/csb_/stride_2" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">stride_2[15:0]</obj_property>
+      <obj_property name="ObjectShortName">stride_2[15:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/csb_tb/csb_/ich_size" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">ich_size[15:0]</obj_property>
+      <obj_property name="ObjectShortName">ich_size[15:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/csb_tb/csb_/och_size" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">och_size[15:0]</obj_property>
+      <obj_property name="ObjectShortName">och_size[15:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/csb_tb/csb_/weight_start_addr" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">weight_start_addr[31:0]</obj_property>
+      <obj_property name="ObjectShortName">weight_start_addr[31:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/csb_tb/csb_/data_start_addr" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">data_start_addr[31:0]</obj_property>
+      <obj_property name="ObjectShortName">data_start_addr[31:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/csb_tb/csb_/w_addr" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">w_addr[31:0]</obj_property>
+      <obj_property name="ObjectShortName">w_addr[31:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/csb_tb/data" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">data[31:0]</obj_property>
+      <obj_property name="ObjectShortName">data[31:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/csb_tb/im_3x3" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">im_3x3[143:0]</obj_property>
+      <obj_property name="ObjectShortName">im_3x3[143:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/csb_tb/weightbias" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">weightbias[31:0]</obj_property>
+      <obj_property name="ObjectShortName">weightbias[31:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/csb_tb/iw_3x3" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">iw_3x3[143:0]</obj_property>
+      <obj_property name="ObjectShortName">iw_3x3[143:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/csb_tb/ib_3x3" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">ib_3x3[15:0]</obj_property>
+      <obj_property name="ObjectShortName">ib_3x3[15:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+</wave_config>
