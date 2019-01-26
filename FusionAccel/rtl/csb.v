@@ -14,7 +14,7 @@ module csb(
 
     output dma_aux_we,      //P0: CSB & CONV1x1. P1: CONV3x3, POOL3x3 & POOL13x13
     output dma_aux_re,      //P0: CSB & CONV1x1. P1: CONV3x3, POOL3x3 & POOL13x13
-
+    //FIFO Interface
     input [31:0] cmd,
     output cmd_fifo_rd_en,
     input cmd_fifo_empty,
@@ -38,6 +38,12 @@ module csb(
 
     output [31:0] r_addr,
     output [31:0] w_addr,
+
+    output p0_reads_en,
+    output p0_writes_en,
+    output p1_reads_en,
+    output p1_writes_en,
+    input cmd_fifo_wr_count,
     output irq
 );
 
@@ -179,7 +185,27 @@ module csb(
         endcase
     end
 
-    //    Output, non-blocking, Command issue and dma access throttle
+    //DMA Accesss commands
+    always @ (posedge clk or negedge rst_n) begin
+        if(!rst_n) begin
+            p0_reads_en <= 0;
+            p1_reads_en <= 0;
+        end else begin
+            //Fifo logic: reads_en --> ob_we --> din->fifo --> fifo_rd_en
+            if(op_en) p0_reads_en <= 1; //Assert to DMA readout, DMA writing data to FIFO
+            if(p0_wr_data_count == cmd_size * 5) begin
+                p0_reads_en <= 0;
+            end
+            if(cmd_collect_done) begin
+                p0_reads_en <= 1;
+                if(op_type == 3'd1 || op_type == 3'd2) begin p1_reads_en <= 1; end
+                //TODO: reset p0_reads_en
+            end
+
+        end
+    end
+
+    //    Output, non-blocking, Command issue, Interface with FIFO
     always @ (posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             cmd_fifo_rd_en <= 0;
@@ -236,7 +262,7 @@ module csb(
                     data_13x13_burst_count <= DATA_13x13_BURST_LEN;
                 end
                 cmd_collect: begin
-                    //TODO: fifo logic
+                    cmd_fifo_rd_en <= 1; //Assert to FIFO, CSB reading data from FIFO            
                     //Split cmds from fifo into separate attributes
                     cmd_burst_count <= cmd_burst_count - 1;
                     op_done <= 0;
@@ -245,7 +271,7 @@ module csb(
                         4: begin ich_size <= cmd[15:0]; och_size <= cmd[31:16]; end
                         3: begin weight_start_addr <= cmd; end
                         2: begin data_start_addr <= cmd; end
-                        1: begin w_addr <= cmd; cmd_collect_done <= 1; end
+                        1: begin w_addr <= cmd; cmd_collect_done <= 1; cmd_fifo_rd_en <= 0; end
                         default: ;
                     endcase 
                 end
@@ -255,6 +281,8 @@ module csb(
                     //TODO: Send out dma access signals to get data to submodules, then send out ready signals
                     case (op_type)
                         1: begin //CONV3x3
+                            data_fifo_rd_en <= 1;  //TODO: Check if FIFO Timing is correct
+                            weight_fifo_rd_en <= 1;
                             data_3x3_burst_count <= data_3x3_burst_count - 1;
                             wb_3x3_burst_count <= wb_3x3_burst_count - 1;
                             //Load data
@@ -276,6 +304,8 @@ module csb(
                             end
                         end
                         2: begin //CONV3x3(with padding) & CONV1x1
+                            data_fifo_rd_en <= 1;
+                            weight_fifo_rd_en <= 1;
                             data_3x3_p_burst_count <= data_3x3_p_burst_count - 1;
                             wb_3x3_p_burst_count <= wb_3x3_p_burst_count - 1;
                             //Load data
@@ -301,6 +331,7 @@ module csb(
                             end 
                         end
                         3: begin //POOLING_3x3_MAX
+                            data_fifo_rd_en <= 1;
                             data_3x3_burst_count <= data_3x3_burst_count - 1;
                             if(data_3x3_burst_count > 1) begin
                                 im_3x3 <= {im_3x3[143-32:0], data};
@@ -313,6 +344,7 @@ module csb(
                             end 
                         end
                         4: begin //POOLING_13x13_AVERAGE
+                            avep_fifo_rd_en <= 1;
                             data_13x13_burst_count <= data_13x13_burst_count - 1;
                             if(data_13x13_burst_count > 1) begin
                                 im_13x13 <= {im_13x13[143-32:0], avep};

@@ -99,6 +99,12 @@ csb csb_(
 
     .r_addr				(r_addr),
     .w_addr				(w_addr),
+
+	.p0_reads_en		(p0_reads_en),
+    .p0_writes_en		(p0_writes_en),
+    .p1_reads_en		(p1_reads_en),
+    .p1_writes_en		(p1_writes_en),
+    .cmd_fifo_wr_count	(cmd_fifo_wr_count),
     .irq				(irq));
 
 //------------------------------------------------
@@ -493,7 +499,7 @@ fifo_w32_1024_r32_1024 csb_cmd_fifo (
 	.empty(cmd_fifo_empty),
 	.valid(),
 	.rd_data_count(), // Bus [9 : 0] 
-	.wr_data_count()); // Bus [9 : 0] 
+	.wr_data_count(cmd_fifo_wr_count)); // Bus [9 : 0] 
 
 //NOTES: always use port0 and port1 for conv3x3. When doing conv3x3&1x1, port0 and port1 reads out additional 1 data.
 //TODO: Update estimated delay of dma access
