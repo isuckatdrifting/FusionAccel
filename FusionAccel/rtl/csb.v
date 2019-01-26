@@ -18,13 +18,20 @@ module csb(
     input [31:0] cmd,
     input [6:0] cmd_size,   //total command size received from okHost after loading memory.
 
+    output [15:0] im_1x1,
+    output [15:0] iw_1x1,
+    output [143:0] im_3x3,
+    output [143:0] iw_3x3,
+    output [15:0] ib,
+    output [2703:0] im_13x13,
+
     output [31:0] r_addr,
     output [31:0] w_addr,
     output irq
 );
 
     //Notes: CMDs are loaded initially to SDRAM to be called multiple times.
-    //Notes: DBB path is not in CSB, it is embedded in dma2submodule path.
+    //Notes: DBB path is in CSB.
     //Notes: CMD Fifo: WR clock domain: c3clk0, RD clock domain: clk.
 
     //Compressed Commands from SDRAM
@@ -38,7 +45,7 @@ module csb(
     //|  write_back_address: 32Bit |
     //|----------------------------| Totally 128Bit
 
-    //TODO: Command Translation from SDRAM --> i_port exposed to top, o_port called inside
+    //TODO: Command Translation from SDRAM --> FIFO i_port exposed to top, o_port called inside
     //TODO: Padding = 1
     //TODO: Multiple Channel Management, Little Endian, Jump Read --> Conv Buffer and Pooling Buffer
     //TODO: Use csb to reset submodules
@@ -72,6 +79,7 @@ module csb(
 
     reg cmd_collect_done;
     reg cmd_issue_done;
+    reg op_done;
 
     //Command Parsing
     localparam CMD_BURST_LEN = 4;
@@ -124,6 +132,7 @@ module csb(
                     else next_state = cmd_collect;
                 end
                 else next_state = finish;
+            end
             finish: begin
 
             end
@@ -159,10 +168,11 @@ module csb(
                     cmd_burst_count <= CMD_BURST_LEN;
                 end
                 cmd_collect: begin
+                    //TODO: fifo logic
                     //Split cmds from fifo into separate attributes
                     cmd_burst_count <= cmd_burst_count - 1;
                     case (cmd_burst_count)
-                        1: begin op_type <= cmd[7:0]; stride_1 <= cmd[15:8]; stride_2 <= cmd[31:0];
+                        1: begin op_type <= cmd[7:0]; stride_1 <= cmd[15:8]; stride_2 <= cmd[31:0]; end
                         2: begin ich_size <= cmd[15:0]; och_size <= cmd[31:16]; end
                         3: begin start_addr <= cmd; end
                         4: begin w_addr <= cmd; cmd_collect_done <= 1; end
@@ -170,20 +180,30 @@ module csb(
                     endcase 
                 end
                 cmd_issue: begin
-                    //Send out dma access signals to generate data to data port of submodules, send out ready signals
+                    cmd_burst_count <= CMD_BURST_LEN;
+                    //TODO: Send out dma access signals to generate data to data port of submodules, then send out ready signals
                     case (op_type)
-                        1: begin conv_ready_3x3 <= 1; end //CONV3x3
-                        2: begin conv_ready_3x3 <= 1; conv_ready_1x1 <= 1; end //CONV3x3(with padding) & CONV1x1
-                        3: begin pool_ready_3x3 <= 1; end //POOLING_3x3_MAX
-                        4: begin pool_ready_13x13 <= 1; end //POOLING_13x13_AVERAGE
+                        1: begin //CONV3x3
+                            conv_ready_3x3 <= 1;
+                            end
+                        2: begin //CONV3x3(with padding) & CONV1x1 
+                            conv_ready_3x3 <= 1; 
+                            conv_ready_1x1 <= 1; 
+                            end
+                        3: begin //POOLING_3x3_MAX
+                            pool_ready_3x3 <= 1; 
+                            end
+                        4: begin //POOLING_13x13_AVERAGE
+                            pool_ready_13x13 <= 1; 
+                            end
                     endcase
                 end
                 wait_op: begin
                     //Wait for submodules to finish --> wait for valid/done signals
-                    if(conv_valid_3x3) conv_ready_3x3 <= 0;
-                    if(conv_valid_1x1) conv_ready_1x1 <= 0;
-                    if(pool_valid_3x3) pool_ready_3x3 <= 0;
-                    if(pool_valid_13x13) pool_ready_13x13 <= 0;
+                    if(conv_valid_3x3) begin conv_ready_3x3 <= 0; op_done <= 1; end
+                    if(conv_valid_1x1) begin conv_ready_1x1 <= 0; op_done <= 1; end
+                    if(pool_valid_3x3) begin pool_ready_3x3 <= 0; op_done <= 1; end
+                    if(pool_valid_13x13) begin pool_ready_13x13 <= 0; op_done <= 1; end
                 end
                 finish: begin
 

@@ -61,7 +61,7 @@ clockgen clockgen_ (
 //------------------------------------------------
 csb csb_(
     .clk				(sys_clk),
-    .rst_n				(ep00wire[2]),
+    .rst_n				(ep00wire[3]),
 	.op_en				(),
 
     .conv_valid_1x1		(conv_valid_1x1), 
@@ -79,6 +79,13 @@ csb csb_(
 	.cmd				(),
 	.cmd_size			(),
 
+	.im_1x1				(im_1x1),
+    .iw_1x1				(iw_1x1),
+    .im_3x3				(im_3x3),
+    .iw_3x3				(iw_3x3),
+    .ib					(ib),
+    .im_13x13			(im_13x13),
+
     .r_addr				(r_addr),
     .w_addr				(w_addr),
     .irq				());
@@ -89,9 +96,9 @@ csb csb_(
 conv_1x1 conv_1x1_(
     .clk		(sys_clk),
     .rst_n		(ep00wire[2]),
-    .im			(),					//Input Matrix 1x1 [15:0]
-    .iw			(),					//Input Weight 1x1 [15:0]
-	.ib			(),					//Input Bias 1x1   [15:0]
+    .im			(im_1x1),			//Input Matrix 1x1 [15:0]
+    .iw			(iw_1x1),			//Input Weight 1x1 [15:0]
+	.ib			(ib),				//Input Bias 1x1   [15:0]
     .om			(),					//Output Weight 1x1[15:0]
     .conv_ready	(conv_ready_1x1),
     .conv_valid	(conv_valid_1x1));
@@ -102,10 +109,10 @@ conv_1x1 conv_1x1_(
 conv_3x3 conv_3x3_(
     .clk		(sys_clk),
     .rst_n		(ep00wire[2]),
-    .im			(im),				//Input Matrix 3x3 [143:0]
-    .iw			(iw),				//Input Weight 3x3 [143:0]
+    .im			(im_3x3),			//Input Matrix 3x3 [143:0]
+    .iw			(iw_3x3),			//Input Weight 3x3 [143:0]
 	.ib			(ib),				//Input Bias 1x1   [15:0]
-    .om			(om),				//Output Weight 1x1[15:0]
+    .om			(),					//Output Weight 1x1[15:0]
     .conv_ready	(conv_ready_3x3),
     .conv_valid	(conv_valid_3x3));
 
@@ -115,8 +122,8 @@ conv_3x3 conv_3x3_(
 pool_3x3 pool_3x3_(
     .clk		(sys_clk),
     .rst_n		(ep00wire[2]),
-    .im			(pool_im),			//Input Matrix 3x3 [143:0]
-    .om			(pool_om),			//Output Matrix 1x1[15:0]
+    .im			(im_3x3),			//Input Matrix 3x3 [143:0]
+    .om			(),					//Output Matrix 1x1[15:0]
     .pool_ready	(pool_ready_3x3),
     .pool_valid	(pool_valid_3x3));
 
@@ -126,7 +133,7 @@ pool_3x3 pool_3x3_(
 pool_13x13 pool_13x13_(
     .clk		(sys_clk),
     .rst_n		(ep00wire[2]),
-    .im			(),					//Input Matrix 13x13[2703:0]
+    .im			(im_13x13),			//Input Matrix 13x13[2703:0]
     .om			(),					//Output Matrix 1x1 [15:0]
     .pool_ready	(pool_ready_13x13),
     .pool_valid	(pool_valid_13x13));
@@ -416,6 +423,67 @@ fifo_w32_1024_r32_1024 okPipeOut_fifo (
 	.valid(),
 	.rd_data_count(pipe_out_rd_count), // Bus [9 : 0] 
 	.wr_data_count(pipe_out_wr_count)); // Bus [9 : 0] 
+
+//FIFO for: CSB Command
+fifo_w32_1024_r32_1024 csbcmd_fifo (
+	.rst(ep00wire[3]),
+	.wr_clk(c3_clk0),
+	.rd_clk(sys_clk),
+	.din(), // Bus [31 : 0] 
+	.wr_en(),
+	.rd_en(),
+	.dout(), // Bus [31 : 0] 
+	.full(),
+	.empty(),
+	.valid(),
+	.rd_data_count(), // Bus [9 : 0] 
+	.wr_data_count()); // Bus [9 : 0] 
+
+//NOTES: always use port0 and port1 for conv3x3. When doing conv3x3&1x1, port0 and port1 reads out additional 1 data.
+//TODO: Update estimated delay of dma access
+//FIFO for: CONV3x3, CONV3x3 & CONV1x1, MAXPOOL3x3
+fifo_w16_16_r16_16 csb_im_fifo (
+	.rst(ep00wire[3]),
+	.wr_clk(c3_clk0),
+	.rd_clk(sys_clk),
+	.din(), // Bus [31 : 0] 
+	.wr_en(),
+	.rd_en(),
+	.dout(), // Bus [31 : 0] 
+	.full(),
+	.empty(),
+	.valid(),
+	.rd_data_count(), // Bus [9 : 0] 
+	.wr_data_count()); // Bus [9 : 0] 
+
+fifo_w16_16_r16_16 csb_iwb_fifo (
+	.rst(ep00wire[3]),
+	.wr_clk(c3_clk0),
+	.rd_clk(sys_clk),
+	.din(), // Bus [31 : 0] 
+	.wr_en(),
+	.rd_en(),
+	.dout(), // Bus [31 : 0] 
+	.full(),
+	.empty(),
+	.valid(),
+	.rd_data_count(), // Bus [9 : 0] 
+	.wr_data_count()); // Bus [9 : 0] 
+
+//FIFO for: AVEPOOL13x13
+fifo_w16_256_r16_256 csb_avep_fifo (
+	.rst(ep00wire[3]),
+	.wr_clk(c3_clk0),
+	.rd_clk(sys_clk),
+	.din(), // Bus [31 : 0] 
+	.wr_en(),
+	.rd_en(),
+	.dout(), // Bus [31 : 0] 
+	.full(),
+	.empty(),
+	.valid(),
+	.rd_data_count(), // Bus [9 : 0] 
+	.wr_data_count()); // Bus [9 : 0] 
 //--------------v2, More complicate Cores for Other Function and Networks--//
 //reshape reshape_(); //Memory Reshape and Concatenation Core
 //acti acti_(); //Activation Core
