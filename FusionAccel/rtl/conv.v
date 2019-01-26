@@ -213,8 +213,8 @@ module conv_1x1(
     accum accum_0 (.a(a0), .b(b0), .operation_nd(operation_nd_accum), .operation_rfd(operation_rfd_accum), .clk(clk), 
     .sclr(sclr_accum), .ce(ce_accum), .result(o_buf0), .underflow(underflow_accum0), .overflow(overflow_accum0), .invalid_op(invalid_op_accum0), .rdy(rdy_accum));
 
-    reg [3:0] curr_state;
-    reg [3:0] next_state;
+    reg [2:0] curr_state;
+    reg [2:0] next_state;
     //    Current State, non-blocking
     always @ (posedge clk or negedge rst_n)    begin
         if (!rst_n)

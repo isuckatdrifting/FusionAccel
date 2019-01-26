@@ -1,11 +1,3 @@
-//|---------------------type------------------------|----op_type----|
-//|IDLE                                             |      000      |
-//|CONV3x3 + ReLU Activation                        |      001      |
-//|CONV3x3(with padding) & CONV1x1 + ReLU Activation|      010      |
-//|POOLING_3x3_MAX                                  |      011      |
-//|POOLING_13x13_AVERAGE                            |      100      |
-//|-------------------------------------------------|---------------| 
- 
 module csb(
     input clk,
     input rst_n,
@@ -44,25 +36,6 @@ module csb(
     //|  write_back_address: 32Bit |
     //|----------------------------| Totally 128Bit
 
-    localparam CMD_BURST_LEN = 4;
-    reg cmd_burst_count;
-    reg [127:0] cmd_full;
-    reg [2:0] op_type;
-    reg [15:0] ich_size;
-    reg [15:0] och_size;
-    reg [31:0] start_addr;
-    reg [31:0] wb_addr;
-    reg [9:0] stride_0 = 1;
-    reg [7:0] stride_1;
-    reg [15:0] stride_2;
-
-    //Translated Address Access Sequence
-
-    reg conv_ready_1x1, conv_ready_3x3, pool_ready_3x3, pool_ready_13x13;
-    reg dma_aux_re, dma_aux_we;
-    reg [31:0] r_addr;
-    reg [31:0] w_addr;
-
     //TODO: Command Translation from SDRAM --> i_port exposed to top, o_port called inside
     //TODO: Padding = 1
     //TODO: Multiple Channel Management, Little Endian, Jump Read --> Conv Buffer and Pooling Buffer
@@ -79,7 +52,18 @@ module csb(
     //|  Outbuf | 0x02e_0000 - 0x7ff_ffff | 125M-128 |    3071416     |
     //|---------|-------------------------|----------|----------------|
 
+    //|---------------------type------------------------|----op_type----|
+    //|IDLE                                             |      000      |
+    //|CONV3x3 + ReLU Activation                        |      001      |
+    //|CONV3x3(with padding) & CONV1x1 + ReLU Activation|      010      |
+    //|POOLING_3x3_MAX                                  |      011      |
+    //|POOLING_13x13_AVERAGE                            |      100      |
+    //|-------------------------------------------------|---------------| 
+
     //Handshake signals to submodules
+
+    reg conv_ready_1x1, conv_ready_3x3, pool_ready_3x3, pool_ready_13x13;
+
     always@ (posedge clk or negedge rst_n) begin
         if(!rst_n) begin
             conv_ready_1x1 <= 0;
@@ -102,13 +86,32 @@ module csb(
     localparam idle = 3'b000;
     localparam cmd_collect = 3'b001; //Get cmd from SDRAM
     localparam cmd_issue = 3'b010; //Generate DMA access commands
-    localparam finish = 3'b011;
+    localparam wait_op = 3'b011; //Get done signals from submodule macs
+    localparam finish = 3'b100;
 
     reg cmd_collect_valid;
     reg cmd_issue_done;
 
-    reg [3:0] curr_state;
-    reg [3:0] next_state;
+    //Command Parsing
+    localparam CMD_BURST_LEN = 4;
+    reg cmd_burst_count;
+    reg [127:0] cmd_full;
+    reg [2:0] op_type;
+    reg [15:0] ich_size;
+    reg [15:0] och_size;
+    reg [31:0] start_addr;
+    reg [31:0] wb_addr;
+    reg [9:0] stride_0 = 1;
+    reg [7:0] stride_1;
+    reg [15:0] stride_2;
+
+    //Translated Address Access Sequence
+    reg dma_aux_re, dma_aux_we;
+    reg [31:0] r_addr;
+    reg [31:0] w_addr;
+
+    reg [2:0] curr_state;
+    reg [2:0] next_state;
     //    Current State, non-blocking
     always @ (posedge clk or negedge rst_n)    begin
         if (!rst_n)
@@ -130,10 +133,17 @@ module csb(
                 else next_state = cmd_collect;
             end
             cmd_issue: begin
-                if(cmd_issue_done) next_state = finish;
+                if(cmd_issue_done) next_state = wait_op;
                 else next_state = cmd_issue;
             end
+            wait_op: begin
+                if(op_done) begin
+                    if(cmd_fifo_empty) next_state = finish;
+                    else next_state = cmd_collect;
+                end
+                else next_state = finish;
             finish: begin
+
             end
             default:
                 next_state = idle;
