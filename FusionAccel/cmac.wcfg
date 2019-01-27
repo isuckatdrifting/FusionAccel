@@ -10,7 +10,7 @@
          </top_modules>
       </db_ref>
    </db_ref_list>
-   <WVObjectSize size="29" />
+   <WVObjectSize size="31" />
    <wvobject fp_name="/cmac_tb/result" type="array" db_ref_id="1">
       <obj_property name="ElementShortName">result[15:0]</obj_property>
       <obj_property name="ObjectShortName">result[15:0]</obj_property>
@@ -36,6 +36,11 @@
    <wvobject fp_name="/cmac_tb/weight" type="array" db_ref_id="1">
       <obj_property name="ElementShortName">weight[15:0]</obj_property>
       <obj_property name="ObjectShortName">weight[15:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/cmac_tb/cmac_/bias" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">bias[15:0]</obj_property>
+      <obj_property name="ObjectShortName">bias[15:0]</obj_property>
       <obj_property name="Radix">HEXRADIX</obj_property>
    </wvobject>
    <wvobject fp_name="/cmac_tb/conv_ready" type="logic" db_ref_id="1">
@@ -107,6 +112,10 @@
       <obj_property name="BkColor">128 128 255</obj_property>
       <obj_property name="TextColor">230 230 230</obj_property>
       <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/cmac_tb/cmac_/data_permit_acc" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">data_permit_acc</obj_property>
+      <obj_property name="ObjectShortName">data_permit_acc</obj_property>
    </wvobject>
    <wvobject fp_name="/cmac_tb/cmac_/acc_/a" type="array" db_ref_id="1">
       <obj_property name="ElementShortName">a[15:0]</obj_property>

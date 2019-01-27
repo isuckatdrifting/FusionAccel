@@ -5,6 +5,7 @@ reg clk;
 reg rst;
 reg [15:0] data;
 reg [15:0] weight;
+reg [15:0] bias;
 wire [15:0] result;
 reg conv_ready;
 reg [31:0] op_num;
@@ -31,6 +32,7 @@ cmac cmac_(
     .rst        (rst),
     .data       (data),
     .weight     (weight),
+    .bias       (bias),
     .result     (result),
     .conv_ready (conv_ready),
     .op_num     (op_num),
@@ -48,6 +50,8 @@ initial begin
     #20 rst = 1;
     #10 rst = 0;
     #100 conv_ready = 1; op_num = 9;
+    //bias = 16'hdc78;
+    bias = 16'h3c00;
 
 end
 

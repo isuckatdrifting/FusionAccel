@@ -3,6 +3,7 @@ module cmac(
     input rst,
     input [15:0] data,
     input [15:0] weight,
+    input [15:0] bias,
     output [15:0] result,
     input conv_ready,
     input [31:0] op_num, //input op_num changes the same time as conv_ready pulls up
@@ -28,12 +29,13 @@ assign ce_acc = ~rdy_acc;
 assign sclr_acc = rdy_acc;
 
 assign data_permit_mult = (~rdy_mult) ^ operation_rfd_mult;
-assign data_permit = (~rdy_acc) ^ operation_rfd_acc;
+assign data_permit_acc = (~rdy_acc) ^ operation_rfd_acc;
 
 localparam idle = 3'b000;
 localparam mult = 3'b001;
 localparam acc = 3'b010;
-localparam finish = 3'b011;
+localparam bia = 3'b011;
+localparam finish = 3'b100;
 //localparam PARA = 32; //Number of same MAC operating at the same time
 
 multiplier mult_ (.a(a_mult), .b(b_mult), .operation_nd(operation_nd_mult), .operation_rfd(operation_rfd_mult), .clk(clk), 
@@ -66,10 +68,14 @@ always @ (*) begin
         end
         acc: begin
             if(rdy_acc) begin
-                if(remain_op_num == 0) next_state = finish;
+                if(remain_op_num == 0) next_state = bia;
                 else next_state = mult;
             end
             else next_state = acc;
+        end
+        bia: begin
+            if(rdy_acc) next_state = finish;
+            else next_state = bia;
         end
         finish: begin
         end
@@ -99,18 +105,28 @@ always @ (posedge clk or posedge rst) begin
             mult: begin
                 if(operation_rfd_mult) begin operation_nd_mult <= 1'b1; end
                 if(data_permit_mult) begin a_mult <= data; b_mult <= weight; end
-                if(rdy_mult) operation_nd_mult <= 1'b0;
+                if(rdy_mult) begin
+                    operation_nd_mult <= 1'b0;
+                    if(remain_op_num == 0) begin a_mult <= 0; b_mult <= 0; end
+                end
             end
             acc: begin
                 if(operation_rfd_acc) begin operation_nd_acc <= 1'b1; end
-                if(data_permit) begin a_acc <= result_acc; b_acc <= result_mult; end
+                if(data_permit_acc) begin a_acc <= result_acc; b_acc <= result_mult; end
                 if(rdy_acc) begin 
                     operation_nd_acc <= 1'b0; 
-                    remain_op_num <= remain_op_num - 1; 
-                    if(remain_op_num == 0) begin 
-                        conv_valid <= 1; 
-                        result <= result_acc[15]?16'h0000:result_acc; 
-                    end
+                    if(remain_op_num != 0) remain_op_num <= remain_op_num - 1; 
+                    else b_acc <= bias;
+                end
+            end
+            bia: begin
+                if(operation_rfd_acc) begin operation_nd_acc <= 1'b1; end
+                if(data_permit_acc) begin a_acc <= result_acc; b_acc <= bias; end
+                if(rdy_acc) begin 
+                    a_acc <= 0; b_acc <= 0;
+                    operation_nd_acc <= 1'b0; 
+                    conv_valid <= 1; 
+                    result <= result_acc[15]?16'h0000:result_acc; 
                 end
             end
             default:;
