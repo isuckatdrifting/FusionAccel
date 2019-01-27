@@ -64,14 +64,12 @@ csb csb_(
     .rst_n				(ep00wire[3]),
 	.op_en				(),
 
-    .conv_valid_1x1		(conv_valid_1x1), 
-	.conv_ready_1x1		(conv_ready_1x1),
-    .conv_valid_3x3		(conv_valid_3x3),
-    .conv_ready_3x3		(conv_ready_3x3),
-    .pool_valid_3x3		(pool_valid_3x3),
-    .pool_ready_3x3		(pool_ready_3x3),
-    .pool_valid_13x13	(pool_valid_13x13),
-    .pool_ready_13x13	(pool_ready_13x13),
+    .conv_valid			(conv_valid),
+	.conv_ready			(conv_ready),
+    .maxpool_valid		(maxpool_valid),
+	.maxpool_ready		(maxpool_ready),
+	.avepool_valid		(avepool_valid),
+	.avepool_ready		(avepool_ready),
 
     .dma_aux_we			(dma_aux_we),      //P0: CSB & CONV1x1. P1: CONV3x3, POOL3x3 & POOL13x13
     .dma_aux_re			(dma_aux_re),      //P0: CSB & CONV1x1. P1: CONV3x3, POOL3x3 & POOL13x13
@@ -83,19 +81,12 @@ csb csb_(
 
 	.data				(data),
 	.data_fifo_rd_en	(data_fifo_rd_en),
-	.im_1x1				(im_1x1),
-    .im_3x3				(im_3x3),
+	.im					(im),
 
 	.weightbias			(weightbias),
 	.weight_fifo_rd_en	(weight_fifo_rd_en),
-    .iw_1x1				(iw_1x1),
-    .iw_3x3				(iw_3x3),
-    .ib_1x1				(ib_1x1),
-	.ib_3x3				(ib_3x3),
-
-	.avep				(avep),
-	.avep_fifo_rd_en	(avep_fifo_rd_en),
-    .im_13x13			(im_13x13),
+    .iw					(iw),
+    .ib					(ib),
 
     .r_addr				(r_addr),
     .w_addr				(w_addr),
@@ -113,10 +104,10 @@ csb csb_(
 pool_3x3 pool_3x3_(
     .clk		(sys_clk),
     .rst_n		(ep00wire[2]),
-    .im			(im_3x3),			//Input Matrix 3x3 [143:0]
+    .im			(),					//Input Matrix 3x3 [143:0]
     .om			(),					//Output Matrix 1x1[15:0]
-    .pool_ready	(pool_ready_3x3),
-    .pool_valid	(pool_valid_3x3));
+    .pool_ready	(maxpool_ready),
+    .pool_valid	(maxpool_valid));
 
 //------------------------------------------------
 // Pipeline 13x13 Average Pooling Core
@@ -124,10 +115,10 @@ pool_3x3 pool_3x3_(
 pool_13x13 pool_13x13_(
     .clk		(sys_clk),
     .rst_n		(ep00wire[2]),
-    .im			(im_13x13),			//Input Matrix 13x13[2703:0]
+    .im			(),					//Input Matrix 13x13[2703:0]
     .om			(),					//Output Matrix 1x1 [15:0]
-    .pool_ready	(pool_ready_13x13),
-    .pool_valid	(pool_valid_13x13));
+    .pool_ready	(avepool_ready),
+    .pool_valid	(avepool_valid));
 
 //------------------------------------------------
 // Memory Control Block
@@ -521,20 +512,6 @@ fifo_w32_16_r32_16 csb_weight_fifo (
 	.rd_data_count(), // Bus [9 : 0] 
 	.wr_data_count()); // Bus [9 : 0] 
 
-//FIFO for: AVEPOOL13x13
-fifo_w32_128_r32_128 csb_avep_fifo (
-	.rst(ep00wire[3]),
-	.wr_clk(c3_clk0),
-	.rd_clk(sys_clk),
-	.din(), // Bus [31 : 0] 
-	.wr_en(),
-	.rd_en(avep_fifo_rd_en),
-	.dout(avep), // Bus [31 : 0] 
-	.full(),
-	.empty(),
-	.valid(),
-	.rd_data_count(), // Bus [9 : 0] 
-	.wr_data_count()); // Bus [9 : 0] 
 //--------------v2, More complicate Cores for Other Function and Networks--//
 //reshape reshape_(); //Memory Reshape and Concatenation Core
 //acti acti_(); //Activation Core
