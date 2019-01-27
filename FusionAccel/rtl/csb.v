@@ -10,8 +10,6 @@ module csb(
     input avepool_valid,
     output avepool_ready,
 
-    output dma_aux_we,      //P0: CSB & CONV1x1. P1: CONV3x3, POOL3x3 & POOL13x13
-    output dma_aux_re,      //P0: CSB & CONV1x1. P1: CONV3x3, POOL3x3 & POOL13x13
     //FIFO Interface
     input [31:0] cmd,
     output cmd_fifo_rd_en,
@@ -34,6 +32,10 @@ module csb(
     output p0_writes_en,
     output p1_reads_en,
     output p1_writes_en,
+    output p2_reads_en,
+    output p2_writes_en,
+    output p3_reads_en,
+    output p3_writes_en,
     input cmd_fifo_wr_count,
     output irq
 );
@@ -114,7 +116,6 @@ module csb(
     reg [31:0] op_num; //0-1048576, Max op num = 512000 @ conv10
 
     //Translated Address Access Sequence
-    reg dma_aux_re, dma_aux_we;
     reg [31:0] r_addr;
     reg [31:0] w_addr;
 
@@ -210,8 +211,6 @@ module csb(
 
             r_addr <= 32'h0000_0000;
             w_addr <= 32'h0000_0000;
-            dma_aux_re <= 0;
-            dma_aux_we <= 0;
 
             conv_ready <= 0;
             maxpool_ready <= 0;
@@ -263,6 +262,7 @@ module csb(
                     data_burst_count <= data_burst_count + 1;
                     wb_burst_count <= wb_burst_count + 1;
                     //TODO: Set data and weight access according to op_type
+                    //Port0: data, Port1: weight
                     case (op_type)
                         1:if(wb_burst_count == 0) begin
                                 conv_ready <= 1;
