@@ -3,14 +3,12 @@ module csb(
     input rst_n,
     input op_en,
 
-    input conv_valid_1x1, 
-    output conv_ready_1x1,
-    input conv_valid_3x3,
-    output conv_ready_3x3,
-    input pool_valid_3x3,
-    output pool_ready_3x3,
-    input pool_valid_13x13,
-    output pool_ready_13x13,
+    input conv_valid,
+    output conv_ready,
+    input maxpool_valid,
+    output maxpool_ready,
+    input avepool_valid,
+    output avepool_ready,
 
     output dma_aux_we,      //P0: CSB & CONV1x1. P1: CONV3x3, POOL3x3 & POOL13x13
     output dma_aux_re,      //P0: CSB & CONV1x1. P1: CONV3x3, POOL3x3 & POOL13x13
@@ -22,19 +20,12 @@ module csb(
 
     input [31:0] data,
     output data_fifo_rd_en,
-    output [15:0] im_1x1,
-    output [143:0] im_3x3,
+    output [15:0] im,
     
     input [31:0] weightbias,
     output weight_fifo_rd_en,
-    output [15:0] iw_1x1,
-    output [143:0] iw_3x3,
-    output [15:0] ib_1x1,
-    output [15:0] ib_3x3,
-
-    input [31:0] avep,
-    output avep_fifo_rd_en,
-    output [2703:0] im_13x13,
+    output [15:0] iw,
+    output [15:0] ib,
 
     output [31:0] r_addr,
     output [31:0] w_addr,
@@ -59,6 +50,8 @@ module csb(
     //|       stride_2: 16Bit      | Max surface size = image size = 224*224 = 50176 < 65536
     //|  input channel size: 16Bit |
     //| output channel size: 16Bit |
+    //|   input kernel size: 16Bit |
+    //|  output kernel size: 16Bit |
     //|   weight_start_addr: 32Bit |
     //|     data_start_addr: 32Bit |
     //|  write_back_address: 32Bit |
@@ -67,7 +60,7 @@ module csb(
     //TODO: Command Translation from SDRAM --> Command Buffer
     //TODO: Use Img2col/MEC Convolution
     //TODO: Bias Operation in Conv is incorrect. Add bias after conv all channels.!!!!
-    //TODO: Padding = 1
+    //TODO: Padding = 1 --> Add 0 in memory
     //TODO: Multiple Channel Management, Little Endian, Jump Read --> Conv Buffer and Pooling Buffer
     //TODO: Use csb to reset submodules
     //TODO: CONV3x3 CONV 1x1 Parallelism
@@ -104,7 +97,7 @@ module csb(
     reg op_done;
 
     //Command Parsing
-    localparam CMD_BURST_LEN = 5;
+    localparam CMD_BURST_LEN = 6;
     localparam stride_0 = 1;
     reg cmd_fifo_rd_en;
     reg [2:0] cmd_burst_count;
@@ -114,43 +107,28 @@ module csb(
     reg [15:0] stride_2;
     reg [15:0] ich_size;
     reg [15:0] och_size;
+    reg [15:0] ikn_size;
+    reg [15:0] okn_size;
     reg [31:0] data_start_addr;
     reg [31:0] weight_start_addr;
-    reg [19:0] op_num; //0-1048576, Max op num = 512000 @ conv10
+    reg [31:0] op_num; //0-1048576, Max op num = 512000 @ conv10
 
     //Translated Address Access Sequence
     reg dma_aux_re, dma_aux_we;
     reg [31:0] r_addr;
     reg [31:0] w_addr;
 
-    localparam DATA_1x1_BURST_LEN = 1;
-    localparam WEIGHT_1x1_BUTST_LEN = 1;
-    localparam DATA_3x3_BURST_LEN = 5;
-    localparam WB_3x3_BURST_LEN = 5;
-    localparam DATA_3x3_P_BURST_LEN = 6;
-    localparam WB_3x3_P_BURST_LEN = 6;
-    localparam DATA_13x13_BURST_LEN = 85;
-    reg [3:0] data_1x1_burst_count;
-    reg [3:0] wb_1x1_burst_count;
-    reg [3:0] data_3x3_burst_count;
-    reg [3:0] wb_3x3_burst_count;
-    reg [3:0] data_3x3_p_burst_count;
-    reg [3:0] wb_3x3_p_burst_count;
-    reg [7:0] data_13x13_burst_count;
+    reg [31:0] data_burst_count;
+    reg [31:0] wb_burst_count;
     
     reg data_fifo_rd_en;
     reg weight_fifo_rd_en;
-    reg [15:0] im_1x1;
-    reg [15:0] iw_1x1;
-    reg [143:0] im_3x3;
-    reg [143:0] iw_3x3;
-    reg [15:0] ib_1x1;
-    reg [15:0] ib_3x3;
-    reg avep_fifo_rd_en;
-    reg [2703:0] im_13x13;
+    reg [15:0] im;
+    reg [15:0] iw;
+    reg [15:0] ib;
 
     //Handshake signals to submodules
-    reg conv_ready_1x1, conv_ready_3x3, pool_ready_3x3, pool_ready_13x13;
+    reg conv_ready, maxpool_ready, avepool_ready;
 
     reg irq;
 
@@ -225,6 +203,8 @@ module csb(
             stride_2 <= 16'h0000;
             ich_size <= 16'h0000;
             och_size <= 16'h0000;
+            ikn_size <= 16'h0000;
+            okn_size <= 16'h0000;
             data_start_addr <= 32'h0000_0000;
             weight_start_addr <= 32'h0000_0000;
 
@@ -233,31 +213,22 @@ module csb(
             dma_aux_re <= 0;
             dma_aux_we <= 0;
 
-            conv_ready_1x1 <= 0;
-            conv_ready_3x3 <= 0;
-            pool_ready_3x3 <= 0;
-            pool_ready_13x13 <= 0;
+            conv_ready <= 0;
+            maxpool_ready <= 0;
+            avepool_ready <= 0;
 
             cmd_collect_done <= 0;
             cmd_issue_done <= 0;
             op_done <= 0;
 
-            data_3x3_burst_count <= 4'd0;
-            wb_3x3_burst_count <= 4'd0;
-            data_3x3_p_burst_count <= 4'd0;
-            wb_3x3_p_burst_count <= 4'd0;
-            data_13x13_burst_count <= 8'd0;
+            data_burst_count <= 32'd0;
+            wb_burst_count <= 32'd0;
 
             data_fifo_rd_en <= 0;
             weight_fifo_rd_en <= 0;
-            im_1x1 <= 16'h0000;
-            iw_1x1 <= 16'h0000;
-            im_3x3 <= 144'h0000__0000_0000_0000_0000__0000_0000_0000_0000;
-            iw_3x3 <= 144'h0000__0000_0000_0000_0000__0000_0000_0000_0000;
-            ib_1x1 <= 16'h0000;
-            ib_3x3 <= 16'h0000;
-            avep_fifo_rd_en <= 0;
-            im_13x13 <= 2704'd0;
+            im <= 16'h0000;
+            iw <= 16'h0000;
+            ib <= 16'h0000;
 
             irq <= 0;
         end
@@ -265,11 +236,8 @@ module csb(
             case (curr_state)
                 idle: begin
                     cmd_burst_count <= CMD_BURST_LEN;
-                    data_3x3_burst_count <= DATA_3x3_BURST_LEN;
-                    wb_3x3_burst_count <= WB_3x3_BURST_LEN;
-                    data_3x3_p_burst_count <= DATA_3x3_P_BURST_LEN;
-                    wb_3x3_p_burst_count <= WB_3x3_P_BURST_LEN;
-                    data_13x13_burst_count <= DATA_13x13_BURST_LEN;
+                    data_burst_count <= 0;
+                    wb_burst_count <= 0;
                 end
                 cmd_collect: begin
                     cmd_fifo_rd_en <= 1; //Assert to FIFO, CSB reading data from FIFO            
@@ -277,8 +245,9 @@ module csb(
                     cmd_burst_count <= cmd_burst_count - 1;
                     op_done <= 0;
                     case (cmd_burst_count)
-                        5: begin op_type <= cmd[2:0]; padding <= cmd[3]; stride_1 <= cmd[15:8]; stride_2 <= cmd[31:16]; end
-                        4: begin ich_size <= cmd[15:0]; och_size <= cmd[31:16]; end
+                        6: begin op_type <= cmd[2:0]; padding <= cmd[3]; stride_1 <= cmd[15:8]; stride_2 <= cmd[31:16]; end
+                        5: begin ich_size <= cmd[15:0]; och_size <= cmd[31:16]; end
+                        4: begin ikn_size <= cmd[15:0]; okn_size <= cmd[31:16]; end
                         3: begin weight_start_addr <= cmd; end
                         2: begin data_start_addr <= cmd; end
                         1: begin w_addr <= cmd; cmd_collect_done <= 1; cmd_fifo_rd_en <= 0; end
@@ -289,112 +258,45 @@ module csb(
                     cmd_burst_count <= CMD_BURST_LEN;
                     cmd_collect_done <= 0;
                     //TODO: Send out dma access signals to get data to submodules, then send out ready signals
+                    data_fifo_rd_en <= 1;
+                    weight_fifo_rd_en <= 1;
+                    data_burst_count <= data_burst_count + 1;
+                    wb_burst_count <= wb_burst_count + 1;
+                    //TODO: Set data and weight access according to op_type
                     case (op_type)
-                        1: begin
-                            data_fifo_rd_en <= 1;
-                            weight_fifo_rd_en <= 1;
-                            data_1x1_burst_count <= data_1x1_burst_count - 1;
-                            wb_1x1_burst_count <= wb_1x1_burst_count - 1;
-                            case (data_1x1_burst_count)
-                                1: im_1x1 <= data[15:0];
-                                default:;
-                            endcase
-                            case (wb_1x1_burst_count)
-                                1: iw_1x1 <= weightbias[15:0];
-                                default:;
-                            endcase
-                            if(wb_1x1_burst_count == 0) begin
-                                conv_ready_1x1 <= 1;
+                        1:if(wb_burst_count == 0) begin
+                                conv_ready <= 1;
                                 cmd_issue_done <= 1;
                             end
-                        end
-                        2: begin //CONV3x3
-                            data_fifo_rd_en <= 1;  //TODO: Check if FIFO Timing is correct
-                            weight_fifo_rd_en <= 1;
-                            data_3x3_burst_count <= data_3x3_burst_count - 1;
-                            wb_3x3_burst_count <= wb_3x3_burst_count - 1;
-                            //Load data
-                            case (data_3x3_burst_count)
-                                5,4,3,2: im_3x3 <= {im_3x3[143-32:0], data};
-                                1: im_3x3 <= {im_3x3[143-16:0], data[15:0]};
-                                default:;
-                            endcase
-                            //Load weight
-                            case (wb_3x3_burst_count)
-                                5,4,3,2: iw_3x3 <= {iw_3x3[143-32:0], weightbias};
-                                1: iw_3x3 <= {iw_3x3[143-16:0], weightbias[15:0]};
-                                default:;
-                            endcase
-                            if(wb_3x3_burst_count == 0) begin
-                                conv_ready_3x3 <= 1;
+                        2:if(wb_burst_count == 0) begin
+                                conv_ready <= 1;
                                 cmd_issue_done <= 1;
                             end
-                        end
-                        3: begin //CONV3x3(with padding) & CONV1x1
-                            data_fifo_rd_en <= 1;
-                            weight_fifo_rd_en <= 1;
-                            data_3x3_p_burst_count <= data_3x3_p_burst_count - 1;
-                            wb_3x3_p_burst_count <= wb_3x3_p_burst_count - 1;
-                            //Load data
-                            case (data_3x3_p_burst_count)
-                                6,5,4,3: im_3x3 <= {im_3x3[143-32:0], data};
-                                2: im_3x3 <= {im_3x3[143-16:0], data[15:0]};
-                                1: im_1x1 <= data[15:0];
-                                default:;
-                            endcase
-                            //Load weight
-                            case (wb_3x3_p_burst_count)
-                                6,5,4,3: iw_3x3 <= {iw_3x3[143-32:0], weightbias};
-                                2: iw_3x3 <= {iw_3x3[143-16:0], weightbias[15:0]};
-                                1: iw_1x1 <= weightbias[15:0];
-                                default:;
-                            endcase
-                            if(wb_3x3_p_burst_count == 0) begin
-                                conv_ready_3x3 <= 1; 
-                                conv_ready_1x1 <= 1;
-                                cmd_issue_done <= 1;
-                            end 
-                        end
-                        4: begin //POOLING_3x3_MAX
-                            data_fifo_rd_en <= 1;
-                            data_3x3_burst_count <= data_3x3_burst_count - 1;
-                            if(data_3x3_burst_count > 1) begin
-                                im_3x3 <= {im_3x3[143-32:0], data};
-                            end else if(data_3x3_burst_count == 1) begin
-                                im_3x3 <= {im_3x3[143-16:0], data[15:0]};
-                            end
-                            if(data_3x3_burst_count == 0) begin
-                                pool_ready_3x3 <= 1;
-                                cmd_issue_done <= 1;
-                            end 
-                        end
-                        5: begin //POOLING_13x13_AVERAGE
-                            avep_fifo_rd_en <= 1;
-                            data_13x13_burst_count <= data_13x13_burst_count - 1;
-                            if(data_13x13_burst_count > 1) begin
-                                im_13x13 <= {im_13x13[143-32:0], avep};
-                            end else if(data_13x13_burst_count == 1) begin
-                                im_13x13 <= {im_13x13[143-16:0], avep[15:0]};
-                            end
-                            if(data_13x13_burst_count == 0) begin
-                                pool_ready_13x13 <= 1;
+                        3:if(wb_burst_count == 0) begin
+                                conv_ready <= 1; 
+                                //TODO: dual channel conv_ready
                                 cmd_issue_done <= 1;
                             end
-                        end
+                        4:if(data_burst_count == 0) begin
+                                maxpool_ready <= 1;
+                                cmd_issue_done <= 1;
+                            end
+                        5:if(data_burst_count == 0) begin
+                                avepool_ready <= 1;
+                                cmd_issue_done <= 1;
+                            end
+                        default:;
                     endcase
                 end
                 wait_op: begin
+                    //Reset register in cmd_issue
                     cmd_issue_done <= 0;
-                    data_3x3_burst_count <= DATA_3x3_BURST_LEN;
-                    wb_3x3_burst_count <= WB_3x3_BURST_LEN;
-                    data_3x3_p_burst_count <= DATA_3x3_P_BURST_LEN;
-                    wb_3x3_p_burst_count <= WB_3x3_P_BURST_LEN;
-                    data_13x13_burst_count <= DATA_13x13_BURST_LEN;
+                    data_burst_count <= 0;
+                    wb_burst_count <= 0;
                     //Wait for submodules to finish --> wait for valid/done signals
-                    if(conv_valid_3x3) begin conv_ready_3x3 <= 0; op_done <= 1; end
-                    if(conv_valid_1x1) begin conv_ready_1x1 <= 0; op_done <= 1; end
-                    if(pool_valid_3x3) begin pool_ready_3x3 <= 0; op_done <= 1; end
-                    if(pool_valid_13x13) begin pool_ready_13x13 <= 0; op_done <= 1; end
+                    if(conv_valid) begin conv_ready <= 0; op_done <= 1; end
+                    if(maxpool_valid) begin maxpool_ready <= 0; op_done <= 1; end
+                    if(avepool_valid) begin avepool_ready <= 0; op_done <= 1; end
                 end
                 finish: begin
                     op_done <= 0;
