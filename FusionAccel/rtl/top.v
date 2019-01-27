@@ -108,32 +108,6 @@ csb csb_(
     .irq				(irq));
 
 //------------------------------------------------
-// Simple 1x1 Convolution Core
-//------------------------------------------------
-conv_1x1 conv_1x1_(
-    .clk		(sys_clk),
-    .rst_n		(ep00wire[2]),
-    .im			(im_1x1),			//Input Matrix 1x1 [15:0]
-    .iw			(iw_1x1),			//Input Weight 1x1 [15:0]
-	.ib			(ib_1x1),			//Input Bias 1x1   [15:0]
-    .om			(),					//Output Weight 1x1[15:0]
-    .conv_ready	(conv_ready_1x1),
-    .conv_valid	(conv_valid_1x1));
-
-//------------------------------------------------
-// Pipeline 3x3 Convolution Core
-//------------------------------------------------
-conv_3x3 conv_3x3_(
-    .clk		(sys_clk),
-    .rst_n		(ep00wire[2]),
-    .im			(im_3x3),			//Input Matrix 3x3 [143:0]
-    .iw			(iw_3x3),			//Input Weight 3x3 [143:0]
-	.ib			(ib_3x3),			//Input Bias 1x1   [15:0]
-    .om			(),					//Output Weight 1x1[15:0]
-    .conv_ready	(conv_ready_3x3),
-    .conv_valid	(conv_valid_3x3));
-
-//------------------------------------------------
 // Bitonic 3x3 Max Pooling Core
 //------------------------------------------------
 pool_3x3 pool_3x3_(

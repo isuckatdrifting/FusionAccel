@@ -65,7 +65,7 @@ module csb(
     //|----------------------------| Totally 160Bit
 
     //TODO: Command Translation from SDRAM --> Command Buffer
-    //TODO: Use Img2col Convolution
+    //TODO: Use Img2col/MEC Convolution
     //TODO: Bias Operation in Conv is incorrect. Add bias after conv all channels.!!!!
     //TODO: Padding = 1
     //TODO: Multiple Channel Management, Little Endian, Jump Read --> Conv Buffer and Pooling Buffer

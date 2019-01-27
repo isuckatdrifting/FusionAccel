@@ -96,10 +96,31 @@ No CPU Architecture means no DMA.
 
 Available SDRAM Resource = 1Gbit = 128MByte = 64MWord
 
-3x3 Conv, Multiply Takes 9 Cycles, Accumulate Takes 42 Cycles, Totally Takes 51 Cycles, 65 FFs.
-Use Bitonic Sort for 3x3 Max Pooling, Takes 31 Cycles, 213 FFs.
-Use Sum/Divide for 13x13 Average Pooling. fp sum calc takes 11 cycles. Takes 110 Cycles totally. Divider takes 26 cycles. Totally takes 136 Cycles, 600FFs.
+- 3x3 Conv, Multiply Takes 9 Cycles, Accumulate Takes 42 Cycles, Totally Takes 51 Cycles, 65 FFs.
+- Use Bitonic Sort for 3x3 Max Pooling, Takes 31 Cycles, 213 FFs.
+- Use Sum/Divide for 13x13 Average Pooling. fp sum calc takes 11 cycles. Takes 110 Cycles totally. Divider takes 26 cycles. Totally takes 136 Cycles, 600FFs.
 
 fp mult aresetn must be asserted for minimum 2 cycles, fp mult takes 7 cycles.
 
 Maybe RCB or CRB is better than BRC or BCR, since it stores different channels on different banks
+
+| Conventional Unit | Cycle | 
+| ---- | ----- |
+| Mult |   8   |
+| Sum  |   11   |
+| Compare |   5   |
+| Divide |  26  |
+| Conv 1x1 | Mult + 1 = 9 |
+| Conv 3x3 | Mult + 1 + Sum * 3 = 42 |
+| Pool 3x3 | Compare * 7 = 35 |
+| Pool 13x13 | Sum * 10 + Divide = 136 |
+
+| MEC Unit | Cycle | 
+| ---- | ----- |
+| Mult |   8   |
+| Sum  |   11   |
+| Compare |   5   |
+| Divide |  26  |
+| Conv_single | Mult + 1 + Sum = 20 |
+| Pool 3x3 | Compare * 7 = 35 |
+| Pool 13x13 | Sum * 10 + Divide = 136 |

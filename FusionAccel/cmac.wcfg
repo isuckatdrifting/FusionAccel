@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wave_config>
+   <wave_state>
+   </wave_state>
+   <db_ref_list>
+      <db_ref path="C:/Users/shish/source/repos/FusionAccel/FusionAccel/cmac_tb_isim_beh.wdb" id="1" type="auto">
+         <top_modules>
+            <top_module name="cmac_tb" />
+            <top_module name="glbl" />
+         </top_modules>
+      </db_ref>
+   </db_ref_list>
+   <WVObjectSize size="31" />
+   <wvobject fp_name="/cmac_tb/result" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">result[15:0]</obj_property>
+      <obj_property name="ObjectShortName">result[15:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/cmac_tb/conv_valid" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">conv_valid</obj_property>
+      <obj_property name="ObjectShortName">conv_valid</obj_property>
+   </wvobject>
+   <wvobject fp_name="/cmac_tb/clk" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">clk</obj_property>
+      <obj_property name="ObjectShortName">clk</obj_property>
+   </wvobject>
+   <wvobject fp_name="/cmac_tb/rst" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">rst</obj_property>
+      <obj_property name="ObjectShortName">rst</obj_property>
+   </wvobject>
+   <wvobject fp_name="/cmac_tb/data" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">data[15:0]</obj_property>
+      <obj_property name="ObjectShortName">data[15:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/cmac_tb/weight" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">weight[15:0]</obj_property>
+      <obj_property name="ObjectShortName">weight[15:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/cmac_tb/cmac_/bias" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">bias[15:0]</obj_property>
+      <obj_property name="ObjectShortName">bias[15:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/cmac_tb/conv_ready" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">conv_ready</obj_property>
+      <obj_property name="ObjectShortName">conv_ready</obj_property>
+   </wvobject>
+   <wvobject fp_name="/cmac_tb/op_num" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">op_num[31:0]</obj_property>
+      <obj_property name="ObjectShortName">op_num[31:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/cmac_tb/cmac_/curr_state" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">curr_state[2:0]</obj_property>
+      <obj_property name="ObjectShortName">curr_state[2:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/cmac_tb/cmac_/remain_op_num" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">remain_op_num[31:0]</obj_property>
+      <obj_property name="ObjectShortName">remain_op_num[31:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="divider12" type="divider">
+      <obj_property name="label">Mult</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <obj_property name="BkColor">128 128 255</obj_property>
+      <obj_property name="TextColor">230 230 230</obj_property>
+   </wvobject>
+   <wvobject fp_name="/cmac_tb/cmac_/data_permit_mult" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">data_permit_mult</obj_property>
+      <obj_property name="ObjectShortName">data_permit_mult</obj_property>
+   </wvobject>
+   <wvobject fp_name="/cmac_tb/cmac_/mult_/a" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">a[15:0]</obj_property>
+      <obj_property name="ObjectShortName">a[15:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/cmac_tb/cmac_/mult_/b" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">b[15:0]</obj_property>
+      <obj_property name="ObjectShortName">b[15:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/cmac_tb/cmac_/mult_/operation_nd" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">operation_nd</obj_property>
+      <obj_property name="ObjectShortName">operation_nd</obj_property>
+   </wvobject>
+   <wvobject fp_name="/cmac_tb/cmac_/mult_/operation_rfd" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">operation_rfd</obj_property>
+      <obj_property name="ObjectShortName">operation_rfd</obj_property>
+   </wvobject>
+   <wvobject fp_name="/cmac_tb/cmac_/mult_/sclr" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">sclr</obj_property>
+      <obj_property name="ObjectShortName">sclr</obj_property>
+   </wvobject>
+   <wvobject fp_name="/cmac_tb/cmac_/mult_/ce" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">ce</obj_property>
+      <obj_property name="ObjectShortName">ce</obj_property>
+   </wvobject>
+   <wvobject fp_name="/cmac_tb/cmac_/mult_/rdy" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">rdy</obj_property>
+      <obj_property name="ObjectShortName">rdy</obj_property>
+   </wvobject>
+   <wvobject fp_name="/cmac_tb/cmac_/mult_/result" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">result[15:0]</obj_property>
+      <obj_property name="ObjectShortName">result[15:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="divider13" type="divider">
+      <obj_property name="label">ACC</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <obj_property name="BkColor">128 128 255</obj_property>
+      <obj_property name="TextColor">230 230 230</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/cmac_tb/cmac_/data_permit_acc" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">data_permit_acc</obj_property>
+      <obj_property name="ObjectShortName">data_permit_acc</obj_property>
+   </wvobject>
+   <wvobject fp_name="/cmac_tb/cmac_/acc_/a" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">a[15:0]</obj_property>
+      <obj_property name="ObjectShortName">a[15:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/cmac_tb/cmac_/acc_/b" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">b[15:0]</obj_property>
+      <obj_property name="ObjectShortName">b[15:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/cmac_tb/cmac_/acc_/operation_nd" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">operation_nd</obj_property>
+      <obj_property name="ObjectShortName">operation_nd</obj_property>
+   </wvobject>
+   <wvobject fp_name="/cmac_tb/cmac_/acc_/operation_rfd" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">operation_rfd</obj_property>
+      <obj_property name="ObjectShortName">operation_rfd</obj_property>
+   </wvobject>
+   <wvobject fp_name="/cmac_tb/cmac_/acc_/sclr" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">sclr</obj_property>
+      <obj_property name="ObjectShortName">sclr</obj_property>
+   </wvobject>
+   <wvobject fp_name="/cmac_tb/cmac_/acc_/ce" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">ce</obj_property>
+      <obj_property name="ObjectShortName">ce</obj_property>
+   </wvobject>
+   <wvobject fp_name="/cmac_tb/cmac_/acc_/rdy" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">rdy</obj_property>
+      <obj_property name="ObjectShortName">rdy</obj_property>
+   </wvobject>
+   <wvobject fp_name="/cmac_tb/cmac_/acc_/result" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">result[15:0]</obj_property>
+      <obj_property name="ObjectShortName">result[15:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+</wave_config>
