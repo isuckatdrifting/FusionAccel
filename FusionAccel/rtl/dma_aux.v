@@ -17,7 +17,7 @@ module dma_aux
 	input  wire [9:0]    p0_ib_count,
 	input  wire          p0_ib_valid,
 	input  wire          p0_ib_empty,
-	//DDR Output Buffer (ob_) get data, weight and bias from ddr2
+	//DDR Output Buffer (ob_) get data from ddr2
 	output reg           p0_ob_we,
 	output reg  [31:0]   p0_ob_data,
 	input  wire [9:0]    p0_ob_count,
@@ -45,7 +45,7 @@ module dma_aux
 	input  wire [9:0]    p1_ib_count,
 	input  wire          p1_ib_valid,
 	input  wire          p1_ib_empty,
-	//DDR Output Buffer (ob_) get data, weight and bias from ddr2
+	//DDR Output Buffer (ob_) get weight and bias from ddr2
 	output reg           p1_ob_we,
 	output reg  [31:0]   p1_ob_data,
 	input  wire [9:0]    p1_ob_count,

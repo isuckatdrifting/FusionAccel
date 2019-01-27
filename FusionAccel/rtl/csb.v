@@ -63,7 +63,8 @@ module csb(
     //|  write_back_address: 32Bit |
     //|----------------------------| Totally 160Bit
 
-    //TODO: Command Translation from SDRAM --> FIFO i_port exposed to top, o_port called inside
+    //TODO: Command Translation from SDRAM --> Command Buffer
+    //TODO: Bias Operation in Conv is incorrect. Add bias after conv all channels.!!!!
     //TODO: Padding = 1
     //TODO: Multiple Channel Management, Little Endian, Jump Read --> Conv Buffer and Pooling Buffer
     //TODO: Use csb to reset submodules
@@ -75,9 +76,9 @@ module csb(
     //|MEM-Block|---------Address---------|---Space--|---Used-Space---|
     //|---------|-------------------------|----------|----------------|
     //|   Cmd   | 0x000_0000 - 0x000_007f |    128   |                |
-    //|  Weight | 0x000_1000 - 0x028_0FFF |1280k x 2 |1231552+CONVBIAS|
-    //|  Image  | 0x029_0000 - 0x02d_9800 | 147k x 2 |     150528     |
-    //|  Outbuf | 0x02e_0000 - 0x7ff_ffff | 125M-128 |    3071416     |
+    //|  Weight | 0x000_1000 - 0x009_D3FF |1280k / 2 |1231552+CONVBIAS|
+    //|  Image  | 0x00A_0000 - 0x00B_1F1B | 147k / 2 |                |
+    //|  Outbuf | 0x00C_0000 - 0x7ff_ffff | 125M-128 |    3071416     |
     //|---------|-------------------------|----------|----------------|
 
     //|---------------------type------------------------|----op_type----|
@@ -118,9 +119,9 @@ module csb(
     reg [31:0] w_addr;
 
     localparam DATA_3x3_BURST_LEN = 5;
-    localparam WB_3x3_BURST_LEN = 6;
+    localparam WB_3x3_BURST_LEN = 5;
     localparam DATA_3x3_P_BURST_LEN = 6;
-    localparam WB_3x3_P_BURST_LEN = 8;
+    localparam WB_3x3_P_BURST_LEN = 6;
     localparam DATA_13x13_BURST_LEN = 85;
     reg [3:0] data_3x3_burst_count;
     reg [3:0] wb_3x3_burst_count;
@@ -194,11 +195,11 @@ module csb(
             //Fifo logic: reads_en --> ob_we --> din->fifo --> fifo_rd_en
             if(op_en) p0_reads_en <= 1; //Assert to DMA readout, DMA writing data to FIFO
             if(p0_wr_data_count == cmd_size * 5) begin
-                p0_reads_en <= 0;
+                p0_reads_en <= 0;       //Read command
             end
             if(cmd_collect_done) begin
-                p0_reads_en <= 1;
-                if(op_type == 3'd1 || op_type == 3'd2) begin p1_reads_en <= 1; end
+                p0_reads_en <= 1;   //Read data
+                if(op_type == 3'd1 || op_type == 3'd2) begin p1_reads_en <= 1; end  //Read weight
                 //TODO: reset p0_reads_en
             end
 
@@ -293,9 +294,8 @@ module csb(
                             endcase
                             //Load weight
                             case (wb_3x3_burst_count)
-                                6,5,4,3: iw_3x3 <= {iw_3x3[143-32:0], weightbias};
-                                2: iw_3x3 <= {iw_3x3[143-16:0], weightbias[15:0]};
-                                1: ib_3x3 <= weightbias[15:0];
+                                5,4,3,2: iw_3x3 <= {iw_3x3[143-32:0], weightbias};
+                                1: iw_3x3 <= {iw_3x3[143-16:0], weightbias[15:0]};
                                 default:;
                             endcase
                             if(wb_3x3_burst_count == 0) begin
@@ -317,11 +317,9 @@ module csb(
                             endcase
                             //Load weight
                             case (wb_3x3_p_burst_count)
-                                8,7,6,5: iw_3x3 <= {iw_3x3[143-32:0], weightbias};
-                                4: iw_3x3 <= {iw_3x3[143-16:0], weightbias[15:0]};
-                                3: iw_1x1 <= weightbias[15:0];
-                                2: ib_3x3 <= weightbias[15:0];
-                                1: ib_1x1 <= weightbias[15:0];
+                                6,5,4,3: iw_3x3 <= {iw_3x3[143-32:0], weightbias};
+                                2: iw_3x3 <= {iw_3x3[143-16:0], weightbias[15:0]};
+                                1: iw_1x1 <= weightbias[15:0];
                                 default:;
                             endcase
                             if(wb_3x3_p_burst_count == 0) begin
