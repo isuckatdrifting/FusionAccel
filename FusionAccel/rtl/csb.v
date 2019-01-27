@@ -263,6 +263,7 @@ module csb(
                     data_burst_count <= data_burst_count + 1;
                     wb_burst_count <= wb_burst_count + 1;
                     //TODO: Set data and weight access according to op_type
+                    //Port0: data, Port1: weight
                     case (op_type)
                         1:if(wb_burst_count == 0) begin
                                 conv_ready <= 1;

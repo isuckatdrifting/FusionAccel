@@ -263,9 +263,9 @@ parameter  C_SKIP_DYNAMIC_CAL            = 0
 
 wire [7:0]  uo_data;
 wire [31:0] status;
- localparam C_PORT_ENABLE              = 6'b000001;
+ localparam C_PORT_ENABLE              = 4'b1111;
 
-localparam C_PORT_CONFIG             =  "B32_B32_R32_R32_R32_R32";
+localparam C_PORT_CONFIG             =  "B32_B32_B32_B32";
 
 
 localparam ARB_TIME_SLOT_0    = {3'b111, 3'b111, 3'b111, 3'b111, 3'b111, C_ARB_TIME_SLOT_0[2:0]};

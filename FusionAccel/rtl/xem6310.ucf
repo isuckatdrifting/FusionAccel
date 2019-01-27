@@ -166,9 +166,9 @@ CONFIG MCB_PERFORMANCE= STANDARD;
 ##################################################################################
 # Timing Ignore constraints for paths crossing the clock domain 
 ##################################################################################
-NET "*/memc?_wrapper_inst/memc?_mcb_raw_wrapper_inst/selfrefresh_mcb_mode" TIG;
+#NET "*/memc?_wrapper_inst/memc?_mcb_raw_wrapper_inst/selfrefresh_mcb_mode" TIG;
 NET "*/c?_pll_lock" TIG;
-NET "*/memc?_wrapper_inst/memc?_mcb_raw_wrapper_inst/gen_term_calib.mcb_soft_calibration_top_inst/mcb_soft_calibration_inst/CKE_Train" TIG;
+#NET "*/memc?_wrapper_inst/memc?_mcb_raw_wrapper_inst/gen_term_calib.mcb_soft_calibration_top_inst/mcb_soft_calibration_inst/CKE_Train" TIG;
      
 ############################################################################
 ## Clock constraints                                                        

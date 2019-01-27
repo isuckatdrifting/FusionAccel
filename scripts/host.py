@@ -29,7 +29,7 @@ import ok
 import struct
 
 bit_directory = 'C:/Users/shish/source/repos/FusionAccel/scripts/ramtest.bit'
-bypass_caffemodel = 0
+bypass_caffemodel = 1
 
 class host:
 	def __init__(self):
