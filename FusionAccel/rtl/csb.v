@@ -16,14 +16,14 @@ module csb(
     input cmd_fifo_empty,
     input [6:0] cmd_size,   //total command size received from okHost after loading memory.
 
-    input [31:0] data,
-    output data_fifo_rd_en,
-    output [15:0] im,
+    //input [31:0] data,
+    //output data_fifo_rd_en,
+    //output [15:0] im,
     
-    input [31:0] weightbias,
-    output weight_fifo_rd_en,
-    output [15:0] iw,
-    output [15:0] ib,
+    //input [31:0] weightbias,
+    //output weight_fifo_rd_en,
+    //output [15:0] iw,
+    //output [15:0] ib,
 
     output [31:0] r_addr,
     output [31:0] w_addr,
@@ -118,11 +118,11 @@ module csb(
     reg [31:0] data_burst_count;
     reg [31:0] wb_burst_count;
     
-    reg data_fifo_rd_en;
-    reg weight_fifo_rd_en;
-    reg [15:0] im;
-    reg [15:0] iw;
-    reg [15:0] ib;
+    //reg data_fifo_rd_en;
+    //reg weight_fifo_rd_en;
+    //reg [15:0] im;
+    //reg [15:0] iw;
+    //reg [15:0] ib;
 
     //Handshake signals to submodules
     reg conv_ready, maxpool_ready, avepool_ready;
@@ -220,8 +220,8 @@ module csb(
             data_burst_count <= 32'd0;
             wb_burst_count <= 32'd0;
 
-            data_fifo_rd_en <= 0;
-            weight_fifo_rd_en <= 0;
+            //data_fifo_rd_en <= 0;
+            //weight_fifo_rd_en <= 0;
             im <= 16'h0000;
             iw <= 16'h0000;
             ib <= 16'h0000;
@@ -254,8 +254,8 @@ module csb(
                     cmd_burst_count <= CMD_BURST_LEN;
                     cmd_collect_done <= 0;
                     //TODO: Send out dma access signals to get data to submodules, then send out ready signals
-                    data_fifo_rd_en <= 1;
-                    weight_fifo_rd_en <= 1;
+                    //data_fifo_rd_en <= 1;
+                    //weight_fifo_rd_en <= 1;
                     data_burst_count <= data_burst_count + 1;
                     wb_burst_count <= wb_burst_count + 1;
                     //TODO: Set data and weight access according to op_type

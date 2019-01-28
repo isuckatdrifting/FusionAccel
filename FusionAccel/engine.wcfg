@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wave_config>
+   <wave_state>
+   </wave_state>
+   <db_ref_list>
+      <db_ref path="C:/Users/shish/source/repos/FusionAccel/FusionAccel/engine_tb_isim_beh.wdb" id="1" type="auto">
+         <top_modules>
+            <top_module name="engine_tb" />
+            <top_module name="glbl" />
+         </top_modules>
+      </db_ref>
+   </db_ref_list>
+   <WVObjectSize size="33" />
+   <wvobject fp_name="/engine_tb/conv_valid" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">conv_valid</obj_property>
+      <obj_property name="ObjectShortName">conv_valid</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/maxpool_valid" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">maxpool_valid</obj_property>
+      <obj_property name="ObjectShortName">maxpool_valid</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/avepool_valid" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">avepool_valid</obj_property>
+      <obj_property name="ObjectShortName">avepool_valid</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/p0_data_fifo_rd_en" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">p0_data_fifo_rd_en</obj_property>
+      <obj_property name="ObjectShortName">p0_data_fifo_rd_en</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/p0_weight_fifo_rd_en" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">p0_weight_fifo_rd_en</obj_property>
+      <obj_property name="ObjectShortName">p0_weight_fifo_rd_en</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/p1_data_fifo_rd_en" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">p1_data_fifo_rd_en</obj_property>
+      <obj_property name="ObjectShortName">p1_data_fifo_rd_en</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/p1_weight_fifo_rd_en" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">p1_weight_fifo_rd_en</obj_property>
+      <obj_property name="ObjectShortName">p1_weight_fifo_rd_en</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/clk" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">clk</obj_property>
+      <obj_property name="ObjectShortName">clk</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/rst" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">rst</obj_property>
+      <obj_property name="ObjectShortName">rst</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/conv_ready" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">conv_ready</obj_property>
+      <obj_property name="ObjectShortName">conv_ready</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/curr_state" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">curr_state[1:0]</obj_property>
+      <obj_property name="ObjectShortName">curr_state[1:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/burst_cnt" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">burst_cnt[7:0]</obj_property>
+      <obj_property name="ObjectShortName">burst_cnt[7:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/result_0" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">result_0[0:15,15:0]</obj_property>
+      <obj_property name="ObjectShortName">result_0[0:15,15:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/conv_ready_0" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">conv_ready_0[15:0]</obj_property>
+      <obj_property name="ObjectShortName">conv_ready_0[15:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/rdy_acc_0" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">rdy_acc_0[15:0]</obj_property>
+      <obj_property name="ObjectShortName">rdy_acc_0[15:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/op_count" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">op_count[0:16,15:0]</obj_property>
+      <obj_property name="ObjectShortName">op_count[0:16,15:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/d0" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">d0[0:15,15:0]</obj_property>
+      <obj_property name="ObjectShortName">d0[0:15,15:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/maxpool_ready" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">maxpool_ready</obj_property>
+      <obj_property name="ObjectShortName">maxpool_ready</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/avepool_ready" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">avepool_ready</obj_property>
+      <obj_property name="ObjectShortName">avepool_ready</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/op_type" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">op_type[2:0]</obj_property>
+      <obj_property name="ObjectShortName">op_type[2:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/op_num" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">op_num[31:0]</obj_property>
+      <obj_property name="ObjectShortName">op_num[31:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/data_0" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">data_0[15:0]</obj_property>
+      <obj_property name="ObjectShortName">data_0[15:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/weight_0" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">weight_0[15:0]</obj_property>
+      <obj_property name="ObjectShortName">weight_0[15:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/bias_0" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">bias_0[15:0]</obj_property>
+      <obj_property name="ObjectShortName">bias_0[15:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/data_1" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">data_1[15:0]</obj_property>
+      <obj_property name="ObjectShortName">data_1[15:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/weight_1" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">weight_1[15:0]</obj_property>
+      <obj_property name="ObjectShortName">weight_1[15:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/bias_1" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">bias_1[15:0]</obj_property>
+      <obj_property name="ObjectShortName">bias_1[15:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/data0_fifo" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">data0_fifo[0:143,15:0]</obj_property>
+      <obj_property name="ObjectShortName">data0_fifo[0:143,15:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/weight0_fifo" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">weight0_fifo[0:143,15:0]</obj_property>
+      <obj_property name="ObjectShortName">weight0_fifo[0:143,15:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/data1_fifo" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">data1_fifo[0:143,15:0]</obj_property>
+      <obj_property name="ObjectShortName">data1_fifo[0:143,15:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/weight1_fifo" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">weight1_fifo[0:143,15:0]</obj_property>
+      <obj_property name="ObjectShortName">weight1_fifo[0:143,15:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/j" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">j[31:0]</obj_property>
+      <obj_property name="ObjectShortName">j[31:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/i" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">i[31:0]</obj_property>
+      <obj_property name="ObjectShortName">i[31:0]</obj_property>
+   </wvobject>
+</wave_config>
