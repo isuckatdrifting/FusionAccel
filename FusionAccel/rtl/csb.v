@@ -27,6 +27,7 @@ module csb(
 
     output [31:0] r_addr,
     output [31:0] w_addr,
+    output [2:0] op_type,
 
     output p0_reads_en,
     output p0_writes_en,
@@ -36,7 +37,7 @@ module csb(
     output p2_writes_en,
     output p3_reads_en,
     output p3_writes_en,
-    input cmd_fifo_wr_count,
+    input [15:0] cmd_fifo_wr_count,
     output irq
 );
 
@@ -59,16 +60,11 @@ module csb(
     //|  write_back_address: 32Bit |
     //|----------------------------| Totally 160Bit
 
-    //TODO: Command Translation from SDRAM --> Command Buffer
     //TODO: Use Img2col/MEC Convolution
-    //TODO: Bias Operation in Conv is incorrect. Add bias after conv all channels.!!!!
     //TODO: Padding = 1 --> Add 0 in memory
-    //TODO: Multiple Channel Management, Little Endian, Jump Read --> Conv Buffer and Pooling Buffer
     //TODO: Use csb to reset submodules
-    //TODO: CONV3x3 CONV 1x1 Parallelism
     //TODO: Dropout Layer
     //TODO: Concatenation Layer
-    //TODO: CONV3x3 Optimization
 
     //|MEM-Block|---------Address---------|---Space--|---Used-Space---|
     //|---------|-------------------------|----------|----------------|
@@ -131,6 +127,7 @@ module csb(
     //Handshake signals to submodules
     reg conv_ready, maxpool_ready, avepool_ready;
 
+    reg p0_reads_en, p0_writes_en, p1_reads_en, p1_writes_en, p2_reads_en, p2_writes_en, p3_reads_en, p3_writes_en;
     reg irq;
 
     reg [2:0] curr_state;
@@ -182,7 +179,7 @@ module csb(
         end else begin
             //Fifo logic: reads_en --> ob_we --> din->fifo --> fifo_rd_en
             if(op_en) p0_reads_en <= 1; //Assert to DMA readout, DMA writing data to FIFO
-            if(p0_wr_data_count == cmd_size * 5) begin
+            if(cmd_fifo_wr_count == cmd_size * 5) begin
                 p0_reads_en <= 0;       //Read command
             end
             if(cmd_collect_done) begin

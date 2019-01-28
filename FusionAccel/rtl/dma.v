@@ -54,13 +54,14 @@ always @(posedge clk) reset_d <= reset;
 
 integer p0_state;
 localparam p0_idle  = 0,
-           p0_write1 = 10,
-           p0_write2 = 11,
-           p0_write3 = 12,
-           p0_read1 = 20,
-           p0_read2 = 21,
-           p0_read3 = 22,
-           p0_read4 = 23;
+           p0_write1 = 1,
+           p0_write2 = 2,
+           p0_write3 = 3,
+           p0_read1 = 4,
+           p0_read2 = 5,
+           p0_read3 = 6,
+           p0_read4 = 7;
+
 always @(posedge clk) begin
 	if (reset_d) begin
 		p0_state           <= p0_idle;
@@ -75,7 +76,6 @@ always @(posedge clk) begin
 		ib_re <= 1'b0;
 		p0_rd_en_o   <= 1'b0;
 		ob_we <= 1'b0;
-
 
 		case (p0_state)
 			p0_idle: begin
@@ -144,8 +144,7 @@ always @(posedge clk) begin
 					p0_state <= p0_read2;
 				end
 			end
-			
-				
+
 		endcase
 	end
 end
