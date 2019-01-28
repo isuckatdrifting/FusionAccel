@@ -1,89 +1,3 @@
-//Instantiate 16CMACs for conv3x3, 16CMACs for conv1x1, maxpool and avepool in engine.
-module engine(
-	input clk,
-	input rst,
-	//Control signals from csb
-	input conv_ready,
-	input maxpool_ready,
-	input avepool_ready,
-	input [2:0] sel,
-	input op_num,
-
-	output conv_valid,
-	output maxpool_valid,
-	output avepool_valid,
-
-	//Data path from dma -> fifos
-	input [15:0] data_0,
-	input [15:0] weight_0,
-	input [15:0] bias_0,
-	input [15:0] data_1,
-	input [15:0] weight_1,
-	
-	//Outputs directly back to dma
-	output [15:0] result_0,
-	output [15:0] result_1
-);
-
-localparam PARA = 16;
-wire [PARA-1:0] conv_ready_0;
-wire [PARA-1:0] conv_ready_1;
-wire [PARA-1:0] rdy_acc_0;
-wire [PARA-1:0] rdy_acc_1;
-wire [PARA-1:0] conv_valid_0;
-wire [PARA-1:0] conv_valid_1;
-
-//Data port 0 mux logic
-
-//Generate 16CMACs for CONV3x3
-//TODO: CMACs start one by one, using the same data path. weight is enabled according to sel.
-genvar i;
-generate 
-	for (i = 0; i < 16; i = i + 1) begin
-		cmac cmac_0(.clk(clk), .rst(rst), .data(data_0), .weight(weight_0), .bias(bias_0), .result(result_0), .conv_ready(conv_ready_0[i]), .op_num(op_num), .rdy_acc(rdy_acc_0[i]), .conv_valid(conv_valid_0[i]));
-	end 
-endgenerate
-
-//Generate 16CMACs for CONV1x1
-genvar j;
-generate 
-	for (j = 0; j < 16; j = j + 1) begin
-		cmac cmac_1(.clk(clk), .rst(rst), .data(), .weight(), .bias(), .result(result_1), .conv_ready(conv_ready_1[i]), .op_num(op_num), .rdy_acc(rdy_acc_1[i]), .conv_valid(conv_valid_1[i]));
-	end 
-endgenerate
-
-//Merged Wire out to csb
-
-//Instantiate MAXPOOL
-//------------------------------------------------
-// Bitonic 3x3 Max Pooling Core
-//------------------------------------------------
-pool_3x3 pool_3x3_(
-    .clk		(sys_clk),
-    .rst_n		(ep00wire[2]),
-    .im			(),					//Input Matrix 3x3 [143:0]
-    .om			(),					//Output Matrix 1x1[15:0]
-    .pool_ready	(maxpool_ready),
-    .pool_valid	(maxpool_valid));
-
-//Instantiate AVEPOOL
-//------------------------------------------------
-// Pipeline 13x13 Average Pooling Core
-//------------------------------------------------
-pool_13x13 pool_13x13_(
-    .clk		(sys_clk),
-    .rst_n		(ep00wire[2]),
-    .im			(),					//Input Matrix 13x13[2703:0]
-    .om			(),					//Output Matrix 1x1 [15:0]
-    .pool_ready	(avepool_ready),
-    .pool_valid	(avepool_valid));
-
-//------------------------------------------------
-// Memory Control Block
-//------------------------------------------------
-
-endmodule
-
 module top 
 (
     ///////////////////////////////////////
@@ -134,13 +48,16 @@ clockgen clockgen_ (
 
 //--------------v1, Minimum Hardware Cores for SqueezeNet------------------//
 
+wire op_en;
+wire [2:0] op_type;
+
 //------------------------------------------------
 // Control Signal Block for all cores
 //------------------------------------------------
 csb csb_(
     .clk				(sys_clk),
     .rst_n				(ep00wire[3]),
-	.op_en				(),
+	.op_en				(op_en),
 
     .conv_valid			(conv_valid),
 	.conv_ready			(conv_ready),
@@ -165,6 +82,7 @@ csb csb_(
 
     .r_addr				(r_addr),
     .w_addr				(w_addr),
+	.op_type			(op_type),
 
 	.p0_reads_en		(p0_reads_en),
     .p0_writes_en		(p0_writes_en),
@@ -176,12 +94,12 @@ csb csb_(
 
 engine engine_(
 	.clk			(clk),
-	.rst			(),
+	.rst			(rst),
 	//Control signals from csb
 	.conv_ready		(conv_ready),
 	.maxpool_ready	(maxpool_ready),
 	.avepool_ready	(avepool_ready),
-	.sel			(),
+	.op_type		(op_type),
 	.op_num			(),
 
 	.conv_valid		(conv_valid),
@@ -193,11 +111,9 @@ engine engine_(
 	.weight_0		(),
 	.bias_0			(),
 	.data_1			(),
-	.weight_1		(),
+	.weight_1		()
 	
 	//Outputs directly back to dma
-	.result_0		(),
-	.result_1		()
 );
 
 
@@ -386,7 +302,7 @@ memc3_inst (
 	.c3_p1_rd_overflow      (c3_p1_rd_overflow),
 	.c3_p1_rd_error         (c3_p1_rd_error));
 
-dma dma_ (
+dma dma_p0 (
 	.clk				(c3_clk0),
 	.reset				(ep00wire[2] | c3_rst0), 
 	.reads_en			(ep00wire[0]),
@@ -417,6 +333,102 @@ dma dma_ (
 	.p0_wr_full			(c3_p0_wr_full), 
 	.p0_wr_data			(c3_p0_wr_data), 
 	.p0_wr_mask			(c3_p0_wr_mask));
+
+dma dma_p1 (
+	.clk				(c3_clk0),
+	.reset				(ep00wire[2] | c3_rst0), 
+	.reads_en			(ep00wire[0]),
+	.writes_en			(ep00wire[1]),
+	.calib_done			(c3_calib_done), 
+
+	.ib_re				(),
+	.ib_data			(),
+	.ib_count			(),
+	.ib_valid			(),
+	.ib_empty			(),
+
+	.ob_we				(),
+	.ob_data			(),
+	.ob_count			(),
+
+	.p0_rd_en_o			(c3_p1_rd_en),  
+	.p0_rd_empty		(c3_p1_rd_empty), 
+	.p0_rd_data			(c3_p1_rd_data), 
+
+	.p0_cmd_en			(c3_p1_cmd_en),
+	.p0_cmd_full		(c3_p1_cmd_full), 
+	.p0_cmd_instr		(c3_p1_cmd_instr),
+	.p0_cmd_byte_addr	(c3_p1_cmd_byte_addr), 
+	.p0_cmd_bl_o		(c3_p1_cmd_bl), 
+
+	.p0_wr_en			(c3_p1_wr_en),
+	.p0_wr_full			(c3_p1_wr_full), 
+	.p0_wr_data			(c3_p1_wr_data), 
+	.p0_wr_mask			(c3_p1_wr_mask));
+
+dma dma_p2 (
+	.clk				(c3_clk0),
+	.reset				(ep00wire[2] | c3_rst0), 
+	.reads_en			(ep00wire[0]),
+	.writes_en			(ep00wire[1]),
+	.calib_done			(c3_calib_done), 
+
+	.ib_re				(),
+	.ib_data			(),
+	.ib_count			(),
+	.ib_valid			(),
+	.ib_empty			(),
+
+	.ob_we				(),
+	.ob_data			(),
+	.ob_count			(),
+
+	.p0_rd_en_o			(c3_p2_rd_en),  
+	.p0_rd_empty		(c3_p2_rd_empty), 
+	.p0_rd_data			(c3_p2_rd_data), 
+
+	.p0_cmd_en			(c3_p2_cmd_en),
+	.p0_cmd_full		(c3_p2_cmd_full), 
+	.p0_cmd_instr		(c3_p2_cmd_instr),
+	.p0_cmd_byte_addr	(c3_p2_cmd_byte_addr), 
+	.p0_cmd_bl_o		(c3_p2_cmd_bl), 
+
+	.p0_wr_en			(c3_p2_wr_en),
+	.p0_wr_full			(c3_p2_wr_full), 
+	.p0_wr_data			(c3_p2_wr_data), 
+	.p0_wr_mask			(c3_p2_wr_mask));
+
+dma dma_p3 (
+	.clk				(c3_clk0),
+	.reset				(ep00wire[2] | c3_rst0), 
+	.reads_en			(ep00wire[0]),
+	.writes_en			(ep00wire[1]),
+	.calib_done			(c3_calib_done), 
+
+	.ib_re				(),
+	.ib_data			(),
+	.ib_count			(),
+	.ib_valid			(),
+	.ib_empty			(),
+
+	.ob_we				(),
+	.ob_data			(),
+	.ob_count			(),
+
+	.p0_rd_en_o			(c3_p3_rd_en),  
+	.p0_rd_empty		(c3_p3_rd_empty), 
+	.p0_rd_data			(c3_p3_rd_data), 
+
+	.p0_cmd_en			(c3_p3_cmd_en),
+	.p0_cmd_full		(c3_p3_cmd_full), 
+	.p0_cmd_instr		(c3_p3_cmd_instr),
+	.p0_cmd_byte_addr	(c3_p3_cmd_byte_addr), 
+	.p0_cmd_bl_o		(c3_p3_cmd_bl), 
+
+	.p0_wr_en			(c3_p3_wr_en),
+	.p0_wr_full			(c3_p3_wr_full), 
+	.p0_wr_data			(c3_p3_wr_data), 
+	.p0_wr_mask			(c3_p3_wr_mask));
 	
 //Block Throttle
 always @(posedge okClk) begin
