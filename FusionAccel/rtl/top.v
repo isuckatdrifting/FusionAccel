@@ -210,7 +210,7 @@ always @(posedge okClk) begin
     end
 end
 
-memc3 # (
+mem_ctrl # (
     .C3_P0_MASK_SIZE(4),
     .C3_P0_DATA_PORT_SIZE(32),
     .C3_P1_MASK_SIZE(4),
@@ -227,32 +227,33 @@ memc3 # (
     .C3_MEM_BANKADDR_WIDTH(3)
 )
 memc3_inst (
-	.sys_clkp          		(sys_clkp),
-	.sys_clkn          		(sys_clkn),
-	.c3_sys_rst_n      		(c3_sys_rst_n),                        
+	.c3_sys_clk_p          		(sys_clkp),
+	.c3_sys_clk_n          		(sys_clkn),
+	.c3_sys_rst_i      		(c3_sys_rst_n),                      
 
-	.ddr2_dq           		(ddr2_dq),  
-	.ddr2_a            		(ddr2_a),  
-	.ddr2_ba           		(ddr2_ba),
-	.ddr2_ras_n        		(ddr2_ras_n),                        
-	.ddr2_cas_n        		(ddr2_cas_n),                        
-	.ddr2_we_n         		(ddr2_we_n),                          
-	.ddr2_odt          		(ddr2_odt),
-	.ddr2_cke          		(ddr2_cke),                          
-	.ddr2_ck           		(ddr2_ck),                          
-	.ddr2_ck_n         		(ddr2_ck_n),       
-	.ddr2_dqs          		(ddr2_dqs),                          
-	.ddr2_dqs_n        		(ddr2_dqs_n),
-	.ddr2_udqs         		(ddr2_udqs),    // for X16 parts                        
-	.ddr2_udqs_n       		(ddr2_udqs_n),  // for X16 parts
-	.ddr2_udm          		(ddr2_udm),     // for X16 parts
-	.ddr2_dm           		(ddr2_dm),
+	.mcb3_dram_dq           		(ddr2_dq),  
+	.mcb3_dram_a            		(ddr2_a),  
+	.mcb3_dram_ba           		(ddr2_ba),
+	.mcb3_dram_ras_n        		(ddr2_ras_n),                        
+	.mcb3_dram_cas_n        		(ddr2_cas_n),                        
+	.mcb3_dram_we_n         		(ddr2_we_n),                          
+	.mcb3_dram_odt          		(ddr2_odt),
+	.mcb3_dram_cke          		(ddr2_cke),                          
+	.mcb3_dram_ck           		(ddr2_ck),                          
+	.mcb3_dram_ck_n         		(ddr2_ck_n),       
+	.mcb3_dram_dqs          		(ddr2_dqs),                          
+	.mcb3_dram_dqs_n        		(ddr2_dqs_n),
+	.mcb3_dram_udqs         		(ddr2_udqs),    // for X16 parts                        
+	.mcb3_dram_udqs_n       		(ddr2_udqs_n),  // for X16 parts
+	.mcb3_dram_udm          		(ddr2_udm),     // for X16 parts
+	.mcb3_dram_dm           		(ddr2_dm),
 	.c3_clk0		     	(c3_clk0),
 	.c3_rst0		     	(c3_rst0),
 	.c3_calib_done     		(c3_calib_done),
-	.ddr2_rzq          		(ddr2_rzq),        
-	.ddr2_zio               (ddr2_zio),     
+	.mcb3_rzq          		(ddr2_rzq),        
+	.mcb3_zio               (ddr2_zio), 
 
+	.c3_p0_cmd_clk			(c3_clk0),
 	.c3_p0_cmd_en           (c3_p0_cmd_en),
 	.c3_p0_cmd_instr        (c3_p0_cmd_instr),
 	.c3_p0_cmd_bl           (c3_p0_cmd_bl),
@@ -260,6 +261,7 @@ memc3_inst (
 	.c3_p0_cmd_empty        (c3_p0_cmd_empty),
 	.c3_p0_cmd_full         (c3_p0_cmd_full),
 
+	.c3_p0_wr_clk			(c3_clk0),
 	.c3_p0_wr_en            (c3_p0_wr_en),
 	.c3_p0_wr_mask          (c3_p0_wr_mask),
 	.c3_p0_wr_data          (c3_p0_wr_data),
@@ -269,6 +271,7 @@ memc3_inst (
 	.c3_p0_wr_underrun      (c3_p0_wr_underrun),
 	.c3_p0_wr_error         (c3_p0_wr_error),
 
+	.c3_p0_rd_clk			(c3_clk0),
 	.c3_p0_rd_en            (c3_p0_rd_en),
 	.c3_p0_rd_data          (c3_p0_rd_data),
 	.c3_p0_rd_full          (c3_p0_rd_full),
@@ -277,6 +280,7 @@ memc3_inst (
 	.c3_p0_rd_overflow      (c3_p0_rd_overflow),
 	.c3_p0_rd_error         (c3_p0_rd_error),
 
+	.c3_p1_cmd_clk			(c3_clk0),
 	.c3_p1_cmd_en           (c3_p1_cmd_en),
 	.c3_p1_cmd_instr        (c3_p1_cmd_instr),
 	.c3_p1_cmd_bl           (c3_p1_cmd_bl),
@@ -284,6 +288,7 @@ memc3_inst (
 	.c3_p1_cmd_empty        (c3_p1_cmd_empty),
 	.c3_p1_cmd_full         (c3_p1_cmd_full),
 
+	.c3_p1_wr_clk			(c3_clk0),
 	.c3_p1_wr_en            (c3_p1_wr_en),
 	.c3_p1_wr_mask          (c3_p1_wr_mask),
 	.c3_p1_wr_data          (c3_p1_wr_data),
@@ -293,6 +298,7 @@ memc3_inst (
 	.c3_p1_wr_underrun      (c3_p1_wr_underrun),
 	.c3_p1_wr_error         (c3_p1_wr_error),
 
+	.c3_p1_rd_clk			(c3_clk0),
 	.c3_p1_rd_en            (c3_p1_rd_en),
 	.c3_p1_rd_data          (c3_p1_rd_data),
 	.c3_p1_rd_full          (c3_p1_rd_full),
@@ -484,7 +490,7 @@ fifo_w32_1024_r32_1024 csb_cmd_fifo (
 //TODO: Update estimated delay of dma access
 //FIFO for: CONV3x3, CONV3x3 & CONV1x1, MAXPOOL3x3
 //TODO: Use non-symmetric aspect ratio of read and write port of fifo.
-fifo_w32_16_r32_16 csb_data_fifo (
+fifo_w32_1024_r32_1024 csb_data_fifo (
 	.rst(ep00wire[3]),
 	.wr_clk(c3_clk0),
 	.rd_clk(sys_clk),
@@ -498,7 +504,7 @@ fifo_w32_16_r32_16 csb_data_fifo (
 	.rd_data_count(), // Bus [9 : 0] 
 	.wr_data_count()); // Bus [9 : 0] 
 
-fifo_w32_16_r32_16 csb_weight_fifo (
+fifo_w32_1024_r32_1024 csb_weight_fifo (
 	.rst(ep00wire[3]),
 	.wr_clk(c3_clk0),
 	.rd_clk(sys_clk),

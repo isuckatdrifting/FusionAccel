@@ -119,7 +119,6 @@ module infrastructure #
   reg [RST_SYNC_NUM-1:0]     rst0_sync_r    /* synthesis syn_maxfan = 10 */;
   wire                       rst_tmp;
   reg                        powerup_pll_locked;
-  reg 			     syn_clk0_powerup_pll_locked;
 
   wire                       sys_rst;
   wire                       bufpll_mcb_locked;
@@ -235,27 +234,18 @@ module infrastructure #
      .I (clk0_bufg_in)
      );
 
-   BUFGCE U_BUFG_CLK1
+   BUFG U_BUFG_CLK1
     (
      .O (mcb_drp_clk),
-     .I (mcb_drp_clk_bufg_in),
-     .CE (locked)
+     .I (mcb_drp_clk_bufg_in)
      );
-
-  always @(posedge mcb_drp_clk , posedge sys_rst)
+         
+  always @(posedge clk0_bufg , posedge sys_rst)
       if(sys_rst)
          powerup_pll_locked <= 1'b0;
        
       else if (bufpll_mcb_locked)
          powerup_pll_locked <= 1'b1;
-         
-
-  always @(posedge clk0_bufg , posedge sys_rst)
-      if(sys_rst)
-         syn_clk0_powerup_pll_locked <= 1'b0;
-       
-      else if (bufpll_mcb_locked)
-         syn_clk0_powerup_pll_locked <= 1'b1;
          
 
   //***************************************************************************
@@ -275,9 +265,9 @@ module infrastructure #
   //***************************************************************************
 
 
-  assign async_rst = sys_rst | ~powerup_pll_locked;
+  assign rst_tmp = sys_rst | ~powerup_pll_locked;
   // synthesis attribute max_fanout of rst0_sync_r is 10
-  assign rst_tmp = sys_rst | ~syn_clk0_powerup_pll_locked;
+  assign async_rst = rst_tmp;
 
   always @(posedge clk0_bufg or posedge rst_tmp)
     if (rst_tmp)

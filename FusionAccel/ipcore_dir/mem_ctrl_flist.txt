@@ -113,4 +113,3 @@ mem_ctrl\user_design\synth\script_synp.tcl
 mem_ctrl_flist.txt
 mem_ctrl_readme.txt
 mem_ctrl_xmdf.tcl
-mig.prj

@@ -20,8 +20,8 @@ Controller Options :
    Interface               : NATIVE
    Design Clock Frequency  : 3200 ps (312.50 MHz)
    Memory Type             : Components
-   Memory Part             : MT47H64M16XX-3
-   Equivalent Part(s)      : MT47H64M16HR-3
+   Memory Part             : MT47J64M16XX-3
+   Equivalent Part(s)      : MT47J64M16HQ-3
    Row Address             : 13
    Column Address          : 10
    Bank Address            : 3

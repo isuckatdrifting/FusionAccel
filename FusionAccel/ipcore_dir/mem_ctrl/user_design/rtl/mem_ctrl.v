@@ -66,7 +66,7 @@
 //*****************************************************************************
 `timescale 1ns/1ps
 
-(* X_CORE_INFO = "mig_v3_92_ddr2_ddr2_s6, Coregen 14.7" , CORE_GENERATION_INFO = "ddr2_ddr2_s6,mig_v3_92,{component_name=mem_ctrl, C3_MEM_INTERFACE_TYPE=DDR2_SDRAM, C3_CLK_PERIOD=3200, C3_MEMORY_PART=mt47h64m16xx-3, C3_MEMORY_DEVICE_WIDTH=16, C3_OUTPUT_DRV=FULL, C3_RTT_NOM=50OHMS, C3_DQS#_ENABLE=YES, C3_HIGH_TEMP_SR=NORMAL, C3_PORT_CONFIG=Four 32-bit bi-directional ports, C3_MEM_ADDR_ORDER=ROW_BANK_COLUMN, C3_PORT_ENABLE=Port0_Port1_Port2_Port3, C3_CLASS_ADDR=II, C3_CLASS_DATA=II, C3_INPUT_PIN_TERMINATION=CALIB_TERM, C3_DATA_TERMINATION=25 Ohms, C3_CLKFBOUT_MULT_F=2, C3_CLKOUT_DIVIDE=1, C3_DEBUG_PORT=0, INPUT_CLK_TYPE=Differential, LANGUAGE=Verilog, SYNTHESIS_TOOL=Foundation_ISE, NO_OF_CONTROLLERS=1}" *)
+(* X_CORE_INFO = "mig_v3_92_ddr2_ddr2_s6, Coregen 14.7" , CORE_GENERATION_INFO = "ddr2_ddr2_s6,mig_v3_92,{component_name=mem_ctrl, C3_MEM_INTERFACE_TYPE=DDR2_SDRAM, C3_CLK_PERIOD=3200, C3_MEMORY_PART=mt47j64m16xx-3, C3_MEMORY_DEVICE_WIDTH=16, C3_OUTPUT_DRV=FULL, C3_RTT_NOM=50OHMS, C3_DQS#_ENABLE=YES, C3_HIGH_TEMP_SR=NORMAL, C3_PORT_CONFIG=Four 32-bit bi-directional ports, C3_MEM_ADDR_ORDER=ROW_BANK_COLUMN, C3_PORT_ENABLE=Port0_Port1_Port2_Port3, C3_CLASS_ADDR=II, C3_CLASS_DATA=II, C3_INPUT_PIN_TERMINATION=CALIB_TERM, C3_DATA_TERMINATION=25 Ohms, C3_CLKFBOUT_MULT_F=2, C3_CLKOUT_DIVIDE=1, C3_DEBUG_PORT=0, INPUT_CLK_TYPE=Differential, LANGUAGE=Verilog, SYNTHESIS_TOOL=Foundation_ISE, NO_OF_CONTROLLERS=1}" *)
 module mem_ctrl #
 (
    parameter C3_P0_MASK_SIZE           = 4,
@@ -307,7 +307,7 @@ module mem_ctrl #
    localparam C3_SMALL_DEVICE         = "FALSE";       // The parameter is set to TRUE for all packages of xc6slx9 device
                                                        // as most of them cannot fit the complete example design when the
                                                        // Chip scope modules are enabled
-   localparam C3_INCLK_PERIOD         = ((C3_MEMCLK_PERIOD * C3_CLKFBOUT_MULT) / (C3_DIVCLK_DIVIDE * C3_CLKOUT0_DIVIDE * 2));       
+   localparam C3_INCLK_PERIOD         = 10000;       
    localparam DBG_WR_STS_WIDTH        = 32;
    localparam DBG_RD_STS_WIDTH        = 32;
    localparam C3_ARB_TIME0_SLOT  = {3'b000, 3'b000, C3_ARB_TIME_SLOT_0[11:9], C3_ARB_TIME_SLOT_0[8:6], C3_ARB_TIME_SLOT_0[5:3], C3_ARB_TIME_SLOT_0[2:0]};
