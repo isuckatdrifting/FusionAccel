@@ -580,7 +580,7 @@ fifo_w32_1024_r32_1024 p0_data_fifo (
 	.rd_clk(sys_clk),
 	.din(), // Bus [31 : 0] 
 	.wr_en(),
-	.rd_en(data_fifo_rd_en),
+	.rd_en(p0_data_fifo_rd_en),
 	.dout(data_0), // Bus [31 : 0] 
 	.full(),
 	.empty(),
@@ -594,7 +594,7 @@ fifo_w32_1024_r32_1024 p0_weight_fifo (
 	.rd_clk(sys_clk),
 	.din(), // Bus [31 : 0] 
 	.wr_en(),
-	.rd_en(weight_fifo_rd_en),
+	.rd_en(p0_weight_fifo_rd_en),
 	.dout(weight_0), // Bus [31 : 0] 
 	.full(),
 	.empty(),
@@ -609,7 +609,7 @@ fifo_w32_1024_r32_1024 p1_data_fifo (
 	.rd_clk(sys_clk),
 	.din(), // Bus [31 : 0] 
 	.wr_en(),
-	.rd_en(data_fifo_rd_en),
+	.rd_en(p1_data_fifo_rd_en),
 	.dout(data_1), // Bus [31 : 0] 
 	.full(),
 	.empty(),
@@ -623,7 +623,7 @@ fifo_w32_1024_r32_1024 p1_weight_fifo (
 	.rd_clk(sys_clk),
 	.din(), // Bus [31 : 0] 
 	.wr_en(),
-	.rd_en(weight_fifo_rd_en),
+	.rd_en(p1_weight_fifo_rd_en),
 	.dout(weight_1), // Bus [31 : 0] 
 	.full(),
 	.empty(),
