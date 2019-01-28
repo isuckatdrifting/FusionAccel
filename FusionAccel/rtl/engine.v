@@ -18,7 +18,8 @@ module engine(
 	input [15:0] weight_0,
 	input [15:0] bias_0,
 	input [15:0] data_1,
-	input [15:0] weight_1
+	input [15:0] weight_1,
+	input [15:0] bias_1
 	
 	//Outputs directly back to dma
 );
