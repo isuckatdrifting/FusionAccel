@@ -167,7 +167,7 @@ CONFIG MCB_PERFORMANCE= STANDARD;
 # Timing Ignore constraints for paths crossing the clock domain 
 ##################################################################################
 NET "*/memc?_wrapper_inst/mcb_ui_top_inst/mcb_raw_wrapper_inst/selfrefresh_mcb_mode" TIG;
-NET "*/c?_pll_lock" TIG;
+NET "c?_pll_lock" TIG;
 INST "*/memc?_wrapper_inst/mcb_ui_top_inst/mcb_raw_wrapper_inst/gen_term_calib.mcb_soft_calibration_top_inst/mcb_soft_calibration_inst/DONE_SOFTANDHARD_CAL*" TIG;
 
 #Please uncomment the below TIG if used in a design which enables self-refresh mode

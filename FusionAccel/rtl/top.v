@@ -1,12 +1,4 @@
-module top #(
-    parameter C3_P0_MASK_SIZE           = 4,
-	parameter C3_P0_DATA_PORT_SIZE      = 32,
-	parameter C3_P1_MASK_SIZE           = 4,
-	parameter C3_P1_DATA_PORT_SIZE      = 32,    
-	parameter C3_NUM_DQ_PINS            = 16,       
-	parameter C3_MEM_ADDR_WIDTH         = 13,       
-	parameter C3_MEM_BANKADDR_WIDTH     = 3    
-)    
+module top 
 (
     ///////////////////////////////////////
 	// Front Panel Interface
@@ -20,25 +12,25 @@ module top #(
 	output      [7:0]   led,
 
     //DDR2 Interface
-    inout  wire [C3_NUM_DQ_PINS-1:0]         ddr2_dq,
-	output wire [C3_MEM_ADDR_WIDTH-1:0]      ddr2_a,
-	output wire [C3_MEM_BANKADDR_WIDTH-1:0]  ddr2_ba,
-	output wire                              ddr2_ras_n,
-	output wire                              ddr2_cas_n,
-	output wire                              ddr2_we_n,
-	output wire                              ddr2_odt,
-	output wire                              ddr2_cke,
-	output wire                              ddr2_dm,
-	inout  wire                              ddr2_udqs,
-	inout  wire                              ddr2_udqs_n,
-	inout  wire                              ddr2_rzq,
-	inout  wire                              ddr2_zio,
-	output wire                              ddr2_udm,
-	inout  wire                              ddr2_dqs,
-	inout  wire                              ddr2_dqs_n,
-	output wire                              ddr2_ck,
-	output wire                              ddr2_ck_n,
-	output wire                              ddr2_cs_n
+    inout  wire [15:0]  ddr2_dq,
+	output wire [12:0]  ddr2_a,
+	output wire [2:0]  	ddr2_ba,
+	output wire         ddr2_ras_n,
+	output wire         ddr2_cas_n,
+	output wire         ddr2_we_n,
+	output wire         ddr2_odt,
+	output wire         ddr2_cke,
+	output wire         ddr2_dm,
+	inout  wire         ddr2_udqs,
+	inout  wire         ddr2_udqs_n,
+	inout  wire         ddr2_rzq,
+	inout  wire         ddr2_zio,
+	output wire         ddr2_udm,
+	inout  wire         ddr2_dqs,
+	inout  wire         ddr2_dqs_n,
+	output wire         ddr2_ck,
+	output wire         ddr2_ck_n,
+	output wire         ddr2_cs_n
 );
 
 //-----------------------------Clock PLL-----------------------------------//
@@ -127,35 +119,35 @@ localparam BLOCK_SIZE      = 128;   // 512 bytes / 4 byte per word;
 localparam FIFO_SIZE       = 1023;  // note that Xilinx does not allow use of the full 1024 words
 localparam BUFFER_HEADROOM = 20; // headroom for the FIFO count to account for latency
 
-wire                              c3_sys_clk;
-wire                              c3_error;
-wire                              c3_calib_done;
-wire                              c3_clk0;
-reg                               c3_sys_rst_n;
-wire                              c3_rst0;
-wire                              c3_pll_lock;
+wire        c3_sys_clk;
+wire        c3_error;
+wire        c3_calib_done;
+wire        c3_clk0;
+reg         c3_sys_rst_n;
+wire        c3_rst0;
+wire        c3_pll_lock;
 
-wire                              c3_p0_cmd_en;
-wire [2:0]                        c3_p0_cmd_instr;
-wire [5:0]                        c3_p0_cmd_bl;
-wire [29:0]                       c3_p0_cmd_byte_addr;
-wire                              c3_p0_cmd_empty;
-wire                              c3_p0_cmd_full;
-wire                              c3_p0_wr_en;
-wire [C3_P0_MASK_SIZE - 1:0]      c3_p0_wr_mask;
-wire [C3_P0_DATA_PORT_SIZE - 1:0] c3_p0_wr_data;
-wire                              c3_p0_wr_full;
-wire                              c3_p0_wr_empty;
-wire [6:0]                        c3_p0_wr_count;
-wire                              c3_p0_wr_underrun;
-wire                              c3_p0_wr_error;
-wire                              c3_p0_rd_en;
-wire [C3_P0_DATA_PORT_SIZE - 1:0] c3_p0_rd_data;
-wire                              c3_p0_rd_full;
-wire                              c3_p0_rd_empty;
-wire [6:0]                        c3_p0_rd_count;
-wire                              c3_p0_rd_overflow;
-wire                              c3_p0_rd_error;
+wire        c3_p0_cmd_en;
+wire [2:0]  c3_p0_cmd_instr;
+wire [5:0]  c3_p0_cmd_bl;
+wire [29:0] c3_p0_cmd_byte_addr;
+wire        c3_p0_cmd_empty;
+wire        c3_p0_cmd_full;
+wire        c3_p0_wr_en;
+wire [3:0]  c3_p0_wr_mask;
+wire [31:0] c3_p0_wr_data;
+wire        c3_p0_wr_full;
+wire        c3_p0_wr_empty;
+wire [6:0]  c3_p0_wr_count;
+wire        c3_p0_wr_underrun;
+wire        c3_p0_wr_error;
+wire        c3_p0_rd_en;
+wire [31:0] c3_p0_rd_data;
+wire        c3_p0_rd_full;
+wire        c3_p0_rd_empty;
+wire [6:0]  c3_p0_rd_count;
+wire        c3_p0_rd_overflow;
+wire        c3_p0_rd_error;
 
 // Front Panel
 
@@ -227,29 +219,30 @@ mem_ctrl # (
     .C3_MEM_BANKADDR_WIDTH(3)
 )
 memc3_inst (
-	.c3_sys_clk_p          		(sys_clkp),
-	.c3_sys_clk_n          		(sys_clkn),
+	.c3_sys_clk_p          	(sys_clkp),
+	.c3_sys_clk_n          	(sys_clkn),
 	.c3_sys_rst_i      		(c3_sys_rst_n),                      
 
-	.mcb3_dram_dq           		(ddr2_dq),  
-	.mcb3_dram_a            		(ddr2_a),  
-	.mcb3_dram_ba           		(ddr2_ba),
-	.mcb3_dram_ras_n        		(ddr2_ras_n),                        
-	.mcb3_dram_cas_n        		(ddr2_cas_n),                        
-	.mcb3_dram_we_n         		(ddr2_we_n),                          
-	.mcb3_dram_odt          		(ddr2_odt),
-	.mcb3_dram_cke          		(ddr2_cke),                          
-	.mcb3_dram_ck           		(ddr2_ck),                          
-	.mcb3_dram_ck_n         		(ddr2_ck_n),       
-	.mcb3_dram_dqs          		(ddr2_dqs),                          
-	.mcb3_dram_dqs_n        		(ddr2_dqs_n),
-	.mcb3_dram_udqs         		(ddr2_udqs),    // for X16 parts                        
-	.mcb3_dram_udqs_n       		(ddr2_udqs_n),  // for X16 parts
-	.mcb3_dram_udm          		(ddr2_udm),     // for X16 parts
-	.mcb3_dram_dm           		(ddr2_dm),
+	.mcb3_dram_dq           (ddr2_dq),  
+	.mcb3_dram_a            (ddr2_a),  
+	.mcb3_dram_ba           (ddr2_ba),
+	.mcb3_dram_ras_n        (ddr2_ras_n),                        
+	.mcb3_dram_cas_n        (ddr2_cas_n),                        
+	.mcb3_dram_we_n         (ddr2_we_n),                          
+	.mcb3_dram_odt          (ddr2_odt),
+	.mcb3_dram_cke          (ddr2_cke),                          
+	.mcb3_dram_ck           (ddr2_ck),                          
+	.mcb3_dram_ck_n         (ddr2_ck_n),       
+	.mcb3_dram_dqs          (ddr2_dqs),                          
+	.mcb3_dram_dqs_n        (ddr2_dqs_n),
+	.mcb3_dram_udqs         (ddr2_udqs),    // for X16 parts                        
+	.mcb3_dram_udqs_n       (ddr2_udqs_n),  // for X16 parts
+	.mcb3_dram_udm          (ddr2_udm),     // for X16 parts
+	.mcb3_dram_dm           (ddr2_dm),
 	.c3_clk0		     	(c3_clk0),
 	.c3_rst0		     	(c3_rst0),
 	.c3_calib_done     		(c3_calib_done),
+	.c3_pll_lock			(c3_pll_lock),
 	.mcb3_rzq          		(ddr2_rzq),        
 	.mcb3_zio               (ddr2_zio), 
 

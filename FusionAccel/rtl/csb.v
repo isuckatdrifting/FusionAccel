@@ -34,6 +34,10 @@ module csb(
     output p0_writes_en,
     output p1_reads_en,
     output p1_writes_en,
+    output p2_reads_en,
+    output p2_writes_en,
+    output p3_reads_en,
+    output p3_writes_en,
     input cmd_fifo_wr_count,
     output irq
 );

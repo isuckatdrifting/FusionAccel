@@ -120,6 +120,7 @@ module mem_ctrl #
    input                                            c3_sys_clk_n,
    input                                            c3_sys_rst_i,
    output                                           c3_calib_done,
+   output                                           c3_pll_lock,
    output                                           c3_clk0,
    output                                           c3_rst0,
    inout                                            mcb3_dram_dqs,

@@ -190,6 +190,7 @@ memc3_inst (
 	.c3_clk0		     	(c3_clk0),
 	.c3_rst0		     	(c3_rst0),
 	.c3_calib_done     		(c3_calib_done),
+	.c3_pll_lock			(c3_pll_lock),
 	.mcb3_rzq          		(ddr2_rzq),        
 	.mcb3_zio               (ddr2_zio), 
 
