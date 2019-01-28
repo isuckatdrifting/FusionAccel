@@ -1,3 +1,89 @@
+//Instantiate 16CMACs for conv3x3, 16CMACs for conv1x1, maxpool and avepool in engine.
+module engine(
+	input clk,
+	input rst,
+	//Control signals from csb
+	input conv_ready,
+	input maxpool_ready,
+	input avepool_ready,
+	input [2:0] sel,
+	input op_num,
+
+	output conv_valid,
+	output maxpool_valid,
+	output avepool_valid,
+
+	//Data path from dma -> fifos
+	input [15:0] data_0,
+	input [15:0] weight_0,
+	input [15:0] bias_0,
+	input [15:0] data_1,
+	input [15:0] weight_1,
+	
+	//Outputs directly back to dma
+	output [15:0] result_0,
+	output [15:0] result_1
+);
+
+localparam PARA = 16;
+wire [PARA-1:0] conv_ready_0;
+wire [PARA-1:0] conv_ready_1;
+wire [PARA-1:0] rdy_acc_0;
+wire [PARA-1:0] rdy_acc_1;
+wire [PARA-1:0] conv_valid_0;
+wire [PARA-1:0] conv_valid_1;
+
+//Data port 0 mux logic
+
+//Generate 16CMACs for CONV3x3
+//TODO: CMACs start one by one, using the same data path. weight is enabled according to sel.
+genvar i;
+generate 
+	for (i = 0; i < 16; i = i + 1) begin
+		cmac cmac_0(.clk(clk), .rst(rst), .data(data_0), .weight(weight_0), .bias(bias_0), .result(result_0), .conv_ready(conv_ready_0[i]), .op_num(op_num), .rdy_acc(rdy_acc_0[i]), .conv_valid(conv_valid_0[i]));
+	end 
+endgenerate
+
+//Generate 16CMACs for CONV1x1
+genvar j;
+generate 
+	for (j = 0; j < 16; j = j + 1) begin
+		cmac cmac_1(.clk(clk), .rst(rst), .data(), .weight(), .bias(), .result(result_1), .conv_ready(conv_ready_1[i]), .op_num(op_num), .rdy_acc(rdy_acc_1[i]), .conv_valid(conv_valid_1[i]));
+	end 
+endgenerate
+
+//Merged Wire out to csb
+
+//Instantiate MAXPOOL
+//------------------------------------------------
+// Bitonic 3x3 Max Pooling Core
+//------------------------------------------------
+pool_3x3 pool_3x3_(
+    .clk		(sys_clk),
+    .rst_n		(ep00wire[2]),
+    .im			(),					//Input Matrix 3x3 [143:0]
+    .om			(),					//Output Matrix 1x1[15:0]
+    .pool_ready	(maxpool_ready),
+    .pool_valid	(maxpool_valid));
+
+//Instantiate AVEPOOL
+//------------------------------------------------
+// Pipeline 13x13 Average Pooling Core
+//------------------------------------------------
+pool_13x13 pool_13x13_(
+    .clk		(sys_clk),
+    .rst_n		(ep00wire[2]),
+    .im			(),					//Input Matrix 13x13[2703:0]
+    .om			(),					//Output Matrix 1x1 [15:0]
+    .pool_ready	(avepool_ready),
+    .pool_valid	(avepool_valid));
+
+//------------------------------------------------
+// Memory Control Block
+//------------------------------------------------
+
+endmodule
+
 module top 
 (
     ///////////////////////////////////////
@@ -63,9 +149,6 @@ csb csb_(
 	.avepool_valid		(avepool_valid),
 	.avepool_ready		(avepool_ready),
 
-    .dma_aux_we			(dma_aux_we),      //P0: CSB & CONV1x1. P1: CONV3x3, POOL3x3 & POOL13x13
-    .dma_aux_re			(dma_aux_re),      //P0: CSB & CONV1x1. P1: CONV3x3, POOL3x3 & POOL13x13
-
 	.cmd				(cmd),
 	.cmd_fifo_rd_en		(cmd_fifo_rd_en),
 	.cmd_fifo_empty		(cmd_fifo_empty),
@@ -90,31 +173,34 @@ csb csb_(
     .cmd_fifo_wr_count	(cmd_fifo_wr_count),
     .irq				(irq));
 
-//------------------------------------------------
-// Bitonic 3x3 Max Pooling Core
-//------------------------------------------------
-pool_3x3 pool_3x3_(
-    .clk		(sys_clk),
-    .rst_n		(ep00wire[2]),
-    .im			(),					//Input Matrix 3x3 [143:0]
-    .om			(),					//Output Matrix 1x1[15:0]
-    .pool_ready	(maxpool_ready),
-    .pool_valid	(maxpool_valid));
 
-//------------------------------------------------
-// Pipeline 13x13 Average Pooling Core
-//------------------------------------------------
-pool_13x13 pool_13x13_(
-    .clk		(sys_clk),
-    .rst_n		(ep00wire[2]),
-    .im			(),					//Input Matrix 13x13[2703:0]
-    .om			(),					//Output Matrix 1x1 [15:0]
-    .pool_ready	(avepool_ready),
-    .pool_valid	(avepool_valid));
+engine engine_(
+	.clk			(clk),
+	.rst			(),
+	//Control signals from csb
+	.conv_ready		(conv_ready),
+	.maxpool_ready	(maxpool_ready),
+	.avepool_ready	(avepool_ready),
+	.sel			(),
+	.op_num			(),
 
-//------------------------------------------------
-// Memory Control Block
-//------------------------------------------------
+	.conv_valid		(conv_valid),
+	.maxpool_valid	(maxpool_valid),
+	.avepool_valid	(avepool_valid),
+
+	//Data path from dma -> fifos
+	.data_0			(),
+	.weight_0		(),
+	.bias_0			(),
+	.data_1			(),
+	.weight_1		(),
+	
+	//Outputs directly back to dma
+	.result_0		(),
+	.result_1		()
+);
+
+
 localparam BLOCK_SIZE      = 128;   // 512 bytes / 4 byte per word;
 localparam FIFO_SIZE       = 1023;  // note that Xilinx does not allow use of the full 1024 words
 localparam BUFFER_HEADROOM = 20; // headroom for the FIFO count to account for latency
@@ -353,67 +439,6 @@ always @(posedge okClk) begin
 	
 end
 
-//TODO: MUX for Port0 of MCB
-dma_aux dma_aux_ (
-	.clk				(c3clk0),
-	.reset				(ep00wire[3] | c3_rst0),
-    .calib_done			(c3_calib_done), 
-    //----------------------------------------------------------------------------------------------
-    //Port 0: get csb command, get data, set output result
-	.p0_writes_en		(p0_writes_en),
-	.p0_reads_en		(p0_reads_en),
-	//DDR Input Buffer (ib_) write mac calculation result back to ddr2
-	.p0_ib_re			(),
-	.p0_ib_data			(), //[31:0]
-	.p0_ib_count		(), //[9:0]
-	.p0_ib_valid		(),
-	.p0_ib_empty		(),
-	//DDR Output Buffer (ob_) get data from ddr2
-	.p0_ob_we			(),
-	.p0_ob_data			(),
-	.p0_ob_count		(),
-	
-	.p0_rd_en_o			(), 
-	.p0_rd_empty		(),
-	.p0_rd_data			(),
-	
-	.p0_cmd_full		(),
-	.p0_cmd_en			(),
-	.p0_cmd_instr		(),
-	.p0_cmd_byte_addr	(),
-	.p0_cmd_bl_o		(), 
-	.p0_wr_full			(),
-	.p0_wr_en			(),
-	.p0_wr_data			(),
-	.p0_wr_mask			(),
-    //----------------------------------------------------------------------------------------------
-    //Port 1: get weight
-    .p1_writes_en		(p1_writes_en),
-    .p1_reads_en		(p1_reads_en),
-    //DDR Input Buffer (ib_) write mac calculation result back to ddr2
-	.p1_ib_re			(),
-	.p1_ib_data			(),
-	.p1_ib_count		(),
-	.p1_ib_valid		(),
-	.p1_ib_empty		(),
-	//DDR Output Buffer (ob_) get weight and bias from ddr2
-	.p1_ob_we			(),
-	.p1_ob_data			(),
-	.p1_ob_count		(),
-    
-    .p1_rd_en_o			(), 
-	.p1_rd_empty		(),
-	.p1_rd_data			(),
-	
-	.p1_cmd_full		(),
-	.p1_cmd_en			(),
-	.p1_cmd_instr		(),
-	.p1_cmd_byte_addr	(),
-	.p1_cmd_bl_o		(), 
-	.p1_wr_full			(),
-	.p1_wr_en			(),
-	.p1_wr_data			(),
-	.p1_wr_mask			());
 //------------------------------------------------
 // PC Communication using Front Panel(TM)
 //------------------------------------------------
@@ -479,10 +504,7 @@ fifo_w32_1024_r32_1024 csb_cmd_fifo (
 	.rd_data_count(), // Bus [9 : 0] 
 	.wr_data_count(cmd_fifo_wr_count)); // Bus [9 : 0] 
 
-//NOTES: always use port0 and port1 for conv3x3. When doing conv3x3&1x1, port0 and port1 reads out additional 1 data.
-//TODO: Update estimated delay of dma access
 //FIFO for: CONV3x3, CONV3x3 & CONV1x1, MAXPOOL3x3
-//TODO: Use non-symmetric aspect ratio of read and write port of fifo.
 fifo_w32_1024_r32_1024 csb_data_fifo (
 	.rst(ep00wire[3]),
 	.wr_clk(c3_clk0),
