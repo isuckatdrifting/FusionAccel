@@ -50,6 +50,7 @@ clockgen clockgen_ (
 
 wire op_en;
 wire [2:0] op_type;
+wire [31:0] op_num;
 wire [31:0] cmd;
 wire [15:0] data_0, weight_0, bias_0, data_1, weight_1, bias_1;
 
@@ -73,18 +74,10 @@ csb csb_(
 	.cmd_fifo_empty		(cmd_fifo_empty),
 	.cmd_size			(),
 
-	.data				(data),
-	.data_fifo_rd_en	(data_fifo_rd_en),
-	.im					(im),
-
-	.weightbias			(weightbias),
-	.weight_fifo_rd_en	(weight_fifo_rd_en),
-    .iw					(iw),
-    .ib					(ib),
-
     .r_addr				(r_addr),
     .w_addr				(w_addr),
 	.op_type			(op_type),
+	.op_num				(op_num),
 
 	.p0_reads_en		(p0_reads_en),
     .p0_writes_en		(p0_writes_en),
@@ -102,17 +95,21 @@ engine engine_(
 	.maxpool_ready	(maxpool_ready),
 	.avepool_ready	(avepool_ready),
 	.op_type		(op_type),
-	.op_num			(),
+	.op_num			(op_num),
 
 	.conv_valid		(conv_valid),
 	.maxpool_valid	(maxpool_valid),
 	.avepool_valid	(avepool_valid),
 
 	//Data path from dma -> fifos
+	.p0_data_fifo_rd_en (p0_data_fifo_rd_en),
 	.data_0			(data_0),
+	.p0_weight_fifo_rd_en (p0_weight_fifo_rd_en),
 	.weight_0		(weight_0),
 	.bias_0			(),
+	.p1_data_fifo_rd_en (p1_data_fifo_rd_en),
 	.data_1			(data_1),
+	.p1_weight_fifo_rd_en (p1_weight_fifo_rd_en),
 	.weight_1		(weight_1),
 	.bias_1			()
 	
