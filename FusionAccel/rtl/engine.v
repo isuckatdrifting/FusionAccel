@@ -132,7 +132,10 @@ always @ (*) begin
 			if(op_count[0] == 0) begin 
 				next_state = finish;
 			end
-			else next_state = busy;
+			else if (rdy_acc_0[0])begin
+				next_state = busy;
+			end
+			else next_state = clear;
 		end
 		finish: begin
 		end
@@ -142,46 +145,15 @@ always @ (*) begin
 end
 
 //    Output, non-blocking
-
+integer a;
 //Synchronous Port 0 MUX logic
 always @ (posedge clk or posedge rst) begin
 	if(rst) begin
-		d0[0] <= 16'h0000; w0[0] <= 16'h0000; b0[0] <= 16'h0000;
-		d1[0] <= 16'h0000; w1[0] <= 16'h0000; b1[0] <= 16'h0000;
-		d0[1] <= 16'h0000; w0[1] <= 16'h0000; b0[1] <= 16'h0000;
-		d1[1] <= 16'h0000; w1[1] <= 16'h0000; b1[1] <= 16'h0000;
-		d0[2] <= 16'h0000; w0[2] <= 16'h0000; b0[2] <= 16'h0000;
-		d1[2] <= 16'h0000; w1[2] <= 16'h0000; b1[2] <= 16'h0000;
-		d0[3] <= 16'h0000; w0[3] <= 16'h0000; b0[3] <= 16'h0000;
-		d1[3] <= 16'h0000; w1[3] <= 16'h0000; b1[3] <= 16'h0000;
-		d0[4] <= 16'h0000; w0[4] <= 16'h0000; b0[4] <= 16'h0000;
-		d1[4] <= 16'h0000; w1[4] <= 16'h0000; b1[4] <= 16'h0000;
-
-		d0[5] <= 16'h0000; w0[5] <= 16'h0000; b0[5] <= 16'h0000;
-		d1[5] <= 16'h0000; w1[5] <= 16'h0000; b1[5] <= 16'h0000;
-		d0[6] <= 16'h0000; w0[6] <= 16'h0000; b0[6] <= 16'h0000;
-		d1[6] <= 16'h0000; w1[6] <= 16'h0000; b1[6] <= 16'h0000;
-		d0[7] <= 16'h0000; w0[7] <= 16'h0000; b0[7] <= 16'h0000;
-		d1[7] <= 16'h0000; w1[7] <= 16'h0000; b1[7] <= 16'h0000;
-		d0[8] <= 16'h0000; w0[8] <= 16'h0000; b0[8] <= 16'h0000;
-		d1[8] <= 16'h0000; w1[8] <= 16'h0000; b1[8] <= 16'h0000;
-		d0[9] <= 16'h0000; w0[9] <= 16'h0000; b0[9] <= 16'h0000;
-		d1[9] <= 16'h0000; w1[9] <= 16'h0000; b1[9] <= 16'h0000;
-
-		d0[10] <= 16'h0000; w0[10] <= 16'h0000; b0[10] <= 16'h0000;
-		d1[10] <= 16'h0000; w1[10] <= 16'h0000; b1[10] <= 16'h0000;
-		d0[11] <= 16'h0000; w0[11] <= 16'h0000; b0[11] <= 16'h0000;
-		d1[11] <= 16'h0000; w1[11] <= 16'h0000; b1[11] <= 16'h0000;
-		d0[12] <= 16'h0000; w0[12] <= 16'h0000; b0[12] <= 16'h0000;
-		d1[12] <= 16'h0000; w1[12] <= 16'h0000; b1[12] <= 16'h0000;
-		d0[13] <= 16'h0000; w0[13] <= 16'h0000; b0[13] <= 16'h0000;
-		d1[13] <= 16'h0000; w1[13] <= 16'h0000; b1[13] <= 16'h0000;
-		d0[14] <= 16'h0000; w0[14] <= 16'h0000; b0[14] <= 16'h0000;
-		d1[14] <= 16'h0000; w1[14] <= 16'h0000; b1[14] <= 16'h0000;
-
-		d0[15] <= 16'h0000; w0[15] <= 16'h0000; b0[15] <= 16'h0000;
-		d1[15] <= 16'h0000; w1[15] <= 16'h0000; b1[15] <= 16'h0000;
-
+		for(a=0;a<PARA;a=a+1) begin:reset
+			d0[a] <= 16'h0000; w0[a] <= 16'h0000; b0[a] <= 16'h0000;
+			d1[a] <= 16'h0000; w1[a] <= 16'h0000; b1[a] <= 16'h0000;
+		end
+		
 		burst_cnt <= 0;
 		conv_ready_1 <= 16'h0;
 		conv_ready_0 <= 16'h0;
@@ -198,22 +170,34 @@ always @ (posedge clk or posedge rst) begin
 				case (op_type)
 					CONV1: begin 
 						conv_ready_1[burst_cnt] <= 1; 
-						p1_data_fifo_rd_en <= 1; p1_weight_fifo_rd_en <= 1; 
-						end
+						if(burst_cnt < 16) begin 
+							p1_data_fifo_rd_en <= 1; 
+							p1_weight_fifo_rd_en <= 1;
+						end 
+					end
 					CONV3: begin 
 						conv_ready_0[burst_cnt] <= 1;
-						p0_data_fifo_rd_en <= 1; p0_weight_fifo_rd_en <= 1;
+						if(burst_cnt < 16) begin 
+							p0_data_fifo_rd_en <= 1; 
+							p0_weight_fifo_rd_en <= 1;
+						end else begin
+							p0_data_fifo_rd_en <= 0; 
+							p0_weight_fifo_rd_en <= 0;
 						end
+					end
 					CONVP: begin 
 						conv_ready_0[burst_cnt] <= 1; conv_ready_1[burst_cnt] <= 1; 
-						p0_data_fifo_rd_en <= 1; p0_weight_fifo_rd_en <= 1;
-						p1_data_fifo_rd_en <= 1; p1_weight_fifo_rd_en <= 1; 
+						if(burst_cnt < 15) begin 
+							p0_data_fifo_rd_en <= 1; p0_weight_fifo_rd_en <= 1;
+							p1_data_fifo_rd_en <= 1; p1_weight_fifo_rd_en <= 1; 
 						end
+					end
 					default: ;
 				endcase
 			end
 			clear: begin
 				burst_cnt <= 0;
+				
 			end
 			default:;
 		endcase
@@ -227,39 +211,19 @@ always @ (posedge clk or posedge rst) begin
 end
 
 //TODO: Handle the last bias
-always @ (posedge rdy_acc_0[0] or posedge conv_ready_0[0] or posedge rst) begin if(rst) begin op_count[0] <= op_num; end else begin d0[0] <= data_0; w0[0] <= weight_0; op_count[0] <= op_count[0] - 1; end end
-always @ (posedge rdy_acc_0[1] or posedge conv_ready_0[1] or posedge rst) begin if(rst) begin op_count[1] <= op_num; end else begin d0[1] <= data_0; w0[1] <= weight_0; op_count[1] <= op_count[1] - 1; end end
-always @ (posedge rdy_acc_0[2] or posedge conv_ready_0[2] or posedge rst) begin if(rst) begin op_count[2] <= op_num; end else begin d0[2] <= data_0; w0[2] <= weight_0; op_count[2] <= op_count[2] - 1; end end
-always @ (posedge rdy_acc_0[3] or posedge conv_ready_0[3] or posedge rst) begin if(rst) begin op_count[3] <= op_num; end else begin d0[3] <= data_0; w0[3] <= weight_0; op_count[3] <= op_count[3] - 1; end end
-always @ (posedge rdy_acc_0[4] or posedge conv_ready_0[4] or posedge rst) begin if(rst) begin op_count[4] <= op_num; end else begin d0[4] <= data_0; w0[4] <= weight_0; op_count[4] <= op_count[4] - 1; end end
-always @ (posedge rdy_acc_0[5] or posedge conv_ready_0[5] or posedge rst) begin if(rst) begin op_count[5] <= op_num; end else begin d0[5] <= data_0; w0[5] <= weight_0; op_count[5] <= op_count[5] - 1; end end
-always @ (posedge rdy_acc_0[6] or posedge conv_ready_0[6] or posedge rst) begin if(rst) begin op_count[6] <= op_num; end else begin d0[6] <= data_0; w0[6] <= weight_0; op_count[6] <= op_count[6] - 1; end end
-always @ (posedge rdy_acc_0[7] or posedge conv_ready_0[7] or posedge rst) begin if(rst) begin op_count[7] <= op_num; end else begin d0[7] <= data_0; w0[7] <= weight_0; op_count[7] <= op_count[7] - 1; end end
-always @ (posedge rdy_acc_0[8] or posedge conv_ready_0[8] or posedge rst) begin if(rst) begin op_count[8] <= op_num; end else begin d0[8] <= data_0; w0[8] <= weight_0; op_count[8] <= op_count[8] - 1; end end
-always @ (posedge rdy_acc_0[9] or posedge conv_ready_0[9] or posedge rst) begin if(rst) begin op_count[9] <= op_num; end else begin d0[9] <= data_0; w0[9] <= weight_0; op_count[9] <= op_count[9] - 1; end end
-always @ (posedge rdy_acc_0[10] or posedge conv_ready_0[10] or posedge rst) begin if(rst) begin op_count[10] <= op_num; end else begin d0[10] <= data_0; w0[10] <= weight_0; op_count[10] <= op_count[10] - 1; end end
-always @ (posedge rdy_acc_0[11] or posedge conv_ready_0[11] or posedge rst) begin if(rst) begin op_count[11] <= op_num; end else begin d0[11] <= data_0; w0[11] <= weight_0; op_count[11] <= op_count[11] - 1; end end
-always @ (posedge rdy_acc_0[12] or posedge conv_ready_0[12] or posedge rst) begin if(rst) begin op_count[12] <= op_num; end else begin d0[12] <= data_0; w0[12] <= weight_0; op_count[12] <= op_count[12] - 1; end end
-always @ (posedge rdy_acc_0[13] or posedge conv_ready_0[13] or posedge rst) begin if(rst) begin op_count[13] <= op_num; end else begin d0[13] <= data_0; w0[13] <= weight_0; op_count[13] <= op_count[13] - 1; end end
-always @ (posedge rdy_acc_0[14] or posedge conv_ready_0[14] or posedge rst) begin if(rst) begin op_count[14] <= op_num; end else begin d0[14] <= data_0; w0[14] <= weight_0; op_count[14] <= op_count[14] - 1; end end
-always @ (posedge rdy_acc_0[15] or posedge conv_ready_0[15] or posedge rst) begin if(rst) begin op_count[15] <= op_num; end else begin d0[15] <= data_0; w0[15] <= weight_0; op_count[15] <= op_count[15] - 1; end end
-
-always @ (posedge rdy_acc_1[0] or posedge conv_ready_1[0] or posedge rst) begin if(rst) begin op_count[0] <= op_num; end else begin d1[0] <= data_1; w1[0] <= weight_1; op_count[0] <= op_count[0] + 1; end end
-always @ (posedge rdy_acc_1[1] or posedge conv_ready_1[1] or posedge rst) begin if(rst) begin op_count[1] <= op_num; end else begin d1[1] <= data_1; w1[1] <= weight_1; op_count[1] <= op_count[1] + 1; end end
-always @ (posedge rdy_acc_1[2] or posedge conv_ready_1[2] or posedge rst) begin if(rst) begin op_count[2] <= op_num; end else begin d1[2] <= data_1; w1[2] <= weight_1; op_count[2] <= op_count[2] + 1; end end
-always @ (posedge rdy_acc_1[3] or posedge conv_ready_1[3] or posedge rst) begin if(rst) begin op_count[3] <= op_num; end else begin d1[3] <= data_1; w1[3] <= weight_1; op_count[3] <= op_count[3] + 1; end end
-always @ (posedge rdy_acc_1[4] or posedge conv_ready_1[4] or posedge rst) begin if(rst) begin op_count[4] <= op_num; end else begin d1[4] <= data_1; w1[4] <= weight_1; op_count[4] <= op_count[4] + 1; end end
-always @ (posedge rdy_acc_1[5] or posedge conv_ready_1[5] or posedge rst) begin if(rst) begin op_count[5] <= op_num; end else begin d1[5] <= data_1; w1[5] <= weight_1; op_count[5] <= op_count[5] + 1; end end
-always @ (posedge rdy_acc_1[6] or posedge conv_ready_1[6] or posedge rst) begin if(rst) begin op_count[6] <= op_num; end else begin d1[6] <= data_1; w1[6] <= weight_1; op_count[6] <= op_count[6] + 1; end end
-always @ (posedge rdy_acc_1[7] or posedge conv_ready_1[7] or posedge rst) begin if(rst) begin op_count[7] <= op_num; end else begin d1[7] <= data_1; w1[7] <= weight_1; op_count[7] <= op_count[7] + 1; end end
-always @ (posedge rdy_acc_1[8] or posedge conv_ready_1[8] or posedge rst) begin if(rst) begin op_count[8] <= op_num; end else begin d1[8] <= data_1; w1[8] <= weight_1; op_count[8] <= op_count[8] + 1; end end
-always @ (posedge rdy_acc_1[9] or posedge conv_ready_1[9] or posedge rst) begin if(rst) begin op_count[9] <= op_num; end else begin d1[9] <= data_1; w1[9] <= weight_1; op_count[9] <= op_count[9] + 1; end end
-always @ (posedge rdy_acc_1[10] or posedge conv_ready_1[10] or posedge rst) begin if(rst) begin op_count[10] <= op_num; end else begin d1[10] <= data_1; w1[10] <= weight_1; op_count[10] <= op_count[10] + 1; end end
-always @ (posedge rdy_acc_1[11] or posedge conv_ready_1[11] or posedge rst) begin if(rst) begin op_count[11] <= op_num; end else begin d1[11] <= data_1; w1[11] <= weight_1; op_count[11] <= op_count[11] + 1; end end
-always @ (posedge rdy_acc_1[12] or posedge conv_ready_1[12] or posedge rst) begin if(rst) begin op_count[12] <= op_num; end else begin d1[12] <= data_1; w1[12] <= weight_1; op_count[12] <= op_count[12] + 1; end end
-always @ (posedge rdy_acc_1[13] or posedge conv_ready_1[13] or posedge rst) begin if(rst) begin op_count[13] <= op_num; end else begin d1[13] <= data_1; w1[13] <= weight_1; op_count[13] <= op_count[13] + 1; end end
-always @ (posedge rdy_acc_1[14] or posedge conv_ready_1[14] or posedge rst) begin if(rst) begin op_count[14] <= op_num; end else begin d1[14] <= data_1; w1[14] <= weight_1; op_count[14] <= op_count[14] + 1; end end
-always @ (posedge rdy_acc_1[15] or posedge conv_ready_1[15] or posedge rst) begin if(rst) begin op_count[15] <= op_num; end else begin d1[15] <= data_1; w1[15] <= weight_1; op_count[15] <= op_count[15] + 1; end end
-
+integer b;
+always@(posedge clk) begin
+	if(!conv_ready) begin
+		for(b=0;b<PARA;b=b+1) begin
+			op_count[b] <= op_num;
+		end
+	end else begin
+		if(burst_cnt >= 2 && burst_cnt <= 17) begin
+			d0[burst_cnt-2] <= data_0;
+			w0[burst_cnt-2] <= weight_0;
+			op_count[burst_cnt-2] <= op_count[burst_cnt-2] - 1;
+		end
+	end
+end
 //Merged Wire out to csb
 endmodule

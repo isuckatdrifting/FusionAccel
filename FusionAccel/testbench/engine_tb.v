@@ -28,6 +28,8 @@ reg [15:0] data0_fifo [0:143];
 reg [15:0] weight0_fifo [0:143];
 reg [15:0] data1_fifo [0:143];
 reg [15:0] weight1_fifo [0:143];
+reg data0_fifo_valid;
+reg weight0_fifo_valid;
 
 integer j;
 initial begin
@@ -72,11 +74,12 @@ engine engine_(
 );
 
 always #5 clk = ~clk;
-integer i;
+integer m,n;
 initial begin
     rst = 1;
     clk = 0;
-    i = 0;
+    m = 0;
+	n = 0;
     op_num = 0;
     conv_ready = 0;
     op_type = 0;
@@ -88,8 +91,17 @@ initial begin
 end
 
 always @(posedge clk) begin
-    if(p0_data_fifo_rd_en) data_0 <= data0_fifo[i];
-    if(p0_weight_fifo_rd_en) weight_0 <= weight0_fifo[i];
-    i <= i + 1;
+	if(conv_ready) begin
+		if(p0_data_fifo_rd_en) begin 
+			data0_fifo_valid <= 1;
+			data_0 <= data0_fifo[m]; 
+			m <= m + 1; 
+		end else data0_fifo_valid <= 0;
+		if(p0_weight_fifo_rd_en) begin 
+			weight0_fifo_valid <= 1;
+			weight_0 <= weight0_fifo[n]; 
+			n <= n + 1; 
+		end else weight0_fifo_valid <= 0;
+	end
 end
 endmodule
