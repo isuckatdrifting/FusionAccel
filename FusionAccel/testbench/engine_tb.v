@@ -83,12 +83,18 @@ initial begin
     op_num = 0;
     conv_ready = 0;
     op_type = 0;
+	data0_fifo_valid = 0;
+	weight0_fifo_valid = 0;
+	data_0 <= 16'h0000;
+	weight_0 <= 16'h0000;
     #20 rst = 1;
     #10 rst = 0;
     #100 op_num = 9; op_type = 2;
     #10 conv_ready = 1; 
 
 end
+
+always @(posedge conv_valid) conv_ready <= 0;
 
 always @(posedge clk) begin
 	if(conv_ready) begin

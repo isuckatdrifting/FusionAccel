@@ -10,10 +10,21 @@
          </top_modules>
       </db_ref>
    </db_ref_list>
-   <WVObjectSize size="68" />
+   <WVObjectSize size="86" />
+   <wave_markers>
+      <marker time="140000000" label="" />
+   </wave_markers>
    <wvobject fp_name="/engine_tb/conv_valid" type="logic" db_ref_id="1">
       <obj_property name="ElementShortName">conv_valid</obj_property>
       <obj_property name="ObjectShortName">conv_valid</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/op_finish" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">op_finish</obj_property>
+      <obj_property name="ObjectShortName">op_finish</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/conv_valid_0" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">conv_valid_0[15:0]</obj_property>
+      <obj_property name="ObjectShortName">conv_valid_0[15:0]</obj_property>
    </wvobject>
    <wvobject fp_name="/engine_tb/maxpool_valid" type="logic" db_ref_id="1">
       <obj_property name="ElementShortName">maxpool_valid</obj_property>
@@ -540,6 +551,70 @@
       <obj_property name="ElementShortName">bias[15:0]</obj_property>
       <obj_property name="ObjectShortName">bias[15:0]</obj_property>
    </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/\[0].cmac_0 /curr_state" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">curr_state[2:0]</obj_property>
+      <obj_property name="ObjectShortName">curr_state[2:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/\[0].cmac_0 /data_permit_mult" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">data_permit_mult</obj_property>
+      <obj_property name="ObjectShortName">data_permit_mult</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/\[0].cmac_0 /data_permit_acc" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">data_permit_acc</obj_property>
+      <obj_property name="ObjectShortName">data_permit_acc</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/\[0].cmac_0 /operation_nd_acc" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">operation_nd_acc</obj_property>
+      <obj_property name="ObjectShortName">operation_nd_acc</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/\[0].cmac_0 /operation_nd_mult" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">operation_nd_mult</obj_property>
+      <obj_property name="ObjectShortName">operation_nd_mult</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/\[0].cmac_0 /operation_rfd_acc" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">operation_rfd_acc</obj_property>
+      <obj_property name="ObjectShortName">operation_rfd_acc</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/\[0].cmac_0 /operation_rfd_mult" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">operation_rfd_mult</obj_property>
+      <obj_property name="ObjectShortName">operation_rfd_mult</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/\[0].cmac_0 /rdy_acc" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">rdy_acc</obj_property>
+      <obj_property name="ObjectShortName">rdy_acc</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/\[0].cmac_0 /rdy_mult" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">rdy_mult</obj_property>
+      <obj_property name="ObjectShortName">rdy_mult</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/\[0].cmac_0 /ce_mult" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">ce_mult</obj_property>
+      <obj_property name="ObjectShortName">ce_mult</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/\[0].cmac_0 /ce_acc" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">ce_acc</obj_property>
+      <obj_property name="ObjectShortName">ce_acc</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/\[0].cmac_0 /a_mult" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">a_mult[15:0]</obj_property>
+      <obj_property name="ObjectShortName">a_mult[15:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/\[0].cmac_0 /b_mult" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">b_mult[15:0]</obj_property>
+      <obj_property name="ObjectShortName">b_mult[15:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/\[0].cmac_0 /a_acc" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">a_acc[15:0]</obj_property>
+      <obj_property name="ObjectShortName">a_acc[15:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/\[0].cmac_0 /b_acc" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">b_acc[15:0]</obj_property>
+      <obj_property name="ObjectShortName">b_acc[15:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
    <wvobject fp_name="/engine_tb/engine_/\[0].cmac_0 /conv_ready" type="logic" db_ref_id="1">
       <obj_property name="ElementShortName">conv_ready</obj_property>
       <obj_property name="ObjectShortName">conv_ready</obj_property>
@@ -553,6 +628,10 @@
       <obj_property name="ObjectShortName">remain_op_num[31:0]</obj_property>
       <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
    </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/\[0].cmac_0 /rdy_mult" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">rdy_mult</obj_property>
+      <obj_property name="ObjectShortName">rdy_mult</obj_property>
+   </wvobject>
    <wvobject fp_name="/engine_tb/engine_/\[0].cmac_0 /rdy_acc" type="logic" db_ref_id="1">
       <obj_property name="ElementShortName">rdy_acc</obj_property>
       <obj_property name="ObjectShortName">rdy_acc</obj_property>
@@ -565,6 +644,7 @@
    <wvobject fp_name="/engine_tb/engine_/\[0].cmac_0 /result_acc" type="array" db_ref_id="1">
       <obj_property name="ElementShortName">result_acc[15:0]</obj_property>
       <obj_property name="ObjectShortName">result_acc[15:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
    </wvobject>
    <wvobject fp_name="/engine_tb/engine_/\[0].cmac_0 /result" type="array" db_ref_id="1">
       <obj_property name="ElementShortName">result[15:0]</obj_property>

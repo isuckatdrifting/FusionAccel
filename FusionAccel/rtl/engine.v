@@ -56,8 +56,28 @@ wire [15:0] result_0 [0:15];
 wire [15:0] result_1 [0:15];
 
 reg [15:0] op_count [0:15];
+reg op_finish;
+reg conv_valid;
 
 reg p0_data_fifo_rd_en, p1_data_fifo_rd_en, p0_weight_fifo_rd_en, p1_weight_fifo_rd_en;
+
+always @(op_type or conv_valid_0 or conv_valid_1) begin
+	case(op_type)
+		CONV1: begin
+			if(conv_valid_1 == 16'hff) op_finish = 1;
+			else op_finish = 0;
+		end
+		CONV3: begin
+			if(conv_valid_0 == 16'hff) op_finish = 1;
+			else op_finish = 0;
+		end
+		CONVP: begin
+			if(conv_valid_0 == 16'hff && conv_valid_1 == 16'hff) op_finish = 1;
+			else op_finish = 0;
+		end
+		default: op_finish = 0;
+	endcase
+end
 
 //Generate 16CMACs for CONV3x3
 //TODO: CMACs start one by one, using the same data path. weight is enabled according to sel.
@@ -77,10 +97,7 @@ generate
 	end 
 endgenerate
 
-//Instantiate MAXPOOL
-//------------------------------------------------
-// Bitonic 3x3 Max Pooling Core
-//------------------------------------------------
+//Instantiate MAXPOOL Bitonic 3x3
 pool_3x3 pool_3x3_(
     .clk		(sys_clk),
     .rst_n		(~rst),
@@ -89,10 +106,7 @@ pool_3x3 pool_3x3_(
     .pool_ready	(maxpool_ready),
     .pool_valid	(maxpool_valid));
 
-//Instantiate AVEPOOL
-//------------------------------------------------
-// Pipeline 13x13 Average Pooling Core
-//------------------------------------------------
+//Instantiate AVEPOOL Pipeline 13x13
 pool_13x13 pool_13x13_(
     .clk		(sys_clk),
     .rst_n		(~rst),
@@ -101,6 +115,7 @@ pool_13x13 pool_13x13_(
     .pool_ready	(avepool_ready),
     .pool_valid	(avepool_valid));
 
+//State Machine
 localparam idle = 2'b00;
 localparam busy = 2'b01;
 localparam clear = 2'b10;
@@ -108,6 +123,7 @@ localparam finish = 2'b11;
 
 reg [1:0] curr_state;
 reg [1:0] next_state;
+
 //    Current State, non-blocking
 always @ (posedge clk or posedge rst)    begin
     if (rst)
@@ -129,7 +145,7 @@ always @ (*) begin
             else next_state = busy;
         end
 		clear: begin
-			if(op_count[0] == 0) begin 
+			if(op_finish) begin 
 				next_state = finish;
 			end
 			else if (rdy_acc_0[0])begin
@@ -149,10 +165,6 @@ integer a;
 //Synchronous Port 0 MUX logic
 always @ (posedge clk or posedge rst) begin
 	if(rst) begin
-		for(a=0;a<PARA;a=a+1) begin:reset
-			d0[a] <= 16'h0000; w0[a] <= 16'h0000; b0[a] <= 16'h0000;
-			d1[a] <= 16'h0000; w1[a] <= 16'h0000; b1[a] <= 16'h0000;
-		end
 		
 		burst_cnt <= 0;
 		conv_ready_1 <= 16'h0;
@@ -161,7 +173,11 @@ always @ (posedge clk or posedge rst) begin
 		p1_data_fifo_rd_en <= 0;
 		p0_weight_fifo_rd_en <= 0;
 		p1_weight_fifo_rd_en <= 0;
+		conv_valid <= 0;
 	end else begin
+		for(a=0;a<PARA;a=a+1) begin: clear_conv_ready
+			if(conv_valid_0[a]) conv_ready_0[a] <= 0;
+		end
 		case (curr_state)
 			idle: begin
 			end
@@ -177,7 +193,7 @@ always @ (posedge clk or posedge rst) begin
 					end
 					CONV3: begin 
 						conv_ready_0[burst_cnt] <= 1;
-						if(burst_cnt < 16) begin 
+						if(burst_cnt < 16 && op_count[0] != 0) begin 
 							p0_data_fifo_rd_en <= 1; 
 							p0_weight_fifo_rd_en <= 1;
 						end else begin
@@ -197,7 +213,9 @@ always @ (posedge clk or posedge rst) begin
 			end
 			clear: begin
 				burst_cnt <= 0;
-				
+			end
+			finish: begin
+				conv_valid <= 1;
 			end
 			default:;
 		endcase
@@ -215,13 +233,16 @@ integer b;
 always@(posedge clk) begin
 	if(!conv_ready) begin
 		for(b=0;b<PARA;b=b+1) begin
+			d0[b] <= 16'h0000; w0[b] <= 16'h0000; b0[b] <= 16'h0000;
+			d1[b] <= 16'h0000; w1[b] <= 16'h0000; b1[b] <= 16'h0000;
 			op_count[b] <= op_num;
 		end
 	end else begin
 		if(burst_cnt >= 2 && burst_cnt <= 17) begin
 			d0[burst_cnt-2] <= data_0;
 			w0[burst_cnt-2] <= weight_0;
-			op_count[burst_cnt-2] <= op_count[burst_cnt-2] - 1;
+			if(op_count[burst_cnt-2] != 0)
+				op_count[burst_cnt-2] <= op_count[burst_cnt-2] - 1;
 		end
 	end
 end

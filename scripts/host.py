@@ -1,34 +1,17 @@
 '''
 Host Client for FusionAccel
-
 Functions:
 - Send FP16 Caffemodel and configs
 - Receive FP16 Output from FPGA
-
-'''
-#from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
-'''
-def parse_args():
-    """Parse input arguments
-    """
-
-    parser = ArgumentParser(description=__doc__,
-                            formatter_class=ArgumentDefaultsHelpFormatter)
-
-    parser.add_argument('input_model_file',
-                        help='Input caffemodel file')
-
-    args = parser.parse_args()
-    return args
 '''
 
-import caffe
 import numpy as np
 import os
 import ok
 import struct
 
-bit_directory = 'C:/Users/shish/source/repos/FusionAccel/scripts/ramtest.bit'
+#bit_directory = 'C:/Users/shish/source/repos/FusionAccel/scripts/ramtest.bit'
+bit_directory = 'C:/Users/shish/source/repos/FusionAccel/scripts/top.bit'
 bypass_caffemodel = 1
 
 class host:
@@ -116,34 +99,36 @@ class host:
 	def readOutput(self):
 		self.reset_fifo()
 
-def extract_caffe_model(model, weights, output_path):
-	"""extract caffe model's parameters to numpy array, and write them to files
-	Args:
-	model: path of '.prototxt'
-	weights: path of '.caffemodel'
-	output_path: output path of numpy params 
-	Returns: None
-	"""
-	net = caffe.Net(model, caffe.TEST)
-	net.copy_from(weights)
+if not bypass_caffemodel:
+	import caffe
+	def extract_caffe_model(model, weights, output_path):
+		"""extract caffe model's parameters to numpy array, and write them to files
+		Args:
+		model: path of '.prototxt'
+		weights: path of '.caffemodel'
+		output_path: output path of numpy params 
+		Returns: None
+		"""
+		net = caffe.Net(model, caffe.TEST)
+		net.copy_from(weights)
 
-	if not os.path.exists(output_path):
-		os.makedirs(output_path)
+		if not os.path.exists(output_path):
+			os.makedirs(output_path)
 
-	for item in net.params.items():
-		name, layer = item
-		print('convert layer: ' + name)
+		for item in net.params.items():
+			name, layer = item
+			print('convert layer: ' + name)
 
-		num = 0
-		for p in net.params[name]:
-			f = open(output_path + '/' + str(name).replace('/', '_') + '_' + str(num) + '.txt', "w")
-			dat = p.data.astype(dtype=np.float16).reshape(1, -1)
-			for i in dat:
-				for j in i:
-					f.write(str(hex(struct.unpack('<H', j)[0]))+', ') #Little-endian
-			f.close()
-			print("layer %d, size = %d" % (num, p.data.size))
-			num += 1
+			num = 0
+			for p in net.params[name]:
+				f = open(output_path + '/' + str(name).replace('/', '_') + '_' + str(num) + '.txt', "w")
+				dat = p.data.astype(dtype=np.float16).reshape(1, -1)
+				for i in dat:
+					for j in i:
+						f.write(str(hex(struct.unpack('<H', j)[0]))+', ') #Little-endian
+				f.close()
+				print("layer %d, size = %d" % (num, p.data.size))
+				num += 1
 
 
 def main():
