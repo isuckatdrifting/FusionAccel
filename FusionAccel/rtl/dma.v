@@ -20,7 +20,7 @@ module dma
 	output reg  [31:0]   ob_data,
 	input  wire [9:0]    ob_count,
 	
-	output reg           rd_en_o, 
+	output reg           rd_en, 
 	input  wire          rd_empty,
 	input  wire [31:0]   rd_data,
 	
@@ -28,7 +28,8 @@ module dma
 	output reg           cmd_en,
 	output reg  [2:0]    cmd_instr,
 	output reg  [29:0]   cmd_byte_addr,
-	output wire [5:0]    cmd_bl_o, 
+	output wire [5:0]    cmd_bl, 
+
 	input  wire          wr_full,
 	output reg           wr_en,
 	output reg  [31:0]   wr_data,
@@ -45,7 +46,7 @@ reg         write_mode;
 reg         read_mode;
 reg         reset_d;
 
-assign cmd_bl_o = BURST_LEN - 1;
+assign cmd_bl = BURST_LEN - 1;
 assign wr_mask = 4'b0000;
 
 always @(posedge clk) write_mode <= writes_en;
@@ -53,7 +54,7 @@ always @(posedge clk) read_mode <= reads_en;
 always @(posedge clk) reset_d <= reset;
 
 integer state;
-localparam idle  = 0,
+localparam idle = 0,
            write1 = 1,
            write2 = 2,
            write3 = 3,
@@ -71,10 +72,10 @@ always @(posedge clk) begin
 		cmd_instr <= 3'b0;
 		cmd_byte_addr <= 30'b0;
 	end else begin
-		cmd_en  <= 1'b0;
+		cmd_en <= 1'b0;
 		wr_en <= 1'b0;
 		ib_re <= 1'b0;
-		rd_en_o   <= 1'b0;
+		rd_en <= 1'b0;
 		ob_we <= 1'b0;
 
 		case (state)
@@ -125,7 +126,7 @@ always @(posedge clk) begin
 			
 			read2: begin
 				if(rd_empty==0) begin
-					rd_en_o <= 1'b1;
+					rd_en <= 1'b1;
 					state <= read3;
 				end
 			end
