@@ -262,20 +262,20 @@ dma dma_ (
 	.ob_data(pipe_out_data),
 	.ob_count(pipe_out_wr_count),
 
-	.p0_rd_en_o(c3_p0_rd_en),  
-	.p0_rd_empty(c3_p0_rd_empty), 
-	.p0_rd_data(c3_p0_rd_data), 
+	.rd_en_o(c3_p0_rd_en),  
+	.rd_empty(c3_p0_rd_empty), 
+	.rd_data(c3_p0_rd_data), 
 
-	.p0_cmd_en(c3_p0_cmd_en),
-	.p0_cmd_full(c3_p0_cmd_full), 
-	.p0_cmd_instr(c3_p0_cmd_instr),
-	.p0_cmd_byte_addr(c3_p0_cmd_byte_addr), 
-	.p0_cmd_bl_o(c3_p0_cmd_bl), 
+	.cmd_en(c3_p0_cmd_en),
+	.cmd_full(c3_p0_cmd_full), 
+	.cmd_instr(c3_p0_cmd_instr),
+	.cmd_byte_addr(c3_p0_cmd_byte_addr), 
+	.cmd_bl_o(c3_p0_cmd_bl), 
 
-	.p0_wr_en(c3_p0_wr_en),
-	.p0_wr_full(c3_p0_wr_full), 
-	.p0_wr_data(c3_p0_wr_data), 
-	.p0_wr_mask(c3_p0_wr_mask));
+	.wr_en(c3_p0_wr_en),
+	.wr_full(c3_p0_wr_full), 
+	.wr_data(c3_p0_wr_data), 
+	.wr_mask(c3_p0_wr_mask));
 	
 //Block Throttle
 always @(posedge okClk) begin

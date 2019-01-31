@@ -20,128 +20,128 @@ module dma
 	output reg  [31:0]   ob_data,
 	input  wire [9:0]    ob_count,
 	
-	output reg           p0_rd_en_o, 
-	input  wire          p0_rd_empty,
-	input  wire [31:0]   p0_rd_data,
+	output reg           rd_en_o, 
+	input  wire          rd_empty,
+	input  wire [31:0]   rd_data,
 	
-	input  wire          p0_cmd_full,
-	output reg           p0_cmd_en,
-	output reg  [2:0]    p0_cmd_instr,
-	output reg  [29:0]   p0_cmd_byte_addr,
-	output wire [5:0]    p0_cmd_bl_o, 
-	input  wire          p0_wr_full,
-	output reg           p0_wr_en,
-	output reg  [31:0]   p0_wr_data,
-	output wire [3:0]    p0_wr_mask
+	input  wire          cmd_full,
+	output reg           cmd_en,
+	output reg  [2:0]    cmd_instr,
+	output reg  [29:0]   cmd_byte_addr,
+	output wire [5:0]    cmd_bl_o, 
+	input  wire          wr_full,
+	output reg           wr_en,
+	output reg  [31:0]   wr_data,
+	output wire [3:0]    wr_mask
 	);
 
 localparam FIFO_SIZE      = 1024;
-localparam P0_BURST_LEN      = 32;  // Number of 32bit user words per DRAM command (Must be Multiple of 2)
+localparam BURST_LEN      = 32;  // Number of 32bit user words per DRAM command (Must be Multiple of 2)
 
-reg  [29:0] p0_cmd_byte_addr_wr, p0_cmd_byte_addr_rd;
-reg  [5:0]  p0_burst_cnt;
+reg  [29:0] cmd_byte_addr_wr, cmd_byte_addr_rd;
+reg  [5:0]  burst_cnt;
 
-reg         p0_write_mode;
-reg         p0_read_mode;
+reg         write_mode;
+reg         read_mode;
 reg         reset_d;
 
-assign p0_cmd_bl_o = P0_BURST_LEN - 1;
-assign p0_wr_mask = 4'b0000;
+assign cmd_bl_o = BURST_LEN - 1;
+assign wr_mask = 4'b0000;
 
-always @(posedge clk) p0_write_mode <= writes_en;
-always @(posedge clk) p0_read_mode <= reads_en;
+always @(posedge clk) write_mode <= writes_en;
+always @(posedge clk) read_mode <= reads_en;
 always @(posedge clk) reset_d <= reset;
 
-integer p0_state;
-localparam p0_idle  = 0,
-           p0_write1 = 1,
-           p0_write2 = 2,
-           p0_write3 = 3,
-           p0_read1 = 4,
-           p0_read2 = 5,
-           p0_read3 = 6,
-           p0_read4 = 7;
+integer state;
+localparam idle  = 0,
+           write1 = 1,
+           write2 = 2,
+           write3 = 3,
+           read1 = 4,
+           read2 = 5,
+           read3 = 6,
+           read4 = 7;
 
 always @(posedge clk) begin
 	if (reset_d) begin
-		p0_state           <= p0_idle;
-		p0_burst_cnt       <= 3'b000;
-		p0_cmd_byte_addr_wr  <= 0;
-		p0_cmd_byte_addr_rd  <= 0;
-		p0_cmd_instr <= 3'b0;
-		p0_cmd_byte_addr <= 30'b0;
+		state           <= idle;
+		burst_cnt       <= 3'b000;
+		cmd_byte_addr_wr  <= 0;
+		cmd_byte_addr_rd  <= 0;
+		cmd_instr <= 3'b0;
+		cmd_byte_addr <= 30'b0;
 	end else begin
-		p0_cmd_en  <= 1'b0;
-		p0_wr_en <= 1'b0;
+		cmd_en  <= 1'b0;
+		wr_en <= 1'b0;
 		ib_re <= 1'b0;
-		p0_rd_en_o   <= 1'b0;
+		rd_en_o   <= 1'b0;
 		ob_we <= 1'b0;
 
-		case (p0_state)
-			p0_idle: begin
-				p0_burst_cnt <= P0_BURST_LEN;
+		case (state)
+			idle: begin
+				burst_cnt <= BURST_LEN;
 
 				// only start writing when initialization done
-				if (calib_done==1 && p0_write_mode==1 && (ib_count >= P0_BURST_LEN)) begin
-					p0_state <= p0_write1;
-				end else if (calib_done==1 && p0_read_mode==1 && (ob_count<(FIFO_SIZE-1-P0_BURST_LEN) ) ) begin
-					p0_state <= p0_read1;
+				if (calib_done==1 && write_mode==1 && (ib_count >= BURST_LEN)) begin
+					state <= write1;
+				end else if (calib_done==1 && read_mode==1 && (ob_count<(FIFO_SIZE-1-BURST_LEN) ) ) begin
+					state <= read1;
 				end
 			end
 
-			p0_write1: begin
-				p0_state <= p0_write2;
+			write1: begin
+				state <= write2;
 				ib_re <= 1'b1;
 			end
 
-			p0_write2: begin
+			write2: begin
 				if(ib_valid==1) begin
-					p0_wr_data <= ib_data;
-					p0_wr_en   <= 1'b1;
-					p0_burst_cnt <= p0_burst_cnt - 1;
-					p0_state <= p0_write3;
+					wr_data <= ib_data;
+					wr_en   <= 1'b1;
+					burst_cnt <= burst_cnt - 1;
+					state <= write3;
 				end
 			end
 			
-			p0_write3: begin
-				if (p0_burst_cnt == 3'd0) begin
-					p0_cmd_en    <= 1'b1;
-					p0_cmd_byte_addr <= p0_cmd_byte_addr_wr;
-					p0_cmd_byte_addr_wr <= p0_cmd_byte_addr_wr + 4*P0_BURST_LEN;
-					p0_cmd_instr     <= 3'b000;
-					p0_state <= p0_idle;
+			write3: begin
+				if (burst_cnt == 3'd0) begin
+					cmd_en    <= 1'b1;
+					cmd_byte_addr <= cmd_byte_addr_wr;
+					cmd_byte_addr_wr <= cmd_byte_addr_wr + 4*BURST_LEN;
+					cmd_instr     <= 3'b000;
+					state <= idle;
 				end else begin
-					p0_state <= p0_write1;
+					state <= write1;
 				end
 			end
 
-			p0_read1: begin
-				p0_cmd_byte_addr <= p0_cmd_byte_addr_rd;
-				p0_cmd_byte_addr_rd <= p0_cmd_byte_addr_rd + 4*P0_BURST_LEN;
-				p0_cmd_instr     <= 3'b001;
-				p0_cmd_en    <= 1'b1;
-				p0_state <= p0_read2;
+			read1: begin
+				cmd_byte_addr <= cmd_byte_addr_rd;
+				cmd_byte_addr_rd <= cmd_byte_addr_rd + 4*BURST_LEN;
+				cmd_instr     <= 3'b001;
+				cmd_en    <= 1'b1;
+				state <= read2;
 			end
 			
-			p0_read2: begin
-				if(p0_rd_empty==0) begin
-					p0_rd_en_o <= 1'b1;
-					p0_state <= p0_read3;
+			read2: begin
+				if(rd_empty==0) begin
+					rd_en_o <= 1'b1;
+					state <= read3;
 				end
 			end
 			
-			p0_read3: begin
-				ob_data <= p0_rd_data;
+			read3: begin
+				ob_data <= rd_data;
 				ob_we <= 1'b1;
-				p0_burst_cnt <= p0_burst_cnt - 1;
-				p0_state <= p0_read4;
+				burst_cnt <= burst_cnt - 1;
+				state <= read4;
 			end
 			
-			p0_read4: begin
-				if (p0_burst_cnt == 3'd0) begin
-					p0_state <= p0_idle;
+			read4: begin
+				if (burst_cnt == 3'd0) begin
+					state <= idle;
 				end else begin
-					p0_state <= p0_read2;
+					state <= read2;
 				end
 			end
 

@@ -356,134 +356,101 @@ memc3_inst (
 	.c3_p3_rd_overflow      (c3_p3_rd_overflow),
 	.c3_p3_rd_error         (c3_p3_rd_error));
 	
-
+//TODO: only dma_p0 can write to sdram
 dma dma_p0 (
-	.clk				(c3_clk0),
-	.reset				(ep00wire[2] | c3_rst0), 
-	.reads_en			(ep00wire[0]),
-	.writes_en			(ep00wire[1]),
-	.calib_done			(c3_calib_done), 
+	.clk			(c3_clk0),
+	.reset			(ep00wire[2] | c3_rst0), 
+	.reads_en		(ep00wire[0]),
+	.writes_en		(ep00wire[1]),
+	.calib_done		(c3_calib_done), 
 
-	.ib_re				(pipe_in_read),
-	.ib_data			(pipe_in_data),
-	.ib_count			(pipe_in_rd_count),
-	.ib_valid			(pipe_in_valid),
-	.ib_empty			(pipe_in_empty),
+	.ib_re			(pipe_in_read),
+	.ib_data		(pipe_in_data),
+	.ib_count		(pipe_in_rd_count),
+	.ib_valid		(pipe_in_valid),
+	.ib_empty		(pipe_in_empty),
 
-	.ob_we				(pipe_out_write),
-	.ob_data			(pipe_out_data),
-	.ob_count			(pipe_out_wr_count),
+	.ob_we			(pipe_out_write),
+	.ob_data		(pipe_out_data),
+	.ob_count		(pipe_out_wr_count),
 
-	.p0_rd_en_o			(c3_p0_rd_en),  
-	.p0_rd_empty		(c3_p0_rd_empty), 
-	.p0_rd_data			(c3_p0_rd_data), 
+	.rd_en_o		(c3_p0_rd_en),  
+	.rd_empty		(c3_p0_rd_empty), 
+	.rd_data		(c3_p0_rd_data), 
 
-	.p0_cmd_en			(c3_p0_cmd_en),
-	.p0_cmd_full		(c3_p0_cmd_full), 
-	.p0_cmd_instr		(c3_p0_cmd_instr),
-	.p0_cmd_byte_addr	(c3_p0_cmd_byte_addr), 
-	.p0_cmd_bl_o		(c3_p0_cmd_bl), 
+	.cmd_en			(c3_p0_cmd_en),
+	.cmd_full		(c3_p0_cmd_full), 
+	.cmd_instr		(c3_p0_cmd_instr),
+	.cmd_byte_addr	(c3_p0_cmd_byte_addr), 
+	.cmd_bl_o		(c3_p0_cmd_bl), 
 
-	.p0_wr_en			(c3_p0_wr_en),
-	.p0_wr_full			(c3_p0_wr_full), 
-	.p0_wr_data			(c3_p0_wr_data), 
-	.p0_wr_mask			(c3_p0_wr_mask));
+	.wr_en			(c3_p0_wr_en),
+	.wr_full		(c3_p0_wr_full), 
+	.wr_data		(c3_p0_wr_data), 
+	.wr_mask		(c3_p0_wr_mask));
 
 dma dma_p1 (
-	.clk				(c3_clk0),
-	.reset				(ep00wire[2] | c3_rst0), 
-	.reads_en			(ep00wire[0]),
-	.writes_en			(ep00wire[1]),
-	.calib_done			(c3_calib_done), 
+	.clk			(c3_clk0),
+	.reset			(ep00wire[2] | c3_rst0), 
+	.reads_en		(ep00wire[0]),
+	.writes_en		(ep00wire[1]),
+	.calib_done		(c3_calib_done), 
 
-	.ib_re				(),
-	.ib_data			(),
-	.ib_count			(),
-	.ib_valid			(),
-	.ib_empty			(),
+	.ob_we			(),
+	.ob_data		(),
+	.ob_count		(),
 
-	.ob_we				(),
-	.ob_data			(),
-	.ob_count			(),
+	.rd_en_o		(c3_p1_rd_en),  
+	.rd_empty		(c3_p1_rd_empty), 
+	.rd_data		(c3_p1_rd_data), 
 
-	.p0_rd_en_o			(c3_p1_rd_en),  
-	.p0_rd_empty		(c3_p1_rd_empty), 
-	.p0_rd_data			(c3_p1_rd_data), 
-
-	.p0_cmd_en			(c3_p1_cmd_en),
-	.p0_cmd_full		(c3_p1_cmd_full), 
-	.p0_cmd_instr		(c3_p1_cmd_instr),
-	.p0_cmd_byte_addr	(c3_p1_cmd_byte_addr), 
-	.p0_cmd_bl_o		(c3_p1_cmd_bl), 
-
-	.p0_wr_en			(c3_p1_wr_en),
-	.p0_wr_full			(c3_p1_wr_full), 
-	.p0_wr_data			(c3_p1_wr_data), 
-	.p0_wr_mask			(c3_p1_wr_mask));
+	.cmd_en			(c3_p1_cmd_en),
+	.cmd_full		(c3_p1_cmd_full), 
+	.cmd_instr		(c3_p1_cmd_instr),
+	.cmd_byte_addr	(c3_p1_cmd_byte_addr), 
+	.cmd_bl_o		(c3_p1_cmd_bl));
 
 dma dma_p2 (
-	.clk				(c3_clk0),
-	.reset				(ep00wire[2] | c3_rst0), 
-	.reads_en			(ep00wire[0]),
-	.writes_en			(ep00wire[1]),
-	.calib_done			(c3_calib_done), 
+	.clk			(c3_clk0),
+	.reset			(ep00wire[2] | c3_rst0), 
+	.reads_en		(ep00wire[0]),
+	.writes_en		(ep00wire[1]),
+	.calib_done		(c3_calib_done), 
 
-	.ib_re				(),
-	.ib_data			(),
-	.ib_count			(),
-	.ib_valid			(),
-	.ib_empty			(),
+	.ob_we			(),
+	.ob_data		(),
+	.ob_count		(),
 
-	.ob_we				(),
-	.ob_data			(),
-	.ob_count			(),
+	.rd_en_o		(c3_p2_rd_en),  
+	.rd_empty		(c3_p2_rd_empty), 
+	.rd_data		(c3_p2_rd_data), 
 
-	.p0_rd_en_o			(c3_p2_rd_en),  
-	.p0_rd_empty		(c3_p2_rd_empty), 
-	.p0_rd_data			(c3_p2_rd_data), 
-
-	.p0_cmd_en			(c3_p2_cmd_en),
-	.p0_cmd_full		(c3_p2_cmd_full), 
-	.p0_cmd_instr		(c3_p2_cmd_instr),
-	.p0_cmd_byte_addr	(c3_p2_cmd_byte_addr), 
-	.p0_cmd_bl_o		(c3_p2_cmd_bl), 
-
-	.p0_wr_en			(c3_p2_wr_en),
-	.p0_wr_full			(c3_p2_wr_full), 
-	.p0_wr_data			(c3_p2_wr_data), 
-	.p0_wr_mask			(c3_p2_wr_mask));
+	.cmd_en			(c3_p2_cmd_en),
+	.cmd_full		(c3_p2_cmd_full), 
+	.cmd_instr		(c3_p2_cmd_instr),
+	.cmd_byte_addr	(c3_p2_cmd_byte_addr), 
+	.cmd_bl_o		(c3_p2_cmd_bl));
 
 dma dma_p3 (
-	.clk				(c3_clk0),
-	.reset				(ep00wire[2] | c3_rst0), 
-	.reads_en			(ep00wire[0]),
-	.writes_en			(ep00wire[1]),
-	.calib_done			(c3_calib_done), 
+	.clk			(c3_clk0),
+	.reset			(ep00wire[2] | c3_rst0), 
+	.reads_en		(ep00wire[0]),
+	.writes_en		(ep00wire[1]),
+	.calib_done		(c3_calib_done), 
 
-	.ib_re				(),
-	.ib_data			(),
-	.ib_count			(),
-	.ib_valid			(),
-	.ib_empty			(),
+	.ob_we			(),
+	.ob_data		(),
+	.ob_count		(),
 
-	.ob_we				(),
-	.ob_data			(),
-	.ob_count			(),
+	.rd_en_o		(c3_p3_rd_en),  
+	.rd_empty		(c3_p3_rd_empty), 
+	.rd_data		(c3_p3_rd_data), 
 
-	.p0_rd_en_o			(c3_p3_rd_en),  
-	.p0_rd_empty		(c3_p3_rd_empty), 
-	.p0_rd_data			(c3_p3_rd_data), 
-
-	.p0_cmd_en			(c3_p3_cmd_en),
-	.p0_cmd_full		(c3_p3_cmd_full), 
-	.p0_cmd_instr		(c3_p3_cmd_instr),
-	.p0_cmd_byte_addr	(c3_p3_cmd_byte_addr), 
-	.p0_cmd_bl_o		(c3_p3_cmd_bl), 
-
-	.p0_wr_en			(c3_p3_wr_en),
-	.p0_wr_full			(c3_p3_wr_full), 
-	.p0_wr_data			(c3_p3_wr_data), 
-	.p0_wr_mask			(c3_p3_wr_mask));
+	.cmd_en			(c3_p3_cmd_en),
+	.cmd_full		(c3_p3_cmd_full), 
+	.cmd_instr		(c3_p3_cmd_instr),
+	.cmd_byte_addr	(c3_p3_cmd_byte_addr), 
+	.cmd_bl_o		(c3_p3_cmd_bl));
 	
 //Block Throttle
 always @(posedge okClk) begin
