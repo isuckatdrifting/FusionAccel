@@ -21,6 +21,7 @@ module csb(
     output [2:0] op_type,
     output [2:0] op_num,
 
+    output op_run,
     output p0_reads_en,
     output p0_writes_en,
     output p1_reads_en,
@@ -102,6 +103,7 @@ module csb(
     reg [31:0] data_start_addr;
     reg [31:0] weight_start_addr;
     reg [31:0] op_num; //0-1048576, Max op num = 512000 @ conv10
+    reg op_run;
 
     //Translated Address Access Sequence
     reg [31:0] r_addr;
@@ -164,7 +166,7 @@ module csb(
             p1_reads_en <= 0;
         end else begin
             //Fifo logic: reads_en --> ob_we --> din->fifo --> fifo_rd_en
-            if(op_en) p0_reads_en <= 1; //Assert to DMA readout, DMA writing data to FIFO
+            if(op_run) p0_reads_en <= 1; //Assert to DMA readout, DMA writing data to FIFO
             if(cmd_fifo_wr_count == cmd_size * 5) begin
                 p0_reads_en <= 0;       //Read command
             end
@@ -202,6 +204,7 @@ module csb(
             cmd_collect_done <= 0;
             cmd_issue_done <= 0;
             op_done <= 0;
+            op_run <= 0;
 
             data_burst_count <= 32'd0;
             wb_burst_count <= 32'd0;
@@ -226,7 +229,7 @@ module csb(
                         4: begin ikn_size <= cmd[15:0]; okn_size <= cmd[31:16]; end
                         3: begin weight_start_addr <= cmd; end
                         2: begin data_start_addr <= cmd; end
-                        1: begin w_addr <= cmd; cmd_collect_done <= 1; cmd_fifo_rd_en <= 0; end
+                        1: begin w_addr <= cmd; cmd_collect_done <= 1; cmd_fifo_rd_en <= 0; op_run <= 1; end
                         default: ;
                     endcase 
                 end
@@ -274,6 +277,7 @@ module csb(
                     if(avepool_valid) begin avepool_ready <= 0; op_done <= 1; end
                 end
                 finish: begin
+                    op_run <= 0;
                     op_done <= 0;
                     irq <= 1;
                 end

@@ -33,20 +33,8 @@ module top
 	output wire         ddr2_cs_n
 );
 
-//-----------------------------Clock PLL-----------------------------------//
-clockgen clockgen_ (
-    // Clock in ports
-    .CLK_IN1_P				(sys_clkp),   // IN
-    .CLK_IN1_N				(sys_clkn),   // IN
-    // Clock out ports
-    .CLK_OUT1				(sys_clk),    // OUT
-	.CLK_OUT2				(),           // OUT
-    // Status and control signals
-    .RESET					(1'b0),       // IN
-    .LOCKED					(LOCKED)      // OUT 
-);      
-
 //--------------v1, Minimum Hardware Cores for SqueezeNet------------------//
+wire        c3_clk0;
 
 wire op_en;
 wire [2:0] op_type;
@@ -58,9 +46,9 @@ wire [15:0] data_0, weight_0, bias_0, data_1, weight_1, bias_1;
 // Control Signal Block for all cores
 //------------------------------------------------
 csb csb_(
-    .clk				(sys_clk),
+    .clk				(c3_clk0),
     .rst_n				(ep00wire[3]),
-	.op_en				(op_en),
+	.op_en				(ep00wire[4]),		// A wire from ep
 
     .conv_valid			(conv_valid),
 	.conv_ready			(conv_ready),
@@ -79,16 +67,20 @@ csb csb_(
 	.op_type			(op_type),
 	.op_num				(op_num),
 
+	.op_run				(op_run),
 	.p0_reads_en		(p0_reads_en),
     .p0_writes_en		(p0_writes_en),
     .p1_reads_en		(p1_reads_en),
     .p1_writes_en		(p1_writes_en),
+	.p2_reads_en		(p2_reads_en),
+    .p2_writes_en		(p2_writes_en),
+    .p3_reads_en		(p3_reads_en),
+    .p3_writes_en		(p3_writes_en),
     .cmd_fifo_wr_count	(cmd_fifo_wr_count),
     .irq				(irq));
 
-
 engine engine_(
-	.clk			(clk),
+	.clk			(c3_clk0),
 	.rst			(rst),
 	//Control signals from csb
 	.conv_ready		(conv_ready),
@@ -124,7 +116,7 @@ localparam BUFFER_HEADROOM = 20; // headroom for the FIFO count to account for l
 wire        c3_sys_clk;
 wire        c3_error;
 wire        c3_calib_done;
-wire        c3_clk0;
+
 reg         c3_sys_rst_n;
 wire        c3_rst0;
 wire        c3_pll_lock;
@@ -356,13 +348,25 @@ memc3_inst (
 	.c3_p3_rd_overflow      (c3_p3_rd_overflow),
 	.c3_p3_rd_error         (c3_p3_rd_error));
 	
-//TODO: only dma_p0 can write to sdram, port0, conv3x3 data, maxpool data, avepool data, result write back
-//TODO: input merge and output mux
+//output MUX
+wire [9:0] p0_count;
+wire p0_we_data0;
+wire p0_we_csb;
+wire [31:0] p0_data_csb;
+wire [31:0] p0_data;
+assign p0_count = ep00wire[4]?(op_run?p0_count_data0:cmd_fifo_wr_count):pipe_out_wr_count;
+assign p0_we_data0 = (ep00wire[4] & op_run) ? p0_we: 1'b0;
+assign p0_data_data0 = (ep00wire[4] & op_run) ? p0_data: 32'h0000_0000;
+assign p0_we_csb = (ep00wire[4] & ~op_run) ? p0_we: 1'b0;
+assign p0_data_csb = (ep00wire[4] & ~op_run) ? p0_data: 1'b0;
+assign pipe_out_write = (~ep00wire[4]) ? p0_we: 1'b0;
+assign pipe_out_data = (~ep00wire[4]) ? p0_data: 32'h0000_0000;
+
 //TODO: Add input start address and parsing in dma
-dma dma_p0 (
+dma dma_p0 ( // only dma_p0 can write to sdram, port0, conv3x3 data, maxpool data, avepool data, result write back
 	.clk			(c3_clk0),
 	.reset			(ep00wire[2] | c3_rst0), 
-	.reads_en		(ep00wire[0]),			//in		-- okPipeOut/cmd/data0 FIFO
+	.reads_en		(ep00wire[0] | p0_reads_en),		//in		-- okPipeOut/cmd/data0 FIFO
 	.writes_en		(ep00wire[1]),			//in		-- okPipeIn
 	.calib_done		(c3_calib_done), 
 
@@ -372,12 +376,12 @@ dma dma_p0 (
 	.ib_valid		(pipe_in_valid),		//in		-- from okPipeIn
 	.ib_empty		(pipe_in_empty),		//in		-- from okPipeIn
 
-	.ob_we			(pipe_out_write),		//out		-- to okPipeOut/cmd/data0 FIFO
-	.ob_data		(pipe_out_data),		//out		-- to okPipeOut/cmd/data0 FIFO
-	.ob_count		(pipe_out_wr_count),	//in		-- from okPipeOut/cmd/data0 FIFO
+	.ob_we			(p0_we),				//out		-- to okPipeOut/cmd/data0 FIFO
+	.ob_data		(p0_data),				//out		-- to okPipeOut/cmd/data0 FIFO
+	.ob_count		(p0_count),				//in		-- from okPipeOut/cmd/data0 FIFO
 
 	.rd_en			(c3_p0_rd_en),  		//out		-- to MCB Port0
-	.rd_empty		(c3_p0_rd_empty), 		//in		-- from okPipeOut/cmd/data0 FIFO
+	.rd_empty		(c3_p0_rd_empty), 		//in		-- from MCB Port0
 	.rd_data		(c3_p0_rd_data), 		//in		-- from MCB Port0
 
 	.cmd_en			(c3_p0_cmd_en),			//out		-- to MCB Port0
@@ -391,11 +395,11 @@ dma dma_p0 (
 	.wr_data		(c3_p0_wr_data), 		//out		-- to MCB Port0
 	.wr_mask		(c3_p0_wr_mask));		//out		-- to MCB Port0
 
-dma dma_p1 ( // Read only, port0, conv3x3 weight
+dma dma_p1 ( // Read only, port1, conv3x3 weight
 	.clk			(c3_clk0),
 	.reset			(ep00wire[2] | c3_rst0), 
-	.reads_en		(),						//in		-- weight0
-	.writes_en		(),	
+	.reads_en		(p1_reads_en),			//in		-- weight0
+	.writes_en		(1'b0),	
 	.calib_done		(c3_calib_done), 
 
 	.ob_we			(p1_we),				//out		-- to weight0 FIFO
@@ -403,7 +407,7 @@ dma dma_p1 ( // Read only, port0, conv3x3 weight
 	.ob_count		(p1_count),				//in		-- from weight0 FIFO
 
 	.rd_en			(c3_p1_rd_en),  		//out		-- to MCB Port1
-	.rd_empty		(c3_p1_rd_empty), 		//in		-- from weight0 FIFO
+	.rd_empty		(c3_p1_rd_empty), 		//in		-- from MCB Port1
 	.rd_data		(c3_p1_rd_data), 		//in		-- from MCB Port1
 
 	.cmd_en			(c3_p1_cmd_en),			//out		-- to MCB Port1
@@ -412,11 +416,11 @@ dma dma_p1 ( // Read only, port0, conv3x3 weight
 	.cmd_byte_addr	(c3_p1_cmd_byte_addr), 	//out		-- to MCB Port1
 	.cmd_bl			(c3_p1_cmd_bl));		//out		-- to MCB Port1
 
-dma dma_p2 ( // Read Only, port1, conv1x1 data
+dma dma_p2 ( // Read Only, port2, conv1x1 data
 	.clk			(c3_clk0),
 	.reset			(ep00wire[2] | c3_rst0), 
-	.reads_en		(),						//in		-- data1
-	.writes_en		(),
+	.reads_en		(p2_reads_en),			//in		-- data1
+	.writes_en		(1'b0),
 	.calib_done		(c3_calib_done), 
 
 	.ob_we			(p2_we),				//out		-- to data1 FIFO
@@ -424,7 +428,7 @@ dma dma_p2 ( // Read Only, port1, conv1x1 data
 	.ob_count		(p2_count),				//in		-- from data1 FIFO
 
 	.rd_en			(c3_p2_rd_en),  		//out		-- to MCB Port2
-	.rd_empty		(c3_p2_rd_empty), 		//in		-- from data1 FIFO
+	.rd_empty		(c3_p2_rd_empty), 		//in		-- from MCB Port2
 	.rd_data		(c3_p2_rd_data), 		//in		-- from MCB Port2
 
 	.cmd_en			(c3_p2_cmd_en),			//out		-- to MCB Port2
@@ -433,11 +437,11 @@ dma dma_p2 ( // Read Only, port1, conv1x1 data
 	.cmd_byte_addr	(c3_p2_cmd_byte_addr), 	//out		-- to MCB Port2
 	.cmd_bl			(c3_p2_cmd_bl));		//out		-- to MCB Port2
 
-dma dma_p3 ( // Read Only, port1, conv1x1 weight
+dma dma_p3 ( // Read Only, port3, conv1x1 weight
 	.clk			(c3_clk0),
 	.reset			(ep00wire[2] | c3_rst0), 
-	.reads_en		(),						//in		-- weight1
-	.writes_en		(),
+	.reads_en		(p3_reads_en),			//in		-- weight1
+	.writes_en		(1'b0),
 	.calib_done		(c3_calib_done), 
 
 	.ob_we			(p3_we),				//out		-- to weight1 FIFO
@@ -445,7 +449,7 @@ dma dma_p3 ( // Read Only, port1, conv1x1 weight
 	.ob_count		(p3_count),				//in		-- from weight1 FIFO
 
 	.rd_en			(c3_p3_rd_en),  		//out		-- to MCB Port3
-	.rd_empty		(c3_p3_rd_empty), 		//in		-- from weight1 FIFO
+	.rd_empty		(c3_p3_rd_empty), 		//in		-- from MCB Port3
 	.rd_data		(c3_p3_rd_data), 		//in		-- from MCB Port3
 
 	.cmd_en			(c3_p3_cmd_en),			//out		-- to MCB Port3
@@ -479,6 +483,7 @@ end
 //------------------------------------------------
 
 // Instantiate the okHost and connect endpoints.
+//ep00wire: 0: pipe read, 1: pipe write, 2: reset pipefifos and dma, 3: reset csb and command fifos, 4: op_en
 wire [65*2-1:0]  okEHx;
 
 okHost okHI(
@@ -528,9 +533,9 @@ fifo_w32_1024_r32_1024 okPipeOut_fifo (
 fifo_w32_1024_r32_1024 csb_cmd_fifo (
 	.rst			(ep00wire[3]),
 	.wr_clk			(c3_clk0),
-	.rd_clk			(sys_clk),
-	.din			(), // Bus [31 : 0] 
-	.wr_en			(),
+	.rd_clk			(c3_clk0),
+	.din			(p0_data_csb), // Bus [31 : 0] 
+	.wr_en			(p0_we_csb),
 	.rd_en			(cmd_fifo_rd_en),
 	.dout			(cmd), // Bus [31 : 0] 
 	.full			(), //NC
@@ -542,21 +547,21 @@ fifo_w32_1024_r32_1024 csb_cmd_fifo (
 fifo_w32_1024_r32_1024 p0_data_fifo (
 	.rst			(ep00wire[3]),
 	.wr_clk			(c3_clk0),
-	.rd_clk			(sys_clk),
-	.din			(), // Bus [31 : 0] 
-	.wr_en			(),
+	.rd_clk			(c3_clk0),
+	.din			(p0_data_data0), // Bus [31 : 0] 
+	.wr_en			(p0_we_data0),
 	.rd_en			(p0_data_fifo_rd_en),
 	.dout			(data_0), // Bus [31 : 0] 
 	.full			(), //NC
 	.empty			(p0_data_fifo_empty),
 	.valid			(), //NC
 	.rd_data_count	(), // Bus [9 : 0] 
-	.wr_data_count	()); // Bus [9 : 0] 
+	.wr_data_count	(p0_count_data0)); // Bus [9 : 0] 
 
 fifo_w32_1024_r32_1024 p0_weight_fifo (
 	.rst			(ep00wire[3]),
 	.wr_clk			(c3_clk0),
-	.rd_clk			(sys_clk),
+	.rd_clk			(c3_clk0),
 	.din			(p1_data), // Bus [31 : 0] 
 	.wr_en			(p1_wr),
 	.rd_en			(p0_weight_fifo_rd_en),
@@ -571,7 +576,7 @@ fifo_w32_1024_r32_1024 p0_weight_fifo (
 fifo_w32_1024_r32_1024 p1_data_fifo (
 	.rst			(ep00wire[3]),
 	.wr_clk			(c3_clk0),
-	.rd_clk			(sys_clk),
+	.rd_clk			(c3_clk0),
 	.din			(p2_data), // Bus [31 : 0] 
 	.wr_en			(p2_wr),
 	.rd_en			(p1_data_fifo_rd_en),
@@ -585,7 +590,7 @@ fifo_w32_1024_r32_1024 p1_data_fifo (
 fifo_w32_1024_r32_1024 p1_weight_fifo (
 	.rst			(ep00wire[3]),
 	.wr_clk			(c3_clk0),
-	.rd_clk			(sys_clk),
+	.rd_clk			(c3_clk0),
 	.din			(p3_data), // Bus [31 : 0] 
 	.wr_en			(p3_wr),
 	.rd_en			(p1_weight_fifo_rd_en),
