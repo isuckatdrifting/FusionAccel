@@ -1,6 +1,6 @@
 import caffe
 import numpy as np
-#import argparse
+import struct
 import os
 
 def extract_caffe_model(model, weights, output_path):
@@ -24,21 +24,17 @@ def extract_caffe_model(model, weights, output_path):
 
     num = 0
     for p in net.params[name]:
-        #f = open(output_path + '/' + str(name).replace('/', '_') + '_' + str(num) + '.txt', "w")
-        #np.save(output_path + '/' + str(name) + '_' + str(num), p.data)
-        #f.write(str(p.data.tolist()))
-        #f.close()
-        print("layer %d, size = %d" % (num, p.data.size))
-        num += 1
+      f = open(output_path + '/' + str(name).replace('/', '_') + '_' + str(num) + '.txt', "w")
+      dat = p.data.astype(dtype=np.float16).reshape(1, -1)
+      for i in dat:
+        for j in i:
+          f.write(str(hex(struct.unpack('<H', j)[0]))+', ') #Little-endian
+      f.close()
+      print("layer %d, size = %d" % (num, p.data.size))
+      num += 1
 
 if __name__ == '__main__':
-  #parser = argparse.ArgumentParser()
-  #parser.add_argument("--model", help="model prototxt path .prototxt")
-  #parser.add_argument("--weights", help="caffe model weights path .caffemodel")
-  #parser.add_argument("--output", help="output path")
-  #args = parser.parse_args()
-  #extract_caffe_model(args.model, args.weights, args.output)
-  model = 'C:/Users/shish/source/repos/SqueezeNet/SqueezeNet_v1.1/deploy.prototxt'
-  weights = 'C:/Users/shish/source/repos/SqueezeNet/SqueezeNet_v1.1/squeezenet_v1.1.caffemodel'
-  output_path = 'C:/Users/shish/source/repos/FusionAccel/demo/tmp'
+  model = '/mnt/c/Users/shish/source/repos/SqueezeNet/SqueezeNet_v1.1/deploy.prototxt'
+  weights = '/mnt/c/Users/shish/source/repos/SqueezeNet/SqueezeNet_v1.1/squeezenet_v1.1.caffemodel'
+  output_path = '/mnt/c/Users/shish/source/repos/FusionAccel/scripts/tmp'
   extract_caffe_model(model, weights, output_path)
