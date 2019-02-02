@@ -10,19 +10,27 @@ import os
 import ok
 import struct
 
-#bit_directory = 'C:/Users/shish/source/repos/FusionAccel/scripts/ramtest.bit'
 bit_directory = 'C:/Users/shish/source/repos/FusionAccel/scripts/top.bit'
+test_enable = 0
 
 class host:
 	def __init__(self):
+		# RamTest Parameters
 		self.memsize = 128 * 1024 * 1024
 		self.blocksize = 512
 		self.writesize = 8 * 1024 * 1024
 		self.readsize = 8 * 1024 * 1024
-		self.numtests = 10
+		self.numtests = 1
 		self.num_of_rams = 1
 		self.buf = bytearray(self.memsize)
 		self.rbuf = bytearray(self.readsize)
+		# Run Parameters
+		self.weightsize = 2470992
+		self.imagesize = 147 * 512
+		self.outputsize = 4096
+		self.weight = bytearray()
+		self.image = bytearray(self.imagesize)
+		self.output = bytearray(self.outputsize)
 		return
 
 	def InitializeDevice(self):
@@ -72,7 +80,6 @@ class host:
 			self.xem.WriteToBlockPipeIn(0x80 + mem, self.blocksize, self.buf[i*self.writesize:(i+1)*self.writesize])
 		self.xem.UpdateWireOuts()
 
-
 	def testSDRAM(self, mem):
 		self.reset_fifo()
 		self.xem.SetWireInValue(0x00, 0x0001)
@@ -90,31 +97,79 @@ class host:
 						   self.rbuf[j+k],
 						   self.buf[i+j+k] ^ self.rbuf[j+k]))
 					passed = False
+			print(sum(self.buf[i:i+self.readsize]), ", ", sum(self.rbuf)) # Checksum
+			if i == 0:
+				print(self.buf[0], ", ", self.rbuf[0])
 		return passed
 
-	def loadModel(self):
+	def loadData(self):
 		self.reset_fifo()
+		self.xem.SetWireInValue(0x00, 0x0002)
+		self.xem.UpdateWireIns()
+
+		print("Reading Weights from file")
+		weightpiece = open("C:/Users/shish/source/repos/FusionAccel/scripts/tmp/weight.txt","r")
+		for line in weightpiece.readlines():
+			tmp = bytearray.fromhex(line.strip('\n'))
+			self.weight = self.weight + tmp
+			#print(len(tmp))
+		print(len(self.weight))
+
+		print("Loading Weights")
+		self.buf = bytearray(os.urandom(self.memsize))
+		# Notes: Write cube must be times of blocksize ------------------↓
+		self.xem.WriteToBlockPipeIn(0x80, self.blocksize, self.weight[0:2470912])
+		self.xem.UpdateWireOuts()
+		'''
+		print("Loading Image")
+		for i in range(0, int(self.weightsize/self.writesize)):
+			self.xem.WriteToBlockPipeIn(0x80, self.blocksize, self.image[i*self.writesize:(i+1)*self.writesize])
+		self.xem.UpdateWireOuts()
+		'''
+	def startOp(self):
+		#print("Resetting CSB...")
+		#self.xem.SetWireInValue(0x00, 0x0008)
+		#self.xem.UpdateWireIns()
+		#self.xem.SetWireInValue(0x00, 0x0010)
+		#self.xem.UpdateWireIns()
+		pass
 	
 	def readOutput(self):
 		self.reset_fifo()
+		self.xem.SetWireInValue(0x00, 0x0001)
+		self.xem.UpdateWireIns()
+		print("Reading Output...")
+		for i in range(0, self.outputsize, self.blocksize):
+			self.xem.ReadFromBlockPipeOut(0xa0, self.blocksize, self.output)
+			for j in range(0, self.blocksize):
+				if j%2==0:
+					print("%02x" % self.output[i+j], end="")
+				else:
+					print("%02x" % self.output[i+j], end=" ")
 
-def main():
-    
+def main():   
 	dev = host()
 	if (False == dev.InitializeDevice()):
 		exit
 	else:
-		pass_num = 0
-		fail_num = 0
-		for i in range(0, dev.numtests):
-			for j in range(0, dev.num_of_rams):
-				dev.buf = bytearray(os.urandom(dev.memsize))
-				dev.writeSDRAM(j)
-				if True == dev.testSDRAM(j):
-					pass_num += 1
-				else:
-					fail_num += 1
-				print("Passed: %d  Failed: %d\n" % (pass_num, fail_num))
+#----------------------------------------Test---------------------------------------#
+		if(test_enable):
+			pass_num = 0
+			fail_num = 0
+			for i in range(0, dev.numtests):
+				for j in range(0, dev.num_of_rams):
+					dev.buf = bytearray(os.urandom(dev.memsize))
+					dev.writeSDRAM(j)
+					if True == dev.testSDRAM(j):
+						pass_num += 1
+					else:
+						fail_num += 1
+					print("Passed: %d  Failed: %d\n" % (pass_num, fail_num))
+#----------------------------------------Run----------------------------------------#
+		else:
+			dev.loadData()
+			#dev.startOp()
+			dev.readOutput()
 
 if __name__ == '__main__':
     main()
