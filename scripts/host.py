@@ -11,6 +11,8 @@ import ok
 import struct
 
 bit_directory = 'C:/Users/shish/source/repos/FusionAccel/scripts/top.bit'
+weight_directory = 'C:/Users/shish/source/repos/FusionAccel/scripts/tmp/weight.txt'
+image_directory = ''
 test_enable = 0
 
 class host:
@@ -28,7 +30,7 @@ class host:
 		self.weightsize = 2470992
 		self.imagesize = 147 * 512
 		self.outputsize = 4096
-		self.weight = bytearray()
+		self.weight = bytearray() #dynamic array allocation
 		self.image = bytearray(self.imagesize)
 		self.output = bytearray(self.outputsize)
 		return
@@ -80,7 +82,7 @@ class host:
 			self.xem.WriteToBlockPipeIn(0x80 + mem, self.blocksize, self.buf[i*self.writesize:(i+1)*self.writesize])
 		self.xem.UpdateWireOuts()
 
-	def testSDRAM(self, mem):
+	def readSDRAM(self, mem):
 		self.reset_fifo()
 		self.xem.SetWireInValue(0x00, 0x0001)
 		self.xem.UpdateWireIns()
@@ -108,7 +110,7 @@ class host:
 		self.xem.UpdateWireIns()
 
 		print("Reading Weights from file")
-		weightpiece = open("C:/Users/shish/source/repos/FusionAccel/scripts/tmp/weight.txt","r")
+		weightpiece = open(weight_directory, "r")
 		for line in weightpiece.readlines():
 			tmp = bytearray.fromhex(line.strip('\n'))
 			self.weight = self.weight + tmp
@@ -142,7 +144,7 @@ class host:
 		for i in range(0, self.outputsize, self.blocksize):
 			self.xem.ReadFromBlockPipeOut(0xa0, self.blocksize, self.output)
 			for j in range(0, self.blocksize):
-				if j%2==0:
+				if j % 2 == 0:
 					print("%02x" % self.output[i+j], end="")
 				else:
 					print("%02x" % self.output[i+j], end=" ")
@@ -160,7 +162,7 @@ def main():
 				for j in range(0, dev.num_of_rams):
 					dev.buf = bytearray(os.urandom(dev.memsize))
 					dev.writeSDRAM(j)
-					if True == dev.testSDRAM(j):
+					if True == dev.readSDRAM(j):
 						pass_num += 1
 					else:
 						fail_num += 1

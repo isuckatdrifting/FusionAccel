@@ -25,6 +25,7 @@ def extract_caffe_model(model, weights, output_path):
     num = 0
     for p in net.params[name]:
       #f = open(output_path + '/' + str(name).replace('/', '_') + '_' + str(num) + '.txt', "w")
+      # TODO: Padding 0
       dat = p.data.astype(dtype=np.float16).reshape(1, -1)
       for i in dat:
         for j in i:
