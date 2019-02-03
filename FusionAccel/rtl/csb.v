@@ -46,12 +46,13 @@ module csb(
     //|       stride_2: 16Bit      | Max surface size = image size = 224*224 = 50176 < 65536
     //|  input channel size: 16Bit |
     //| output channel size: 16Bit |
-    //|   input kernel size: 16Bit |
-    //|  output kernel size: 16Bit |
+    //|   input kernel size: 8Bit  |
+    //|  output kernel size: 8Bit  |
+    //|     op_num per cmac: 16Bit |
     //|   weight_start_addr: 32Bit |
     //|     data_start_addr: 32Bit |
     //|  write_back_address: 32Bit |
-    //|----------------------------| Totally 160Bit
+    //|----------------------------| Totally 192Bit
 
     //TODO: Use Img2col/MEC Convolution
     //TODO: Padding = 1 --> Add 0 in memory
