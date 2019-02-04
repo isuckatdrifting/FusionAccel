@@ -33,6 +33,7 @@ class host:
 		self.weight = bytearray() #dynamic array allocation
 		self.image = bytearray(self.imagesize)
 		self.output = bytearray(self.outputsize)
+		self.command = bytearray()
 		return
 
 	def InitializeDevice(self):
@@ -110,8 +111,8 @@ class host:
 		self.xem.UpdateWireIns()
 
 		print("Reading Weights from file")
-		weightpiece = open(weight_directory, "r")
-		for line in weightpiece.readlines():
+		weightfile = open(weight_directory, "r")
+		for line in weightfile.readlines():
 			tmp = bytearray.fromhex(line.strip('\n'))
 			self.weight = self.weight + tmp
 			#print(len(tmp))
@@ -129,7 +130,15 @@ class host:
 		self.xem.UpdateWireOuts()
 		'''
 	def startOp(self):
-		#print("Resetting CSB...")
+		print("Loading commands")
+		commandfile = open(command_directory, "r")
+		for line in commandfile.readlines():
+			tmp = bytearray.fromhex(line.strip('\n'))
+			self.command = self.command + tmp
+		self.xem.WriteToBlockPipeIn(0x80, self.blocksize, self.command[0:1024]) # Actually 30 Commands x 24 Bytes
+		self.xem.UpdateWireOuts()
+
+		print("Resetting CSB...")
 		#self.xem.SetWireInValue(0x00, 0x0008)
 		#self.xem.UpdateWireIns()
 		#self.xem.SetWireInValue(0x00, 0x0010)

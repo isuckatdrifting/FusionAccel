@@ -19,7 +19,7 @@ module csb(
     output [31:0] r_addr,
     output [31:0] w_addr,
     output [2:0] op_type,
-    output [2:0] op_num,
+    output [15:0] op_num,
 
     output op_run,
     output p0_reads_en,
@@ -103,15 +103,13 @@ module csb(
     reg [15:0] okn_size;
     reg [31:0] data_start_addr;
     reg [31:0] weight_start_addr;
-    reg [31:0] op_num; //0-1048576, Max op num = 512000 @ conv10
-    reg op_run;
+    reg [15:0] op_num;
+    reg [15:0] n_count; //TODO: n_count from 0 to op_num, step = conv kernel size
+    reg op_run; //register output to indicate p0 transfers command/data
 
     //Translated Address Access Sequence
     reg [31:0] r_addr;
     reg [31:0] w_addr;
-
-    reg [31:0] data_burst_count;
-    reg [31:0] wb_burst_count;
 
     //Handshake signals to submodules
     reg conv_ready, maxpool_ready, avepool_ready;
@@ -167,16 +165,32 @@ module csb(
             p1_reads_en <= 0;
         end else begin
             //Fifo logic: reads_en --> ob_we --> din->fifo --> fifo_rd_en
-            if(op_run) p0_reads_en <= 1; //Assert to DMA readout, DMA writing data to FIFO
-            if(cmd_fifo_wr_count == cmd_size * 5) begin
+            //DMA Access: get command
+            if(op_en) p0_reads_en <= 1; //Assert to DMA readout, DMA writing data to FIFO
+            if(cmd_fifo_wr_count == cmd_size * 6) begin
                 p0_reads_en <= 0;       //Read command
             end
+            //DMA Access: get data and weight
             if(cmd_collect_done) begin
-                p0_reads_en <= 1;   //Read data
-                if(op_type == 3'd1 || op_type == 3'd2) begin p1_reads_en <= 1; end  //Read weight
-                //TODO: reset p0_reads_en
+                case(op_type)
+                    1:begin p2_reads_en <= 1; p3_reads_en <= 1; end  //Conv1x1
+                    2:begin p0_reads_en <= 1; p1_reads_en <= 1; end  //Conv3x3
+                    3:begin p0_reads_en <= 1; p1_reads_en <= 1; p2_reads_en <= 1; p3_reads_en <= 1; end  //Conv3x3
+                    4:begin p0_reads_en <= 1; p1_reads_en <= 1; end  //Maxpool3x3
+                    5:begin p0_reads_en <= 1; p1_reads_en <= 1; end  //Avepool13x13
+                    default:;
+                endcase
             end
-
+            if(op_done) begin
+                case(op_type)
+                    1:begin p2_reads_en <= 0; p3_reads_en <= 0; end  //Conv1x1
+                    2:begin p0_reads_en <= 0; p1_reads_en <= 0; end  //Conv3x3
+                    3:begin p0_reads_en <= 0; p1_reads_en <= 0; p2_reads_en <= 0; p3_reads_en <= 0; end  //Conv3x3
+                    4:begin p0_reads_en <= 0; p1_reads_en <= 0; end  //Maxpool3x3
+                    5:begin p0_reads_en <= 0; p1_reads_en <= 0; end  //Avepool13x13
+                    default:;
+                endcase
+            end
         end
     end
 
@@ -206,9 +220,8 @@ module csb(
             cmd_issue_done <= 0;
             op_done <= 0;
             op_run <= 0;
-
-            data_burst_count <= 32'd0;
-            wb_burst_count <= 32'd0;
+            op_num <= 16'h0000;
+            n_count <= 16'h0000;
 
             irq <= 0;
         end
@@ -216,8 +229,6 @@ module csb(
             case (curr_state)
                 idle: begin
                     cmd_burst_count <= CMD_BURST_LEN;
-                    data_burst_count <= 0;
-                    wb_burst_count <= 0;
                 end
                 cmd_collect: begin
                     cmd_fifo_rd_en <= 1; //Assert to FIFO, CSB reading data from FIFO            
@@ -237,45 +248,25 @@ module csb(
                 cmd_issue: begin
                     cmd_burst_count <= CMD_BURST_LEN;
                     cmd_collect_done <= 0;
-                    //TODO: Send out dma access signals to get data to submodules, then send out ready signals
-                    data_burst_count <= data_burst_count + 1;
-                    wb_burst_count <= wb_burst_count + 1;
-                    //TODO: Set data and weight access according to op_type
-                    //Port0: data, Port1: weight
+                    //TODO: Send out dma access signals (addr) to get data and weight (according to op_type) to submodules, then send out ready signals
                     case (op_type)
-                        1:if(wb_burst_count == 0) begin
-                                conv_ready <= 1;
-                                cmd_issue_done <= 1;
-                            end
-                        2:if(wb_burst_count == 0) begin
-                                conv_ready <= 1;
-                                cmd_issue_done <= 1;
-                            end
-                        3:if(wb_burst_count == 0) begin
-                                conv_ready <= 1; 
-                                //TODO: dual channel conv_ready
-                                cmd_issue_done <= 1;
-                            end
-                        4:if(data_burst_count == 0) begin
-                                maxpool_ready <= 1;
-                                cmd_issue_done <= 1;
-                            end
-                        5:if(data_burst_count == 0) begin
-                                avepool_ready <= 1;
-                                cmd_issue_done <= 1;
-                            end
+                        1,2,3: begin conv_ready <= 1; cmd_issue_done <= 1; end
+                        4:begin maxpool_ready <= 1; cmd_issue_done <= 1; end
+                        5:begin avepool_ready <= 1; cmd_issue_done <= 1; end
                         default:;
                     endcase
                 end
                 wait_op: begin
                     //Reset register in cmd_issue
                     cmd_issue_done <= 0;
-                    data_burst_count <= 0;
-                    wb_burst_count <= 0;
                     //Wait for submodules to finish --> wait for valid/done signals
-                    if(conv_valid) begin conv_ready <= 0; op_done <= 1; end
-                    if(maxpool_valid) begin maxpool_ready <= 0; op_done <= 1; end
-                    if(avepool_valid) begin avepool_ready <= 0; op_done <= 1; end
+                    if(conv_valid | maxpool_valid | avepool_valid) n_count <= n_count + 16; // n parallelism is 16
+                    if(n_count + 16 == och_size) begin
+                        if(conv_valid) begin conv_ready <= 0; end
+                        if(maxpool_valid) begin maxpool_ready <= 0; end
+                        if(avepool_valid) begin avepool_ready <= 0;end
+                        op_done <= 1; // op_done only issues for once.
+                    end
                 end
                 finish: begin
                     op_run <= 0;
