@@ -85,7 +85,7 @@ end
 genvar i;
 generate 
 	for (i = 0; i < 16; i = i + 1) begin
-		cmac cmac_0(.clk(clk), .rst(rst), .data(d0[i]), .weight(w0[i]), .bias(b0[i]), .result(result_0[i]), .conv_ready(conv_ready_0[i]), .op_num(op_num), .rdy_acc(rdy_acc_0[i]), .conv_valid(conv_valid_0[i]));
+		cmac cmac_0(.clk(clk), .rst(~conv_ready), .data(d0[i]), .weight(w0[i]), .bias(b0[i]), .result(result_0[i]), .conv_ready(conv_ready_0[i]), .op_num(op_num), .rdy_acc(rdy_acc_0[i]), .conv_valid(conv_valid_0[i]));
 	end 
 endgenerate
 
@@ -93,7 +93,7 @@ endgenerate
 genvar j;
 generate 
 	for (j = 0; j < 16; j = j + 1) begin
-		cmac cmac_1(.clk(clk), .rst(rst), .data(d1[j]), .weight(w1[j]), .bias(b1[j]), .result(result_1[j]), .conv_ready(conv_ready_1[j]), .op_num(op_num), .rdy_acc(rdy_acc_1[j]), .conv_valid(conv_valid_1[j]));
+		cmac cmac_1(.clk(clk), .rst(~conv_ready), .data(d1[j]), .weight(w1[j]), .bias(b1[j]), .result(result_1[j]), .conv_ready(conv_ready_1[j]), .op_num(op_num), .rdy_acc(rdy_acc_1[j]), .conv_valid(conv_valid_1[j]));
 	end 
 endgenerate
 
@@ -246,5 +246,5 @@ always@(posedge clk) begin
 		end
 	end
 end
-//Merged Wire out to csb
+//TODO: Merged Write back to csb
 endmodule
