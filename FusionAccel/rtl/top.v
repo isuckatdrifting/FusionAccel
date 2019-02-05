@@ -57,17 +57,19 @@ csb csb_(
 	.avepool_valid		(avepool_valid),
 	.avepool_ready		(avepool_ready),
 
+	.cmd_fifo_wr_count	(cmd_fifo_wr_count),
 	.cmd				(cmd),
-	.cmd_fifo_rd_en		(cmd_fifo_rd_en),
 	.cmd_fifo_empty		(cmd_fifo_empty),
 	.cmd_size			(),
+	.cmd_fifo_rd_en		(cmd_fifo_rd_en),
 
-    .r_addr				(r_addr),
-    .w_addr				(w_addr),
 	.op_type			(op_type),
 	.op_num				(op_num),
-
+	.weight_start_addr	(),
+	.data_start_addr	(),
+    .writeback_addr		(writeback_addr),
 	.op_run				(op_run),
+
 	.p0_reads_en		(p0_reads_en),
     .p0_writes_en		(p0_writes_en),
     .p1_reads_en		(p1_reads_en),
@@ -76,36 +78,34 @@ csb csb_(
     .p2_writes_en		(p2_writes_en),
     .p3_reads_en		(p3_reads_en),
     .p3_writes_en		(p3_writes_en),
-    .cmd_fifo_wr_count	(cmd_fifo_wr_count),
+    
     .irq				(irq));
 
 engine engine_(
-	.clk			(c3_clk0),
-	.rst			(rst),
+	.clk				(c3_clk0),
+	.rst				(rst),
 	//Control signals from csb
-	.conv_ready		(conv_ready),
-	.maxpool_ready	(maxpool_ready),
-	.avepool_ready	(avepool_ready),
-	.op_type		(op_type),
-	.op_num			(op_num),
+	.conv_ready			(conv_ready),
+	.maxpool_ready		(maxpool_ready),
+	.avepool_ready		(avepool_ready),
+	.op_type			(op_type),
+	.op_num				(op_num),
 
-	.conv_valid		(conv_valid),
-	.maxpool_valid	(maxpool_valid),
-	.avepool_valid	(avepool_valid),
+	.conv_valid			(conv_valid),
+	.maxpool_valid		(maxpool_valid),
+	.avepool_valid		(avepool_valid),
 
 	//Data path from dma -> fifos
 	.p0_data_fifo_rd_en (p0_data_fifo_rd_en),
-	.data_0			(data_0),
+	.data_0				(data_0),
 	.p0_weight_fifo_rd_en (p0_weight_fifo_rd_en),
-	.weight_0		(weight_0),
-	.bias_0			(),
+	.weight_0			(weight_0),
+	.bias_0				(),
 	.p1_data_fifo_rd_en (p1_data_fifo_rd_en),
-	.data_1			(data_1),
+	.data_1				(data_1),
 	.p1_weight_fifo_rd_en (p1_weight_fifo_rd_en),
-	.weight_1		(weight_1),
-	.bias_1			()
-	
-	//Outputs directly back to dma
+	.weight_1			(weight_1),
+	.bias_1				()
 );
 
 
@@ -359,8 +359,8 @@ assign p0_we_data0 = (ep00wire[4] & op_run) ? p0_we: 1'b0;
 assign p0_data_data0 = (ep00wire[4] & op_run) ? p0_data: 32'h0000_0000;
 assign p0_we_csb = (ep00wire[4] & ~op_run) ? p0_we: 1'b0;
 assign p0_data_csb = (ep00wire[4] & ~op_run) ? p0_data: 1'b0;
-assign pipe_out_write = (~ep00wire[4]) ? p0_we: 1'b0;
-assign pipe_out_data = (~ep00wire[4]) ? p0_data: 32'h0000_0000;
+assign pipe_out_write = ep00wire[4] ? 1'b0: p0_we;
+assign pipe_out_data = ep00wire[4] ? 32'h0000_0000: p0_data;
 
 //TODO: Add input start address and parsing in dma
 dma dma_p0 ( // only dma_p0 and p2 can write to sdram, port0, conv3x3 data, maxpool data, avepool data, result write back
@@ -393,7 +393,9 @@ dma dma_p0 ( // only dma_p0 and p2 can write to sdram, port0, conv3x3 data, maxp
 	.wr_en			(c3_p0_wr_en),			//out		-- to MCB Port0
 	.wr_full		(c3_p0_wr_full), 		//in		-- from MCB Port0
 	.wr_data		(c3_p0_wr_data), 		//out		-- to MCB Port0
-	.wr_mask		(c3_p0_wr_mask));		//out		-- to MCB Port0
+	.wr_mask		(c3_p0_wr_mask),		//out		-- to MCB Port0
+	.start_addr		(32'h0000_0000),		//in		-- from csb
+	.op_num			());					//in 		-- from csb
 
 dma dma_p1 ( // Read only, port1, conv3x3 weight
 	.clk			(c3_clk0),
@@ -414,7 +416,9 @@ dma dma_p1 ( // Read only, port1, conv3x3 weight
 	.cmd_full		(c3_p1_cmd_full), 		//in		-- from MCB Port1
 	.cmd_instr		(c3_p1_cmd_instr),		//out		-- to MCB Port1
 	.cmd_byte_addr	(c3_p1_cmd_byte_addr), 	//out		-- to MCB Port1
-	.cmd_bl			(c3_p1_cmd_bl));		//out		-- to MCB Port1
+	.cmd_bl			(c3_p1_cmd_bl), 		//out		-- to MCB Port1
+	.start_addr		(32'h0000_0000),		//in		-- from csb
+	.op_num			());					//in 		-- from csb
 
 dma dma_p2 ( // Read and Write, port2, conv1x1 data
 	.clk			(c3_clk0),
@@ -446,7 +450,9 @@ dma dma_p2 ( // Read and Write, port2, conv1x1 data
 	.wr_en			(c3_p2_wr_en),			//out		-- to MCB Port2
 	.wr_full		(c3_p2_wr_full), 		//in		-- from MCB Port2
 	.wr_data		(c3_p2_wr_data), 		//out		-- to MCB Port2
-	.wr_mask		(c3_p2_wr_mask));		//out		-- to MCB Port2
+	.wr_mask		(c3_p2_wr_mask),		//out		-- to MCB Port2
+	.start_addr		(32'h0000_0000),		//in		-- from csb
+	.op_num			());					//in 		-- from csb
 
 dma dma_p3 ( // Read Only, port3, conv1x1 weight
 	.clk			(c3_clk0),
@@ -467,7 +473,9 @@ dma dma_p3 ( // Read Only, port3, conv1x1 weight
 	.cmd_full		(c3_p3_cmd_full), 		//in		-- from MCB Port3
 	.cmd_instr		(c3_p3_cmd_instr),		//out		-- to MCB Port3
 	.cmd_byte_addr	(c3_p3_cmd_byte_addr), 	//out		-- to MCB Port3
-	.cmd_bl			(c3_p3_cmd_bl));		//out		-- to MCB Port3
+	.cmd_bl			(c3_p3_cmd_bl), 		//out		-- to MCB Port3
+	.start_addr		(32'h0000_0000),		//in		-- from csb
+	.op_num			());					//in 		-- from csb
 	
 //Block Throttle
 always @(posedge okClk) begin
