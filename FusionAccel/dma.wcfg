@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wave_config>
+   <wave_state>
+   </wave_state>
+   <db_ref_list>
+      <db_ref path="C:/Users/shish/source/repos/FusionAccel/FusionAccel/dma_tb_isim_beh.wdb" id="1" type="auto">
+         <top_modules>
+            <top_module name="dma_tb" />
+            <top_module name="glbl" />
+         </top_modules>
+      </db_ref>
+   </db_ref_list>
+   <WVObjectSize size="28" />
+   <wave_markers>
+      <marker time="155000000" label="" />
+      <marker time="110000000" label="" />
+      <marker time="185000000" label="" />
+      <marker time="135000000" label="" />
+   </wave_markers>
+   <wvobject fp_name="/dma_tb/ib_re" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">ib_re</obj_property>
+      <obj_property name="ObjectShortName">ib_re</obj_property>
+   </wvobject>
+   <wvobject fp_name="/dma_tb/ob_we" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">ob_we</obj_property>
+      <obj_property name="ObjectShortName">ob_we</obj_property>
+   </wvobject>
+   <wvobject fp_name="/dma_tb/ob_data" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">ob_data</obj_property>
+      <obj_property name="ObjectShortName">ob_data</obj_property>
+   </wvobject>
+   <wvobject fp_name="/dma_tb/rd_en" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">rd_en</obj_property>
+      <obj_property name="ObjectShortName">rd_en</obj_property>
+   </wvobject>
+   <wvobject fp_name="/dma_tb/cmd_en" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">cmd_en</obj_property>
+      <obj_property name="ObjectShortName">cmd_en</obj_property>
+   </wvobject>
+   <wvobject fp_name="/dma_tb/cmd_instr" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">cmd_instr</obj_property>
+      <obj_property name="ObjectShortName">cmd_instr</obj_property>
+   </wvobject>
+   <wvobject fp_name="/dma_tb/cmd_byte_addr" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">cmd_byte_addr</obj_property>
+      <obj_property name="ObjectShortName">cmd_byte_addr</obj_property>
+   </wvobject>
+   <wvobject fp_name="/dma_tb/cmd_bl" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">cmd_bl</obj_property>
+      <obj_property name="ObjectShortName">cmd_bl</obj_property>
+   </wvobject>
+   <wvobject fp_name="/dma_tb/dma_/burst_cnt" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">burst_cnt[5:0]</obj_property>
+      <obj_property name="ObjectShortName">burst_cnt[5:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/dma_tb/dma_/state" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">state[31:0]</obj_property>
+      <obj_property name="ObjectShortName">state[31:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/dma_tb/dma_/curr_state" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">curr_state[2:0]</obj_property>
+      <obj_property name="ObjectShortName">curr_state[2:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/dma_tb/wr_en" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">wr_en</obj_property>
+      <obj_property name="ObjectShortName">wr_en</obj_property>
+   </wvobject>
+   <wvobject fp_name="/dma_tb/wr_data" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">wr_data</obj_property>
+      <obj_property name="ObjectShortName">wr_data</obj_property>
+   </wvobject>
+   <wvobject fp_name="/dma_tb/wr_mask" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">wr_mask</obj_property>
+      <obj_property name="ObjectShortName">wr_mask</obj_property>
+   </wvobject>
+   <wvobject fp_name="/dma_tb/clk" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">clk</obj_property>
+      <obj_property name="ObjectShortName">clk</obj_property>
+   </wvobject>
+   <wvobject fp_name="/dma_tb/reset" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">reset</obj_property>
+      <obj_property name="ObjectShortName">reset</obj_property>
+   </wvobject>
+   <wvobject fp_name="/dma_tb/writes_en" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">writes_en</obj_property>
+      <obj_property name="ObjectShortName">writes_en</obj_property>
+   </wvobject>
+   <wvobject fp_name="/dma_tb/reads_en" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">reads_en</obj_property>
+      <obj_property name="ObjectShortName">reads_en</obj_property>
+   </wvobject>
+   <wvobject fp_name="/dma_tb/calib_done" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">calib_done</obj_property>
+      <obj_property name="ObjectShortName">calib_done</obj_property>
+   </wvobject>
+   <wvobject fp_name="/dma_tb/ib_data" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">ib_data[31:0]</obj_property>
+      <obj_property name="ObjectShortName">ib_data[31:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/dma_tb/ib_count" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">ib_count[9:0]</obj_property>
+      <obj_property name="ObjectShortName">ib_count[9:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/dma_tb/ib_valid" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">ib_valid</obj_property>
+      <obj_property name="ObjectShortName">ib_valid</obj_property>
+   </wvobject>
+   <wvobject fp_name="/dma_tb/ib_empty" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">ib_empty</obj_property>
+      <obj_property name="ObjectShortName">ib_empty</obj_property>
+   </wvobject>
+   <wvobject fp_name="/dma_tb/ob_count" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">ob_count[9:0]</obj_property>
+      <obj_property name="ObjectShortName">ob_count[9:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/dma_tb/rd_empty" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">rd_empty</obj_property>
+      <obj_property name="ObjectShortName">rd_empty</obj_property>
+   </wvobject>
+   <wvobject fp_name="/dma_tb/rd_data" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">rd_data[31:0]</obj_property>
+      <obj_property name="ObjectShortName">rd_data[31:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/dma_tb/cmd_full" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">cmd_full</obj_property>
+      <obj_property name="ObjectShortName">cmd_full</obj_property>
+   </wvobject>
+   <wvobject fp_name="/dma_tb/wr_full" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">wr_full</obj_property>
+      <obj_property name="ObjectShortName">wr_full</obj_property>
+   </wvobject>
+</wave_config>

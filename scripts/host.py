@@ -93,12 +93,14 @@ class host:
 			self.xem.ReadFromBlockPipeOut(0xa0 + mem, self.blocksize, self.rbuf)
 			for j in range(0, self.blocksize):
 				if self.buf[i+j] != self.rbuf[j]:
+					'''
 					for k in range(0, 8):
 						print("[0x%X = 0x%02X / 0x%02X // 0x%02X\n" %(
 					       i+j+k,
 						   self.buf[i+j+k],
 						   self.rbuf[j+k],
 						   self.buf[i+j+k] ^ self.rbuf[j+k]))
+					'''
 					passed = False
 			print(sum(self.buf[i:i+self.readsize]), ", ", sum(self.rbuf)) # Checksum
 			if i == 0:

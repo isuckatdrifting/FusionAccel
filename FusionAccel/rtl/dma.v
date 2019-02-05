@@ -53,7 +53,6 @@ always @(posedge clk) write_mode <= writes_en;
 always @(posedge clk) read_mode <= reads_en;
 always @(posedge clk) reset_d <= reset;
 
-integer state;
 localparam idle = 0,
            write_blob1 = 1,
            write_blob2 = 2,
@@ -63,9 +62,67 @@ localparam idle = 0,
            read_blob3 = 6,
            read_blob4 = 7;
 
+reg [2:0] curr_state;
+reg [2:0] next_state;
+
+//    Current State, non-blocking
+always @ (posedge clk or posedge reset_d)    begin
+	if (reset_d)
+		curr_state    <= idle;
+	else
+		curr_state    <= next_state;
+end
+
+//    Status Jump, blocking
+always @ (*) begin
+	next_state = idle;    //    Initialize
+	case (curr_state)
+		idle: begin
+			// only start writing when initialization done
+			if (calib_done==1 && write_mode==1 && (ib_count >= BURST_LEN)) begin
+				next_state = write_blob1;
+			end else if (calib_done==1 && read_mode==1 && (ob_count<(FIFO_SIZE-1-BURST_LEN) ) ) begin
+				next_state = read_blob1;
+			end else begin
+				next_state = idle;
+			end
+		end
+		write_blob1:begin
+			next_state = write_blob2;
+		end
+		write_blob2:begin
+			if(ib_valid==1) next_state = write_blob3;
+			else next_state = write_blob2;
+		end
+		write_blob3:begin
+			if(burst_cnt == 0) next_state = idle;
+			else next_state = write_blob1;
+		end
+		read_blob1:begin
+			next_state = read_blob2;
+		end
+		read_blob2:begin
+			if(rd_empty==0) next_state = read_blob3;
+			else next_state = read_blob2;
+		end
+		read_blob3:begin
+			next_state = read_blob4;
+		end
+		read_blob4:begin
+			if (burst_cnt == 0) begin
+				next_state = idle;
+			end else begin
+				next_state = read_blob2;
+			end
+		end
+		default:
+			next_state = idle;
+	endcase
+end
+
 always @(posedge clk or posedge reset_d) begin
 	if (reset_d) begin
-		state           <= idle;
+		//state           <= idle;
 		burst_cnt       <= 3'b000;
 		cmd_byte_addr_wr  <= 0;
 		cmd_byte_addr_rd  <= 0;
@@ -77,78 +134,50 @@ always @(posedge clk or posedge reset_d) begin
 		ib_re <= 1'b0;
 		rd_en <= 1'b0;
 		ob_we <= 1'b0;
-
-		case (state)
+		case (curr_state)
 			idle: begin
 				burst_cnt <= BURST_LEN;
-
-				// only start writing when initialization done
-				if (calib_done==1 && write_mode==1 && (ib_count >= BURST_LEN)) begin
-					state <= write_blob1;
-				end else if (calib_done==1 && read_mode==1 && (ob_count<(FIFO_SIZE-1-BURST_LEN) ) ) begin
-					state <= read_blob1;
-				end
 			end
-
 			write_blob1: begin
-				state <= write_blob2;
 				ib_re <= 1'b1;
 			end
-
 			write_blob2: begin
 				if(ib_valid==1) begin
 					wr_data <= ib_data;
 					wr_en   <= 1'b1;
 					burst_cnt <= burst_cnt - 1;
-					state <= write_blob3;
 				end
 			end
-			
 			write_blob3: begin
-				if (burst_cnt == 3'd0) begin
+				if (burst_cnt == 0) begin
 					cmd_en    <= 1'b1;
 					cmd_byte_addr <= cmd_byte_addr_wr;
 					cmd_byte_addr_wr <= cmd_byte_addr_wr + 4*BURST_LEN; //4Byte * BURST_LEN = Jump distance
 					cmd_instr     <= 3'b000;
-					state <= idle;
-				end else begin
-					state <= write_blob1;
 				end
 			end
-
 			read_blob1: begin
 				cmd_byte_addr <= cmd_byte_addr_rd;
 				cmd_byte_addr_rd <= cmd_byte_addr_rd + 4*BURST_LEN;
 				cmd_instr     <= 3'b001;
 				cmd_en    <= 1'b1;
-				state <= read_blob2;
 			end
-			
 			read_blob2: begin
 				if(rd_empty==0) begin
 					rd_en <= 1'b1;
-					state <= read_blob3;
 				end
 			end
-			
 			read_blob3: begin
 				ob_data <= rd_data;
 				ob_we <= 1'b1;
 				burst_cnt <= burst_cnt - 1;
-				state <= read_blob4;
 			end
-			
 			read_blob4: begin
-				if (burst_cnt == 3'd0) begin
-					state <= idle;
-				end else begin
-					state <= read_blob2;
-				end
+
 			end
 
 		endcase
 	end
 end
-
 
 endmodule
