@@ -13,7 +13,7 @@ import struct
 bit_directory = 'C:/Users/shish/source/repos/FusionAccel/scripts/top.bit'
 weight_directory = 'C:/Users/shish/source/repos/FusionAccel/scripts/tmp/weight.txt'
 image_directory = ''
-test_enable = 0
+test_enable = 1
 
 class host:
 	def __init__(self):

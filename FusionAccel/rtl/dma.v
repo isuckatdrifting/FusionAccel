@@ -37,7 +37,7 @@ module dma
 	);
 
 localparam FIFO_SIZE      = 1024;
-localparam BURST_LEN      = 32;  // Number of 32bit user words per DRAM command (Must be Multiple of 2)
+localparam BURST_LEN      = 32;  // Number of 32bit(Port size) user words per DRAM command (Must be Multiple of 2)
 
 reg  [29:0] cmd_byte_addr_wr, cmd_byte_addr_rd;
 reg  [5:0]  burst_cnt;
@@ -55,15 +55,15 @@ always @(posedge clk) reset_d <= reset;
 
 integer state;
 localparam idle = 0,
-           write1 = 1,
-           write2 = 2,
-           write3 = 3,
-           read1 = 4,
-           read2 = 5,
-           read3 = 6,
-           read4 = 7;
+           write_blob1 = 1,
+           write_blob2 = 2,
+           write_blob3 = 3,
+           read_blob1 = 4,
+           read_blob2 = 5,
+           read_blob3 = 6,
+           read_blob4 = 7;
 
-always @(posedge clk) begin
+always @(posedge clk or posedge reset_d) begin
 	if (reset_d) begin
 		state           <= idle;
 		burst_cnt       <= 3'b000;
@@ -84,65 +84,65 @@ always @(posedge clk) begin
 
 				// only start writing when initialization done
 				if (calib_done==1 && write_mode==1 && (ib_count >= BURST_LEN)) begin
-					state <= write1;
+					state <= write_blob1;
 				end else if (calib_done==1 && read_mode==1 && (ob_count<(FIFO_SIZE-1-BURST_LEN) ) ) begin
-					state <= read1;
+					state <= read_blob1;
 				end
 			end
 
-			write1: begin
-				state <= write2;
+			write_blob1: begin
+				state <= write_blob2;
 				ib_re <= 1'b1;
 			end
 
-			write2: begin
+			write_blob2: begin
 				if(ib_valid==1) begin
 					wr_data <= ib_data;
 					wr_en   <= 1'b1;
 					burst_cnt <= burst_cnt - 1;
-					state <= write3;
+					state <= write_blob3;
 				end
 			end
 			
-			write3: begin
+			write_blob3: begin
 				if (burst_cnt == 3'd0) begin
 					cmd_en    <= 1'b1;
 					cmd_byte_addr <= cmd_byte_addr_wr;
-					cmd_byte_addr_wr <= cmd_byte_addr_wr + 4*BURST_LEN;
+					cmd_byte_addr_wr <= cmd_byte_addr_wr + 4*BURST_LEN; //4Byte * BURST_LEN = Jump distance
 					cmd_instr     <= 3'b000;
 					state <= idle;
 				end else begin
-					state <= write1;
+					state <= write_blob1;
 				end
 			end
 
-			read1: begin
+			read_blob1: begin
 				cmd_byte_addr <= cmd_byte_addr_rd;
 				cmd_byte_addr_rd <= cmd_byte_addr_rd + 4*BURST_LEN;
 				cmd_instr     <= 3'b001;
 				cmd_en    <= 1'b1;
-				state <= read2;
+				state <= read_blob2;
 			end
 			
-			read2: begin
+			read_blob2: begin
 				if(rd_empty==0) begin
 					rd_en <= 1'b1;
-					state <= read3;
+					state <= read_blob3;
 				end
 			end
 			
-			read3: begin
+			read_blob3: begin
 				ob_data <= rd_data;
 				ob_we <= 1'b1;
 				burst_cnt <= burst_cnt - 1;
-				state <= read4;
+				state <= read_blob4;
 			end
 			
-			read4: begin
+			read_blob4: begin
 				if (burst_cnt == 3'd0) begin
 					state <= idle;
 				end else begin
-					state <= read2;
+					state <= read_blob2;
 				end
 			end
 
