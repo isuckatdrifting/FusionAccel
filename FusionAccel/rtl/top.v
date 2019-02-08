@@ -62,8 +62,9 @@ csb csb_(
 	.cmd_fifo_empty		(cmd_fifo_empty),
 	.cmd_size			(),
 
-    .r_addr				(r_addr),
-    .w_addr				(w_addr),
+	.data_start_addr	(),
+	.weight_start_addr	(),
+    .writeback_addr		(writeback_addr),
 	.op_type			(op_type),
 	.op_num				(op_num),
 
@@ -359,8 +360,8 @@ assign p0_we_data0 = (ep00wire[4] & op_run) ? p0_we: 1'b0;
 assign p0_data_data0 = (ep00wire[4] & op_run) ? p0_data: 32'h0000_0000;
 assign p0_we_csb = (ep00wire[4] & ~op_run) ? p0_we: 1'b0;
 assign p0_data_csb = (ep00wire[4] & ~op_run) ? p0_data: 1'b0;
-assign pipe_out_write = (~ep00wire[4]) ? p0_we: 1'b0;
-assign pipe_out_data = (~ep00wire[4]) ? p0_data: 32'h0000_0000;
+assign pipe_out_write = ep00wire[4] ? 1'b0: p0_we;
+assign pipe_out_data = ep00wire[4] ? 32'h0000_0000: p0_data;
 
 //TODO: Add input start address and parsing in dma
 dma dma_p0 ( // only dma_p0 and p2 can write to sdram, port0, conv3x3 data, maxpool data, avepool data, result write back

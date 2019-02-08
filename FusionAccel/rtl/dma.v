@@ -35,12 +35,13 @@ module dma
 	output reg  [31:0]   wr_data,
 	output wire [3:0]    wr_mask,
 
-	input wire [29:0] start_addr,
-	input wire [15:0] op_num
+	input wire [29:0] 	 start_addr,
+	input wire [15:0] 	 op_num
 	);
 
 localparam FIFO_SIZE = 1024;
 localparam BURST_LEN = 32;  // Number of 32bit(Port size) user words per DRAM command (Must be Multiple of 2)
+localparam PARA = 16;
 
 reg  [29:0] cmd_byte_addr_wr, cmd_byte_addr_rd;
 reg  [5:0]  burst_cnt;
@@ -80,46 +81,37 @@ end
 always @ (*) begin
 	next_state = idle;    // Initialize
 	case (curr_state)
-		idle: begin
-			// only start writing when initialization done
-			if (calib_done == 1 && write_mode == 1 && (ib_count >= BURST_LEN)) begin
-				next_state = write_blob1;
-			end else if (calib_done==1 && read_mode==1 && (ob_count < (FIFO_SIZE - 1 - BURST_LEN))) begin
-				next_state = read_blob1;
-			end else begin
-				next_state = idle;
-			end
-		end
-		write_blob1: begin
-			next_state = write_blob2;
-		end
-		write_blob2: begin
-			if(ib_valid == 1) next_state = write_blob3;
-			else next_state = write_blob2;
-		end
-		write_blob3: begin
-			if(burst_cnt == 0) next_state = idle;
-			else next_state = write_blob1;
-		end
-		read_blob1: begin
-			next_state = read_blob2;
-		end
-		read_blob2: begin
-			if(rd_empty==0) next_state = read_blob3;
-			else next_state = read_blob2;
-		end
-		read_blob3: begin
-			next_state = read_blob4;
-		end
-		read_blob4: begin
-			if (burst_cnt == 0) begin
-				next_state = idle;
-			end else begin
-				next_state = read_blob2;
-			end
-		end
-		default:
-			next_state = idle;
+		// only start writing when initialization done
+		idle: 			if (calib_done == 1 && write_mode == 1 && (ib_count >= BURST_LEN)) begin
+							next_state = write_blob1;
+						end else if (calib_done == 1 && read_mode == 1 && (ob_count < (FIFO_SIZE - 1 - BURST_LEN))) begin
+							next_state = read_blob1;
+						end else begin
+							next_state = idle;
+						end
+
+		write_blob1: 	next_state = write_blob2;
+
+		write_blob2: 	if(ib_valid == 1) next_state = write_blob3;
+						else next_state = write_blob2;
+
+		write_blob3: 	if(burst_cnt == 0) next_state = idle;
+						else next_state = write_blob1;
+
+		read_blob1: 	next_state = read_blob2;
+
+		read_blob2: 	if(rd_empty == 0) next_state = read_blob3;
+						else next_state = read_blob2;
+
+		read_blob3: 	next_state = read_blob4;
+
+		read_blob4: 	if (burst_cnt == 0) begin
+							next_state = idle;
+						end else begin
+							next_state = read_blob2;
+						end
+
+		default:		next_state = idle;
 	endcase
 end
 
@@ -138,44 +130,39 @@ always @(posedge clk or posedge reset_d) begin
 		rd_en <= 1'b0;
 		ob_we <= 1'b0;
 		case (curr_state)
-			idle: begin
-				burst_cnt <= BURST_LEN;
-			end
-			write_blob1: begin
-				ib_re <= 1'b1;
-			end
-			write_blob2: begin
-				if(ib_valid == 1) begin
-					wr_data <= ib_data;
-					wr_en <= 1'b1;
-					burst_cnt <= burst_cnt - 1;
-				end
-			end
-			write_blob3: begin
-				if (burst_cnt == 0) begin
-					cmd_en <= 1'b1;
-					cmd_byte_addr <= cmd_byte_addr_wr;
-					cmd_byte_addr_wr <= cmd_byte_addr_wr + 4*BURST_LEN; //4Byte * BURST_LEN = Jump distance
-					cmd_instr <= 3'b000;
-				end
-			end
-			read_blob1: begin
-				cmd_byte_addr <= cmd_byte_addr_rd;
-				cmd_byte_addr_rd <= cmd_byte_addr_rd + 4*BURST_LEN;
-				cmd_instr <= 3'b001;
-				cmd_en <= 1'b1;
-			end
-			read_blob2: begin
-				if(rd_empty == 0) begin
-					rd_en <= 1'b1;
-				end
-			end
-			read_blob3: begin
-				ob_data <= rd_data;
-				ob_we <= 1'b1;
-				burst_cnt <= burst_cnt - 1;
-			end
-			read_blob4:;
+			idle: 			burst_cnt <= BURST_LEN;
+
+			write_blob1: 	ib_re <= 1'b1;
+
+			write_blob2: 	if(ib_valid == 1) begin
+								wr_data <= ib_data;
+								wr_en <= 1'b1;
+								burst_cnt <= burst_cnt - 1;
+							end
+
+			write_blob3:	if (burst_cnt == 0) begin
+								cmd_en <= 1'b1;
+								cmd_byte_addr <= cmd_byte_addr_wr;
+								cmd_byte_addr_wr <= cmd_byte_addr_wr + 4*BURST_LEN; //4Byte * BURST_LEN = Jump distance
+								cmd_instr <= 3'b000;
+							end
+
+			read_blob1: 	begin
+								cmd_byte_addr <= cmd_byte_addr_rd;
+								cmd_byte_addr_rd <= cmd_byte_addr_rd + 4*BURST_LEN;
+								cmd_instr <= 3'b001;
+								cmd_en <= 1'b1;
+							end
+
+			read_blob2:		if(rd_empty == 0) rd_en <= 1'b1;
+
+			read_blob3: 	begin
+								ob_data <= rd_data;
+								ob_we <= 1'b1;
+								burst_cnt <= burst_cnt - 1;
+							end
+
+			read_blob4:		;
 			default:;
 		endcase
 	end

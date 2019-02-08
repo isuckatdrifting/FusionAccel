@@ -16,8 +16,9 @@ module csb(
     input cmd_fifo_empty,
     input [6:0] cmd_size,   //total command size received from okHost after loading memory.
 
-    output [31:0] r_addr,
-    output [31:0] w_addr,
+    output [31:0] data_start_addr,
+    output [31:0] weight_start_addr,
+    output [31:0] writeback_addr,
     output [2:0] op_type,
     output [15:0] op_num,
 
@@ -37,6 +38,12 @@ module csb(
     //Notes: CMDs are loaded initially to SDRAM to be called multiple times.
     //Notes: DBB path is in CSB.
     //Notes: CMD Fifo: WR clock domain: c3clk0, RD clock domain: clk.
+    
+    //TODO: Use Img2col/MEC Convolution
+    //TODO: Padding = 1 --> Add 0 in memory
+    //TODO: Use csb to reset submodules
+    //TODO: Dropout Layer
+    //TODO: Concatenation Layer
 
     //Compressed Commands from SDRAM
     //|----------CMD TYPE----------|
@@ -53,12 +60,6 @@ module csb(
     //|     data_start_addr: 32Bit |
     //|  write_back_address: 32Bit |
     //|----------------------------| Totally 192Bit
-
-    //TODO: Use Img2col/MEC Convolution
-    //TODO: Padding = 1 --> Add 0 in memory
-    //TODO: Use csb to reset submodules
-    //TODO: Dropout Layer
-    //TODO: Concatenation Layer
 
     //|MEM-Block|---------Address---------|---Space--|---Used-Space---|
     //|---------|-------------------------|----------|----------------|
@@ -77,17 +78,6 @@ module csb(
     //|POOLING_13x13_AVERAGE                            |      101      |
     //|-------------------------------------------------|---------------| 
 
-    //State Machine
-    localparam idle = 3'b000;
-    localparam cmd_collect = 3'b001; //Get cmd from SDRAM
-    localparam cmd_issue = 3'b010; //Generate DMA access commands
-    localparam wait_op = 3'b011; //Get done signals from submodule macs
-    localparam finish = 3'b100;
-
-    reg cmd_collect_done;
-    reg cmd_issue_done;
-    reg op_done;
-
     //Command Parsing
     localparam CMD_BURST_LEN = 6;
     localparam stride_0 = 1;
@@ -97,25 +87,35 @@ module csb(
     reg padding;
     reg [7:0] stride_1;
     reg [15:0] stride_2;
-    reg [15:0] ich_size;
-    reg [15:0] och_size;
-    reg [15:0] ikn_size;
-    reg [15:0] okn_size;
+    reg [15:0] i_channel_size;
+    reg [15:0] o_channel_size;
+    reg [15:0] i_kernel_size;
+    reg [15:0] o_kernel_size;
+
     reg [31:0] data_start_addr;
     reg [31:0] weight_start_addr;
+    reg [31:0] writeback_addr;
     reg [15:0] op_num;
-    reg [15:0] n_count; //TODO: n_count from 0 to op_num, step = conv kernel size
-    reg op_run; //register output to indicate p0 transfers command/data
-
-    //Translated Address Access Sequence
-    reg [31:0] r_addr;
-    reg [31:0] w_addr;
+    reg [15:0] n_count; //TODO: n_count from 0 to op_num, step = conv kernel size, // +64 per read = +4 per read per channel
+    reg op_run; //register output to indicate p0 transfers command or data
 
     //Handshake signals to submodules
     reg conv_ready, maxpool_ready, avepool_ready;
 
+    //DMA enable signal
     reg p0_reads_en, p0_writes_en, p1_reads_en, p1_writes_en, p2_reads_en, p2_writes_en, p3_reads_en, p3_writes_en;
-    reg irq;
+    reg irq; //Interrupt signal
+
+    //State Machine
+    localparam idle = 3'b000;
+    localparam cmd_collect = 3'b001; //Get command from SDRAM
+    localparam cmd_issue = 3'b010; //Generate DMA access commands
+    localparam wait_op = 3'b011; //Get done signals from submodule macs
+    localparam finish = 3'b100;
+
+    reg cmd_collect_done;
+    reg cmd_issue_done;
+    reg op_done;
 
     reg [2:0] curr_state;
     reg [2:0] next_state;
@@ -202,15 +202,14 @@ module csb(
             op_type <= 3'd0;
             stride_1 <= 8'h00;
             stride_2 <= 16'h0000;
-            ich_size <= 16'h0000;
-            och_size <= 16'h0000;
-            ikn_size <= 16'h0000;
-            okn_size <= 16'h0000;
+            i_channel_size <= 16'h0000;
+            o_channel_size <= 16'h0000;
+            i_kernel_size <= 16'h0000;
+            o_kernel_size <= 16'h0000;
             data_start_addr <= 32'h0000_0000;
             weight_start_addr <= 32'h0000_0000;
 
-            r_addr <= 32'h0000_0000;
-            w_addr <= 32'h0000_0000;
+            writeback_addr <= 32'h0000_0000;
 
             conv_ready <= 0;
             maxpool_ready <= 0;
@@ -237,11 +236,11 @@ module csb(
                     op_done <= 0;
                     case (cmd_burst_count)
                         6: begin op_type <= cmd[2:0]; padding <= cmd[3]; stride_1 <= cmd[15:8]; stride_2 <= cmd[31:16]; end
-                        5: begin ich_size <= cmd[15:0]; och_size <= cmd[31:16]; end
-                        4: begin ikn_size <= cmd[15:0]; okn_size <= cmd[31:16]; end
+                        5: begin i_channel_size <= cmd[15:0]; o_channel_size <= cmd[31:16]; end
+                        4: begin i_kernel_size <= cmd[15:0]; o_kernel_size <= cmd[31:16]; end
                         3: begin weight_start_addr <= cmd; end
                         2: begin data_start_addr <= cmd; end
-                        1: begin w_addr <= cmd; cmd_collect_done <= 1; cmd_fifo_rd_en <= 0; op_run <= 1; end
+                        1: begin writeback_addr <= cmd; cmd_collect_done <= 1; cmd_fifo_rd_en <= 0; op_run <= 1; end
                         default: ;
                     endcase 
                 end
@@ -261,7 +260,7 @@ module csb(
                     cmd_issue_done <= 0;
                     //Wait for submodules to finish --> wait for valid/done signals
                     if(conv_valid | maxpool_valid | avepool_valid) n_count <= n_count + 16; // n parallelism is 16
-                    if(n_count + 16 == och_size) begin
+                    if(n_count + 16 == o_channel_size) begin
                         if(conv_valid) begin conv_ready <= 0; end
                         if(maxpool_valid) begin maxpool_ready <= 0; end
                         if(avepool_valid) begin avepool_ready <= 0;end
