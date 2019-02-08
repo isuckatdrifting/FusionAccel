@@ -11,18 +11,19 @@ module csb(
     output avepool_ready,
 
     //FIFO Interface
+    input [15:0] cmd_fifo_wr_count,
     input [31:0] cmd,
-    output cmd_fifo_rd_en,
     input cmd_fifo_empty,
     input [6:0] cmd_size,   //total command size received from okHost after loading memory.
+    output cmd_fifo_rd_en,
 
-    output [31:0] data_start_addr,
-    output [31:0] weight_start_addr,
-    output [31:0] writeback_addr,
     output [2:0] op_type,
     output [15:0] op_num,
-
+    output [31:0] weight_start_addr,
+    output [31:0] data_start_addr,
+    output [31:0] writeback_addr,
     output op_run,
+
     output p0_reads_en,
     output p0_writes_en,
     output p1_reads_en,
@@ -31,7 +32,7 @@ module csb(
     output p2_writes_en,
     output p3_reads_en,
     output p3_writes_en,
-    input [15:0] cmd_fifo_wr_count,
+    
     output irq
 );
 
@@ -78,12 +79,16 @@ module csb(
     //|POOLING_13x13_AVERAGE                            |      101      |
     //|-------------------------------------------------|---------------| 
 
+    //Handshake signals to submodules
+    reg conv_ready, maxpool_ready, avepool_ready;
+
     //Command Parsing
     localparam CMD_BURST_LEN = 6;
     localparam stride_0 = 1;
     reg cmd_fifo_rd_en;
     reg [2:0] cmd_burst_count;
-    reg [2:0] op_type; //Actually use 3bits
+
+    reg [2:0] op_type;              //Output
     reg padding;
     reg [7:0] stride_1;
     reg [15:0] stride_2;
@@ -91,20 +96,17 @@ module csb(
     reg [15:0] o_channel_size;
     reg [15:0] i_kernel_size;
     reg [15:0] o_kernel_size;
+    reg [15:0] op_num;              //Output
+    reg [31:0] weight_start_addr;   //Output
+    reg [31:0] data_start_addr;     //Output
+    reg [31:0] writeback_addr;      //Output
 
-    reg [31:0] data_start_addr;
-    reg [31:0] weight_start_addr;
-    reg [31:0] writeback_addr;
-    reg [15:0] op_num;
-    reg [15:0] n_count; //TODO: n_count from 0 to op_num, step = conv kernel size, // +64 per read = +4 per read per channel
-    reg op_run; //register output to indicate p0 transfers command or data
-
-    //Handshake signals to submodules
-    reg conv_ready, maxpool_ready, avepool_ready;
+    reg [15:0] n_count;             //TODO: n_count from 0 to op_num, step = conv kernel size, // +64 per read = +4 per read per channel
+    reg op_run;                     //Output, indicating p0 transfers command or data
 
     //DMA enable signal
     reg p0_reads_en, p0_writes_en, p1_reads_en, p1_writes_en, p2_reads_en, p2_writes_en, p3_reads_en, p3_writes_en;
-    reg irq; //Interrupt signal
+    reg irq;                        //Output, interrupt signal
 
     //State Machine
     localparam idle = 3'b000;
@@ -199,17 +201,20 @@ module csb(
         if (!rst_n) begin
             cmd_fifo_rd_en <= 0;
             cmd_burst_count <= 3'd0;
+            //Commands
             op_type <= 3'd0;
             stride_1 <= 8'h00;
             stride_2 <= 16'h0000;
             i_channel_size <= 16'h0000;
             o_channel_size <= 16'h0000;
-            i_kernel_size <= 16'h0000;
-            o_kernel_size <= 16'h0000;
+            i_kernel_size <= 8'h0000;
+            o_kernel_size <= 8'h0000;
+            op_num <= 16'h0000;
             data_start_addr <= 32'h0000_0000;
             weight_start_addr <= 32'h0000_0000;
-
             writeback_addr <= 32'h0000_0000;
+            op_run <= 0;
+            n_count <= 16'h0000;
 
             conv_ready <= 0;
             maxpool_ready <= 0;
@@ -218,9 +223,6 @@ module csb(
             cmd_collect_done <= 0;
             cmd_issue_done <= 0;
             op_done <= 0;
-            op_run <= 0;
-            op_num <= 16'h0000;
-            n_count <= 16'h0000;
 
             irq <= 0;
         end
@@ -237,7 +239,7 @@ module csb(
                     case (cmd_burst_count)
                         6: begin op_type <= cmd[2:0]; padding <= cmd[3]; stride_1 <= cmd[15:8]; stride_2 <= cmd[31:16]; end
                         5: begin i_channel_size <= cmd[15:0]; o_channel_size <= cmd[31:16]; end
-                        4: begin i_kernel_size <= cmd[15:0]; o_kernel_size <= cmd[31:16]; end
+                        4: begin i_kernel_size <= cmd[7:0]; o_kernel_size <= cmd[15:8]; op_num <= cmd[31:16]; end
                         3: begin weight_start_addr <= cmd; end
                         2: begin data_start_addr <= cmd; end
                         1: begin writeback_addr <= cmd; cmd_collect_done <= 1; cmd_fifo_rd_en <= 0; op_run <= 1; end
@@ -264,7 +266,7 @@ module csb(
                         if(conv_valid) begin conv_ready <= 0; end
                         if(maxpool_valid) begin maxpool_ready <= 0; end
                         if(avepool_valid) begin avepool_ready <= 0;end
-                        op_done <= 1; // op_done only issues for once.
+                        op_done <= 1; // op_done only issues for once after the whole operation is done
                     end
                 end
                 finish: begin

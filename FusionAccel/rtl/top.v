@@ -57,18 +57,19 @@ csb csb_(
 	.avepool_valid		(avepool_valid),
 	.avepool_ready		(avepool_ready),
 
+	.cmd_fifo_wr_count	(cmd_fifo_wr_count),
 	.cmd				(cmd),
-	.cmd_fifo_rd_en		(cmd_fifo_rd_en),
 	.cmd_fifo_empty		(cmd_fifo_empty),
 	.cmd_size			(),
+	.cmd_fifo_rd_en		(cmd_fifo_rd_en),
 
-	.data_start_addr	(),
-	.weight_start_addr	(),
-    .writeback_addr		(writeback_addr),
 	.op_type			(op_type),
 	.op_num				(op_num),
-
+	.weight_start_addr	(),
+	.data_start_addr	(),
+    .writeback_addr		(writeback_addr),
 	.op_run				(op_run),
+
 	.p0_reads_en		(p0_reads_en),
     .p0_writes_en		(p0_writes_en),
     .p1_reads_en		(p1_reads_en),
@@ -77,36 +78,34 @@ csb csb_(
     .p2_writes_en		(p2_writes_en),
     .p3_reads_en		(p3_reads_en),
     .p3_writes_en		(p3_writes_en),
-    .cmd_fifo_wr_count	(cmd_fifo_wr_count),
+    
     .irq				(irq));
 
 engine engine_(
-	.clk			(c3_clk0),
-	.rst			(rst),
+	.clk				(c3_clk0),
+	.rst				(rst),
 	//Control signals from csb
-	.conv_ready		(conv_ready),
-	.maxpool_ready	(maxpool_ready),
-	.avepool_ready	(avepool_ready),
-	.op_type		(op_type),
-	.op_num			(op_num),
+	.conv_ready			(conv_ready),
+	.maxpool_ready		(maxpool_ready),
+	.avepool_ready		(avepool_ready),
+	.op_type			(op_type),
+	.op_num				(op_num),
 
-	.conv_valid		(conv_valid),
-	.maxpool_valid	(maxpool_valid),
-	.avepool_valid	(avepool_valid),
+	.conv_valid			(conv_valid),
+	.maxpool_valid		(maxpool_valid),
+	.avepool_valid		(avepool_valid),
 
 	//Data path from dma -> fifos
 	.p0_data_fifo_rd_en (p0_data_fifo_rd_en),
-	.data_0			(data_0),
+	.data_0				(data_0),
 	.p0_weight_fifo_rd_en (p0_weight_fifo_rd_en),
-	.weight_0		(weight_0),
-	.bias_0			(),
+	.weight_0			(weight_0),
+	.bias_0				(),
 	.p1_data_fifo_rd_en (p1_data_fifo_rd_en),
-	.data_1			(data_1),
+	.data_1				(data_1),
 	.p1_weight_fifo_rd_en (p1_weight_fifo_rd_en),
-	.weight_1		(weight_1),
-	.bias_1			()
-	
-	//Outputs directly back to dma
+	.weight_1			(weight_1),
+	.bias_1				()
 );
 
 
