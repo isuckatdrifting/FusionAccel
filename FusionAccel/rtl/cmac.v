@@ -35,7 +35,6 @@ localparam mult = 3'b001;
 localparam acc = 3'b010;
 localparam bia = 3'b011;
 localparam finish = 3'b100;
-//localparam PARA = 32; //Number of same MAC operating at the same time
 
 multiplier mult_ (.a(a_mult), .b(b_mult), .operation_nd(operation_nd_mult), .operation_rfd(operation_rfd_mult), .clk(clk), 
 .sclr(sclr_mult), .ce(ce_mult), .result(result_mult), .underflow(), .overflow(), .invalid_op(), .rdy(rdy_mult));
