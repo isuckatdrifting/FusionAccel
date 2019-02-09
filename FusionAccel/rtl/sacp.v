@@ -1,4 +1,6 @@
+///////////////////////////////////////////////////////////////////////////////////////////////////
 //-------------------------------------------AVE Pooling-----------------------------------------//
+///////////////////////////////////////////////////////////////////////////////////////////////////
 module sacc(
     input clk,
     input rst,
@@ -118,7 +120,118 @@ always @ (posedge clk or posedge rst) begin
         endcase
     end
 end
-
 endmodule
 
+///////////////////////////////////////////////////////////////////////////////////////////////////
 //-------------------------------------------MAX Pooling-----------------------------------------//
+///////////////////////////////////////////////////////////////////////////////////////////////////
+module scmp(
+    input clk,
+    input rst,
+    input [15:0] data,
+    output [15:0] result,
+    input pool_ready,
+    input [31:0] op_num, //input op_num changes the same time as conv_ready pulls up
+    output rdy_cmp,
+    output pool_valid
+);
+
+reg [15:0] result;
+reg [15:0] a_cmp, b_cmp;
+reg pool_valid;
+reg [31:0] remain_op_num;
+
+reg operation_nd_cmp;
+wire operation_rfd_cmp;
+wire rdy_cmp;
+wire sclr_cmp;
+wire ce_cmp;
+wire result_cmp;
+reg [15:0] tmp;
+
+assign ce_cmp = ~rdy_cmp;
+assign sclr_cmp = rdy_cmp;
+assign data_permit_cmp = (~rdy_cmp) ^ operation_rfd_cmp;
+
+localparam idle = 3'b000;
+localparam cmp = 3'b001;
+localparam finish = 3'b010;
+
+//Unordered             000100
+//Less Than             001100
+//Equal                 010100
+//Less Than or Equal    011100
+//Greater Than          100100
+//Not Equal             101100
+//Greater Than or Equal 110100
+
+comparator cmp_ (.a(a_cmp), .b(b_cmp), .operation(6'b100100), .operation_nd(operation_nd_cmp), .operation_rfd(operation_rfd_cmp), .clk(clk), .sclr(sclr_cmp), .ce(ce_cmp), .result(result_cmp), .invalid_op(), .rdy(rdy_cmp));
+
+reg [2:0] curr_state;
+reg [2:0] next_state;
+//    Current State, non-blocking
+always @ (posedge clk or posedge rst)    begin
+    if (rst)
+        curr_state    <= idle;
+    else
+        curr_state    <= next_state;
+end
+
+//    Status Jump, blocking
+always @ (*) begin
+    next_state = idle;    //    Initialize
+    case (curr_state)
+        idle: begin
+            if(pool_ready) next_state = cmp;
+            else next_state = idle;
+        end
+        cmp: begin
+            if(rdy_cmp) begin
+                if(remain_op_num == 0) next_state = finish;
+                else next_state = cmp;
+            end
+            else next_state = cmp;
+        end
+        finish: begin
+        end
+        default:
+            next_state = idle;
+    endcase
+end
+
+//    Output, non-blocking
+always @ (posedge clk or posedge rst) begin
+    if (rst) begin
+        operation_nd_cmp <= 1'b0;
+        result <= 0;
+        pool_valid <= 0;
+        remain_op_num <= 0;
+        a_cmp <= 0;
+        b_cmp <= 0;
+        tmp <= 0;
+    end
+    else begin
+        case (curr_state)
+            idle: begin
+                remain_op_num <= op_num;
+            end
+            cmp: begin
+                if(operation_rfd_cmp) begin operation_nd_cmp <= 1'b1; end
+                if(data_permit_cmp) begin 
+                a_cmp <= tmp; b_cmp <= data; 
+                end
+                if(rdy_cmp) begin 
+                    operation_nd_cmp <= 1'b0; 
+                    if(!result_cmp) tmp <= b_cmp;
+                    if(remain_op_num != 0) remain_op_num <= remain_op_num - 1; 
+                    else pool_valid <= 1;
+                end
+            end
+            finish: begin
+                result = tmp;
+            end
+            default:;
+        endcase
+    end
+end
+endmodule
