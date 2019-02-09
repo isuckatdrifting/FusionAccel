@@ -202,14 +202,9 @@ module csb(
             cmd_fifo_rd_en <= 0;
             cmd_burst_count <= 3'd0;
             //Commands
-            op_type <= 3'd0;
-            stride_1 <= 8'h00;
-            stride_2 <= 16'h0000;
-            i_channel_size <= 16'h0000;
-            o_channel_size <= 16'h0000;
-            i_kernel_size <= 8'h0000;
-            o_kernel_size <= 8'h0000;
-            op_num <= 16'h0000;
+            op_type <= 3'd0; stride_1 <= 8'h00; stride_2 <= 16'h0000;
+            i_channel_size <= 16'h0000; o_channel_size <= 16'h0000;
+            i_kernel_size <= 8'h00; o_kernel_size <= 8'h00; op_num <= 16'h0000;
             data_start_addr <= 32'h0000_0000;
             weight_start_addr <= 32'h0000_0000;
             writeback_addr <= 32'h0000_0000;

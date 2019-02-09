@@ -18,14 +18,12 @@ module engine(
 	input [15:0] data_0,
 	output p0_weight_fifo_rd_en,
 	input [15:0] weight_0,
-	input [15:0] bias_0,
 	output p1_data_fifo_rd_en,
 	input [15:0] data_1,
 	output p1_weight_fifo_rd_en,
-	input [15:0] weight_1,
-	input [15:0] bias_1
+	input [15:0] weight_1
 	
-	//Outputs directly back to dma
+	//Outputs write back
 );
 
 localparam PARA = 16;
@@ -46,10 +44,8 @@ wire [PARA-1:0] conv_valid_1;
 
 reg [15:0] d0 [0:15];
 reg [15:0] w0 [0:15];
-reg [15:0] b0 [0:15];
 reg [15:0] d1 [0:15];
 reg [15:0] w1 [0:15];
-reg [15:0] b1 [0:15];
 
 reg [15:0] mp, ap;
 wire [15:0] result_0 [0:15];
@@ -64,15 +60,15 @@ reg p0_data_fifo_rd_en, p1_data_fifo_rd_en, p0_weight_fifo_rd_en, p1_weight_fifo
 always @(op_type or conv_valid_0 or conv_valid_1) begin
 	case(op_type)
 		CONV1: begin
-			if(conv_valid_1 == 16'hff) op_finish = 1;
+			if(conv_valid_1 == 16'hffff) op_finish = 1;
 			else op_finish = 0;
 		end
 		CONV3: begin
-			if(conv_valid_0 == 16'hff) op_finish = 1;
+			if(conv_valid_0 == 16'hffff) op_finish = 1;
 			else op_finish = 0;
 		end
 		CONVP: begin
-			if(conv_valid_0 == 16'hff && conv_valid_1 == 16'hff) op_finish = 1;
+			if(conv_valid_0 == 16'hffff && conv_valid_1 == 16'hffff) op_finish = 1;
 			else op_finish = 0;
 		end
 		default: op_finish = 0;
@@ -85,7 +81,7 @@ end
 genvar i;
 generate 
 	for (i = 0; i < 16; i = i + 1) begin
-		cmac cmac_0(.clk(clk), .rst(~conv_ready), .data(d0[i]), .weight(w0[i]), .bias(b0[i]), .result(result_0[i]), .conv_ready(conv_ready_0[i]), .op_num(op_num), .rdy_acc(rdy_acc_0[i]), .conv_valid(conv_valid_0[i]));
+		cmac cmac_0(.clk(clk), .rst(~conv_ready), .data(d0[i]), .weight(w0[i]), .result(result_0[i]), .conv_ready(conv_ready_0[i]), .op_num(op_num), .rdy_acc(rdy_acc_0[i]), .conv_valid(conv_valid_0[i]));
 	end 
 endgenerate
 
@@ -93,7 +89,7 @@ endgenerate
 genvar j;
 generate 
 	for (j = 0; j < 16; j = j + 1) begin
-		cmac cmac_1(.clk(clk), .rst(~conv_ready), .data(d1[j]), .weight(w1[j]), .bias(b1[j]), .result(result_1[j]), .conv_ready(conv_ready_1[j]), .op_num(op_num), .rdy_acc(rdy_acc_1[j]), .conv_valid(conv_valid_1[j]));
+		cmac cmac_1(.clk(clk), .rst(~conv_ready), .data(d1[j]), .weight(w1[j]), .result(result_1[j]), .conv_ready(conv_ready_1[j]), .op_num(op_num), .rdy_acc(rdy_acc_1[j]), .conv_valid(conv_valid_1[j]));
 	end 
 endgenerate
 
@@ -165,7 +161,6 @@ integer a;
 //Synchronous Port 0 MUX logic
 always @ (posedge clk or posedge rst) begin
 	if(rst) begin
-		
 		burst_cnt <= 0;
 		conv_ready_1 <= 16'h0;
 		conv_ready_0 <= 16'h0;
@@ -193,7 +188,7 @@ always @ (posedge clk or posedge rst) begin
 					end
 					CONV3: begin 
 						conv_ready_0[burst_cnt] <= 1;
-						if(burst_cnt < 16 && op_count[0] != 0) begin 
+						if(burst_cnt < 16) begin 
 							p0_data_fifo_rd_en <= 1; 
 							p0_weight_fifo_rd_en <= 1;
 						end else begin
@@ -203,7 +198,7 @@ always @ (posedge clk or posedge rst) begin
 					end
 					CONVP: begin 
 						conv_ready_0[burst_cnt] <= 1; conv_ready_1[burst_cnt] <= 1; 
-						if(burst_cnt < 15) begin 
+						if(burst_cnt < 16) begin 
 							p0_data_fifo_rd_en <= 1; p0_weight_fifo_rd_en <= 1;
 							p1_data_fifo_rd_en <= 1; p1_weight_fifo_rd_en <= 1; 
 						end
@@ -228,13 +223,12 @@ always @ (posedge clk or posedge rst) begin
 	end
 end
 
-//TODO: Handle the last bias
 integer b;
 always@(posedge clk) begin
 	if(!conv_ready) begin
 		for(b=0;b<PARA;b=b+1) begin
-			d0[b] <= 16'h0000; w0[b] <= 16'h0000; b0[b] <= 16'h0000;
-			d1[b] <= 16'h0000; w1[b] <= 16'h0000; b1[b] <= 16'h0000;
+			d0[b] <= 16'h0000; w0[b] <= 16'h0000;
+			d1[b] <= 16'h0000; w1[b] <= 16'h0000;
 			op_count[b] <= op_num;
 		end
 	end else begin

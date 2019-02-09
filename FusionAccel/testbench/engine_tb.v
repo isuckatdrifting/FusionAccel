@@ -17,15 +17,14 @@ wire p0_data_fifo_rd_en;
 reg [15:0] data_0;
 wire p0_weight_fifo_rd_en;
 reg [15:0] weight_0;
-reg [15:0] bias_0;
 wire p1_data_fifo_rd_en;
 reg [15:0] data_1;
 wire p1_weight_fifo_rd_en;
 reg [15:0] weight_1;
-reg [15:0] bias_1;
 
 reg [15:0] data0_fifo [0:143];
-reg [15:0] weight0_fifo [0:143];
+reg [15:0] weight0_fifo [0:159];
+reg [15:0] bias0_fifo [0:15];
 reg [15:0] data1_fifo [0:143];
 reg [15:0] weight1_fifo [0:143];
 reg data0_fifo_valid;
@@ -42,6 +41,7 @@ initial begin
     for (j=96;j<112;j=j+1) begin data0_fifo[j] = 16'h4700; weight0_fifo[j] = 16'h4700; end
     for (j=112;j<128;j=j+1) begin data0_fifo[j] = 16'h4800; weight0_fifo[j] = 16'h4800; end
     for (j=128;j<144;j=j+1) begin data0_fifo[j] = 16'h4880; weight0_fifo[j] = 16'h4880; end
+	for (j=144;j<160;j=j+1) begin weight0_fifo[j] = 16'h3c00; end
 end
 
 engine engine_(
@@ -63,12 +63,10 @@ engine engine_(
 	.data_0                 (data_0),
 	.p0_weight_fifo_rd_en   (p0_weight_fifo_rd_en),
 	.weight_0               (weight_0),
-	.bias_0                 (bias_0),
 	.p1_data_fifo_rd_en     (p1_data_fifo_rd_en),
 	.data_1                 (data_1),
 	.p1_weight_fifo_rd_en   (p1_weight_fifo_rd_en),
-	.weight_1               (weight_1),
-	.bias_1                 (bias_1)
+	.weight_1               (weight_1)
 	
 	//Outputs directly back to dma
 );

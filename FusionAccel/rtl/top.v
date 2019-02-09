@@ -100,12 +100,10 @@ engine engine_(
 	.data_0				(data_0),
 	.p0_weight_fifo_rd_en (p0_weight_fifo_rd_en),
 	.weight_0			(weight_0),
-	.bias_0				(),
 	.p1_data_fifo_rd_en (p1_data_fifo_rd_en),
 	.data_1				(data_1),
 	.p1_weight_fifo_rd_en (p1_weight_fifo_rd_en),
-	.weight_1			(weight_1),
-	.bias_1				()
+	.weight_1			(weight_1)
 );
 
 
