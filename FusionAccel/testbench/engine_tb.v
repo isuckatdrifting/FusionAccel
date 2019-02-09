@@ -1,6 +1,7 @@
 `timescale 1ns/1ps
 //`define CMAC
-`define SCAP
+//`define SCAP
+`define SCMP
 
 module engine_tb;
 
@@ -30,6 +31,7 @@ reg [15:0] weight0_fifo [0:159];
 reg [15:0] data1_fifo [0:143];
 reg [15:0] weight1_fifo [0:143];
 reg [169*16-1:0] pooldata;
+reg [9*16-1:0] maxpooldata;
 reg data0_fifo_valid;
 reg weight0_fifo_valid;
 
@@ -50,7 +52,6 @@ end
 `endif
 
 `ifdef SCAP
-integer j;
 initial begin
 	pooldata = {16'h3757, 16'h39da, 16'h3b67, 16'h3376, 16'h3bb5, 16'h30da, 16'h3b8a, 16'h2675, 16'h3454, 16'h2d3e, 16'h39d1, 16'h3614, 16'h36dd,
 16'h304e, 16'h3023, 16'h3b02, 16'h3367, 16'h3b9d, 16'h32ff, 16'h387e, 16'h384d, 16'h3812, 16'h3bad, 16'h3587, 16'h33f5, 16'h3ab1,
@@ -65,6 +66,12 @@ initial begin
 16'h3a29, 16'h3a08, 16'h3301, 16'h386f, 16'h2a75, 16'h37cf, 16'h3267, 16'h30e1, 16'h3967, 16'h388a, 16'h397b, 16'h3ab4, 16'h3999,
 16'h3899, 16'h378f, 16'h394b, 16'h3554, 16'h3723, 16'h3880, 16'h327a, 16'h3a9b, 16'h383c, 16'h3936, 16'h387d, 16'h34c5, 16'h3782,
 16'h3a3f, 16'h3b8c, 16'h3156, 16'h3ba7, 16'h3b97, 16'h2e65, 16'h3194, 16'h32d6, 16'h3572, 16'h3889, 16'h3aa1, 16'h36d4, 16'h2cc5}; //16'h558f, 16'h3836
+end
+`endif
+
+`ifdef SCMP
+initial begin
+	maxpooldata = {16'h4880, 16'h4400, 16'h4600, 16'h4880, 16'h4200, 16'h4700, 16'h3c00, 16'h4000, 16'h4500}; //9,4,6,8,3,7,1,2,5
 end
 `endif
 
@@ -136,11 +143,9 @@ end
 `endif
 
 `ifdef SCAP
-reg [15:0] m;
 initial begin
     rst = 1;
     clk = 0;
-    m = 0;
     op_num = 0;
     avepool_ready = 0;
     op_type = 0;
@@ -160,6 +165,34 @@ always @(posedge clk) begin
 			data0_fifo_valid <= 1;
 			data_0 <= pooldata[15:0]; 
 			pooldata <= pooldata >> 16;
+		end else data0_fifo_valid <= 0;
+	end
+end
+`endif
+
+`ifdef SCMP
+initial begin
+    rst = 1;
+    clk = 0;
+    op_num = 0;
+    maxpool_ready = 0;
+    op_type = 0;
+	data0_fifo_valid = 0;
+	data_0 = 16'h0000;
+    #20 rst = 1;
+    #10 rst = 0;
+    #100 op_num = 9; op_type = 4;
+    #10 maxpool_ready = 1; 
+end
+
+always @(posedge maxpool_valid) maxpool_ready <= 0;
+
+always @(posedge clk) begin
+	if(maxpool_ready) begin
+		if(p0_data_fifo_rd_en) begin 
+			data0_fifo_valid <= 1;
+			data_0 <= maxpooldata[15:0]; 
+			maxpooldata <= maxpooldata >> 16;
 		end else data0_fifo_valid <= 0;
 	end
 end

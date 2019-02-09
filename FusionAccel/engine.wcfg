@@ -10,7 +10,7 @@
          </top_modules>
       </db_ref>
    </db_ref_list>
-   <WVObjectSize size="111" />
+   <WVObjectSize size="134" />
    <wave_markers>
       <marker time="140000000" label="" />
    </wave_markers>
@@ -91,11 +91,6 @@
    <wvobject fp_name="/engine_tb/engine_/p0_data_fifo_rd_en" type="logic" db_ref_id="1">
       <obj_property name="ElementShortName">p0_data_fifo_rd_en</obj_property>
       <obj_property name="ObjectShortName">p0_data_fifo_rd_en</obj_property>
-   </wvobject>
-   <wvobject fp_name="/engine_tb/m" type="array" db_ref_id="1">
-      <obj_property name="ElementShortName">m[15:0]</obj_property>
-      <obj_property name="ObjectShortName">m[15:0]</obj_property>
-      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
    </wvobject>
    <wvobject fp_name="/engine_tb/data_0" type="array" db_ref_id="1">
       <obj_property name="ElementShortName">data_0[15:0]</obj_property>
@@ -240,15 +235,117 @@
       <obj_property name="ElementShortName">weight1_fifo[0:143,15:0]</obj_property>
       <obj_property name="ObjectShortName">weight1_fifo[0:143,15:0]</obj_property>
    </wvobject>
-   <wvobject fp_name="/engine_tb/j" type="array" db_ref_id="1">
-      <obj_property name="ElementShortName">j[31:0]</obj_property>
-      <obj_property name="ObjectShortName">j[31:0]</obj_property>
+   <wvobject fp_name="divider155" type="divider">
+      <obj_property name="label">MAXPOOL</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <obj_property name="BkColor">128 128 255</obj_property>
+      <obj_property name="TextColor">230 230 230</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/curr_state" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">curr_state[2:0]</obj_property>
+      <obj_property name="ObjectShortName">curr_state[2:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/maxpool_ready" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">maxpool_ready</obj_property>
+      <obj_property name="ObjectShortName">maxpool_ready</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/maxpool_valid" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">maxpool_valid</obj_property>
+      <obj_property name="ObjectShortName">maxpool_valid</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/maxpool_finish" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">maxpool_finish</obj_property>
+      <obj_property name="ObjectShortName">maxpool_finish</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/maxpool_valid_0" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">maxpool_valid_0[0:0]</obj_property>
+      <obj_property name="ObjectShortName">maxpool_valid_0[0:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/\[0].scmp_ /clk" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">clk</obj_property>
+      <obj_property name="ObjectShortName">clk</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/\[0].scmp_ /rst" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">rst</obj_property>
+      <obj_property name="ObjectShortName">rst</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/\[0].scmp_ /data" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">data[15:0]</obj_property>
+      <obj_property name="ObjectShortName">data[15:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/\[0].scmp_ /pool_ready" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">pool_ready</obj_property>
+      <obj_property name="ObjectShortName">pool_ready</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/\[0].scmp_ /op_num" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">op_num[31:0]</obj_property>
+      <obj_property name="ObjectShortName">op_num[31:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/\[0].scmp_ /rdy_cmp" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">rdy_cmp</obj_property>
+      <obj_property name="ObjectShortName">rdy_cmp</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/\[0].scmp_ /operation_rfd_cmp" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">operation_rfd_cmp</obj_property>
+      <obj_property name="ObjectShortName">operation_rfd_cmp</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/\[0].scmp_ /sclr_cmp" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">sclr_cmp</obj_property>
+      <obj_property name="ObjectShortName">sclr_cmp</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/\[0].scmp_ /ce_cmp" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">ce_cmp</obj_property>
+      <obj_property name="ObjectShortName">ce_cmp</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/\[0].scmp_ /result_cmp" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">result_cmp</obj_property>
+      <obj_property name="ObjectShortName">result_cmp</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/\[0].scmp_ /data_permit_cmp" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">data_permit_cmp</obj_property>
+      <obj_property name="ObjectShortName">data_permit_cmp</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/\[0].scmp_ /result" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">result[15:0]</obj_property>
+      <obj_property name="ObjectShortName">result[15:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/\[0].scmp_ /pool_valid" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">pool_valid</obj_property>
+      <obj_property name="ObjectShortName">pool_valid</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/\[0].scmp_ /a_cmp" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">a_cmp[15:0]</obj_property>
+      <obj_property name="ObjectShortName">a_cmp[15:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/\[0].scmp_ /b_cmp" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">b_cmp[15:0]</obj_property>
+      <obj_property name="ObjectShortName">b_cmp[15:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/\[0].scmp_ /remain_op_num" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">remain_op_num[31:0]</obj_property>
+      <obj_property name="ObjectShortName">remain_op_num[31:0]</obj_property>
       <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
    </wvobject>
-   <wvobject fp_name="/engine_tb/m" type="array" db_ref_id="1">
-      <obj_property name="ElementShortName">m[15:0]</obj_property>
-      <obj_property name="ObjectShortName">m[15:0]</obj_property>
-      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+   <wvobject fp_name="/engine_tb/engine_/\[0].scmp_ /operation_nd_cmp" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">operation_nd_cmp</obj_property>
+      <obj_property name="ObjectShortName">operation_nd_cmp</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/\[0].scmp_ /tmp" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">tmp[15:0]</obj_property>
+      <obj_property name="ObjectShortName">tmp[15:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/\[0].scmp_ /curr_state" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">curr_state[2:0]</obj_property>
+      <obj_property name="ObjectShortName">curr_state[2:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/\[0].scmp_ /next_state" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">next_state[2:0]</obj_property>
+      <obj_property name="ObjectShortName">next_state[2:0]</obj_property>
    </wvobject>
    <wvobject fp_name="divider179" type="divider">
       <obj_property name="label">AVEPOOL</obj_property>

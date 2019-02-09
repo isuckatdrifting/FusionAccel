@@ -39,15 +39,15 @@ reg  [CONV_BURST_LEN-1:0] conv_ready_0, conv_ready_1;
 wire [CONV_BURST_LEN-1:0] rdy_acc_0, rdy_acc_1;
 wire [CONV_BURST_LEN-1:0] conv_valid_0, conv_valid_1;
 
-reg  [POOL_BURST_LEN-1:0] avepool_ready_0;
-wire [POOL_BURST_LEN-1:0] rdy_avepool;
-wire [POOL_BURST_LEN-1:0] avepool_valid_0;
+reg  [POOL_BURST_LEN-1:0] avepool_ready_0, maxpool_ready_0;
+wire [POOL_BURST_LEN-1:0] rdy_avepool, rdy_maxpool;
+wire [POOL_BURST_LEN-1:0] avepool_valid_0, maxpool_valid_0;
 
 reg  [15:0] d0 [0:CONV_BURST_LEN-1];
 reg  [15:0] w0 [0:CONV_BURST_LEN-1];
 reg  [15:0] d1 [0:CONV_BURST_LEN-1];
 reg  [15:0] w1 [0:CONV_BURST_LEN-1];
-reg  [15:0] mp;
+reg  [15:0] mp [0:POOL_BURST_LEN-1];
 reg  [15:0] ap [0:POOL_BURST_LEN-1];
 
 wire [15:0] conv_result_0 [0:CONV_BURST_LEN-1];
@@ -57,12 +57,12 @@ reg  [15:0] conv_count [0:CONV_BURST_LEN-1];
 reg  [15:0] pool_count [0:POOL_BURST_LEN-1];
 reg 		conv_finish;
 reg 		conv_valid;
-reg 		avepool_finish;
-reg 		avepool_valid;
+reg 		avepool_finish, maxpool_finish;
+reg 		avepool_valid, maxpool_valid;
 
 reg p0_data_fifo_rd_en, p1_data_fifo_rd_en, p0_weight_fifo_rd_en, p1_weight_fifo_rd_en;
 
-always @(op_type or conv_valid_0 or conv_valid_1 or avepool_valid_0) begin
+always @(op_type or conv_valid_0 or conv_valid_1 or avepool_valid_0 or maxpool_valid_0) begin
 	case(op_type)
 		CONV1: begin
 			if(conv_valid_1 == 16'hffff) conv_finish = 1;
@@ -76,11 +76,15 @@ always @(op_type or conv_valid_0 or conv_valid_1 or avepool_valid_0) begin
 			if(conv_valid_0 == 16'hffff && conv_valid_1 == 16'hffff) conv_finish = 1;
 			else conv_finish = 0;
 		end
+		MPOOL: begin
+			if(maxpool_valid_0 == 1) maxpool_finish = 1;
+			else maxpool_finish = 0;
+		end
 		APOOL: begin
 			if(avepool_valid_0 == 1) avepool_finish = 1;
 			else avepool_finish = 0;
 		end
-		default: begin conv_finish = 0; avepool_finish = 0; end
+		default: begin conv_finish = 0; avepool_finish = 0; maxpool_finish = 0; end
 	endcase
 end
 
@@ -109,13 +113,22 @@ generate
 	end
 endgenerate
 
+genvar l;
+generate
+	for (l = 0; l < POOL_BURST_LEN; l = l + 1) begin
+		scmp scmp_(.clk(clk), .rst(~maxpool_ready), .data(mp[l]), .result(), .pool_ready(maxpool_ready_0[l]), .op_num(op_num), .rdy_cmp(rdy_maxpool[l]), .pool_valid(maxpool_valid_0[l]));
+	end
+endgenerate
+
 //State Machine
 localparam idle = 3'b000;
 localparam conv_busy = 3'b001;
 localparam conv_clear = 3'b010;
-localparam avepool_busy = 3'b011;
-localparam avepool_clear = 3'b100;
-localparam finish = 3'b101;
+localparam maxpool_busy = 3'b011;
+localparam maxpool_clear = 3'b100;
+localparam avepool_busy = 3'b101;
+localparam avepool_clear = 3'b110;
+localparam finish = 3'b111;
 
 reg [2:0] curr_state;
 reg [2:0] next_state;
@@ -135,6 +148,7 @@ always @ (*) begin
         idle: begin
             if(conv_ready) next_state = conv_busy;
 			else if(avepool_ready) next_state = avepool_busy;
+			else if(maxpool_ready) next_state = maxpool_busy;
             else next_state = idle;
         end
         conv_busy: begin
@@ -144,11 +158,24 @@ always @ (*) begin
 		conv_clear: begin
 			if(conv_finish) begin 
 				next_state = finish;
-			end
-			else if (rdy_acc_0[0])begin
+			end else if (rdy_acc_0[0])begin
 				next_state = conv_busy;
+			end else begin
+				next_state = conv_clear;
 			end
-			else next_state = conv_clear;
+		end
+		maxpool_busy: begin
+			if(pool_burst_cnt == POOL_BURST_LEN) next_state = maxpool_clear;
+			else next_state = maxpool_busy;
+		end
+		maxpool_clear: begin
+			if(maxpool_finish) begin
+				next_state = finish;
+			end else if (rdy_maxpool[0]) begin
+				next_state = maxpool_busy;
+			end else begin
+				next_state = maxpool_clear;
+			end
 		end
 		avepool_busy: begin
             if(pool_burst_cnt == POOL_BURST_LEN) next_state = avepool_clear;
@@ -157,11 +184,11 @@ always @ (*) begin
 		avepool_clear: begin
 			if(avepool_finish) begin 
 				next_state = finish;
-			end
-			else if (rdy_avepool[0])begin
+			end else if (rdy_avepool[0]) begin
 				next_state = avepool_busy;
+			end else begin
+				next_state = avepool_clear;
 			end
-			else next_state = avepool_clear;
 		end
 		finish: begin
 		end
@@ -180,18 +207,21 @@ always @ (posedge clk or posedge rst) begin
 		conv_ready_0 <= 16'h0;
 		conv_ready_1 <= 16'h0;
 		avepool_ready_0 <= 0;
+		maxpool_ready_0 <= 0;
 		p0_data_fifo_rd_en <= 0;
 		p1_data_fifo_rd_en <= 0;
 		p0_weight_fifo_rd_en <= 0;
 		p1_weight_fifo_rd_en <= 0;
 		conv_valid <= 0;
 		avepool_valid <= 0;
+		maxpool_valid <= 0;
 	end else begin
 		for(a=0;a<CONV_BURST_LEN;a=a+1) begin: clear_conv_ready
 			if(conv_valid_0[a]) conv_ready_0[a] <= 0;
 		end
 		for(a=0;a<POOL_BURST_LEN;a=a+1) begin: clear_avepool_ready
 			if(avepool_valid_0[a]) avepool_ready_0[a] <= 0;
+			if(maxpool_valid_0[a]) maxpool_ready_0[a] <= 0;
 		end
 		case (curr_state)
 			idle: begin
@@ -231,6 +261,23 @@ always @ (posedge clk or posedge rst) begin
 			conv_clear: begin
 				conv_burst_cnt <= 0;
 			end
+			maxpool_busy: begin
+				case(op_type)
+					MPOOL: begin
+						pool_burst_cnt <= pool_burst_cnt + 1;
+						maxpool_ready_0[pool_burst_cnt] <= 1;
+						if(pool_burst_cnt < 1) begin
+							p0_data_fifo_rd_en <= 1;
+						end else begin
+							p0_data_fifo_rd_en <= 0;
+						end
+					end
+					default:;
+				endcase
+			end
+			maxpool_clear: begin
+				pool_burst_cnt <= 0;
+			end
 			avepool_busy: begin
 				case (op_type)
 					APOOL: begin
@@ -251,6 +298,7 @@ always @ (posedge clk or posedge rst) begin
 			finish: begin
 				case(op_type)
 					CONV3:conv_valid <= 1;
+					MPOOL:maxpool_valid <= 1;
 					APOOL:avepool_valid <= 1;
 					default:;
 				endcase
@@ -288,6 +336,22 @@ always@(posedge clk) begin
 	end else begin
 		if(pool_burst_cnt >= 2 && pool_burst_cnt <= POOL_BURST_LEN + 1) begin
 			ap[pool_burst_cnt-2] <= data_0;
+			if(pool_count[pool_burst_cnt-2] != 0)
+				pool_count[pool_burst_cnt-2] <= pool_count[pool_burst_cnt-2] - 1;
+		end
+	end
+end
+
+integer d;
+always@(posedge clk) begin
+	if(!maxpool_ready) begin
+		for(d=0;d<POOL_BURST_LEN;d=d+1) begin
+			mp[d] <= 16'h0000;
+			pool_count[d] <= op_num;
+		end
+	end else begin
+		if(pool_burst_cnt >= 2 && pool_burst_cnt <= POOL_BURST_LEN + 1) begin
+			mp[pool_burst_cnt-2] <= data_0;
 			if(pool_count[pool_burst_cnt-2] != 0)
 				pool_count[pool_burst_cnt-2] <= pool_count[pool_burst_cnt-2] - 1;
 		end
