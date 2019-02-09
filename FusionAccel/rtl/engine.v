@@ -223,6 +223,9 @@ always @ (posedge clk or posedge rst) begin
 					default:;
 				endcase
 			end
+			conv_clear: begin
+				burst_cnt <= 0;
+			end
 			avepool_busy: begin
 				case (op_type)
 					APOOL: begin
@@ -236,9 +239,6 @@ always @ (posedge clk or posedge rst) begin
 					end
 					default: ;
 				endcase
-			end
-			conv_clear: begin
-				burst_cnt <= 0;
 			end
 			avepool_clear: begin
 				pool_burst_cnt <= 0;
@@ -264,7 +264,7 @@ always@(posedge clk) begin
 			op_count[b] <= op_num;
 		end
 	end else begin
-		if(burst_cnt >= 2 && burst_cnt <= 17) begin
+		if(burst_cnt >= 2 && burst_cnt <= BURST_LEN + 1) begin
 			d0[burst_cnt-2] <= data_0;
 			w0[burst_cnt-2] <= weight_0;
 			if(op_count[burst_cnt-2] != 0)
@@ -278,7 +278,7 @@ always@(posedge clk) begin
 		ap <= 16'h0000;
 		pool_count <= op_num;
 	end else begin
-		if(pool_burst_cnt==1) begin
+		if(pool_burst_cnt >= 2 && pool_burst_cnt <= POOL_BURST_LEN + 1) begin
 			ap <= data_0;
 			if(pool_count != 0)
 				pool_count <= pool_count - 1;

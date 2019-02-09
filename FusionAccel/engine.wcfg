@@ -10,7 +10,7 @@
          </top_modules>
       </db_ref>
    </db_ref_list>
-   <WVObjectSize size="118" />
+   <WVObjectSize size="119" />
    <wave_markers>
       <marker time="140000000" label="" />
    </wave_markers>
@@ -77,8 +77,8 @@
       <obj_property name="ObjectShortName">conv_ready</obj_property>
    </wvobject>
    <wvobject fp_name="/engine_tb/engine_/curr_state" type="array" db_ref_id="1">
-      <obj_property name="ElementShortName">curr_state[1:0]</obj_property>
-      <obj_property name="ObjectShortName">curr_state[1:0]</obj_property>
+      <obj_property name="ElementShortName">curr_state[2:0]</obj_property>
+      <obj_property name="ObjectShortName">curr_state[2:0]</obj_property>
    </wvobject>
    <wvobject fp_name="/engine_tb/engine_/burst_cnt" type="array" db_ref_id="1">
       <obj_property name="ElementShortName">burst_cnt[7:0]</obj_property>
@@ -99,8 +99,8 @@
       <obj_property name="ObjectShortName">rdy_acc_0[15:0]</obj_property>
    </wvobject>
    <wvobject fp_name="/engine_tb/engine_/curr_state" type="array" db_ref_id="1">
-      <obj_property name="ElementShortName">curr_state[1:0]</obj_property>
-      <obj_property name="ObjectShortName">curr_state[1:0]</obj_property>
+      <obj_property name="ElementShortName">curr_state[2:0]</obj_property>
+      <obj_property name="ObjectShortName">curr_state[2:0]</obj_property>
    </wvobject>
    <wvobject fp_name="/engine_tb/engine_/p0_data_fifo_rd_en" type="logic" db_ref_id="1">
       <obj_property name="ElementShortName">p0_data_fifo_rd_en</obj_property>
@@ -444,6 +444,11 @@
       <obj_property name="DisplayName">label</obj_property>
       <obj_property name="BkColor">128 128 255</obj_property>
       <obj_property name="TextColor">230 230 230</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/pool_burst_cnt" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">pool_burst_cnt[7:0]</obj_property>
+      <obj_property name="ObjectShortName">pool_burst_cnt[7:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
    </wvobject>
    <wvobject fp_name="/engine_tb/engine_/sacc_/clk" type="logic" db_ref_id="1">
       <obj_property name="ElementShortName">clk</obj_property>
