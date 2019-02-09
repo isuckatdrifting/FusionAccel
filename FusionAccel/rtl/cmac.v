@@ -3,7 +3,6 @@ module cmac(
     input rst,
     input [15:0] data,
     input [15:0] weight,
-    input [15:0] bias,
     output [15:0] result,
     input conv_ready,
     input [31:0] op_num, //input op_num changes the same time as conv_ready pulls up
@@ -116,12 +115,12 @@ always @ (posedge clk or posedge rst) begin
                 if(rdy_acc) begin 
                     operation_nd_acc <= 1'b0; 
                     if(remain_op_num != 0) remain_op_num <= remain_op_num - 1; 
-                    else b_acc <= bias;
+                    else b_acc <= weight;
                 end
             end
             bia: begin
                 if(operation_rfd_acc) begin operation_nd_acc <= 1'b1; end
-                if(data_permit_acc) begin a_acc <= result_acc; b_acc <= bias; end
+                if(data_permit_acc) begin a_acc <= result_acc; b_acc <= weight; end
                 if(rdy_acc) begin 
                     a_acc <= 0; b_acc <= 0;
                     operation_nd_acc <= 1'b0; 
