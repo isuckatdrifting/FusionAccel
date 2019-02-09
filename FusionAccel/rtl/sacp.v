@@ -228,7 +228,7 @@ always @ (posedge clk or posedge rst) begin
                 end
             end
             finish: begin
-                result = tmp;
+                result <= tmp;
             end
             default:;
         endcase
