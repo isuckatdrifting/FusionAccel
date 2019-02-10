@@ -121,7 +121,7 @@ always @(posedge clk or posedge reset_d) begin
 		burst_cnt <= 0;
 		cmd_byte_addr_wr <= start_addr;
 		cmd_byte_addr_rd <= start_addr;
-		cmd_instr <= 3'b0;
+		cmd_instr <= 3'b000;
 		cmd_byte_addr <= 30'b0;
 	end else begin
 		cmd_en <= 1'b0;

@@ -22,10 +22,12 @@ module engine(
 	output 			conv_valid,
 	output 			maxpool_valid,
 	output 			avepool_valid,
-	output [15:0]	result,
+	//Outputs write back
+	output [15:0]	p0_result,
+	output [15:0]	p1_result,
 	output			p0_writes_en,
 	output			p1_writes_en
-	//Outputs write back
+	
 );
 
 localparam CONV_BURST_LEN = 16;
@@ -36,15 +38,15 @@ localparam CONVP = 3;
 localparam MPOOL = 4;
 localparam APOOL = 5;
 
-reg  [7:0] conv_burst_cnt;
-reg  [7:0] pool_burst_cnt;
+reg  [7:0] conv_burst_cnt, conv_wb_burst_cnt;
+reg  [7:0] pool_burst_cnt, pool_wb_burst_cnt;
 reg  [CONV_BURST_LEN-1:0] conv_ready_0, conv_ready_1;
 wire [CONV_BURST_LEN-1:0] rdy_acc_0, rdy_acc_1;
 wire [CONV_BURST_LEN-1:0] conv_valid_0, conv_valid_1;
 
-reg  [POOL_BURST_LEN-1:0] avepool_ready_0, maxpool_ready_0;
-wire [POOL_BURST_LEN-1:0] rdy_avepool, rdy_maxpool;
-wire [POOL_BURST_LEN-1:0] avepool_valid_0, maxpool_valid_0;
+reg  [POOL_BURST_LEN-1:0] maxpool_ready_0, avepool_ready_0;
+wire [POOL_BURST_LEN-1:0] rdy_maxpool, rdy_avepool;
+wire [POOL_BURST_LEN-1:0] maxpool_valid_0, avepool_valid_0;
 
 reg  [15:0] d0 [0:CONV_BURST_LEN-1];
 reg  [15:0] w0 [0:CONV_BURST_LEN-1];
@@ -55,6 +57,8 @@ reg  [15:0] ap [0:POOL_BURST_LEN-1];
 
 wire [15:0] conv_result_0 [0:CONV_BURST_LEN-1];
 wire [15:0] conv_result_1 [0:CONV_BURST_LEN-1];
+wire [15:0] maxpool_result [0:POOL_BURST_LEN-1];
+wire [15:0] avepool_result [0:POOL_BURST_LEN-1];
 
 reg  [15:0] conv_count [0:CONV_BURST_LEN-1];
 reg  [15:0] pool_count [0:POOL_BURST_LEN-1];
@@ -62,8 +66,10 @@ reg 		conv_finish;
 reg 		conv_valid;
 reg 		avepool_finish, maxpool_finish;
 reg 		avepool_valid, maxpool_valid;
-
-reg p0_data_fifo_rd_en, p1_data_fifo_rd_en, p0_weight_fifo_rd_en, p1_weight_fifo_rd_en;
+reg			writeback_finish;
+reg 		p0_data_fifo_rd_en, p1_data_fifo_rd_en, p0_weight_fifo_rd_en, p1_weight_fifo_rd_en;
+reg	 [15:0] p0_result, p1_result;
+reg			p0_writes_en, p1_writes_en;
 
 always @(op_type or conv_valid_0 or conv_valid_1 or avepool_valid_0 or maxpool_valid_0) begin
 	case(op_type)
@@ -112,29 +118,30 @@ endgenerate
 genvar k;
 generate
 	for (k = 0; k < POOL_BURST_LEN; k = k + 1) begin
-		sacc sacc_(.clk(clk), .rst(~avepool_ready), .data(ap[k]), .result(), .pool_ready(avepool_ready_0[k]), .op_num(op_num), .rdy(rdy_avepool[k]), .pool_valid(avepool_valid_0[k]));
+		sacc sacc_(.clk(clk), .rst(~avepool_ready), .data(ap[k]), .result(avepool_result[k]), .pool_ready(avepool_ready_0[k]), .op_num(op_num), .rdy(rdy_avepool[k]), .pool_valid(avepool_valid_0[k]));
 	end
 endgenerate
 
 genvar l;
 generate
 	for (l = 0; l < POOL_BURST_LEN; l = l + 1) begin
-		scmp scmp_(.clk(clk), .rst(~maxpool_ready), .data(mp[l]), .result(), .pool_ready(maxpool_ready_0[l]), .op_num(op_num), .rdy_cmp(rdy_maxpool[l]), .pool_valid(maxpool_valid_0[l]));
+		scmp scmp_(.clk(clk), .rst(~maxpool_ready), .data(mp[l]), .result(maxpool_result[l]), .pool_ready(maxpool_ready_0[l]), .op_num(op_num), .rdy_cmp(rdy_maxpool[l]), .pool_valid(maxpool_valid_0[l]));
 	end
 endgenerate
 
 //State Machine
-localparam idle = 3'b000;
-localparam conv_busy = 3'b001;
-localparam conv_clear = 3'b010;
-localparam maxpool_busy = 3'b011;
-localparam maxpool_clear = 3'b100;
-localparam avepool_busy = 3'b101;
-localparam avepool_clear = 3'b110;
-localparam finish = 3'b111;
+localparam idle = 4'b0000;
+localparam conv_busy = 4'b0001;
+localparam conv_clear = 4'b0010;
+localparam maxpool_busy = 4'b0011;
+localparam maxpool_clear = 4'b0100;
+localparam avepool_busy = 4'b0101;
+localparam avepool_clear = 4'b0110;
+localparam writeback = 4'b0111;
+localparam finish = 4'b1000;
 
-reg [2:0] curr_state;
-reg [2:0] next_state;
+reg [3:0] curr_state;
+reg [3:0] next_state;
 
 //    Current State, non-blocking
 always @ (posedge clk or posedge rst)    begin
@@ -160,8 +167,8 @@ always @ (*) begin
         end
 		conv_clear: begin
 			if(conv_finish) begin 
-				next_state = finish;
-			end else if (rdy_acc_0[0])begin
+				next_state = writeback;
+			end else if (rdy_acc_0[0]) begin // use the first mac in the pipeline as flag
 				next_state = conv_busy;
 			end else begin
 				next_state = conv_clear;
@@ -173,7 +180,7 @@ always @ (*) begin
 		end
 		maxpool_clear: begin
 			if(maxpool_finish) begin
-				next_state = finish;
+				next_state = writeback;
 			end else if (rdy_maxpool[0]) begin
 				next_state = maxpool_busy;
 			end else begin
@@ -186,11 +193,18 @@ always @ (*) begin
         end
 		avepool_clear: begin
 			if(avepool_finish) begin 
-				next_state = finish;
+				next_state = writeback;
 			end else if (rdy_avepool[0]) begin
 				next_state = avepool_busy;
 			end else begin
 				next_state = avepool_clear;
+			end
+		end
+		writeback: begin
+			if(writeback_finish) begin
+				next_state = finish;
+			end else begin
+				next_state = writeback;
 			end
 		end
 		finish: begin
@@ -205,10 +219,10 @@ integer a;
 //Synchronous Port 0 MUX logic
 always @ (posedge clk or posedge rst) begin
 	if(rst) begin
-		conv_burst_cnt <= 0;
-		pool_burst_cnt <= 0;
-		conv_ready_0 <= 16'h0;
-		conv_ready_1 <= 16'h0;
+		conv_burst_cnt <= 0; conv_wb_burst_cnt <= 0;
+		pool_burst_cnt <= 0; pool_wb_burst_cnt <= 0;
+		conv_ready_0 <= 16'h0000;
+		conv_ready_1 <= 16'h0000;
 		avepool_ready_0 <= 0;
 		maxpool_ready_0 <= 0;
 		p0_data_fifo_rd_en <= 0;
@@ -218,6 +232,8 @@ always @ (posedge clk or posedge rst) begin
 		conv_valid <= 0;
 		avepool_valid <= 0;
 		maxpool_valid <= 0;
+		p0_writes_en <= 0; p1_writes_en <= 0;
+		p0_result <= 16'h0000; p1_result <= 16'h0000;
 	end else begin
 		for(a=0;a<CONV_BURST_LEN;a=a+1) begin: clear_conv_ready
 			if(conv_valid_0[a]) conv_ready_0[a] <= 0;
@@ -237,7 +253,10 @@ always @ (posedge clk or posedge rst) begin
 						if(conv_burst_cnt < 16) begin 
 							p1_data_fifo_rd_en <= 1; 
 							p1_weight_fifo_rd_en <= 1;
-						end 
+						end else begin
+							p1_data_fifo_rd_en <= 0;
+							p1_weight_fifo_rd_en <= 0;
+						end
 					end
 					CONV3: begin 
 						conv_burst_cnt <= conv_burst_cnt + 1;
@@ -256,6 +275,9 @@ always @ (posedge clk or posedge rst) begin
 						if(conv_burst_cnt < 16) begin 
 							p0_data_fifo_rd_en <= 1; p0_weight_fifo_rd_en <= 1;
 							p1_data_fifo_rd_en <= 1; p1_weight_fifo_rd_en <= 1; 
+						end else begin
+							p0_data_fifo_rd_en <= 0; p0_weight_fifo_rd_en <= 0;
+							p1_data_fifo_rd_en <= 0; p1_weight_fifo_rd_en <= 0; 
 						end
 					end
 					default:;
@@ -298,13 +320,93 @@ always @ (posedge clk or posedge rst) begin
 			avepool_clear: begin
 				pool_burst_cnt <= 0;
 			end
+			writeback: begin
+				case (op_type)
+					CONV1: begin
+						if(conv_wb_burst_cnt < CONV_BURST_LEN) begin
+							p1_writes_en <= 1;
+							conv_wb_burst_cnt <= conv_wb_burst_cnt + 1;
+							p1_result <= conv_result_1[conv_wb_burst_cnt];
+						end else begin
+							p1_writes_en <= 0;
+							conv_wb_burst_cnt <= 0;
+							p1_result <= 16'h0000;
+						end
+						if(conv_wb_burst_cnt == CONV_BURST_LEN - 1) begin
+							writeback_finish <= 1;
+						end
+					end
+					CONV3: begin
+						if(conv_wb_burst_cnt < CONV_BURST_LEN) begin
+							p0_writes_en <= 1;
+							conv_wb_burst_cnt <= conv_wb_burst_cnt + 1;
+							p0_result <= conv_result_0[conv_wb_burst_cnt];
+						end else begin
+							p0_writes_en <= 0;
+							conv_wb_burst_cnt <= 0;
+							p0_result <= 16'h0000;
+						end
+						if(conv_wb_burst_cnt == CONV_BURST_LEN - 1) begin
+							writeback_finish <= 1;
+						end
+					end
+					CONVP: begin
+						if(conv_wb_burst_cnt < CONV_BURST_LEN) begin
+							p0_writes_en <= 1; p1_writes_en <= 1;
+							conv_wb_burst_cnt <= conv_wb_burst_cnt + 1;
+							p0_result <= conv_result_0[conv_wb_burst_cnt];
+							p1_result <= conv_result_1[conv_wb_burst_cnt];
+						end else begin
+							p0_writes_en <= 0; p1_writes_en <= 0;
+							conv_wb_burst_cnt <= 0;
+							p0_result <= 16'h0000; p1_result <= 16'h0000;
+						end
+						if(conv_wb_burst_cnt == CONV_BURST_LEN - 1) begin
+							writeback_finish <= 1;
+						end
+					end
+					MPOOL: begin
+						if(pool_wb_burst_cnt < POOL_BURST_LEN) begin
+							p0_writes_en <= 1;
+							pool_wb_burst_cnt <= pool_wb_burst_cnt + 1;
+							p0_result <= maxpool_result[pool_wb_burst_cnt];
+							writeback_finish <= 1;
+						end else begin
+							p0_writes_en <= 0;
+							pool_wb_burst_cnt <= 0;
+							p0_result <= 16'h0000;
+						end
+						if(pool_wb_burst_cnt == POOL_BURST_LEN - 1) begin
+							writeback_finish <= 1;
+						end
+					end
+					APOOL: begin
+						if(pool_wb_burst_cnt < POOL_BURST_LEN) begin
+							p0_writes_en <= 1;
+							pool_wb_burst_cnt <= pool_wb_burst_cnt + 1;
+							p0_result <= avepool_result[pool_wb_burst_cnt];
+						end else begin
+							p0_writes_en <= 0;
+							pool_wb_burst_cnt <= 0;
+							p0_result <= 16'h0000;
+						end
+						if(pool_wb_burst_cnt == POOL_BURST_LEN - 1) begin
+							writeback_finish <= 1;
+						end
+					end
+					default:;
+				endcase
+			end
 			finish: begin
 				case(op_type)
+					CONV1:conv_valid <= 1;
 					CONV3:conv_valid <= 1;
+					CONVP:conv_valid <= 1;
 					MPOOL:maxpool_valid <= 1;
 					APOOL:avepool_valid <= 1;
 					default:;
 				endcase
+				writeback_finish <= 0;
 			end
 			default:;
 		endcase

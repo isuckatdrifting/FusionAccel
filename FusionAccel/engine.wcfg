@@ -10,7 +10,7 @@
          </top_modules>
       </db_ref>
    </db_ref_list>
-   <WVObjectSize size="134" />
+   <WVObjectSize size="141" />
    <wave_markers>
       <marker time="140000000" label="" />
    </wave_markers>
@@ -73,8 +73,8 @@
       <obj_property name="ObjectShortName">conv_ready</obj_property>
    </wvobject>
    <wvobject fp_name="/engine_tb/engine_/curr_state" type="array" db_ref_id="1">
-      <obj_property name="ElementShortName">curr_state[2:0]</obj_property>
-      <obj_property name="ObjectShortName">curr_state[2:0]</obj_property>
+      <obj_property name="ElementShortName">curr_state[3:0]</obj_property>
+      <obj_property name="ObjectShortName">curr_state[3:0]</obj_property>
    </wvobject>
    <wvobject fp_name="/engine_tb/engine_/conv_ready_0" type="array" db_ref_id="1">
       <obj_property name="ElementShortName">conv_ready_0[15:0]</obj_property>
@@ -85,8 +85,8 @@
       <obj_property name="ObjectShortName">rdy_acc_0[15:0]</obj_property>
    </wvobject>
    <wvobject fp_name="/engine_tb/engine_/curr_state" type="array" db_ref_id="1">
-      <obj_property name="ElementShortName">curr_state[2:0]</obj_property>
-      <obj_property name="ObjectShortName">curr_state[2:0]</obj_property>
+      <obj_property name="ElementShortName">curr_state[3:0]</obj_property>
+      <obj_property name="ObjectShortName">curr_state[3:0]</obj_property>
    </wvobject>
    <wvobject fp_name="/engine_tb/engine_/p0_data_fifo_rd_en" type="logic" db_ref_id="1">
       <obj_property name="ElementShortName">p0_data_fifo_rd_en</obj_property>
@@ -235,6 +235,39 @@
       <obj_property name="ElementShortName">weight1_fifo[0:143,15:0]</obj_property>
       <obj_property name="ObjectShortName">weight1_fifo[0:143,15:0]</obj_property>
    </wvobject>
+   <wvobject fp_name="divider177" type="divider">
+      <obj_property name="label">WRITEBACK</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <obj_property name="BkColor">128 128 255</obj_property>
+      <obj_property name="TextColor">230 230 230</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/curr_state" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">curr_state[3:0]</obj_property>
+      <obj_property name="ObjectShortName">curr_state[3:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/conv_wb_burst_cnt" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">conv_wb_burst_cnt[7:0]</obj_property>
+      <obj_property name="ObjectShortName">conv_wb_burst_cnt[7:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/p0_writes_en" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">p0_writes_en</obj_property>
+      <obj_property name="ObjectShortName">p0_writes_en</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/p0_result" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">p0_result[15:0]</obj_property>
+      <obj_property name="ObjectShortName">p0_result[15:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/p1_writes_en" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">p1_writes_en</obj_property>
+      <obj_property name="ObjectShortName">p1_writes_en</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/p1_result" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">p1_result[15:0]</obj_property>
+      <obj_property name="ObjectShortName">p1_result[15:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
    <wvobject fp_name="divider155" type="divider">
       <obj_property name="label">MAXPOOL</obj_property>
       <obj_property name="DisplayName">label</obj_property>
@@ -242,8 +275,8 @@
       <obj_property name="TextColor">230 230 230</obj_property>
    </wvobject>
    <wvobject fp_name="/engine_tb/engine_/curr_state" type="array" db_ref_id="1">
-      <obj_property name="ElementShortName">curr_state[2:0]</obj_property>
-      <obj_property name="ObjectShortName">curr_state[2:0]</obj_property>
+      <obj_property name="ElementShortName">curr_state[3:0]</obj_property>
+      <obj_property name="ObjectShortName">curr_state[3:0]</obj_property>
    </wvobject>
    <wvobject fp_name="/engine_tb/maxpool_ready" type="logic" db_ref_id="1">
       <obj_property name="ElementShortName">maxpool_ready</obj_property>

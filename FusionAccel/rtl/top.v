@@ -36,11 +36,12 @@ module top
 //--------------v1, Minimum Hardware Cores for SqueezeNet------------------//
 wire        c3_clk0;
 
-wire op_en;
-wire [2:0] op_type;
+wire 		op_en;
+wire [2:0] 	op_type;
 wire [31:0] op_num;
 wire [31:0] cmd;
-wire [15:0] data_0, weight_0, bias_0, data_1, weight_1, bias_1;
+wire [15:0] data_0, weight_0, bias_0, data_1, weight_1, bias_1, p0_result, p1_result;
+wire 		p0_writes_en, p1_writes_en;
 
 //------------------------------------------------
 // Control Signal Block for all cores
@@ -103,7 +104,12 @@ engine engine_(
 	.p1_data_fifo_rd_en (p1_data_fifo_rd_en),
 	.data_1				(data_1),
 	.p1_weight_fifo_rd_en (p1_weight_fifo_rd_en),
-	.weight_1			(weight_1)
+	.weight_1			(weight_1),
+	
+	.p0_result			(p0_result),
+	.p1_result			(p1_result),
+	.p0_writes_en		(p0_writes_en),
+	.p1_writes_en		(p1_writes_en)
 );
 
 
@@ -622,9 +628,9 @@ fifo_w32_1024_r32_1024 p0_write_fifo (
 	.rst			(ep00wire[3]),			// input
 	.wr_clk			(c3_clk0),				// input
 	.rd_clk			(c3_clk0),				// input
-	.din			(), 					// input, Bus [31 : 0] 
-	.wr_en			(),						// input
-	.rd_en			(),						// input
+	.din			(p0_result), 			// input, Bus [31 : 0] 
+	.wr_en			(p0_writes_en),			// input, from engine
+	.rd_en			(),						// input, from dma
 	.dout			(), 					// output, Bus [31 : 0] 
 	.full			(),						// 
 	.empty			(),						// output
@@ -636,9 +642,9 @@ fifo_w32_1024_r32_1024 p1_write_fifo (
 	.rst			(ep00wire[3]),			// input
 	.wr_clk			(c3_clk0),				// input
 	.rd_clk			(c3_clk0),				// input
-	.din			(), 					// input, Bus [31 : 0] 
-	.wr_en			(),						// input
-	.rd_en			(),						// input
+	.din			(p1_result), 			// input, Bus [31 : 0] 
+	.wr_en			(p1_writes_en),			// input, from engine
+	.rd_en			(),						// input, from dma
 	.dout			(), 					// output, Bus [31 : 0] 
 	.full			(),						//
 	.empty			(),						// output

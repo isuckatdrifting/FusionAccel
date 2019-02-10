@@ -85,8 +85,8 @@ end
 //    Output, non-blocking
 always @ (posedge clk or posedge rst) begin
     if (rst) begin
-        operation_nd_mult <= 1'b0;
-        operation_nd_acc <= 1'b0;
+        operation_nd_mult <= 0;
+        operation_nd_acc <= 0;
         result <= 0;
         conv_valid <= 0;
         remain_op_num <= 0;
@@ -101,28 +101,28 @@ always @ (posedge clk or posedge rst) begin
                 remain_op_num <= op_num;
             end
             mult: begin
-                if(operation_rfd_mult) begin operation_nd_mult <= 1'b1; end
+                if(operation_rfd_mult) begin operation_nd_mult <= 1; end
                 if(data_permit_mult) begin a_mult <= data; b_mult <= weight; end
                 if(rdy_mult) begin
-                    operation_nd_mult <= 1'b0;
+                    operation_nd_mult <= 0;
                     if(remain_op_num == 0) begin a_mult <= 0; b_mult <= 0; end
                 end
             end
             acc: begin
-                if(operation_rfd_acc) begin operation_nd_acc <= 1'b1; end
+                if(operation_rfd_acc) begin operation_nd_acc <= 1; end
                 if(data_permit_acc) begin a_acc <= result_acc; b_acc <= result_mult; end
                 if(rdy_acc) begin 
-                    operation_nd_acc <= 1'b0; 
+                    operation_nd_acc <= 0; 
                     if(remain_op_num != 0) remain_op_num <= remain_op_num - 1; 
                     else b_acc <= weight;
                 end
             end
             bia: begin
-                if(operation_rfd_acc) begin operation_nd_acc <= 1'b1; end
+                if(operation_rfd_acc) begin operation_nd_acc <= 1; end
                 if(data_permit_acc) begin a_acc <= result_acc; b_acc <= weight; end
                 if(rdy_acc) begin 
                     a_acc <= 0; b_acc <= 0;
-                    operation_nd_acc <= 1'b0; 
+                    operation_nd_acc <= 0; 
                     conv_valid <= 1; 
                     result <= result_acc[15]?16'h0000:result_acc; 
                 end
