@@ -21,7 +21,10 @@ module engine(
 	output 			p1_weight_fifo_rd_en,
 	output 			conv_valid,
 	output 			maxpool_valid,
-	output 			avepool_valid
+	output 			avepool_valid,
+	output [15:0]	result,
+	output			p0_writes_en,
+	output			p1_writes_en
 	//Outputs write back
 );
 

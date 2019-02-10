@@ -163,8 +163,8 @@ module csb(
     //DMA Accesss commands
     always @ (posedge clk or negedge rst_n) begin
         if(!rst_n) begin
-            p0_reads_en <= 0;
-            p1_reads_en <= 0;
+            p0_reads_en <= 0; p1_reads_en <= 0;
+            p2_reads_en <= 0; p3_reads_en <= 0;
         end else begin
             //Fifo logic: reads_en --> ob_we --> din->fifo --> fifo_rd_en
             //DMA Access: get command
@@ -244,7 +244,7 @@ module csb(
                 cmd_issue: begin
                     cmd_burst_count <= CMD_BURST_LEN;
                     cmd_collect_done <= 0;
-                    //TODO: Send out dma access signals (addr) to get data and weight (according to op_type) to submodules, then send out ready signals
+                    //Notes: Send out dma access signals (addr) to get data and weight (according to op_type) to submodules (ready signals)
                     case (op_type)
                         1,2,3: begin conv_ready <= 1; cmd_issue_done <= 1; end
                         4:begin maxpool_ready <= 1; cmd_issue_done <= 1; end
