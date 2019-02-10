@@ -2,20 +2,20 @@
 //-------------------------------------------AVE Pooling-----------------------------------------//
 ///////////////////////////////////////////////////////////////////////////////////////////////////
 module sacc(
-    input clk,
-    input rst,
-    input [15:0] data,
-    output [15:0] result,
-    input pool_ready,
-    input [31:0] op_num, //input op_num changes the same time as conv_ready pulls up
-    output rdy,
-    output pool_valid
+    input           clk,
+    input           rst,
+    input  [15:0]   data,
+    output [15:0]   result,
+    input           pool_ready,
+    input  [31:0]   op_num, //input op_num changes the same time as conv_ready pulls up
+    output          rdy,
+    output          pool_valid
 );
 
 reg [15:0] result;
 reg [15:0] a_div, b_div, a_acc, b_acc;
 reg pool_valid;
-reg [31:0] remain_op_num;
+reg [15:0] remain_op_num;
 
 reg operation_nd_div, operation_nd_acc;
 wire operation_rfd_div, operation_rfd_acc;
@@ -136,18 +136,18 @@ module scmp(
     output pool_valid
 );
 
-reg [15:0] result;
-reg [15:0] a_cmp, b_cmp;
-reg pool_valid;
-reg [31:0] remain_op_num;
+reg [15:0]  result;
+reg [15:0]  a_cmp, b_cmp;
+reg         pool_valid;
+reg [15:0]  remain_op_num;
 
-reg operation_nd_cmp;
-wire operation_rfd_cmp;
-wire rdy_cmp;
-wire sclr_cmp;
-wire ce_cmp;
-wire result_cmp;
-reg [15:0] tmp;
+reg         operation_nd_cmp;
+wire        operation_rfd_cmp;
+wire        rdy_cmp;
+wire        sclr_cmp;
+wire        ce_cmp;
+wire        result_cmp;
+reg [15:0]  tmp;
 
 assign ce_cmp = ~rdy_cmp;
 assign sclr_cmp = rdy_cmp;

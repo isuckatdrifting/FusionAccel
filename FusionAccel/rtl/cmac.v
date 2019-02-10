@@ -1,25 +1,25 @@
 module cmac(
-    input clk,
-    input rst,
-    input [15:0] data,
-    input [15:0] weight,
-    output [15:0] result,
-    input conv_ready,
-    input [31:0] op_num, //input op_num changes the same time as conv_ready pulls up
-    output rdy_acc,
-    output conv_valid
+    input           clk,
+    input           rst,
+    input  [15:0]   data,
+    input  [15:0]   weight,
+    output [15:0]   result,
+    input           conv_ready,
+    input  [31:0]   op_num, //input op_num changes the same time as conv_ready pulls up
+    output          rdy_acc,
+    output          conv_valid
 );
 
-reg [15:0] result;
-reg [15:0] a_mult, b_mult, a_acc, b_acc;
-reg conv_valid;
-reg [31:0] remain_op_num;
+reg [15:0]  result;
+reg [15:0]  a_mult, b_mult, a_acc, b_acc;
+reg         conv_valid;
+reg [15:0]  remain_op_num;
 
-reg operation_nd_mult, operation_nd_acc;
-wire operation_rfd_mult, operation_rfd_acc;
-wire rdy_mult, rdy_acc;
-wire sclr_mult, sclr_acc;
-wire ce_mult, ce_acc;
+reg         operation_nd_mult, operation_nd_acc;
+wire        operation_rfd_mult, operation_rfd_acc;
+wire        rdy_mult, rdy_acc;
+wire        sclr_mult, sclr_acc;
+wire        ce_mult, ce_acc;
 wire [15:0] result_mult, result_acc;
 
 assign ce_mult = ~rdy_mult;
@@ -89,7 +89,7 @@ always @ (posedge clk or posedge rst) begin
         operation_nd_acc <= 0;
         result <= 0;
         conv_valid <= 0;
-        remain_op_num <= 0;
+        remain_op_num <= 32'h0000_0000_0000_0000;
         a_mult <= 0;
         b_mult <= 0;
         a_acc <= 0;
