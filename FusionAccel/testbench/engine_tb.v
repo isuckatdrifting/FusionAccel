@@ -1,7 +1,7 @@
 `timescale 1ns/1ps
-//`define CMAC
+`define CMAC
 //`define SACP
-`define SCMP
+//`define SCMP
 
 module engine_tb;
 

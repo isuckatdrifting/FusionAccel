@@ -1,4 +1,3 @@
-
 `timescale 1ns/1ps
 //`default_nettype none
 
@@ -39,9 +38,9 @@ module dma
 	input wire [15:0] 	 op_num
 	);
 
-localparam FIFO_SIZE = 1024;
-localparam BURST_LEN = 32;  // Number of 32bit(Port size) user words per DRAM command (Must be Multiple of 2)
-localparam PARA = 16;
+localparam 	FIFO_SIZE = 1024;
+localparam 	BURST_LEN = 6'd32;  // Number of 32bit(Port size) user words per DRAM command (Must be Multiple of 2)
+localparam 	PARA = 16;
 
 reg  [29:0] cmd_byte_addr_wr, cmd_byte_addr_rd;
 reg  [5:0]  burst_cnt;
@@ -66,8 +65,8 @@ localparam idle = 0,
            read_blob3 = 6,
            read_blob4 = 7;
 
-reg [2:0] curr_state;
-reg [2:0] next_state;
+reg [2:0] 	curr_state;
+reg [2:0] 	next_state;
 
 //    Current State, non-blocking
 always @ (posedge clk or posedge reset_d)    begin
@@ -121,7 +120,7 @@ always @(posedge clk or posedge reset_d) begin
 		burst_cnt <= 0;
 		cmd_byte_addr_wr <= start_addr;
 		cmd_byte_addr_rd <= start_addr;
-		cmd_instr <= 3'b0;
+		cmd_instr <= 3'b000;
 		cmd_byte_addr <= 30'b0;
 	end else begin
 		cmd_en <= 1'b0;

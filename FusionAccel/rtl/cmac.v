@@ -1,25 +1,25 @@
 module cmac(
-    input clk,
-    input rst,
-    input [15:0] data,
-    input [15:0] weight,
-    output [15:0] result,
-    input conv_ready,
-    input [31:0] op_num, //input op_num changes the same time as conv_ready pulls up
-    output rdy_acc,
-    output conv_valid
+    input           clk,
+    input           rst,
+    input  [15:0]   data,
+    input  [15:0]   weight,
+    output [15:0]   result,
+    input           conv_ready,
+    input  [31:0]   op_num, //input op_num changes the same time as conv_ready pulls up
+    output          rdy_acc,
+    output          conv_valid
 );
 
-reg [15:0] result;
-reg [15:0] a_mult, b_mult, a_acc, b_acc;
-reg conv_valid;
-reg [31:0] remain_op_num;
+reg [15:0]  result;
+reg [15:0]  a_mult, b_mult, a_acc, b_acc;
+reg         conv_valid;
+reg [15:0]  remain_op_num;
 
-reg operation_nd_mult, operation_nd_acc;
-wire operation_rfd_mult, operation_rfd_acc;
-wire rdy_mult, rdy_acc;
-wire sclr_mult, sclr_acc;
-wire ce_mult, ce_acc;
+reg         operation_nd_mult, operation_nd_acc;
+wire        operation_rfd_mult, operation_rfd_acc;
+wire        rdy_mult, rdy_acc;
+wire        sclr_mult, sclr_acc;
+wire        ce_mult, ce_acc;
 wire [15:0] result_mult, result_acc;
 
 assign ce_mult = ~rdy_mult;
@@ -85,11 +85,11 @@ end
 //    Output, non-blocking
 always @ (posedge clk or posedge rst) begin
     if (rst) begin
-        operation_nd_mult <= 1'b0;
-        operation_nd_acc <= 1'b0;
+        operation_nd_mult <= 0;
+        operation_nd_acc <= 0;
         result <= 0;
         conv_valid <= 0;
-        remain_op_num <= 0;
+        remain_op_num <= 32'h0000_0000_0000_0000;
         a_mult <= 0;
         b_mult <= 0;
         a_acc <= 0;
@@ -101,28 +101,28 @@ always @ (posedge clk or posedge rst) begin
                 remain_op_num <= op_num;
             end
             mult: begin
-                if(operation_rfd_mult) begin operation_nd_mult <= 1'b1; end
+                if(operation_rfd_mult) begin operation_nd_mult <= 1; end
                 if(data_permit_mult) begin a_mult <= data; b_mult <= weight; end
                 if(rdy_mult) begin
-                    operation_nd_mult <= 1'b0;
+                    operation_nd_mult <= 0;
                     if(remain_op_num == 0) begin a_mult <= 0; b_mult <= 0; end
                 end
             end
             acc: begin
-                if(operation_rfd_acc) begin operation_nd_acc <= 1'b1; end
+                if(operation_rfd_acc) begin operation_nd_acc <= 1; end
                 if(data_permit_acc) begin a_acc <= result_acc; b_acc <= result_mult; end
                 if(rdy_acc) begin 
-                    operation_nd_acc <= 1'b0; 
+                    operation_nd_acc <= 0; 
                     if(remain_op_num != 0) remain_op_num <= remain_op_num - 1; 
                     else b_acc <= weight;
                 end
             end
             bia: begin
-                if(operation_rfd_acc) begin operation_nd_acc <= 1'b1; end
+                if(operation_rfd_acc) begin operation_nd_acc <= 1; end
                 if(data_permit_acc) begin a_acc <= result_acc; b_acc <= weight; end
                 if(rdy_acc) begin 
                     a_acc <= 0; b_acc <= 0;
-                    operation_nd_acc <= 1'b0; 
+                    operation_nd_acc <= 0; 
                     conv_valid <= 1; 
                     result <= result_acc[15]?16'h0000:result_acc; 
                 end
