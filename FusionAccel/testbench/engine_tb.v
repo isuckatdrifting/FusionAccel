@@ -1,6 +1,6 @@
 `timescale 1ns/1ps
 //`define CMAC
-//`define SCAP
+//`define SACP
 `define SCMP
 
 module engine_tb;
@@ -51,7 +51,7 @@ initial begin
 end
 `endif
 
-`ifdef SCAP
+`ifdef SACP
 initial begin
 	pooldata = {16'h3757, 16'h39da, 16'h3b67, 16'h3376, 16'h3bb5, 16'h30da, 16'h3b8a, 16'h2675, 16'h3454, 16'h2d3e, 16'h39d1, 16'h3614, 16'h36dd,
 16'h304e, 16'h3023, 16'h3b02, 16'h3367, 16'h3b9d, 16'h32ff, 16'h387e, 16'h384d, 16'h3812, 16'h3bad, 16'h3587, 16'h33f5, 16'h3ab1,
