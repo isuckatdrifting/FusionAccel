@@ -62,13 +62,17 @@ initial begin
     reset = 1;
     clk = 0;
     writes_en = 0;
+	reads_en = 0;
     calib_done = 0;
     ib_count = 0;
+	ob_count = 0;
     ib_valid = 0;
+	rd_empty = 0;
     #10 reset = 0;
-    #100 writes_en = 1;
+    #100 reads_en = 1;
     calib_done = 1;
-    ib_count = 64;
+    ob_count = 64;
     #40 ib_valid = 1;
+
 end
 endmodule

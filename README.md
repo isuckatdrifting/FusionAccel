@@ -124,3 +124,6 @@ Maybe RCB or CRB is better than BRC or BCR, since it stores different channels o
 | Conv_single | Mult + 1 + Sum = 20 |
 | Pool 3x3 | Compare * 7 = 35 |
 | Pool 13x13 | Sum * 10 + Divide = 136 |
+
+Memory access time: width = 32, depth = 32, time = 32 * 30 + 10 = 970ns.
+64 per 970ns.
