@@ -49,40 +49,32 @@ wire [9:0] 	cmd_fifo_wr_count;
 // Control Signal Block for all cores
 //------------------------------------------------
 csb csb_(
-    .clk				(c3_clk0),
-    .rst_n				(ep00wire[3]),
-	.op_en				(ep00wire[4]),		// A wire from ep
+    .clk					(c3_clk0),
+    .rst_n					(ep00wire[3]),
+	.op_en					(ep00wire[4]),		// A wire from ep
 
-    .conv_valid			(conv_valid),
-	.conv_ready			(conv_ready),
-    .maxpool_valid		(maxpool_valid),
-	.maxpool_ready		(maxpool_ready),
-	.avepool_valid		(avepool_valid),
-	.avepool_ready		(avepool_ready),
+    .conv_valid				(conv_valid),
+	.conv_ready				(conv_ready),
+    .maxpool_valid			(maxpool_valid),
+	.maxpool_ready			(maxpool_ready),
+	.avepool_valid			(avepool_valid),
+	.avepool_ready			(avepool_ready),
 
-	.cmd_fifo_wr_count	(cmd_fifo_wr_count),
-	.cmd				(cmd_fifo_dout),
-	.cmd_fifo_empty		(cmd_fifo_empty),
-	.cmd_size			(),
-	.cmd_fifo_rd_en		(cmd_fifo_rd_en),
+	.cmd_fifo_wr_count		(cmd_fifo_wr_count),
+	.cmd					(cmd_fifo_dout),
+	.cmd_fifo_empty			(cmd_fifo_empty),
+	.cmd_size				(),
+	.cmd_fifo_rd_en			(cmd_fifo_rd_en),
 
-	.op_type			(op_type),
-	.op_num				(op_num),
-	.weight_start_addr	(),
-	.data_start_addr	(),
-    .writeback_addr		(writeback_addr),
-	.op_run				(op_run),
+	.op_type				(op_type),
+	.op_num					(op_num),
+	.weight_start_addr		(),
+	.data_start_addr		(),
+    .writeback_addr			(writeback_addr),
+	.op_run					(op_run),
+	.dma_cmd_reads_en		(dma_cmd_reads_en),
 
-	.dma_p0_reads_en		(dma_p0_reads_en),
-    .dma_p0_writes_en		(dma_p0_writes_en),
-    .dma_p1_reads_en		(dma_p1_reads_en),
-    .dma_p1_writes_en		(dma_p1_writes_en),
-	.dma_p2_reads_en		(dma_p2_reads_en),
-    .dma_p2_writes_en		(dma_p2_writes_en),
-    .dma_p3_reads_en		(dma_p3_reads_en),
-    .dma_p3_writes_en		(dma_p3_writes_en),
-    
-    .irq				(irq));
+    .irq					(irq));
 
 engine engine_(
 	.clk					(c3_clk0),
@@ -111,7 +103,17 @@ engine engine_(
 	.p0_result				(p0_result_din),
 	.p1_result				(p1_result_din),
 	.p0_result_fifo_wr_en	(p0_result_fifo_wr_en),
-	.p1_result_fifo_wr_en	(p1_result_fifo_wr_en)
+	.p1_result_fifo_wr_en	(p1_result_fifo_wr_en),
+	
+	.dma_p0_reads_en		(dma_p0_reads_en),
+    .dma_p0_writes_en		(dma_p0_writes_en),
+    .dma_p1_reads_en		(dma_p1_reads_en),
+    .dma_p1_writes_en		(dma_p1_writes_en),
+	.dma_p2_reads_en		(dma_p2_reads_en),
+    .dma_p2_writes_en		(dma_p2_writes_en),
+    .dma_p3_reads_en		(dma_p3_reads_en),
+    .dma_p3_writes_en		(dma_p3_writes_en)
+    
 );
 
 
@@ -373,7 +375,7 @@ assign pipe_out_data = ep00wire[4] ? 32'h0000_0000: dma_p0_data;
 dma dma_p0 ( // only dma_p0 and p2 can write to sdram, port0, conv3x3 data, maxpool data, avepool data, result write back
 	.clk			(c3_clk0),
 	.reset			(ep00wire[2] | c3_rst0), 
-	.reads_en		(ep00wire[0] | dma_p0_reads_en),		//in		-- okPipeOut/cmd/data0 FIFO
+	.reads_en		(ep00wire[0] | dma_p0_reads_en | dma_cmd_reads_en),	//in	-- okPipeOut/cmd/data0 FIFO
 	.writes_en		(ep00wire[1]),			//in		-- okPipeIn
 	.calib_done		(c3_calib_done), 
 

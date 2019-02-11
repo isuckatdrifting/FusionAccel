@@ -26,7 +26,16 @@ module engine(
 	output [15:0]	p0_result,
 	output [15:0]	p1_result,
 	output			p0_result_fifo_wr_en,
-	output			p1_result_fifo_wr_en
+	output			p1_result_fifo_wr_en,
+
+    output          dma_p0_reads_en,
+    output          dma_p0_writes_en,
+    output          dma_p1_reads_en,
+    output          dma_p1_writes_en,
+    output          dma_p2_reads_en,
+    output          dma_p2_writes_en,
+    output          dma_p3_reads_en,
+    output          dma_p3_writes_en
 	
 );
 
@@ -70,6 +79,9 @@ reg			writeback_finish;
 reg 		p0_data_fifo_rd_en, p1_data_fifo_rd_en, p0_weight_fifo_rd_en, p1_weight_fifo_rd_en;
 reg	 [15:0] p0_result, p1_result;
 reg			p0_result_fifo_wr_en, p1_result_fifo_wr_en;
+
+//DMA enable signal
+reg			dma_p0_reads_en, dma_p0_writes_en, dma_p1_reads_en, dma_p1_writes_en, dma_p2_reads_en, dma_p2_writes_en, dma_p3_reads_en, dma_p3_writes_en;
 
 always @(op_type or conv_valid_0 or conv_valid_1 or avepool_valid_0 or maxpool_valid_0) begin
 	case(op_type)
@@ -234,6 +246,8 @@ always @ (posedge clk or posedge rst) begin
 		maxpool_valid <= 0;
 		p0_result_fifo_wr_en <= 0; p1_result_fifo_wr_en <= 0;
 		p0_result <= 16'h0000; p1_result <= 16'h0000;
+		dma_p0_reads_en <= 0; dma_p1_reads_en <= 0;
+        dma_p2_reads_en <= 0; dma_p3_reads_en <= 0;
 	end else begin
 		for(a=0;a<CONV_BURST_LEN;a=a+1) begin: clear_conv_ready
 			if(conv_valid_0[a]) conv_ready_0[a] <= 0;
@@ -248,6 +262,7 @@ always @ (posedge clk or posedge rst) begin
 			conv_busy: begin
 				case (op_type)
 					CONV1: begin 
+						dma_p2_reads_en <= 1; dma_p3_reads_en <= 1;
 						conv_burst_cnt <= conv_burst_cnt + 1;
 						conv_ready_1[conv_burst_cnt] <= 1; 
 						if(conv_burst_cnt < 16) begin 
@@ -259,6 +274,7 @@ always @ (posedge clk or posedge rst) begin
 						end
 					end
 					CONV3: begin 
+						dma_p0_reads_en <= 1; dma_p1_reads_en <= 1;
 						conv_burst_cnt <= conv_burst_cnt + 1;
 						conv_ready_0[conv_burst_cnt] <= 1;
 						if(conv_burst_cnt < 16) begin 
@@ -270,6 +286,7 @@ always @ (posedge clk or posedge rst) begin
 						end
 					end
 					CONVP: begin 
+						dma_p0_reads_en <= 1; dma_p1_reads_en <= 1; dma_p2_reads_en <= 1; dma_p3_reads_en <= 1;
 						conv_burst_cnt <= conv_burst_cnt + 1;
 						conv_ready_0[conv_burst_cnt] <= 1; conv_ready_1[conv_burst_cnt] <= 1; 
 						if(conv_burst_cnt < 16) begin 
@@ -285,6 +302,7 @@ always @ (posedge clk or posedge rst) begin
 			end
 			conv_clear: begin
 				conv_burst_cnt <= 0;
+				dma_p0_reads_en <= 0; dma_p1_reads_en <= 0; dma_p2_reads_en <= 0; dma_p3_reads_en <= 0;
 			end
 			maxpool_busy: begin
 				case(op_type)
@@ -302,6 +320,7 @@ always @ (posedge clk or posedge rst) begin
 			end
 			maxpool_clear: begin
 				pool_burst_cnt <= 0;
+				dma_p0_reads_en <= 0;
 			end
 			avepool_busy: begin
 				case (op_type)
@@ -319,6 +338,7 @@ always @ (posedge clk or posedge rst) begin
 			end
 			avepool_clear: begin
 				pool_burst_cnt <= 0;
+				dma_p0_reads_en <= 0;
 			end
 			writeback: begin
 				case (op_type)
@@ -464,5 +484,4 @@ always@(posedge clk) begin
 		end
 	end
 end
-//TODO: Merged Write back to csb
 endmodule
