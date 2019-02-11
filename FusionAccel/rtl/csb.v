@@ -24,14 +24,14 @@ module csb(
     output [31:0]   writeback_addr,
     output          op_run,
 
-    output          p0_reads_en,
-    output          p0_writes_en,
-    output          p1_reads_en,
-    output          p1_writes_en,
-    output          p2_reads_en,
-    output          p2_writes_en,
-    output          p3_reads_en,
-    output          p3_writes_en,
+    output          dma_p0_reads_en,
+    output          dma_p0_writes_en,
+    output          dma_p1_reads_en,
+    output          dma_p1_writes_en,
+    output          dma_p2_reads_en,
+    output          dma_p2_writes_en,
+    output          dma_p3_reads_en,
+    output          dma_p3_writes_en,
     
     output          irq
 );
@@ -104,7 +104,7 @@ reg [15:0]  n_count;             //TODO: n_count from 0 to op_num, step = conv k
 reg         op_run;                     //Output, indicating p0 transfers command or data
 
 //DMA enable signal
-reg         p0_reads_en, p0_writes_en, p1_reads_en, p1_writes_en, p2_reads_en, p2_writes_en, p3_reads_en, p3_writes_en;
+reg         dma_p0_reads_en, dma_p0_writes_en, dma_p1_reads_en, dma_p1_writes_en, dma_p2_reads_en, dma_p2_writes_en, dma_p3_reads_en, dma_p3_writes_en;
 reg         irq;                        //Output, interrupt signal
 
 //State Machine
@@ -162,33 +162,33 @@ end
 //DMA Accesss commands
 always @ (posedge clk or negedge rst_n) begin
     if(!rst_n) begin
-        p0_reads_en <= 0; p1_reads_en <= 0;
-        p2_reads_en <= 0; p3_reads_en <= 0;
+        dma_p0_reads_en <= 0; dma_p1_reads_en <= 0;
+        dma_p2_reads_en <= 0; dma_p3_reads_en <= 0;
     end else begin
         //Fifo logic: reads_en --> ob_we --> din->fifo --> fifo_rd_en
         //DMA Access: get command
-        if(op_en) p0_reads_en <= 1; //Assert to DMA readout, DMA writing data to FIFO
+        if(op_en) dma_p0_reads_en <= 1; //Assert to DMA readout, DMA writing data to FIFO
         if(cmd_fifo_wr_count == cmd_size * 6) begin
-            p0_reads_en <= 0;       //Read command
+            dma_p0_reads_en <= 0;       //Read command
         end
         //DMA Access: get data and weight
         if(cmd_collect_done) begin
             case(op_type)
-                1:begin p2_reads_en <= 1; p3_reads_en <= 1; end  //Conv1x1
-                2:begin p0_reads_en <= 1; p1_reads_en <= 1; end  //Conv3x3
-                3:begin p0_reads_en <= 1; p1_reads_en <= 1; p2_reads_en <= 1; p3_reads_en <= 1; end  //Conv3x3
-                4:begin p0_reads_en <= 1; p1_reads_en <= 1; end  //Maxpool3x3
-                5:begin p0_reads_en <= 1; p1_reads_en <= 1; end  //Avepool13x13
+                1:begin dma_p2_reads_en <= 1; dma_p3_reads_en <= 1; end  //Conv1x1
+                2:begin dma_p0_reads_en <= 1; dma_p1_reads_en <= 1; end  //Conv3x3
+                3:begin dma_p0_reads_en <= 1; dma_p1_reads_en <= 1; dma_p2_reads_en <= 1; dma_p3_reads_en <= 1; end  //Conv3x3
+                4:begin dma_p0_reads_en <= 1; dma_p1_reads_en <= 1; end  //Maxpool3x3
+                5:begin dma_p0_reads_en <= 1; dma_p1_reads_en <= 1; end  //Avepool13x13
                 default:;
             endcase
         end
         if(op_done) begin
             case(op_type)
-                1:begin p2_reads_en <= 0; p3_reads_en <= 0; end  //Conv1x1
-                2:begin p0_reads_en <= 0; p1_reads_en <= 0; end  //Conv3x3
-                3:begin p0_reads_en <= 0; p1_reads_en <= 0; p2_reads_en <= 0; p3_reads_en <= 0; end  //Conv3x3
-                4:begin p0_reads_en <= 0; p1_reads_en <= 0; end  //Maxpool3x3
-                5:begin p0_reads_en <= 0; p1_reads_en <= 0; end  //Avepool13x13
+                1:begin dma_p2_reads_en <= 0; dma_p3_reads_en <= 0; end  //Conv1x1
+                2:begin dma_p0_reads_en <= 0; dma_p1_reads_en <= 0; end  //Conv3x3
+                3:begin dma_p0_reads_en <= 0; dma_p1_reads_en <= 0; dma_p2_reads_en <= 0; dma_p3_reads_en <= 0; end  //Conv3x3
+                4:begin dma_p0_reads_en <= 0; dma_p1_reads_en <= 0; end  //Maxpool3x3
+                5:begin dma_p0_reads_en <= 0; dma_p1_reads_en <= 0; end  //Avepool13x13
                 default:;
             endcase
         end
