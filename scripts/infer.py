@@ -14,7 +14,7 @@ net = caffe.Net(model_def, model_weights, caffe.TEST)
 # Load the mean ImageNet image for subtraction
 mu = np.load('./ilsvrc_2012_mean.npy')
 mu = mu.mean(1).mean(1)
-print('mean-substracted values: ', zip('BGR', mu))
+print('mean-substracted values: ', list(zip('BGR', mu)))
 
 # create transformer for the input called 'data'
 transformer = caffe.io.Transformer({'data': net.blobs['data'].data.shape})
@@ -48,10 +48,11 @@ labels = np.loadtxt(labels_file, str, delimiter = '\t')
 
 print('output label:', labels[output_prob.argmax()])
 
-top_inds = output_prob.argsort()[::-1][:5] # reverse sort and take five largest items
+top_inds = np.argsort(-output_prob.reshape(-1))[0:5] # reverse sort and take five largest items
 
 print('probabilities and labels:')
-zip(output_prob[top_inds], labels[top_inds])
+for i in top_inds:
+    print(str(output_prob[i]) + '\t' + str(labels[i]))
 
 ##################Intermediate Output#####################
 for layer_name, blob in net.blobs.items():
