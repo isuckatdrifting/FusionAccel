@@ -1,6 +1,7 @@
 import numpy as np
 import sys
 import caffe
+import struct
 
 #######################Inference###########################
 caffe.set_mode_cpu()
@@ -55,12 +56,19 @@ for i in top_inds:
     print(str(output_prob[i]) + '\t' + str(labels[i]))
 
 ##################Intermediate Output#####################
+f = open('./tmp/intermediate.txt', "w")
 for layer_name, blob in net.blobs.items():
     print(layer_name + '\t' + str(blob.data.shape))
-    # output_channels, input_channels, filter_height, filter_width
+    filters = net.blobs[layer_name].data # intermediate responses of the filters (first 36 only) 
+                                         # output_channels, input_channels, filter_height, filter_width
+    # print(filters)
+    dat = filters.reshape(1, -1)[0][0:1].astype(dtype=np.float16) # get the first two of the layer output
+    print(dat)
+    f.write(str(layer_name) + '\t')
+    for i in dat:
+        f.write(str(hex(struct.unpack('<H', i)[0])).replace('0x','').zfill(4)+' ') #Little-endian
+    f.write("\n")
+f.close()
 
 for layer_name, param in net.params.items():
     print(layer_name + '\t' + str(param[0].data.shape), str(param[1].data.shape))
-
-filters = net.blobs['conv1'].data[0, :36] # intermediate responses of the filters (first 36 only)
-print(filters)
