@@ -132,5 +132,6 @@ Memory access time: width = 32, depth = 32, time = 32 * 30 + 10 = 970ns.
 //reshape reshape_(); //Memory Reshape and Concatenation Core
 //acti acti_(); //Activation Core
 //lut lut_(); //Loop up table for activation and lrn cores
-//lrn lrn_(); //Local response normalization Core
-s
+//lrn lrn_(); //Local response normalization Cores
+
+Dropout Layer is disabled in test.
