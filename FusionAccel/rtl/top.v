@@ -657,10 +657,4 @@ fifo_w32_1024_r32_1024 p1_result_fifo (
 	.rd_data_count	(), 					// output, Bus [9 : 0] 
 	.wr_data_count	()); 					// output, Bus [9 : 0] 
 
-//--------------v2, More complicate Cores for Other Function and Networks--//
-//reshape reshape_(); //Memory Reshape and Concatenation Core
-//acti acti_(); //Activation Core
-//lut lut_(); //Loop up table for activation and lrn cores
-//lrn lrn_(); //Local response normalization Core
-
 endmodule
