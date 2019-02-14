@@ -2,8 +2,10 @@ import numpy as np
 import sys
 import caffe
 import struct
+import time
 
 #######################Inference###########################
+start_0 = time.clock()
 caffe.set_mode_cpu()
 model_def = '/mnt/c/Users/shish/source/repos/SqueezeNet/SqueezeNet_v1.1/deploy.prototxt'
 model_weights = '/mnt/c/Users/shish/source/repos/SqueezeNet/SqueezeNet_v1.1/squeezenet_v1.1.caffemodel'
@@ -36,8 +38,9 @@ transformed_image = transformer.preprocess('data', image)
 net.blobs['data'].data[...] = transformed_image
 
 # perform classification
+start_1 = time.clock()
 output = net.forward()
-
+end_1 = time.clock()
 output_prob = output['prob'][0] # the output probability vector for the first image in the batch
 
 print('predicted class is: ', output_prob.argmax())
@@ -54,6 +57,11 @@ top_inds = np.argsort(-output_prob.reshape(-1))[0:5] # reverse sort and take fiv
 print('probabilities and labels:')
 for i in top_inds:
     print(str(output_prob[i]) + '\t' + str(labels[i]))
+end_0 = time.clock()
+
+#################Report Execution Time####################
+print('Net forward time: %s' % str(end_1-start_1))
+print('Overall execution time: %s' % str(end_0-start_0))
 
 ##################Intermediate Output#####################
 f = open('./tmp/intermediate.txt', "w")
