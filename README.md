@@ -127,3 +127,10 @@ Maybe RCB or CRB is better than BRC or BCR, since it stores different channels o
 
 Memory access time: width = 32, depth = 32, time = 32 * 30 + 10 = 970ns.
 64 per 970ns.
+
+//--------------v2, More complicate Cores for Other Function and Networks--//
+//reshape reshape_(); //Memory Reshape and Concatenation Core
+//acti acti_(); //Activation Core
+//lut lut_(); //Loop up table for activation and lrn cores
+//lrn lrn_(); //Local response normalization Core
+s
