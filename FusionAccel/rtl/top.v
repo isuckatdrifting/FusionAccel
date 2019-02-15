@@ -40,7 +40,7 @@ wire 		op_en;
 wire [2:0] 	op_type;
 wire [15:0] op_num;
 wire [31:0] cmd_fifo_dout;
-wire [31:0] p0_data_fifo_dout, p0_weight_fifo_dout, p1_data_fifo_dout, p1_weight_fifo_dout;
+wire [31:0] p2_data_fifo_dout, p3_weight_fifo_dout, p4_data_fifo_dout, p5_weight_fifo_dout;
 wire [15:0] p0_result_din, p1_result_din;
 wire 		p0_result_fifo_wr_en, p1_result_fifo_wr_en;
 wire [9:0] 	cmd_fifo_wr_count;
@@ -92,28 +92,27 @@ engine engine_(
 	.avepool_valid			(avepool_valid),
 
 	//Data path from dma -> fifos
-	.p0_data_fifo_rd_en 	(p0_data_fifo_rd_en),
-	.data_0					(p0_data_fifo_dout),
-	.p0_weight_fifo_rd_en 	(p0_weight_fifo_rd_en),
-	.weight_0				(p0_weight_fifo_dout),
-	.p1_data_fifo_rd_en 	(p1_data_fifo_rd_en),
-	.data_1					(p1_data_fifo_dout),
-	.p1_weight_fifo_rd_en 	(p1_weight_fifo_rd_en),
-	.weight_1				(p1_weight_fifo_dout),
+	.data_0					(p2_data_fifo_dout),
+	.weight_0				(p3_weight_fifo_dout),
+	.data_1					(p4_data_fifo_dout),
+	.weight_1				(p5_weight_fifo_dout),
+
+	.p2_data_fifo_rd_en 	(p2_data_fifo_rd_en),
+	.p3_weight_fifo_rd_en 	(p3_weight_fifo_rd_en),
+	.p4_data_fifo_rd_en 	(p4_data_fifo_rd_en),
+	.p5_weight_fifo_rd_en 	(p5_weight_fifo_rd_en),
 	
 	.p0_result				(p0_result_din),
 	.p1_result				(p1_result_din),
 	.p0_result_fifo_wr_en	(p0_result_fifo_wr_en),
 	.p1_result_fifo_wr_en	(p1_result_fifo_wr_en),
 	
-	.dma_p0_reads_en		(dma_p0_reads_en),
-    .dma_p0_writes_en		(dma_p0_writes_en),
-    .dma_p1_reads_en		(dma_p1_reads_en),
-    .dma_p1_writes_en		(dma_p1_writes_en),
 	.dma_p2_reads_en		(dma_p2_reads_en),
-    .dma_p2_writes_en		(dma_p2_writes_en),
     .dma_p3_reads_en		(dma_p3_reads_en),
-    .dma_p3_writes_en		(dma_p3_writes_en)
+	.dma_p4_reads_en		(dma_p4_reads_en),
+    .dma_p5_reads_en		(dma_p5_reads_en),
+    .dma_p0_writes_en		(dma_p0_writes_en),
+    .dma_p1_writes_en		(dma_p1_writes_en)
     
 );
 
@@ -130,27 +129,27 @@ reg         c3_sys_rst_n;
 wire        c3_rst0;
 wire        c3_pll_lock;
 
-wire        c3_p0_cmd_en, c3_p1_cmd_en, c3_p2_cmd_en, c3_p3_cmd_en;
-wire [2:0]  c3_p0_cmd_instr, c3_p1_cmd_instr, c3_p2_cmd_instr, c3_p3_cmd_instr;
-wire [5:0]  c3_p0_cmd_bl, c3_p1_cmd_bl, c3_p2_cmd_bl, c3_p3_cmd_bl;
-wire [29:0] c3_p0_cmd_byte_addr, c3_p1_cmd_byte_addr, c3_p2_cmd_byte_addr, c3_p3_cmd_byte_addr;
-wire        c3_p0_cmd_empty, c3_p1_cmd_empty, c3_p2_cmd_empty, c3_p3_cmd_empty;
-wire        c3_p0_cmd_full, c3_p1_cmd_full, c3_p2_cmd_full, c3_p3_cmd_full;
-wire        c3_p0_wr_en, c3_p1_wr_en, c3_p2_wr_en, c3_p3_wr_en;
-wire [3:0]  c3_p0_wr_mask, c3_p1_wr_mask, c3_p2_wr_mask, c3_p3_wr_mask;
-wire [31:0] c3_p0_wr_data, c3_p1_wr_data, c3_p2_wr_data, c3_p3_wr_data;
-wire        c3_p0_wr_full, c3_p1_wr_full, c3_p2_wr_full, c3_p3_wr_full;
-wire        c3_p0_wr_empty, c3_p1_wr_empty, c3_p2_wr_empty, c3_p3_wr_empty;
-wire [6:0]  c3_p0_wr_count, c3_p1_wr_count, c3_p2_wr_count, c3_p3_wr_count;
-wire        c3_p0_wr_underrun, c3_p1_wr_underrun, c3_p2_wr_underrun, c3_p3_wr_underrun;
-wire        c3_p0_wr_error, c3_p1_wr_error, c3_p2_wr_error, c3_p3_wr_error;
-wire        c3_p0_rd_en, c3_p1_rd_en, c3_p2_rd_en, c3_p3_rd_en;
-wire [31:0] c3_p0_rd_data, c3_p1_rd_data, c3_p2_rd_data, c3_p3_rd_data;
-wire        c3_p0_rd_full, c3_p1_rd_full, c3_p2_rd_full, c3_p3_rd_full;
-wire        c3_p0_rd_empty, c3_p1_rd_empty, c3_p2_rd_empty, c3_p3_rd_empty;
-wire [6:0]  c3_p0_rd_count, c3_p1_rd_count, c3_p2_rd_count, c3_p3_rd_count;
-wire        c3_p0_rd_overflow, c3_p1_rd_overflow, c3_p2_rd_overflow, c3_p3_rd_overflow;
-wire        c3_p0_rd_error, c3_p1_rd_error, c3_p2_rd_error, c3_p3_rd_error;
+wire        c3_p0_cmd_en, c3_p1_cmd_en, c3_p2_cmd_en, c3_p3_cmd_en, c3_p4_cmd_en, c3_p5_cmd_en;
+wire [2:0]  c3_p0_cmd_instr, c3_p1_cmd_instr, c3_p2_cmd_instr, c3_p3_cmd_instr, c3_p4_cmd_instr, c3_p5_cmd_instr;
+wire [5:0]  c3_p0_cmd_bl, c3_p1_cmd_bl, c3_p2_cmd_bl, c3_p3_cmd_bl, c3_p4_cmd_bl, c3_p5_cmd_bl;
+wire [29:0] c3_p0_cmd_byte_addr, c3_p1_cmd_byte_addr, c3_p2_cmd_byte_addr, c3_p3_cmd_byte_addr, c3_p4_cmd_byte_addr, c3_p5_cmd_byte_addr;
+wire        c3_p0_cmd_empty, c3_p1_cmd_empty, c3_p2_cmd_empty, c3_p3_cmd_empty, c3_p4_cmd_empty, c3_p5_cmd_empty;
+wire        c3_p0_cmd_full, c3_p1_cmd_full, c3_p2_cmd_full, c3_p3_cmd_full, c3_p4_cmd_full, c3_p5_cmd_full;
+wire        c3_p0_wr_en, c3_p1_wr_en;
+wire [3:0]  c3_p0_wr_mask, c3_p1_wr_mask;
+wire [31:0] c3_p0_wr_data, c3_p1_wr_data;
+wire        c3_p0_wr_full, c3_p1_wr_full;
+wire        c3_p0_wr_empty, c3_p1_wr_empty;
+wire [6:0]  c3_p0_wr_count, c3_p1_wr_count;
+wire        c3_p0_wr_underrun, c3_p1_wr_underrun;
+wire        c3_p0_wr_error, c3_p1_wr_error;
+wire        c3_p0_rd_en, c3_p1_rd_en, c3_p2_rd_en, c3_p3_rd_en, c3_p4_rd_en, c3_p5_rd_en;
+wire [31:0] c3_p0_rd_data, c3_p1_rd_data, c3_p2_rd_data, c3_p3_rd_data, c3_p4_rd_data, c3_p5_rd_data;
+wire        c3_p0_rd_full, c3_p1_rd_full, c3_p2_rd_full, c3_p3_rd_full, c3_p4_rd_full, c3_p5_rd_full;
+wire        c3_p0_rd_empty, c3_p1_rd_empty, c3_p2_rd_empty, c3_p3_rd_empty, c3_p4_rd_empty, c3_p5_rd_empty;
+wire [6:0]  c3_p0_rd_count, c3_p1_rd_count, c3_p2_rd_count, c3_p3_rd_count, c3_p4_rd_count, c3_p5_rd_count;
+wire        c3_p0_rd_overflow, c3_p1_rd_overflow, c3_p2_rd_overflow, c3_p3_rd_overflow, c3_p4_rd_overflow, c3_p5_rd_overflow;
+wire        c3_p0_rd_error, c3_p1_rd_error, c3_p2_rd_error, c3_p3_rd_error, c3_p4_rd_error, c3_p5_rd_error;
 
 // Front Panel
 
@@ -163,13 +162,13 @@ wire [31:0]  ep00wire;
 
 wire        pipe_in_start;
 wire        pipe_in_done;
-wire        pipe_in_read;
-wire [31:0] pipe_in_data;
-wire [9:0]  pipe_in_rd_count;
+wire        pipe_in_read, p0_result_fifo_rd_en, p1_result_fifo_rd_en, p0_ib_re;
+wire [31:0] pipe_in_data, p0_result_fifo_dout, p1_result_fifo_dout, p0_ib_data;
+wire [9:0]  pipe_in_rd_count, p0_result_fifo_rd_count, p1_result_fifo_rd_count, p0_ib_count;
 wire [9:0]  pipe_in_wr_count;
-wire        pipe_in_valid;
+wire        pipe_in_valid, p0_result_fifo_valid, p1_result_fifo_valid, p0_ib_valid;
 wire        pipe_in_full;
-wire        pipe_in_empty;
+wire        pipe_in_empty, p0_result_fifo_empty, p1_result_fifo_empty, p0_ib_empty;
 reg         pipe_in_ready;
 
 wire        pipe_out_start;
@@ -335,25 +334,49 @@ memc3_inst (
 	.c3_p3_rd_empty         (c3_p3_rd_empty),
 	.c3_p3_rd_count         (c3_p3_rd_count),
 	.c3_p3_rd_overflow      (c3_p3_rd_overflow),
-	.c3_p3_rd_error         (c3_p3_rd_error));
+	.c3_p3_rd_error         (c3_p3_rd_error),
+	
+	.c3_p4_cmd_clk			(c3_clk0),
+	.c3_p4_cmd_en           (c3_p4_cmd_en),
+	.c3_p4_cmd_instr        (c3_p4_cmd_instr),
+	.c3_p4_cmd_bl           (c3_p4_cmd_bl),
+	.c3_p4_cmd_byte_addr    (c3_p4_cmd_byte_addr),
+	.c3_p4_cmd_empty        (c3_p4_cmd_empty),
+	.c3_p4_cmd_full         (c3_p4_cmd_full),
+
+	.c3_p4_rd_clk			(c3_clk0),
+	.c3_p4_rd_en            (c3_p4_rd_en),
+	.c3_p4_rd_data          (c3_p4_rd_data),
+	.c3_p4_rd_full          (c3_p4_rd_full),
+	.c3_p4_rd_empty         (c3_p4_rd_empty),
+	.c3_p4_rd_count         (c3_p4_rd_count),
+	.c3_p4_rd_overflow      (c3_p4_rd_overflow),
+	.c3_p4_rd_error         (c3_p4_rd_error),
+	
+	.c3_p5_cmd_clk			(c3_clk0),
+	.c3_p5_cmd_en           (c3_p5_cmd_en),
+	.c3_p5_cmd_instr        (c3_p5_cmd_instr),
+	.c3_p5_cmd_bl           (c3_p5_cmd_bl),
+	.c3_p5_cmd_byte_addr    (c3_p5_cmd_byte_addr),
+	.c3_p5_cmd_empty        (c3_p5_cmd_empty),
+	.c3_p5_cmd_full         (c3_p5_cmd_full),
+
+	.c3_p5_rd_clk			(c3_clk0),
+	.c3_p5_rd_en            (c3_p5_rd_en),
+	.c3_p5_rd_data          (c3_p5_rd_data),
+	.c3_p5_rd_full          (c3_p5_rd_full),
+	.c3_p5_rd_empty         (c3_p5_rd_empty),
+	.c3_p5_rd_count         (c3_p5_rd_count),
+	.c3_p5_rd_overflow      (c3_p5_rd_overflow),
+	.c3_p5_rd_error         (c3_p5_rd_error));
 	
 //output MUX
-wire [9:0] 	p0_count, p0_weight_fifo_wr_data_count, p1_data_fifo_wr_data_count, p1_weight_fifo_wr_data_count, p0_data_fifo_wr_data_count;
-wire 	   	p0_data_fifo_wr_en;
-wire 		cmd_fifo_wr_en;
-wire [31:0] cmd_fifo_din;
-wire [31:0] dma_p0_ob_data, dma_p1_ob_data, dma_p2_ob_data, dma_p3_ob_data;
-wire [31:0] p0_data_fifo_din;
-assign p0_count = ep00wire[4]?(op_run?p0_data_fifo_wr_data_count:cmd_fifo_wr_count):pipe_out_wr_count;
-assign p0_data_fifo_wr_en = (ep00wire[4] & op_run) ? dma_p0_we: 1'b0;
-assign p0_data_fifo_din = (ep00wire[4] & op_run) ? dma_p0_ob_data: 32'h0000_0000;
-assign cmd_fifo_wr_en = (ep00wire[4] & ~op_run) ? dma_p0_we: 1'b0;
-assign cmd_fifo_din = (ep00wire[4] & ~op_run) ? dma_p0_ob_data: 32'h0000_0000;
-assign pipe_out_write = ep00wire[4] ? 1'b0: dma_p0_we;
-assign pipe_out_data = ep00wire[4] ? 32'h0000_0000: dma_p0_ob_data;
+wire [9:0] p2_data_fifo_wr_data_count, p3_weight_fifo_wr_data_count, p4_data_fifo_wr_data_count, p5_weight_fifo_wr_data_count;
 
-wire [29:0] dma_p0_start_addr, dma_p1_start_addr, dma_p2_start_addr, dma_p3_start_addr;
-wire [15:0] dma_p0_op_num, dma_p1_op_num, dma_p2_op_num, dma_p3_op_num;
+wire [31:0] dma_p0_ob_data, dma_p1_ob_data, dma_p2_ob_data, dma_p3_ob_data, dma_p4_ob_data, dma_p5_ob_data;
+
+wire [29:0] dma_p0_start_addr, dma_p1_start_addr, dma_p2_start_addr, dma_p3_start_addr, dma_p4_start_addr,  dma_p5_start_addr;
+wire [15:0] dma_p0_op_num, dma_p1_op_num, dma_p2_op_num, dma_p3_op_num, dma_p4_op_num, dma_p5_op_num;
 
 assign dma_p0_start_addr = ep00wire[4]?data_start_addr:30'h0000_0000;
 assign dma_p1_start_addr = ep00wire[4]?weight_start_addr:30'h0000_0000;
@@ -364,26 +387,30 @@ assign dma_p1_op_num = ep00wire[4]?op_num:16'h0000;
 assign dma_p2_op_num = ep00wire[4]?op_num:16'h0000;
 assign dma_p3_op_num = ep00wire[4]?op_num:16'h0000;
 
-wire [31:0] p0_result_fifo_dout, p1_result_fifo_dout;
-wire p0_result_fifo_empty, p1_result_fifo_empty, p0_result_fifo_full, p1_result_fifo_full;
+assign p0_result_fifo_rd_en = dma_p0_writes_en ? p0_ib_re : 0;
+assign pipe_in_read = dma_p0_writes_en ? 0 : p0_ib_re;
+assign p0_ib_data = dma_p0_writes_en ? p0_result_fifo_dout : pipe_in_data;
+assign p0_ib_count = dma_p0_writes_en ? p0_result_fifo_rd_count : pipe_in_rd_count;
+assign p0_ib_valid = dma_p0_writes_en ? p0_result_fifo_valid : pipe_in_valid;
+assign p0_ib_empty = dma_p0_writes_en ? p0_result_fifo_empty : pipe_in_empty;
 
 //TODO: Add input start address and parsing in dma
-dma dma_p0 ( // only dma_p0 and p2 can write to sdram, port0, conv3x3 data, maxpool data, avepool data, result write back
+dma dma_p0 ( // Read/Write, port0, pipeout read, pipein write, result_0 write
 	.clk			(c3_clk0),
 	.reset			(ep00wire[2] | c3_rst0), 
-	.reads_en		(ep00wire[0] | dma_p0_reads_en | dma_cmd_reads_en),	//in	-- okPipeOut/cmd/data0 FIFO
+	.reads_en		(ep00wire[0]),			//in	-- okPipeOut/cmd/data0 FIFO
 	.writes_en		(ep00wire[1] | dma_p0_writes_en),			//in		-- okPipeIn
 	.calib_done		(c3_calib_done), 
 
-	.ib_re			(pipe_in_read),			//out		-- from okPipeIn
-	.ib_data		(pipe_in_data),			//in		-- from okPipeIn
-	.ib_count		(pipe_in_rd_count),		//in		-- from okPipeIn
-	.ib_valid		(pipe_in_valid),		//in		-- from okPipeIn
-	.ib_empty		(pipe_in_empty),		//in		-- from okPipeIn
+	.ib_re			(p0_ib_re),				//out		-- to okPipeIn
+	.ib_data		(p0_ib_data),			//in		-- from okPipeIn
+	.ib_count		(p0_ib_count),			//in		-- from okPipeIn
+	.ib_valid		(p0_ib_valid),			//in		-- from okPipeIn
+	.ib_empty		(p0_ib_empty),			//in		-- from okPipeIn
 
-	.ob_we			(dma_p0_we),			//out		-- to okPipeOut/cmd/data0 FIFO
-	.ob_data		(dma_p0_ob_data),			//out		-- to okPipeOut/cmd/data0 FIFO
-	.ob_count		(p0_count),				//in		-- from okPipeOut/cmd/data0 FIFO
+	.ob_we			(pipe_out_write),		//out		-- to okPipeOut/cmd/data0 FIFO
+	.ob_data		(pipe_out_data),		//out		-- to okPipeOut/cmd/data0 FIFO
+	.ob_count		(pipe_out_wr_count),	//in		-- from okPipeOut/cmd/data0 FIFO
 
 	.rd_en			(c3_p0_rd_en),  		//out		-- to MCB Port0
 	.rd_empty		(c3_p0_rd_empty), 		//in		-- from MCB Port0
@@ -402,16 +429,22 @@ dma dma_p0 ( // only dma_p0 and p2 can write to sdram, port0, conv3x3 data, maxp
 	.start_addr		(dma_p0_start_addr),	//in		-- from csb
 	.op_num			(dma_p0_op_num));		//in 		-- from csb
 
-dma dma_p1 ( // Read only, port1, conv3x3 weight
+dma dma_p1 ( // Read/Write, port1, cmd read, result1 write
 	.clk			(c3_clk0),
 	.reset			(ep00wire[2] | c3_rst0), 
 	.reads_en		(dma_p1_reads_en),		//in		-- weight0
-	.writes_en		(1'b0),	
+	.writes_en		(dma_p1_writes_en),	
 	.calib_done		(c3_calib_done), 
+	
+	.ib_re			(p1_result_fifo_rd_en),			//out		-- from
+	.ib_data		(p1_result_fifo_dout),			//in		-- from
+	.ib_count		(p1_result_fifo_rd_count),		//in		-- from
+	.ib_valid		(p1_result_fifo_valid),		//in		-- from
+	.ib_empty		(p1_result_fifo_empty),		//in		-- from
 
 	.ob_we			(dma_p1_ob_we),			//out		-- to weight0 FIFO
-	.ob_data		(dma_p1_ob_data),			//out		-- to weight0 FIFO
-	.ob_count		(p0_weight_fifo_wr_data_count),		//in		-- from weight0 FIFO
+	.ob_data		(dma_p1_ob_data),		//out		-- to weight0 FIFO
+	.ob_count		(cmd_fifo_wr_count),	//in		-- from weight0 FIFO
 
 	.rd_en			(c3_p1_rd_en),  		//out		-- to MCB Port1
 	.rd_empty		(c3_p1_rd_empty), 		//in		-- from MCB Port1
@@ -425,22 +458,16 @@ dma dma_p1 ( // Read only, port1, conv3x3 weight
 	.start_addr		(dma_p1_start_addr),	//in		-- from csb
 	.op_num			(dma_p1_op_num));		//in 		-- from csb
 
-dma dma_p2 ( // Read and Write, port2, conv1x1 data
+dma dma_p2 ( // Read Only, port2, conv3x3 data
 	.clk			(c3_clk0),
 	.reset			(ep00wire[2] | c3_rst0), 
 	.reads_en		(dma_p2_reads_en),		//in		-- data1
-	.writes_en		(dma_p2_writes_en),
+	.writes_en		(1'b0),
 	.calib_done		(c3_calib_done), 
 
-	.ib_re			(p1_result_fifo_rd_en),	//out		-- from
-	.ib_data		(),						//in		-- from
-	.ib_count		(),						//in		-- from
-	.ib_valid		(p1_result_fifo_valid),						//in		-- from
-	.ib_empty		(),						//in		-- from
-
 	.ob_we			(dma_p2_ob_we),			//out		-- to data1 FIFO
-	.ob_data		(dma_p2_ob_data),			//out		-- to data1 FIFO
-	.ob_count		(p1_data_fifo_wr_data_count),		//in		-- from data1 FIFO
+	.ob_data		(dma_p2_ob_data),		//out		-- to data1 FIFO
+	.ob_count		(p2_data_fifo_wr_data_count),		//in		-- from data1 FIFO
 
 	.rd_en			(c3_p2_rd_en),  		//out		-- to MCB Port2
 	.rd_empty		(c3_p2_rd_empty), 		//in		-- from MCB Port2
@@ -459,7 +486,7 @@ dma dma_p2 ( // Read and Write, port2, conv1x1 data
 	.start_addr		(dma_p2_start_addr),	//in		-- from csb
 	.op_num			(dma_p2_op_num));		//in 		-- from csb
 
-dma dma_p3 ( // Read Only, port3, conv1x1 weight
+dma dma_p3 ( // Read Only, port3, conv3x3 weight
 	.clk			(c3_clk0),
 	.reset			(ep00wire[2] | c3_rst0), 
 	.reads_en		(dma_p3_reads_en),		//in		-- weight1
@@ -468,7 +495,7 @@ dma dma_p3 ( // Read Only, port3, conv1x1 weight
 
 	.ob_we			(dma_p3_ob_we),			//out		-- to weight1 FIFO
 	.ob_data		(dma_p3_ob_data),			//out		-- to weight1 FIFO
-	.ob_count		(p1_weight_fifo_wr_data_count),		//in		-- from weight1 FIFO
+	.ob_count		(p3_weight_fifo_wr_data_count),		//in		-- from weight1 FIFO
 
 	.rd_en			(c3_p3_rd_en),  		//out		-- to MCB Port3
 	.rd_empty		(c3_p3_rd_empty), 		//in		-- from MCB Port3
@@ -481,6 +508,52 @@ dma dma_p3 ( // Read Only, port3, conv1x1 weight
 	.cmd_bl			(c3_p3_cmd_bl), 		//out		-- to MCB Port3
 	.start_addr		(dma_p3_start_addr),	//in		-- from csb
 	.op_num			(dma_p3_op_num));		//in 		-- from csb
+
+dma dma_p4 ( // Read Only, port4, conv1x1 data
+	.clk			(c3_clk0),
+	.reset			(ep00wire[2] | c3_rst0), 
+	.reads_en		(dma_p4_reads_en),		//in		-- weight1
+	.writes_en		(1'b0),
+	.calib_done		(c3_calib_done), 
+
+	.ob_we			(dma_p4_ob_we),			//out		-- to weight1 FIFO
+	.ob_data		(dma_p4_ob_data),		//out		-- to weight1 FIFO
+	.ob_count		(p4_data_fifo_wr_data_count),		//in		-- from weight1 FIFO
+
+	.rd_en			(c3_p4_rd_en),  		//out		-- to MCB Port3
+	.rd_empty		(c3_p4_rd_empty), 		//in		-- from MCB Port3
+	.rd_data		(c3_p4_rd_data), 		//in		-- from MCB Port3
+
+	.cmd_en			(c3_p4_cmd_en),			//out		-- to MCB Port3
+	.cmd_full		(c3_p4_cmd_full), 		//in		-- from MCB Port3
+	.cmd_instr		(c3_p4_cmd_instr),		//out		-- to MCB Port3
+	.cmd_byte_addr	(c3_p4_cmd_byte_addr), 	//out		-- to MCB Port3
+	.cmd_bl			(c3_p4_cmd_bl), 		//out		-- to MCB Port3
+	.start_addr		(dma_p4_start_addr),	//in		-- from csb
+	.op_num			(dma_p4_op_num));		//in 		-- from csb
+
+dma dma_p5 ( // Read Only, port5, conv1x1 weight
+	.clk			(c3_clk0),
+	.reset			(ep00wire[2] | c3_rst0), 
+	.reads_en		(dma_p5_reads_en),		//in		-- weight1
+	.writes_en		(1'b0),
+	.calib_done		(c3_calib_done), 
+
+	.ob_we			(dma_p5_ob_we),			//out		-- to weight1 FIFO
+	.ob_data		(dma_p5_ob_data),		//out		-- to weight1 FIFO
+	.ob_count		(p5_weight_fifo_wr_data_count),		//in		-- from weight1 FIFO
+
+	.rd_en			(c3_p5_rd_en),  		//out		-- to MCB Port3
+	.rd_empty		(c3_p5_rd_empty), 		//in		-- from MCB Port3
+	.rd_data		(c3_p5_rd_data), 		//in		-- from MCB Port3
+
+	.cmd_en			(c3_p5_cmd_en),			//out		-- to MCB Port3
+	.cmd_full		(c3_p5_cmd_full), 		//in		-- from MCB Port3
+	.cmd_instr		(c3_p5_cmd_instr),		//out		-- to MCB Port3
+	.cmd_byte_addr	(c3_p5_cmd_byte_addr), 	//out		-- to MCB Port3
+	.cmd_bl			(c3_p5_cmd_bl), 		//out		-- to MCB Port3
+	.start_addr		(dma_p5_start_addr),	//in		-- from csb
+	.op_num			(dma_p5_op_num));		//in 		-- from csb
 	
 //Block Throttle
 always @(posedge okClk) begin
@@ -525,7 +598,7 @@ okWireIn       wi00 (.okHE(okHE),                             .ep_addr(8'h00), .
 okBTPipeIn     pi0  (.okHE(okHE), .okEH(okEHx[ 0*65 +: 65 ]), .ep_addr(8'h80), .ep_write(pi0_ep_write), .ep_blockstrobe(), .ep_dataout(pi0_ep_dataout), .ep_ready(pipe_in_ready));
 okBTPipeOut    po0  (.okHE(okHE), .okEH(okEHx[ 1*65 +: 65 ]), .ep_addr(8'ha0), .ep_read(po0_ep_read),   .ep_blockstrobe(), .ep_datain(po0_ep_datain),   .ep_ready(pipe_out_ready));
 
-fifo_w32_1024_r32_1024 okPipeIn_fifo (
+fifo_w32_1024_r32_1024 p0_okPipeIn_fifo (
 	.rst			(ep00wire[2]),			// input
 	.wr_clk			(okClk),				// input
 	.rd_clk			(c3_clk0),				// input
@@ -539,7 +612,7 @@ fifo_w32_1024_r32_1024 okPipeIn_fifo (
 	.rd_data_count	(pipe_in_rd_count), 	// output, Bus [9 : 0] 
 	.wr_data_count	(pipe_in_wr_count));	// output, Bus [9 : 0] 
 
-fifo_w32_1024_r32_1024 okPipeOut_fifo (
+fifo_w32_1024_r32_1024 p0_okPipeOut_fifo (
 	.rst			(ep00wire[2]),			// input
 	.wr_clk			(c3_clk0),				// input
 	.rd_clk			(okClk),				// input
@@ -553,104 +626,103 @@ fifo_w32_1024_r32_1024 okPipeOut_fifo (
 	.rd_data_count	(pipe_out_rd_count), 	// output, Bus [9 : 0] 
 	.wr_data_count	(pipe_out_wr_count));	// output, Bus [9 : 0] 
 
-//FIFO for: CSB Command
-fifo_w32_1024_r32_1024 cmd_fifo (
+fifo_w32_1024_r32_1024 p1_cmd_fifo (
 	.rst			(ep00wire[3]),			// input
 	.wr_clk			(c3_clk0),				// input
 	.rd_clk			(c3_clk0),				// input
-	.din			(cmd_fifo_din), 		// input, Bus [31 : 0] 
-	.wr_en			(cmd_fifo_wr_en),		// input
+	.din			(dma_p1_ob_data), 		// input, Bus [31 : 0] 
+	.wr_en			(dma_p1_ob_we),			// input
 	.rd_en			(cmd_fifo_rd_en),		// input
-	.dout			(cmd_fifo_dout), 					// output, Bus [31 : 0] 
+	.dout			(cmd_fifo_dout), 		// output, Bus [31 : 0] 
 	.full			(), 					// NC
 	.empty			(cmd_fifo_empty),		// output
 	.valid			(), 					// NC
 	.rd_data_count	(), 					// output, Bus [9 : 0] 
 	.wr_data_count	(cmd_fifo_wr_count)); 	// output, Bus [9 : 0] 
 
-fifo_w32_1024_r32_1024 p0_data_fifo (
+fifo_w32_1024_r32_1024 p2_data_fifo (
 	.rst			(ep00wire[3]),			// input
 	.wr_clk			(c3_clk0),				// input
 	.rd_clk			(c3_clk0),				// input
-	.din			(p0_data_fifo_din), 	// input, Bus [31 : 0] 
-	.wr_en			(p0_data_fifo_wr_en),	// input
-	.rd_en			(p0_data_fifo_rd_en),	// input
-	.dout			(p0_data_fifo_dout), 				// output, Bus [31 : 0] 
+	.din			(dma_p2_ob_data), 		// input, Bus [31 : 0] 
+	.wr_en			(dma_p2_ob_we),			// input
+	.rd_en			(p2_data_fifo_rd_en),	// input
+	.dout			(p2_data_fifo_dout), 	// output, Bus [31 : 0] 
 	.full			(), 					// NC
-	.empty			(p0_data_fifo_empty),	// output
+	.empty			(p2_data_fifo_empty),	// output
 	.valid			(), 					// NC
 	.rd_data_count	(), 					// output, Bus [9 : 0] 
-	.wr_data_count	(p0_data_fifo_wr_data_count)); 		// output, Bus [9 : 0] 
+	.wr_data_count	(p2_data_fifo_wr_data_count)); 		// output, Bus [9 : 0] 
 
-fifo_w32_1024_r32_1024 p0_weight_fifo (
+fifo_w32_1024_r32_1024 p3_weight_fifo (
 	.rst			(ep00wire[3]),			// input
 	.wr_clk			(c3_clk0),				// input
 	.rd_clk			(c3_clk0),				// input
-	.din			(dma_p1_ob_data), 				// input, Bus [31 : 0] 
-	.wr_en			(dma_p1_ob_we),				// input
-	.rd_en			(p0_weight_fifo_rd_en),	// input
-	.dout			(p0_weight_fifo_dout), 			// output, Bus [31 : 0] 
+	.din			(dma_p3_ob_data), 		// input, Bus [31 : 0] 
+	.wr_en			(dma_p3_ob_we),			// input
+	.rd_en			(p3_weight_fifo_rd_en),	// input
+	.dout			(p3_weight_fifo_dout), 	// output, Bus [31 : 0] 
 	.full			(), 					// NC
-	.empty			(p0_weight_fifo_empty),	// output
+	.empty			(p3_weight_fifo_empty),	// output
 	.valid			(), 					// NC
 	.rd_data_count	(), 					// output, Bus [9 : 0] 
-	.wr_data_count	(p0_weight_fifo_wr_data_count)); 			// output, Bus [9 : 0] 
+	.wr_data_count	(p3_weight_fifo_wr_data_count)); 			// output, Bus [9 : 0] 
 
 //FIFO for: CONV3x3, CONV3x3 & CONV1x1, MAXPOOL3x3
-fifo_w32_1024_r32_1024 p1_data_fifo (
+fifo_w32_1024_r32_1024 p4_data_fifo (
 	.rst			(ep00wire[3]),			// input
 	.wr_clk			(c3_clk0),				// input
 	.rd_clk			(c3_clk0),				// input
-	.din			(dma_p2_ob_data), 			// input, Bus [31 : 0] 
-	.wr_en			(dma_p2_ob_we),	// input
-	.rd_en			(p1_data_fifo_rd_en),	// input
-	.dout			(p1_data_fifo_dout), 				// output, Bus [31 : 0] 
+	.din			(dma_p4_ob_data), 		// input, Bus [31 : 0] 
+	.wr_en			(dma_p4_ob_we),			// input
+	.rd_en			(p4_data_fifo_rd_en),	// input
+	.dout			(p4_data_fifo_dout), 	// output, Bus [31 : 0] 
 	.full			(), 					// NC
-	.empty			(p1_data_fifo_empty),	// output
+	.empty			(p4_data_fifo_empty),	// output
 	.valid			(), 					// NC
 	.rd_data_count	(), 					// output, Bus [9 : 0] 
-	.wr_data_count	(p1_data_fifo_wr_data_count)); 			// output, Bus [9 : 0] 
+	.wr_data_count	(p4_data_fifo_wr_data_count)); 			// output, Bus [9 : 0] 
 
-fifo_w32_1024_r32_1024 p1_weight_fifo (
+fifo_w32_1024_r32_1024 p5_weight_fifo (
 	.rst			(ep00wire[3]),			// input
 	.wr_clk			(c3_clk0),				// input
 	.rd_clk			(c3_clk0),				// input
-	.din			(dma_p3_ob_data), 			// input, Bus [31 : 0] 
-	.wr_en			(dma_p3_ob_we),	// input
-	.rd_en			(p1_weight_fifo_rd_en),	// input
-	.dout			(p1_weight_fifo_dout), 			// output, Bus [31 : 0] 
+	.din			(dma_p5_ob_data), 		// input, Bus [31 : 0] 
+	.wr_en			(dma_p5_ob_we),			// input
+	.rd_en			(p5_weight_fifo_rd_en),	// input
+	.dout			(p5_weight_fifo_dout), 	// output, Bus [31 : 0] 
 	.full			(), 					// NC
-	.empty			(p1_weight_fifo_empty),	// output
+	.empty			(p5_weight_fifo_empty),	// output
 	.valid			(), 					// NC
 	.rd_data_count	(), 					// output, Bus [9 : 0] 
-	.wr_data_count	(p1_weight_fifo_wr_data_count)); 			// output, Bus [9 : 0] 
+	.wr_data_count	(p5_weight_fifo_wr_data_count)); 			// output, Bus [9 : 0] 
 
 fifo_w32_1024_r32_1024 p0_result_fifo (
 	.rst			(ep00wire[3]),			// input
 	.wr_clk			(c3_clk0),				// input
 	.rd_clk			(c3_clk0),				// input
-	.din			(p0_result_din), 			// input, Bus [31 : 0] 
+	.din			(p0_result_din), 		// input, Bus [31 : 0] 
 	.wr_en			(p0_result_fifo_wr_en),	// input, from engine
-	.rd_en			(p0_result_fifo_rd_en),						// input, from dma
-	.dout			(p0_result_fifo_dout), 					// output, Bus [31 : 0] 
-	.full			(),						// NC
-	.empty			(p0_result_fifo_empty),						// output
-	.valid			(p0_result_fifo_valid),						//
-	.rd_data_count	(), 					// output, Bus [9 : 0] 
+	.rd_en			(p0_result_fifo_rd_en),	// input, from dma
+	.dout			(p0_result_fifo_dout), 	// output, Bus [31 : 0] 
+	.full			(),	// NC
+	.empty			(p0_result_fifo_empty),	// output
+	.valid			(p0_result_fifo_valid),	//
+	.rd_data_count	(p0_result_fifo_rd_count), 					// output, Bus [9 : 0] 
 	.wr_data_count	()); 					// output, Bus [9 : 0] 
 
 fifo_w32_1024_r32_1024 p1_result_fifo (
 	.rst			(ep00wire[3]),			// input
 	.wr_clk			(c3_clk0),				// input
 	.rd_clk			(c3_clk0),				// input
-	.din			(p1_result_din), 			// input, Bus [31 : 0] 
+	.din			(p1_result_din), 		// input, Bus [31 : 0] 
 	.wr_en			(p1_result_fifo_wr_en),	// input, from engine
-	.rd_en			(p1_result_fifo_rd_en),						// input, from dma
-	.dout			(p1_result_fifo_dout), 					// output, Bus [31 : 0] 
-	.full			(),						// NC
-	.empty			(p1_result_fifo_empty),						// output
-	.valid			(p1_result_fifo_valid),						//
-	.rd_data_count	(), 					// output, Bus [9 : 0] 
+	.rd_en			(p1_result_fifo_rd_en),	// input, from dma
+	.dout			(p1_result_fifo_dout), 	// output, Bus [31 : 0] 
+	.full			(),	// NC
+	.empty			(p1_result_fifo_empty),	// output
+	.valid			(p1_result_fifo_valid),	//
+	.rd_data_count	(p1_result_fifo_rd_count), 					// output, Bus [9 : 0] 
 	.wr_data_count	()); 					// output, Bus [9 : 0] 
 
 endmodule

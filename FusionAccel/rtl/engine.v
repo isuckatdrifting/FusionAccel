@@ -15,10 +15,10 @@ module engine(
 	input [15:0] 	data_1,
 	input [15:0] 	weight_1,
 
-	output 			p0_data_fifo_rd_en,
-	output 			p0_weight_fifo_rd_en,
-	output 			p1_data_fifo_rd_en,
-	output 			p1_weight_fifo_rd_en,
+	output 			p2_data_fifo_rd_en,
+	output 			p3_weight_fifo_rd_en,
+	output 			p4_data_fifo_rd_en,
+	output 			p5_weight_fifo_rd_en,
 	output 			conv_valid,
 	output 			maxpool_valid,
 	output 			avepool_valid,
@@ -28,14 +28,12 @@ module engine(
 	output			p0_result_fifo_wr_en,
 	output			p1_result_fifo_wr_en,
 
-    output          dma_p0_reads_en,
-    output          dma_p0_writes_en,
-    output          dma_p1_reads_en,
-    output          dma_p1_writes_en,
     output          dma_p2_reads_en,
-    output          dma_p2_writes_en,
     output          dma_p3_reads_en,
-    output          dma_p3_writes_en
+    output          dma_p4_reads_en,
+    output          dma_p5_reads_en,
+	output          dma_p0_writes_en,
+	output          dma_p1_writes_en
 	
 );
 
@@ -76,12 +74,12 @@ reg 		conv_valid;
 reg 		avepool_finish, maxpool_finish;
 reg 		avepool_valid, maxpool_valid;
 reg			writeback_finish;
-reg 		p0_data_fifo_rd_en, p1_data_fifo_rd_en, p0_weight_fifo_rd_en, p1_weight_fifo_rd_en;
+reg 		p2_data_fifo_rd_en, p4_data_fifo_rd_en, p3_weight_fifo_rd_en, p5_weight_fifo_rd_en;
 reg	 [15:0] p0_result, p1_result;
 reg			p0_result_fifo_wr_en, p1_result_fifo_wr_en;
 
 //DMA enable signal
-reg			dma_p0_reads_en, dma_p0_writes_en, dma_p1_reads_en, dma_p1_writes_en, dma_p2_reads_en, dma_p2_writes_en, dma_p3_reads_en, dma_p3_writes_en;
+reg			dma_p0_writes_en, dma_p1_writes_en, dma_p2_reads_en, dma_p3_reads_en, dma_p4_reads_en, dma_p5_reads_en;
 
 always @(op_type or conv_valid_0 or conv_valid_1 or avepool_valid_0 or maxpool_valid_0) begin
 	case(op_type)
@@ -237,17 +235,17 @@ always @ (posedge clk or posedge rst) begin
 		conv_ready_1 <= 16'h0000;
 		avepool_ready_0 <= 0;
 		maxpool_ready_0 <= 0;
-		p0_data_fifo_rd_en <= 0;
-		p1_data_fifo_rd_en <= 0;
-		p0_weight_fifo_rd_en <= 0;
-		p1_weight_fifo_rd_en <= 0;
+		p2_data_fifo_rd_en <= 0;
+		p4_data_fifo_rd_en <= 0;
+		p3_weight_fifo_rd_en <= 0;
+		p5_weight_fifo_rd_en <= 0;
 		conv_valid <= 0;
 		avepool_valid <= 0;
 		maxpool_valid <= 0;
 		p0_result_fifo_wr_en <= 0; p1_result_fifo_wr_en <= 0;
 		p0_result <= 16'h0000; p1_result <= 16'h0000;
-		dma_p0_reads_en <= 0; dma_p1_reads_en <= 0;
-        dma_p2_reads_en <= 0; dma_p3_reads_en <= 0;
+		dma_p2_reads_en <= 0; dma_p3_reads_en <= 0;
+        dma_p4_reads_en <= 0; dma_p5_reads_en <= 0;
 	end else begin
 		for(a=0;a<CONV_BURST_LEN;a=a+1) begin: clear_conv_ready
 			if(conv_valid_0[a]) conv_ready_0[a] <= 0;
@@ -262,39 +260,39 @@ always @ (posedge clk or posedge rst) begin
 			conv_busy: begin
 				case (op_type)
 					CONV1: begin 
-						dma_p2_reads_en <= 1; dma_p3_reads_en <= 1;
+						dma_p4_reads_en <= 1; dma_p5_reads_en <= 1;
 						conv_burst_cnt <= conv_burst_cnt + 1;
 						conv_ready_1[conv_burst_cnt] <= 1; 
 						if(conv_burst_cnt < 16) begin 
-							p1_data_fifo_rd_en <= 1; 
-							p1_weight_fifo_rd_en <= 1;
+							p4_data_fifo_rd_en <= 1; 
+							p5_weight_fifo_rd_en <= 1;
 						end else begin
-							p1_data_fifo_rd_en <= 0;
-							p1_weight_fifo_rd_en <= 0;
+							p4_data_fifo_rd_en <= 0;
+							p5_weight_fifo_rd_en <= 0;
 						end
 					end
 					CONV3: begin 
-						dma_p0_reads_en <= 1; dma_p1_reads_en <= 1;
+						dma_p2_reads_en <= 1; dma_p3_reads_en <= 1;
 						conv_burst_cnt <= conv_burst_cnt + 1;
 						conv_ready_0[conv_burst_cnt] <= 1;
 						if(conv_burst_cnt < 16) begin 
-							p0_data_fifo_rd_en <= 1; 
-							p0_weight_fifo_rd_en <= 1;
+							p2_data_fifo_rd_en <= 1; 
+							p3_weight_fifo_rd_en <= 1;
 						end else begin
-							p0_data_fifo_rd_en <= 0; 
-							p0_weight_fifo_rd_en <= 0;
+							p2_data_fifo_rd_en <= 0; 
+							p3_weight_fifo_rd_en <= 0;
 						end
 					end
 					CONVP: begin 
-						dma_p0_reads_en <= 1; dma_p1_reads_en <= 1; dma_p2_reads_en <= 1; dma_p3_reads_en <= 1;
+						dma_p2_reads_en <= 1; dma_p3_reads_en <= 1; dma_p4_reads_en <= 1; dma_p5_reads_en <= 1;
 						conv_burst_cnt <= conv_burst_cnt + 1;
 						conv_ready_0[conv_burst_cnt] <= 1; conv_ready_1[conv_burst_cnt] <= 1; 
 						if(conv_burst_cnt < 16) begin 
-							p0_data_fifo_rd_en <= 1; p0_weight_fifo_rd_en <= 1;
-							p1_data_fifo_rd_en <= 1; p1_weight_fifo_rd_en <= 1; 
+							p2_data_fifo_rd_en <= 1; p3_weight_fifo_rd_en <= 1;
+							p4_data_fifo_rd_en <= 1; p5_weight_fifo_rd_en <= 1; 
 						end else begin
-							p0_data_fifo_rd_en <= 0; p0_weight_fifo_rd_en <= 0;
-							p1_data_fifo_rd_en <= 0; p1_weight_fifo_rd_en <= 0; 
+							p2_data_fifo_rd_en <= 0; p3_weight_fifo_rd_en <= 0;
+							p4_data_fifo_rd_en <= 0; p5_weight_fifo_rd_en <= 0; 
 						end
 					end
 					default:;
@@ -302,7 +300,7 @@ always @ (posedge clk or posedge rst) begin
 			end
 			conv_clear: begin
 				conv_burst_cnt <= 0;
-				dma_p0_reads_en <= 0; dma_p1_reads_en <= 0; dma_p2_reads_en <= 0; dma_p3_reads_en <= 0;
+				dma_p2_reads_en <= 0; dma_p3_reads_en <= 0; dma_p4_reads_en <= 0; dma_p5_reads_en <= 0;
 			end
 			maxpool_busy: begin
 				case(op_type)
@@ -310,9 +308,9 @@ always @ (posedge clk or posedge rst) begin
 						pool_burst_cnt <= pool_burst_cnt + 1;
 						maxpool_ready_0[pool_burst_cnt] <= 1;
 						if(pool_burst_cnt < 1) begin
-							p0_data_fifo_rd_en <= 1;
+							p2_data_fifo_rd_en <= 1;
 						end else begin
-							p0_data_fifo_rd_en <= 0;
+							p2_data_fifo_rd_en <= 0;
 						end
 					end
 					default:;
@@ -320,7 +318,7 @@ always @ (posedge clk or posedge rst) begin
 			end
 			maxpool_clear: begin
 				pool_burst_cnt <= 0;
-				dma_p0_reads_en <= 0;
+				dma_p2_reads_en <= 0;
 			end
 			avepool_busy: begin
 				case (op_type)
@@ -328,9 +326,9 @@ always @ (posedge clk or posedge rst) begin
 						pool_burst_cnt <= pool_burst_cnt + 1;
 						avepool_ready_0[pool_burst_cnt] <= 1;
 						if(pool_burst_cnt < 1) begin
-							p0_data_fifo_rd_en <= 1;
+							p2_data_fifo_rd_en <= 1;
 						end else begin
-							p0_data_fifo_rd_en <= 0;
+							p2_data_fifo_rd_en <= 0;
 						end
 					end
 					default: ;
@@ -338,12 +336,12 @@ always @ (posedge clk or posedge rst) begin
 			end
 			avepool_clear: begin
 				pool_burst_cnt <= 0;
-				dma_p0_reads_en <= 0;
+				dma_p2_reads_en <= 0;
 			end
 			writeback: begin
 				case (op_type)
 					CONV1: begin
-						dma_p2_writes_en <= 1;
+						dma_p1_writes_en <= 1;
 						if(conv_wb_burst_cnt < CONV_BURST_LEN) begin
 							p1_result_fifo_wr_en <= 1;
 							conv_wb_burst_cnt <= conv_wb_burst_cnt + 1;
@@ -373,7 +371,7 @@ always @ (posedge clk or posedge rst) begin
 						end
 					end
 					CONVP: begin
-						dma_p0_writes_en <= 1; dma_p2_writes_en <= 1;
+						dma_p0_writes_en <= 1; dma_p1_writes_en <= 1;
 						if(conv_wb_burst_cnt < CONV_BURST_LEN) begin
 							p0_result_fifo_wr_en <= 1; p1_result_fifo_wr_en <= 1;
 							conv_wb_burst_cnt <= conv_wb_burst_cnt + 1;
@@ -433,7 +431,7 @@ always @ (posedge clk or posedge rst) begin
 				endcase
 				writeback_finish <= 0;
 				dma_p0_writes_en <= 0;
-				dma_p2_writes_en <= 0;
+				dma_p1_writes_en <= 0;
 			end
 			default:;
 		endcase
