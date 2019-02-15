@@ -41,25 +41,25 @@ Memory Options :
    High Temparature Self Refresh Rate : Disable
 
 User Interface Parameters :
-   Configuration Type     : Four 32-bit bi-directional ports
-   Ports Selected         : Port0, Port1, Port2, Port3
+   Configuration Type     : Two 32-bit bi-directional and four 32-bit unidirectional ports
+   Ports Selected         : Port0, Port1, Port2, Port3, Port4, Port5
    Memory Address Mapping : ROW_BANK_COLUMN
 
    Arbitration Algorithm  : Round Robin
 
    Arbitration            : 
-      Time Slot0 : 0123
-      Time Slot1 : 1230
-      Time Slot2 : 2301
-      Time Slot3 : 3012
-      Time Slot4 : 0123
-      Time Slot5 : 1230
-      Time Slot6 : 2301
-      Time Slot7 : 3012
-      Time Slot8 : 0123
-      Time Slot9 : 1230
-      Time Slot10: 2301
-      Time Slot11: 3012
+      Time Slot0 : 012345
+      Time Slot1 : 123450
+      Time Slot2 : 234501
+      Time Slot3 : 345012
+      Time Slot4 : 450123
+      Time Slot5 : 501234
+      Time Slot6 : 012345
+      Time Slot7 : 123450
+      Time Slot8 : 234501
+      Time Slot9 : 345012
+      Time Slot10: 450123
+      Time Slot11: 501234
 
 FPGA Options :
    Class for Address and Control       : II

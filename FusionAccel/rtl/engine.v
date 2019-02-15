@@ -343,6 +343,7 @@ always @ (posedge clk or posedge rst) begin
 			writeback: begin
 				case (op_type)
 					CONV1: begin
+						dma_p2_writes_en <= 1;
 						if(conv_wb_burst_cnt < CONV_BURST_LEN) begin
 							p1_result_fifo_wr_en <= 1;
 							conv_wb_burst_cnt <= conv_wb_burst_cnt + 1;
@@ -357,6 +358,7 @@ always @ (posedge clk or posedge rst) begin
 						end
 					end
 					CONV3: begin
+						dma_p0_writes_en <= 1;
 						if(conv_wb_burst_cnt < CONV_BURST_LEN) begin
 							p0_result_fifo_wr_en <= 1;
 							conv_wb_burst_cnt <= conv_wb_burst_cnt + 1;
@@ -371,6 +373,7 @@ always @ (posedge clk or posedge rst) begin
 						end
 					end
 					CONVP: begin
+						dma_p0_writes_en <= 1; dma_p2_writes_en <= 1;
 						if(conv_wb_burst_cnt < CONV_BURST_LEN) begin
 							p0_result_fifo_wr_en <= 1; p1_result_fifo_wr_en <= 1;
 							conv_wb_burst_cnt <= conv_wb_burst_cnt + 1;
@@ -386,6 +389,7 @@ always @ (posedge clk or posedge rst) begin
 						end
 					end
 					MPOOL: begin
+						dma_p0_writes_en <= 1;
 						if(pool_wb_burst_cnt < POOL_BURST_LEN) begin
 							p0_result_fifo_wr_en <= 1;
 							pool_wb_burst_cnt <= pool_wb_burst_cnt + 1;
@@ -401,6 +405,7 @@ always @ (posedge clk or posedge rst) begin
 						end
 					end
 					APOOL: begin
+						dma_p0_writes_en <= 1;
 						if(pool_wb_burst_cnt < POOL_BURST_LEN) begin
 							p0_result_fifo_wr_en <= 1;
 							pool_wb_burst_cnt <= pool_wb_burst_cnt + 1;
@@ -427,6 +432,8 @@ always @ (posedge clk or posedge rst) begin
 					default:;
 				endcase
 				writeback_finish <= 0;
+				dma_p0_writes_en <= 0;
+				dma_p2_writes_en <= 0;
 			end
 			default:;
 		endcase
