@@ -39,6 +39,7 @@ wire        c3_clk0;
 wire 		op_en;
 wire [2:0] 	op_type;
 wire [15:0] op_num;
+wire		engine_reset;
 wire [31:0] cmd_fifo_dout;
 wire [31:0] p2_data_fifo_dout, p3_weight_fifo_dout, p4_data_fifo_dout, p5_weight_fifo_dout;
 wire [15:0] p0_result_din, p1_result_din;
@@ -51,7 +52,7 @@ wire [29:0] weight_start_addr, data_start_addr, writeback_addr;
 //------------------------------------------------
 csb csb_(
     .clk					(c3_clk0),
-    .rst_n					(ep00wire[3]),
+    .rst					(ep00wire[3]),
 	.op_en					(ep00wire[4]),		// A wire from ep
 
     .conv_valid				(conv_valid),
@@ -74,12 +75,13 @@ csb csb_(
     .writeback_addr			(writeback_addr),
 	.op_run					(op_run),
 	.dma_cmd_reads_en		(dma_cmd_reads_en),
+	.engine_reset			(engine_reset),
 
     .irq					(irq));
 
 engine engine_(
 	.clk					(c3_clk0),
-	.rst					(rst),
+	.rst					(engine_reset),
 	//Control signals from csb
 	.conv_ready				(conv_ready),
 	.maxpool_ready			(maxpool_ready),
@@ -627,7 +629,7 @@ fifo_w32_1024_r32_1024 p0_okPipeOut_fifo (
 	.wr_data_count	(pipe_out_wr_count));	// output, Bus [9 : 0] 
 
 fifo_w32_1024_r32_1024 p1_cmd_fifo (
-	.rst			(ep00wire[3]),			// input
+	.rst			(engine_reset),			// input
 	.wr_clk			(c3_clk0),				// input
 	.rd_clk			(c3_clk0),				// input
 	.din			(dma_p1_ob_data), 		// input, Bus [31 : 0] 
@@ -641,7 +643,7 @@ fifo_w32_1024_r32_1024 p1_cmd_fifo (
 	.wr_data_count	(cmd_fifo_wr_count)); 	// output, Bus [9 : 0] 
 
 fifo_w32_1024_r32_1024 p2_data_fifo (
-	.rst			(ep00wire[3]),			// input
+	.rst			(engine_reset),			// input
 	.wr_clk			(c3_clk0),				// input
 	.rd_clk			(c3_clk0),				// input
 	.din			(dma_p2_ob_data), 		// input, Bus [31 : 0] 
@@ -655,7 +657,7 @@ fifo_w32_1024_r32_1024 p2_data_fifo (
 	.wr_data_count	(p2_data_fifo_wr_data_count)); 		// output, Bus [9 : 0] 
 
 fifo_w32_1024_r32_1024 p3_weight_fifo (
-	.rst			(ep00wire[3]),			// input
+	.rst			(engine_reset),			// input
 	.wr_clk			(c3_clk0),				// input
 	.rd_clk			(c3_clk0),				// input
 	.din			(dma_p3_ob_data), 		// input, Bus [31 : 0] 
@@ -670,7 +672,7 @@ fifo_w32_1024_r32_1024 p3_weight_fifo (
 
 //FIFO for: CONV3x3, CONV3x3 & CONV1x1, MAXPOOL3x3
 fifo_w32_1024_r32_1024 p4_data_fifo (
-	.rst			(ep00wire[3]),			// input
+	.rst			(engine_reset),			// input
 	.wr_clk			(c3_clk0),				// input
 	.rd_clk			(c3_clk0),				// input
 	.din			(dma_p4_ob_data), 		// input, Bus [31 : 0] 
@@ -684,7 +686,7 @@ fifo_w32_1024_r32_1024 p4_data_fifo (
 	.wr_data_count	(p4_data_fifo_wr_data_count)); 			// output, Bus [9 : 0] 
 
 fifo_w32_1024_r32_1024 p5_weight_fifo (
-	.rst			(ep00wire[3]),			// input
+	.rst			(engine_reset),			// input
 	.wr_clk			(c3_clk0),				// input
 	.rd_clk			(c3_clk0),				// input
 	.din			(dma_p5_ob_data), 		// input, Bus [31 : 0] 
@@ -698,7 +700,7 @@ fifo_w32_1024_r32_1024 p5_weight_fifo (
 	.wr_data_count	(p5_weight_fifo_wr_data_count)); 			// output, Bus [9 : 0] 
 
 fifo_w32_1024_r32_1024 p0_result_fifo (
-	.rst			(ep00wire[3]),			// input
+	.rst			(engine_reset),			// input
 	.wr_clk			(c3_clk0),				// input
 	.rd_clk			(c3_clk0),				// input
 	.din			(p0_result_din), 		// input, Bus [31 : 0] 
@@ -712,7 +714,7 @@ fifo_w32_1024_r32_1024 p0_result_fifo (
 	.wr_data_count	()); 					// output, Bus [9 : 0] 
 
 fifo_w32_1024_r32_1024 p1_result_fifo (
-	.rst			(ep00wire[3]),			// input
+	.rst			(engine_reset),			// input
 	.wr_clk			(c3_clk0),				// input
 	.rd_clk			(c3_clk0),				// input
 	.din			(p1_result_din), 		// input, Bus [31 : 0] 

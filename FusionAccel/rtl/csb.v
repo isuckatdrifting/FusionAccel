@@ -1,6 +1,6 @@
 module csb(
     input           clk,
-    input           rst_n,
+    input           rst,
     input           op_en,
 
     input           conv_valid,
@@ -24,17 +24,16 @@ module csb(
     output [31:0]   data_start_addr,
     output [31:0]   writeback_addr,
     output          op_run,
+    output          engine_reset,
 
     output          irq
 );
 //Notes: CMDs are loaded initially to SDRAM to be called multiple times.
-//Notes: DBB path is in CSB.
 //Notes: CMD Fifo: WR clock domain: c3clk0, RD clock domain: clk.
 
 //TODO: Use Img2col/MEC Convolution
 //TODO: Padding = 1 --> Add 0 in memory
 //TODO: Use csb to reset submodules
-//TODO: Dropout Layer
 //TODO: Concatenation Layer
 
 //Compressed Commands from SDRAM
@@ -75,7 +74,6 @@ reg         conv_ready, maxpool_ready, avepool_ready;
 
 //Command Parsing
 localparam  CMD_BURST_LEN = 3'd6;
-localparam  stride_0 = 1;
 reg         cmd_fifo_rd_en;
 reg [2:0]   cmd_burst_count;
 
@@ -83,10 +81,8 @@ reg [2:0]   op_type;              //Output
 reg         padding;
 reg [7:0]   stride_1;
 reg [15:0]  stride_2;
-reg [15:0]  i_channel_size;
-reg [15:0]  o_channel_size;
-reg [15:0]  i_kernel_size;
-reg [15:0]  o_kernel_size;
+reg [15:0]  i_channel_size, o_channel_size;
+reg [7:0]  i_kernel_size, o_kernel_size;
 reg [15:0]  op_num;              //Output
 reg [31:0]  weight_start_addr;   //Output
 reg [31:0]  data_start_addr;     //Output
@@ -94,6 +90,7 @@ reg [31:0]  writeback_addr;      //Output
 
 reg [15:0]  n_count;             //TODO: n_count from 0 to op_num, step = conv kernel size, // +64 per read = +4 per read per channel
 reg         op_run;                     //Output, indicating p0 transfers command or data
+reg         engine_reset;
 
 reg         dma_cmd_reads_en;
 reg         irq;                        //Output, interrupt signal
@@ -112,8 +109,8 @@ reg         op_done;
 reg [2:0]   curr_state;
 reg [2:0]   next_state;
 //    Current State, non-blocking
-always @ (posedge clk or negedge rst_n)    begin
-    if (!rst_n)
+always @ (posedge clk or posedge rst)    begin
+    if (rst)
         curr_state    <= idle;
     else
         curr_state    <= next_state;
@@ -151,12 +148,10 @@ always @ (*) begin
 end
 
 //DMA Accesss commands
-always @ (posedge clk or negedge rst_n) begin
-    if(!rst_n) begin
+always @ (posedge clk or posedge rst) begin
+    if(rst) begin
         dma_cmd_reads_en <= 0;
     end else begin
-        //Fifo logic: reads_en --> ob_we --> din->fifo --> fifo_rd_en
-        //DMA Access: get command
         if(op_en) dma_cmd_reads_en <= 1; //Assert to DMA readout, DMA writing data to FIFO
         if(cmd_fifo_wr_count == cmd_size * 6) begin
             dma_cmd_reads_en <= 0;       //Read command
@@ -165,8 +160,8 @@ always @ (posedge clk or negedge rst_n) begin
 end
 
 //    Output, non-blocking, Command issue, Interface with FIFO
-always @ (posedge clk or negedge rst_n) begin
-    if (!rst_n) begin
+always @ (posedge clk or posedge rst) begin
+    if (rst) begin
         cmd_fifo_rd_en <= 0;
         cmd_burst_count <= 3'd0;
         //Commands
@@ -186,6 +181,7 @@ always @ (posedge clk or negedge rst_n) begin
         cmd_collect_done <= 0;
         cmd_issue_done <= 0;
         op_done <= 0;
+        engine_reset <= 1;
 
         irq <= 0;
     end
@@ -195,6 +191,7 @@ always @ (posedge clk or negedge rst_n) begin
                 cmd_burst_count <= CMD_BURST_LEN;
             end
             cmd_collect: begin
+                engine_reset <= 1;
                 cmd_fifo_rd_en <= 1; //Assert to FIFO, CSB reading data from FIFO            
                 //Split cmds from fifo into separate attributes
                 cmd_burst_count <= cmd_burst_count - 1;
@@ -210,6 +207,7 @@ always @ (posedge clk or negedge rst_n) begin
                 endcase 
             end
             cmd_issue: begin
+                engine_reset <= 0;
                 cmd_burst_count <= CMD_BURST_LEN;
                 cmd_collect_done <= 0;
                 //Notes: Send out dma access signals (addr) to get data and weight (according to op_type) to submodules (ready signals)
