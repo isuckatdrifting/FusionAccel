@@ -71,7 +71,7 @@ for layer_name, blob in net.blobs.items():
                                          # output_channels, input_channels, filter_height, filter_width
     # print(filters)
     dat = filters.reshape(1, -1)[0][0:1].astype(dtype=np.float16) # get the first two of the layer output
-    print(dat)
+    print(filters.size, dat)
     f.write(str(layer_name) + '\t')
     for i in dat:
         f.write(str(hex(struct.unpack('<H', i)[0])).replace('0x','').zfill(4)+' ') #Little-endian
@@ -79,4 +79,4 @@ for layer_name, blob in net.blobs.items():
 f.close()
 
 for layer_name, param in net.params.items():
-    print(layer_name + '\t' + str(param[0].data.shape), str(param[1].data.shape))
+    print(layer_name + '\t' + str(param[0].data.shape), str(param[1].data.shape) + str(param[0].data.size))
