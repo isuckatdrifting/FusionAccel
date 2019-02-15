@@ -75,12 +75,12 @@ module sim_tb_top;
    localparam DBG_RD_STS_WIDTH       = 32;
    localparam C3_P0_PORT_MODE             =  "BI_MODE";
    localparam C3_P1_PORT_MODE             =  "BI_MODE";
-   localparam C3_P2_PORT_MODE             =  "BI_MODE";
-   localparam C3_P3_PORT_MODE             =  "BI_MODE";
-   localparam C3_P4_PORT_MODE             =  "NONE";
-   localparam C3_P5_PORT_MODE             =  "NONE";
-   localparam C3_PORT_ENABLE              = 6'b001111;
-   localparam C3_PORT_CONFIG             =  "B32_B32_B32_B32";
+   localparam C3_P2_PORT_MODE             =  "RD_MODE";
+   localparam C3_P3_PORT_MODE             =  "RD_MODE";
+   localparam C3_P4_PORT_MODE             =  "RD_MODE";
+   localparam C3_P5_PORT_MODE             =  "RD_MODE";
+   localparam C3_PORT_ENABLE              = 6'b111111;
+   localparam C3_PORT_CONFIG             =  "B32_B32_R32_R32_R32_R32";
    	parameter C3_MEMCLK_PERIOD     = 3200;
    parameter C3_RST_ACT_LOW        = 0;
    parameter C3_INPUT_CLK_TYPE     = "DIFFERENTIAL";
@@ -108,26 +108,26 @@ module sim_tb_top;
    localparam C3_p1_END_ADDRESS                     = (C3_HW_TESTING == "TRUE") ? 32'h04ffffff:32'h000004ff;
    localparam C3_p1_PRBS_EADDR_MASK_POS             = (C3_HW_TESTING == "TRUE") ? 32'hf8000000:32'hfffff800;
    localparam C3_p1_PRBS_SADDR_MASK_POS             = (C3_HW_TESTING == "TRUE") ? 32'h03000000:32'h00000300;
-   localparam C3_p2_BEGIN_ADDRESS                   = (C3_HW_TESTING == "TRUE") ? 32'h05000000:32'h00000500;
+   localparam C3_p2_BEGIN_ADDRESS                   = (C3_HW_TESTING == "TRUE") ? 32'h01000000:32'h00000100;
    localparam C3_p2_DATA_MODE                       = 4'b0010;
-   localparam C3_p2_END_ADDRESS                     = (C3_HW_TESTING == "TRUE") ? 32'h06ffffff:32'h000006ff;
-   localparam C3_p2_PRBS_EADDR_MASK_POS             = (C3_HW_TESTING == "TRUE") ? 32'hf8000000:32'hfffff800;
-   localparam C3_p2_PRBS_SADDR_MASK_POS             = (C3_HW_TESTING == "TRUE") ? 32'h05000000:32'h00000500;
-   localparam C3_p3_BEGIN_ADDRESS                   = (C3_HW_TESTING == "TRUE") ? 32'h01000000:32'h00000700;
+   localparam C3_p2_END_ADDRESS                     = (C3_HW_TESTING == "TRUE") ? 32'h02ffffff:32'h000002ff;
+   localparam C3_p2_PRBS_EADDR_MASK_POS             = (C3_HW_TESTING == "TRUE") ? 32'hfc000000:32'hfffffc00;
+   localparam C3_p2_PRBS_SADDR_MASK_POS             = (C3_HW_TESTING == "TRUE") ? 32'h01000000:32'h00000100;
+   localparam C3_p3_BEGIN_ADDRESS                   = (C3_HW_TESTING == "TRUE") ? 32'h01000000:32'h00000100;
    localparam C3_p3_DATA_MODE                       = 4'b0010;
-   localparam C3_p3_END_ADDRESS                     = (C3_HW_TESTING == "TRUE") ? 32'h02ffffff:32'h000008ff;
-   localparam C3_p3_PRBS_EADDR_MASK_POS             = (C3_HW_TESTING == "TRUE") ? 32'hfc000000:32'hfffff000;
-   localparam C3_p3_PRBS_SADDR_MASK_POS             = (C3_HW_TESTING == "TRUE") ? 32'h01000000:32'h00000700;
-   localparam C3_p4_BEGIN_ADDRESS                   = (C3_HW_TESTING == "TRUE") ? 32'h05000000:32'h00000500;
+   localparam C3_p3_END_ADDRESS                     = (C3_HW_TESTING == "TRUE") ? 32'h02ffffff:32'h000002ff;
+   localparam C3_p3_PRBS_EADDR_MASK_POS             = (C3_HW_TESTING == "TRUE") ? 32'hfc000000:32'hfffffc00;
+   localparam C3_p3_PRBS_SADDR_MASK_POS             = (C3_HW_TESTING == "TRUE") ? 32'h01000000:32'h00000100;
+   localparam C3_p4_BEGIN_ADDRESS                   = (C3_HW_TESTING == "TRUE") ? 32'h01000000:32'h00000100;
    localparam C3_p4_DATA_MODE                       = 4'b0010;
-   localparam C3_p4_END_ADDRESS                     = (C3_HW_TESTING == "TRUE") ? 32'h06ffffff:32'h000006ff;
-   localparam C3_p4_PRBS_EADDR_MASK_POS             = (C3_HW_TESTING == "TRUE") ? 32'hf8000000:32'hfffff800;
-   localparam C3_p4_PRBS_SADDR_MASK_POS             = (C3_HW_TESTING == "TRUE") ? 32'h05000000:32'h00000500;
-   localparam C3_p5_BEGIN_ADDRESS                   = (C3_HW_TESTING == "TRUE") ? 32'h05000000:32'h00000500;
+   localparam C3_p4_END_ADDRESS                     = (C3_HW_TESTING == "TRUE") ? 32'h02ffffff:32'h000002ff;
+   localparam C3_p4_PRBS_EADDR_MASK_POS             = (C3_HW_TESTING == "TRUE") ? 32'hfc000000:32'hfffffc00;
+   localparam C3_p4_PRBS_SADDR_MASK_POS             = (C3_HW_TESTING == "TRUE") ? 32'h01000000:32'h00000100;
+   localparam C3_p5_BEGIN_ADDRESS                   = (C3_HW_TESTING == "TRUE") ? 32'h01000000:32'h00000100;
    localparam C3_p5_DATA_MODE                       = 4'b0010;
-   localparam C3_p5_END_ADDRESS                     = (C3_HW_TESTING == "TRUE") ? 32'h06ffffff:32'h000006ff;
-   localparam C3_p5_PRBS_EADDR_MASK_POS             = (C3_HW_TESTING == "TRUE") ? 32'hf8000000:32'hfffff800;
-   localparam C3_p5_PRBS_SADDR_MASK_POS             = (C3_HW_TESTING == "TRUE") ? 32'h05000000:32'h00000500;
+   localparam C3_p5_END_ADDRESS                     = (C3_HW_TESTING == "TRUE") ? 32'h02ffffff:32'h000002ff;
+   localparam C3_p5_PRBS_EADDR_MASK_POS             = (C3_HW_TESTING == "TRUE") ? 32'hfc000000:32'hfffffc00;
+   localparam C3_p5_PRBS_SADDR_MASK_POS             = (C3_HW_TESTING == "TRUE") ? 32'h01000000:32'h00000100;
 // ========================================================================== //
 // Signal Declarations                                                        //
 // ========================================================================== //
@@ -240,14 +240,6 @@ module sim_tb_top;
   wire [29:0]	c3_p2_cmd_byte_addr;
   wire		c3_p2_cmd_empty;
   wire		c3_p2_cmd_full;
-  wire		c3_p2_wr_en;
-  wire [3:0]	c3_p2_wr_mask;
-  wire [31:0]	c3_p2_wr_data;
-  wire		c3_p2_wr_full;
-  wire		c3_p2_wr_empty;
-  wire [6:0]	c3_p2_wr_count;
-  wire		c3_p2_wr_underrun;
-  wire		c3_p2_wr_error;
   wire		c3_p2_rd_en;
   wire [31:0]	c3_p2_rd_data;
   wire		c3_p2_rd_full;
@@ -262,14 +254,6 @@ module sim_tb_top;
   wire [29:0]	c3_p3_cmd_byte_addr;
   wire		c3_p3_cmd_empty;
   wire		c3_p3_cmd_full;
-  wire		c3_p3_wr_en;
-  wire [3:0]	c3_p3_wr_mask;
-  wire [31:0]	c3_p3_wr_data;
-  wire		c3_p3_wr_full;
-  wire		c3_p3_wr_empty;
-  wire [6:0]	c3_p3_wr_count;
-  wire		c3_p3_wr_underrun;
-  wire		c3_p3_wr_error;
   wire		c3_p3_rd_en;
   wire [31:0]	c3_p3_rd_data;
   wire		c3_p3_rd_full;
@@ -278,13 +262,52 @@ module sim_tb_top;
   wire		c3_p3_rd_overflow;
   wire		c3_p3_rd_error;
 
-wire				c3_p4_cmd_clk;
-wire				c3_p4_cmd_en;
-wire[2:0]			c3_p4_cmd_instr;
-wire[5:0]			c3_p4_cmd_bl;
-wire[29:0]			c3_p4_cmd_byte_addr;
-wire				c3_p4_cmd_empty;
-wire				c3_p4_cmd_full;
+  wire		c3_p4_cmd_en;
+  wire [2:0]	c3_p4_cmd_instr;
+  wire [5:0]	c3_p4_cmd_bl;
+  wire [29:0]	c3_p4_cmd_byte_addr;
+  wire		c3_p4_cmd_empty;
+  wire		c3_p4_cmd_full;
+  wire		c3_p4_rd_en;
+  wire [31:0]	c3_p4_rd_data;
+  wire		c3_p4_rd_full;
+  wire		c3_p4_rd_empty;
+  wire [6:0]	c3_p4_rd_count;
+  wire		c3_p4_rd_overflow;
+  wire		c3_p4_rd_error;
+
+  wire		c3_p5_cmd_en;
+  wire [2:0]	c3_p5_cmd_instr;
+  wire [5:0]	c3_p5_cmd_bl;
+  wire [29:0]	c3_p5_cmd_byte_addr;
+  wire		c3_p5_cmd_empty;
+  wire		c3_p5_cmd_full;
+  wire		c3_p5_rd_en;
+  wire [31:0]	c3_p5_rd_data;
+  wire		c3_p5_rd_full;
+  wire		c3_p5_rd_empty;
+  wire [6:0]	c3_p5_rd_count;
+  wire		c3_p5_rd_overflow;
+  wire		c3_p5_rd_error;
+
+wire				c3_p2_wr_clk;
+wire				c3_p2_wr_en;
+wire[3:0]			c3_p2_wr_mask;
+wire[31:0]			c3_p2_wr_data;
+wire				c3_p2_wr_full;
+wire				c3_p2_wr_empty;
+wire[6:0]			c3_p2_wr_count;
+wire				c3_p2_wr_underrun;
+wire				c3_p2_wr_error;
+wire				c3_p3_wr_clk;
+wire				c3_p3_wr_en;
+wire[3:0]			c3_p3_wr_mask;
+wire[31:0]			c3_p3_wr_data;
+wire				c3_p3_wr_full;
+wire				c3_p3_wr_empty;
+wire[6:0]			c3_p3_wr_count;
+wire				c3_p3_wr_underrun;
+wire				c3_p3_wr_error;
 wire				c3_p4_wr_clk;
 wire				c3_p4_wr_en;
 wire[3:0]			c3_p4_wr_mask;
@@ -294,21 +317,6 @@ wire				c3_p4_wr_empty;
 wire[6:0]			c3_p4_wr_count;
 wire				c3_p4_wr_underrun;
 wire				c3_p4_wr_error;
-wire				c3_p4_rd_clk;
-wire				c3_p4_rd_en;
-wire[31:0]			c3_p4_rd_data;
-wire				c3_p4_rd_full;
-wire				c3_p4_rd_empty;
-wire[6:0]			c3_p4_rd_count;
-wire				c3_p4_rd_overflow;
-wire				c3_p4_rd_error;
-wire				c3_p5_cmd_clk;
-wire				c3_p5_cmd_en;
-wire[2:0]			c3_p5_cmd_instr;
-wire[5:0]			c3_p5_cmd_bl;
-wire[29:0]			c3_p5_cmd_byte_addr;
-wire				c3_p5_cmd_empty;
-wire				c3_p5_cmd_full;
 wire				c3_p5_wr_clk;
 wire				c3_p5_wr_en;
 wire[3:0]			c3_p5_wr_mask;
@@ -318,14 +326,6 @@ wire				c3_p5_wr_empty;
 wire[6:0]			c3_p5_wr_count;
 wire				c3_p5_wr_underrun;
 wire				c3_p5_wr_error;
-wire				c3_p5_rd_clk;
-wire				c3_p5_rd_en;
-wire[31:0]			c3_p5_rd_data;
-wire				c3_p5_rd_full;
-wire				c3_p5_rd_empty;
-wire[6:0]			c3_p5_rd_count;
-wire				c3_p5_rd_overflow;
-wire				c3_p5_rd_error;
 
 // Error & Calib Signals
    wire                             error;
@@ -485,15 +485,6 @@ design_top (
    .c3_p2_cmd_byte_addr                    (c3_p2_cmd_byte_addr),
    .c3_p2_cmd_empty                        (c3_p2_cmd_empty),
    .c3_p2_cmd_full                         (c3_p2_cmd_full),
-   .c3_p2_wr_clk                           (c3_clk0),
-   .c3_p2_wr_en                            (c3_p2_wr_en),
-   .c3_p2_wr_mask                          (c3_p2_wr_mask),
-   .c3_p2_wr_data                          (c3_p2_wr_data),
-   .c3_p2_wr_full                          (c3_p2_wr_full),
-   .c3_p2_wr_empty                         (c3_p2_wr_empty),
-   .c3_p2_wr_count                         (c3_p2_wr_count),
-   .c3_p2_wr_underrun                      (c3_p2_wr_underrun),
-   .c3_p2_wr_error                         (c3_p2_wr_error),
    .c3_p2_rd_clk                           (c3_clk0),
    .c3_p2_rd_en                            (c3_p2_rd_en),
    .c3_p2_rd_data                          (c3_p2_rd_data),
@@ -509,15 +500,6 @@ design_top (
    .c3_p3_cmd_byte_addr                    (c3_p3_cmd_byte_addr),
    .c3_p3_cmd_empty                        (c3_p3_cmd_empty),
    .c3_p3_cmd_full                         (c3_p3_cmd_full),
-   .c3_p3_wr_clk                           (c3_clk0),
-   .c3_p3_wr_en                            (c3_p3_wr_en),
-   .c3_p3_wr_mask                          (c3_p3_wr_mask),
-   .c3_p3_wr_data                          (c3_p3_wr_data),
-   .c3_p3_wr_full                          (c3_p3_wr_full),
-   .c3_p3_wr_empty                         (c3_p3_wr_empty),
-   .c3_p3_wr_count                         (c3_p3_wr_count),
-   .c3_p3_wr_underrun                      (c3_p3_wr_underrun),
-   .c3_p3_wr_error                         (c3_p3_wr_error),
    .c3_p3_rd_clk                           (c3_clk0),
    .c3_p3_rd_en                            (c3_p3_rd_en),
    .c3_p3_rd_data                          (c3_p3_rd_data),
@@ -525,7 +507,37 @@ design_top (
    .c3_p3_rd_empty                         (c3_p3_rd_empty),
    .c3_p3_rd_count                         (c3_p3_rd_count),
    .c3_p3_rd_overflow                      (c3_p3_rd_overflow),
-   .c3_p3_rd_error                         (c3_p3_rd_error)
+   .c3_p3_rd_error                         (c3_p3_rd_error),
+   .c3_p4_cmd_clk                          (c3_clk0),
+   .c3_p4_cmd_en                           (c3_p4_cmd_en),
+   .c3_p4_cmd_instr                        (c3_p4_cmd_instr),
+   .c3_p4_cmd_bl                           (c3_p4_cmd_bl),
+   .c3_p4_cmd_byte_addr                    (c3_p4_cmd_byte_addr),
+   .c3_p4_cmd_empty                        (c3_p4_cmd_empty),
+   .c3_p4_cmd_full                         (c3_p4_cmd_full),
+   .c3_p4_rd_clk                           (c3_clk0),
+   .c3_p4_rd_en                            (c3_p4_rd_en),
+   .c3_p4_rd_data                          (c3_p4_rd_data),
+   .c3_p4_rd_full                          (c3_p4_rd_full),
+   .c3_p4_rd_empty                         (c3_p4_rd_empty),
+   .c3_p4_rd_count                         (c3_p4_rd_count),
+   .c3_p4_rd_overflow                      (c3_p4_rd_overflow),
+   .c3_p4_rd_error                         (c3_p4_rd_error),
+   .c3_p5_cmd_clk                          (c3_clk0),
+   .c3_p5_cmd_en                           (c3_p5_cmd_en),
+   .c3_p5_cmd_instr                        (c3_p5_cmd_instr),
+   .c3_p5_cmd_bl                           (c3_p5_cmd_bl),
+   .c3_p5_cmd_byte_addr                    (c3_p5_cmd_byte_addr),
+   .c3_p5_cmd_empty                        (c3_p5_cmd_empty),
+   .c3_p5_cmd_full                         (c3_p5_cmd_full),
+   .c3_p5_rd_clk                           (c3_clk0),
+   .c3_p5_rd_en                            (c3_p5_rd_en),
+   .c3_p5_rd_data                          (c3_p5_rd_data),
+   .c3_p5_rd_full                          (c3_p5_rd_full),
+   .c3_p5_rd_empty                         (c3_p5_rd_empty),
+   .c3_p5_rd_count                         (c3_p5_rd_count),
+   .c3_p5_rd_overflow                      (c3_p5_rd_overflow),
+   .c3_p5_rd_error                         (c3_p5_rd_error)
 );      
 
 
