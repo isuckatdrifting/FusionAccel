@@ -38,7 +38,7 @@ wire        c3_clk0;
 
 wire 		op_en;
 wire [2:0] 	op_type;
-wire [15:0] op_num;
+wire [19:0] op_num;
 wire		engine_reset;
 wire [31:0] cmd_fifo_dout;
 wire [31:0] p2_data_fifo_dout, p3_weight_fifo_dout, p4_data_fifo_dout, p5_weight_fifo_dout;

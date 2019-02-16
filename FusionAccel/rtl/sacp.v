@@ -108,7 +108,7 @@ always @ (posedge clk or posedge rst) begin
             div: begin
                 if(operation_rfd_div) begin operation_nd_div <= 1'b1; end
                 //if(data_permit_div) begin 
-                a_div <= result_acc; b_div <= 16'h5948; 
+                a_div <= result_acc; b_div <= 16'h5a20; //196
                 //end
                 if(rdy_div) begin 
                     a_div <= 0; b_div <= 0;

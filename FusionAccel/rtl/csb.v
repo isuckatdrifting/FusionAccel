@@ -19,7 +19,7 @@ module csb(
     output          dma_cmd_reads_en,
 
     output [2:0]    op_type,
-    output [15:0]   op_num,
+    output [19:0]   op_num,
     output [31:0]   weight_start_addr,
     output [31:0]   data_start_addr,
     output [31:0]   writeback_addr,
@@ -38,15 +38,14 @@ module csb(
 
 //Compressed Commands from SDRAM
 //|----------CMD TYPE----------|
-//|        op_type: 3Bit       | 
-//|    padding = 1: 1Bit       | 4Bit remained space
-//|       stride_1: 8bit       | Max line size = 224 < 256
-//|       stride_2: 16Bit      | Max surface size = image size = 224*224 = 50176 < 65536
+//|        op_type: 3Bit       | 1Bit remained spece
+//|    padding = 1: 1Bit       | 3Bit remained space
+//|       stride: 4Bit         | 
+//|       op_num: 20Bit        |
 //|  input channel size: 16Bit |
 //| output channel size: 16Bit |
 //|   input kernel size: 8Bit  |
-//|  output kernel size: 8Bit  |
-//|     op_num per cmac: 16Bit |
+//|  output kernel size: 8Bit  | 16Bit remained space
 //|   weight_start_addr: 32Bit |
 //|     data_start_addr: 32Bit |
 //|  write_back_address: 32Bit |
@@ -79,11 +78,10 @@ reg [2:0]   cmd_burst_count;
 
 reg [2:0]   op_type;              //Output
 reg         padding;
-reg [7:0]   stride_1;
-reg [15:0]  stride_2;
+reg [3:0]   stride;
+reg [19:0]  op_num;              //Output
 reg [15:0]  i_channel_size, o_channel_size;
 reg [7:0]  i_kernel_size, o_kernel_size;
-reg [15:0]  op_num;              //Output
 reg [31:0]  weight_start_addr;   //Output
 reg [31:0]  data_start_addr;     //Output
 reg [31:0]  writeback_addr;      //Output
@@ -165,9 +163,9 @@ always @ (posedge clk or posedge rst) begin
         cmd_fifo_rd_en <= 0;
         cmd_burst_count <= 3'd0;
         //Commands
-        op_type <= 3'd0; stride_1 <= 8'h00; stride_2 <= 16'h0000;
+        op_type <= 3'd0; stride <= 4'h0; padding <= 1'b0; op_num <= 20'h0000;
         i_channel_size <= 16'h0000; o_channel_size <= 16'h0000;
-        i_kernel_size <= 8'h00; o_kernel_size <= 8'h00; op_num <= 16'h0000;
+        i_kernel_size <= 8'h00; o_kernel_size <= 8'h00; 
         data_start_addr <= 32'h0000_0000;
         weight_start_addr <= 32'h0000_0000;
         writeback_addr <= 32'h0000_0000;
@@ -197,9 +195,9 @@ always @ (posedge clk or posedge rst) begin
                 cmd_burst_count <= cmd_burst_count - 1;
                 op_done <= 0;
                 case (cmd_burst_count)
-                    6: begin op_type <= cmd[2:0]; padding <= cmd[3]; stride_1 <= cmd[15:8]; stride_2 <= cmd[31:16]; end
+                    6: begin op_type <= cmd[2:0]; padding <= cmd[4]; stride <= cmd[11:8]; op_num <= cmd[31:12]; end
                     5: begin i_channel_size <= cmd[15:0]; o_channel_size <= cmd[31:16]; end
-                    4: begin i_kernel_size <= cmd[7:0]; o_kernel_size <= cmd[15:8]; op_num <= cmd[31:16]; end
+                    4: begin i_kernel_size <= cmd[7:0]; o_kernel_size <= cmd[15:8]; end
                     3: begin weight_start_addr <= cmd; end
                     2: begin data_start_addr <= cmd; end
                     1: begin writeback_addr <= cmd; cmd_collect_done <= 1; cmd_fifo_rd_en <= 0; op_run <= 1; end
