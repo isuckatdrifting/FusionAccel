@@ -19,6 +19,8 @@ module csb(
     output          dma_cmd_reads_en,
 
     output [2:0]    op_type,
+    output          padding,
+    output [3:0]    stride,
     output [19:0]   op_num,
     output [31:0]   weight_start_addr,
     output [31:0]   data_start_addr,
@@ -64,8 +66,8 @@ module csb(
 //|CONV1x1 + ReLU Activation                        |      001      |
 //|CONV3x3 + ReLU Activation                        |      010      |
 //|CONV3x3(with padding) & CONV1x1 + ReLU Activation|      011      |
-//|POOLING_3x3_MAX                                  |      100      |
-//|POOLING_13x13_AVERAGE                            |      101      |
+//|Max Pooling                                      |      100      |
+//|Average Pooling                                  |      101      |
 //|-------------------------------------------------|---------------| 
 
 //Handshake signals to submodules
