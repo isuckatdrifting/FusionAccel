@@ -45,7 +45,7 @@ wire [31:0] p2_data_fifo_dout, p3_weight_fifo_dout, p4_data_fifo_dout, p5_weight
 wire [15:0] p0_result_din, p1_result_din;
 wire 		p0_result_fifo_wr_en, p1_result_fifo_wr_en;
 wire [9:0] 	cmd_fifo_wr_count;
-wire [29:0] weight_start_addr, data_start_addr, writeback_addr;
+wire [29:0] weight_start_addr, data_start_addr, result_addr;
 
 //------------------------------------------------
 // Control Signal Block for all cores
@@ -72,7 +72,7 @@ csb csb_(
 	.op_num					(op_num),
 	.weight_start_addr		(weight_start_addr),
 	.data_start_addr		(data_start_addr),
-    .writeback_addr			(writeback_addr),
+    .result_addr			(result_addr),
 	.op_run					(op_run),
 	.dma_cmd_reads_en		(dma_cmd_reads_en),
 	.engine_reset			(engine_reset),

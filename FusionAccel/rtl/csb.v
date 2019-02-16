@@ -22,7 +22,7 @@ module csb(
     output [19:0]   op_num,
     output [31:0]   weight_start_addr,
     output [31:0]   data_start_addr,
-    output [31:0]   writeback_addr,
+    output [31:0]   result_addr,
     output          op_run,
     output          engine_reset,
 
@@ -30,22 +30,22 @@ module csb(
 );
 //Notes: CMDs are loaded initially to SDRAM to be called multiple times.
 //Notes: CMD Fifo: WR clock domain: c3clk0, RD clock domain: clk.
+//Notes: Use Img2col(MEC) Convolution
 
-//TODO: Use Img2col/MEC Convolution
 //TODO: Padding = 1 --> Add 0 in memory
-//TODO: Use csb to reset submodules
 //TODO: Concatenation Layer
 
 //Compressed Commands from SDRAM
 //|----------CMD TYPE----------|
-//|        op_type: 3Bit       | 1Bit remained spece
-//|    padding = 1: 1Bit       | 3Bit remained space
-//|       stride: 4Bit         | 
-//|       op_num: 20Bit        |
+//|        op_type:  3Bit      | 1Bit remained space
+//|    padding = 1:  1Bit      | 3Bit remained space
+//|         stride:  4Bit      | 
+//|         op_num: 20Bit      |
 //|  input channel size: 16Bit |
 //| output channel size: 16Bit |
-//|   input kernel size: 8Bit  |
-//|  output kernel size: 8Bit  | 16Bit remained space
+//|   input kernel size:  8Bit |
+//|  output kernel size:  8Bit |
+//| output surface size: 16Bit |
 //|   weight_start_addr: 32Bit |
 //|     data_start_addr: 32Bit |
 //|  write_back_address: 32Bit |
@@ -81,10 +81,11 @@ reg         padding;
 reg [3:0]   stride;
 reg [19:0]  op_num;              //Output
 reg [15:0]  i_channel_size, o_channel_size;
-reg [7:0]  i_kernel_size, o_kernel_size;
+reg [7:0]   i_kernel_size, o_kernel_size;
+reg [15:0]  o_surf_size;
 reg [31:0]  weight_start_addr;   //Output
 reg [31:0]  data_start_addr;     //Output
-reg [31:0]  writeback_addr;      //Output
+reg [31:0]  result_addr;      //Output
 
 reg [15:0]  n_count;             //TODO: n_count from 0 to op_num, step = conv kernel size, // +64 per read = +4 per read per channel
 reg         op_run;                     //Output, indicating p0 transfers command or data
@@ -165,10 +166,10 @@ always @ (posedge clk or posedge rst) begin
         //Commands
         op_type <= 3'd0; stride <= 4'h0; padding <= 1'b0; op_num <= 20'h0000;
         i_channel_size <= 16'h0000; o_channel_size <= 16'h0000;
-        i_kernel_size <= 8'h00; o_kernel_size <= 8'h00; 
+        i_kernel_size <= 8'h00; o_kernel_size <= 8'h00; o_surf_size <= 16'h0000;
         data_start_addr <= 32'h0000_0000;
         weight_start_addr <= 32'h0000_0000;
-        writeback_addr <= 32'h0000_0000;
+        result_addr <= 32'h0000_0000;
         op_run <= 0;
         n_count <= 16'h0000;
 
@@ -197,10 +198,10 @@ always @ (posedge clk or posedge rst) begin
                 case (cmd_burst_count)
                     6: begin op_type <= cmd[2:0]; padding <= cmd[4]; stride <= cmd[11:8]; op_num <= cmd[31:12]; end
                     5: begin i_channel_size <= cmd[15:0]; o_channel_size <= cmd[31:16]; end
-                    4: begin i_kernel_size <= cmd[7:0]; o_kernel_size <= cmd[15:8]; end
+                    4: begin i_kernel_size <= cmd[7:0]; o_kernel_size <= cmd[15:8]; o_surf_size <= cmd[31:16]; end
                     3: begin weight_start_addr <= cmd; end
                     2: begin data_start_addr <= cmd; end
-                    1: begin writeback_addr <= cmd; cmd_collect_done <= 1; cmd_fifo_rd_en <= 0; op_run <= 1; end
+                    1: begin result_addr <= cmd; cmd_collect_done <= 1; cmd_fifo_rd_en <= 0; op_run <= 1; end
                     default: ;
                 endcase 
             end
