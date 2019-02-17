@@ -38,6 +38,8 @@ wire        c3_clk0;
 
 wire 		op_en;
 wire [2:0] 	op_type;
+wire 		padding;
+wire [3:0]  stride;
 wire [19:0] op_num;
 wire		engine_reset;
 wire [31:0] cmd_fifo_dout;
@@ -67,14 +69,15 @@ csb csb_(
 	.cmd_fifo_empty			(cmd_fifo_empty),
 	.cmd_size				(),
 	.cmd_fifo_rd_en			(cmd_fifo_rd_en),
+	.dma_p1_reads_en		(dma_p1_reads_en),
 
 	.op_type				(op_type),
+	.padding				(padding),
+	.stride					(stride),
 	.op_num					(op_num),
 	.weight_start_addr		(weight_start_addr),
 	.data_start_addr		(data_start_addr),
     .result_addr			(result_addr),
-	.op_run					(op_run),
-	.dma_cmd_reads_en		(dma_cmd_reads_en),
 	.engine_reset			(engine_reset),
 
     .irq					(irq));
@@ -117,7 +120,6 @@ engine engine_(
     .dma_p1_writes_en		(dma_p1_writes_en)
     
 );
-
 
 localparam BLOCK_SIZE      = 128;   // 512 bytes / 4 byte per word;
 localparam FIFO_SIZE       = 1023;  // note that Xilinx does not allow use of the full 1024 words
