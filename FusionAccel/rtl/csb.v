@@ -22,8 +22,10 @@ module csb(
     output          padding,
     output [3:0]    stride,
     output [19:0]   op_num,
-    output [31:0]   weight_start_addr,
-    output [31:0]   data_start_addr,
+    output [29:0]   p2_start_addr,
+    output [29:0]   p3_start_addr,
+    output [29:0]   p4_start_addr,
+    output [29:0]   p5_start_addr,
     output [31:0]   result_addr,
     output          op_run,
     output          engine_reset,
@@ -70,10 +72,15 @@ reg [19:0]  op_num;                     //Output
 reg [15:0]  i_channel_size, o_channel_size;
 reg [7:0]   i_side_size, o_side_size;
 reg [15:0]  o_surf_size;
-reg [31:0]  weight_start_addr;          //Output
-reg [31:0]  data_start_addr;            //Output
+reg [31:0]  weight_start_addr;
+reg [31:0]  data_start_addr;
 reg [31:0]  result_addr;                //Output
+reg [29:0]  p2_start_addr;              //Output to DMA, burst start address. 
+reg [29:0]  p3_start_addr;
+reg [29:0]  p4_start_addr;
+reg [29:0]  p5_start_addr;
 
+reg [7:0]   done_side_count;            // from 0 to o_side_size
 reg [15:0]  done_surf_count;            // from 0 to o_surf_size
 reg [15:0]  done_channel_count;         // from 0 to o_channel_size, step = PARA = 16
 reg         engine_reset;
@@ -155,9 +162,13 @@ always @ (posedge clk or posedge rst) begin
         i_side_size <= 8'h00; o_side_size <= 8'h00; o_surf_size <= 16'h0000;
         data_start_addr <= 32'h0000_0000;
         weight_start_addr <= 32'h0000_0000;
+        p2_start_addr <= 30'h0000_0000;
+        p3_start_addr <= 30'h0000_0000;
+        p4_start_addr <= 30'h0000_0000;
+        p5_start_addr <= 30'h0000_0000;
         result_addr <= 32'h0000_0000;
 
-        done_channel_count <= 16'h0000; done_surf_count <= 16'h0000;
+        done_side_count <= 8'h00; done_channel_count <= 16'h0000; done_surf_count <= 16'h0000;
         conv_ready <= 0; maxpool_ready <= 0; avepool_ready <= 0;
         cmd_collect_done <= 0; cmd_issue_done <= 0; op_done <= 0;
 
@@ -189,6 +200,7 @@ always @ (posedge clk or posedge rst) begin
                 cmd_burst_count <= CMD_BURST_LEN;
                 cmd_collect_done <= 0;
                 //Notes: Send out dma access signals(ready, addr) to submodules according to op_type to get data and weight
+                p3_start_addr <= weight_start_addr; p2_start_addr <= data_start_addr; 
                 case (op_type)
                     1,2,3: begin conv_ready <= 1; cmd_issue_done <= 1; end
                     4:begin maxpool_ready <= 1; cmd_issue_done <= 1; end
@@ -198,8 +210,18 @@ always @ (posedge clk or posedge rst) begin
             end
             wait_op: begin
                 cmd_issue_done <= 0; //Reset the registers in cmd_issue and wait for submodules to finish
-                if(conv_valid | maxpool_valid | avepool_valid) done_surf_count <= done_surf_count + 1; 
-                if(done_surf_count == o_surf_size) begin
+                if(conv_valid | maxpool_valid | avepool_valid) begin
+                    done_surf_count <= done_surf_count + 1; 
+                    // data cube start_address parsing
+                    // TODO: padding conditions
+                    done_side_count <= done_side_count + 1;
+                    if(done_side_count + 1 == o_side_size) begin // stride & next row conditions
+                        p2_start_addr <= p2_start_addr + {6'h00, op_num, 4'h0}; // Jump @ end, 6+20+4
+                    end else begin
+                        p2_start_addr <= p2_start_addr + {22'h00_0000, stride, 4'h0}; //Only add data addr, x16, 22+4+4
+                    end
+                end
+                if(done_surf_count + 1 == o_surf_size) begin
                     done_channel_count <= done_channel_count + 16; // parallelism is 16
                     done_surf_count <= 0;
                 end
