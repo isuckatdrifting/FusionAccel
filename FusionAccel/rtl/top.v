@@ -41,7 +41,7 @@ wire [6:0]  cmd_size;
 wire [2:0] 	op_type;
 wire 		padding;
 wire [3:0]  stride;
-wire [19:0] op_num;
+wire [15:0] op_num;
 wire		engine_reset;
 wire [31:0] cmd_fifo_dout;
 wire [31:0] p2_data_fifo_dout, p3_weight_fifo_dout, p4_data_fifo_dout, p5_weight_fifo_dout;

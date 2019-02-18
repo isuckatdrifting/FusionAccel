@@ -263,31 +263,37 @@ always @ (posedge clk or posedge rst) begin
 						dma_p4_reads_en <= 1; dma_p5_reads_en <= 1;
 						conv_burst_cnt <= conv_burst_cnt + 1;
 						conv_ready_1[conv_burst_cnt] <= 1; 
-						if(conv_burst_cnt < 16) begin 
-							p4_data_fifo_rd_en <= 1; 
+						if(conv_burst_cnt < CONV_BURST_LEN) begin 
 							p5_weight_fifo_rd_en <= 1;
 						end else begin
-							p4_data_fifo_rd_en <= 0;
 							p5_weight_fifo_rd_en <= 0;
+						end
+						if(conv_burst_cnt == 1) begin
+							p4_data_fifo_rd_en <= 1;
+						end else begin
+							p4_data_fifo_rd_en <= 0;
 						end
 					end
 					CONV3: begin 
 						dma_p2_reads_en <= 1; dma_p3_reads_en <= 1;
 						conv_burst_cnt <= conv_burst_cnt + 1;
 						conv_ready_0[conv_burst_cnt] <= 1;
-						if(conv_burst_cnt < 16) begin 
-							p2_data_fifo_rd_en <= 1; 
+						if(conv_burst_cnt < CONV_BURST_LEN) begin 
 							p3_weight_fifo_rd_en <= 1;
 						end else begin
-							p2_data_fifo_rd_en <= 0; 
 							p3_weight_fifo_rd_en <= 0;
+						end
+						if(conv_burst_cnt == 1) begin
+							p2_data_fifo_rd_en <= 1;
+						end else begin
+							p2_data_fifo_rd_en <= 0;
 						end
 					end
 					CONVP: begin 
 						dma_p2_reads_en <= 1; dma_p3_reads_en <= 1; dma_p4_reads_en <= 1; dma_p5_reads_en <= 1;
 						conv_burst_cnt <= conv_burst_cnt + 1;
 						conv_ready_0[conv_burst_cnt] <= 1; conv_ready_1[conv_burst_cnt] <= 1; 
-						if(conv_burst_cnt < 16) begin 
+						if(conv_burst_cnt < CONV_BURST_LEN) begin 
 							p2_data_fifo_rd_en <= 1; p3_weight_fifo_rd_en <= 1;
 							p4_data_fifo_rd_en <= 1; p5_weight_fifo_rd_en <= 1; 
 						end else begin
@@ -307,7 +313,7 @@ always @ (posedge clk or posedge rst) begin
 					MPOOL: begin
 						pool_burst_cnt <= pool_burst_cnt + 1;
 						maxpool_ready_0[pool_burst_cnt] <= 1;
-						if(pool_burst_cnt < 1) begin
+						if(pool_burst_cnt < POOL_BURST_LEN) begin
 							p2_data_fifo_rd_en <= 1;
 						end else begin
 							p2_data_fifo_rd_en <= 0;
@@ -325,7 +331,7 @@ always @ (posedge clk or posedge rst) begin
 					APOOL: begin
 						pool_burst_cnt <= pool_burst_cnt + 1;
 						avepool_ready_0[pool_burst_cnt] <= 1;
-						if(pool_burst_cnt < 1) begin
+						if(pool_burst_cnt < POOL_BURST_LEN) begin
 							p2_data_fifo_rd_en <= 1;
 						end else begin
 							p2_data_fifo_rd_en <= 0;

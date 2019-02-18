@@ -17,13 +17,13 @@ wire conv_valid;
 wire maxpool_valid;
 wire avepool_valid;
 
-wire p0_data_fifo_rd_en;
+wire p2_data_fifo_rd_en;
 reg [15:0] data_0;
-wire p0_weight_fifo_rd_en;
+wire p3_weight_fifo_rd_en;
 reg [15:0] weight_0;
-wire p1_data_fifo_rd_en;
+wire p4_data_fifo_rd_en;
 reg [15:0] data_1;
-wire p1_weight_fifo_rd_en;
+wire p5_weight_fifo_rd_en;
 reg [15:0] weight_1;
 
 reg [15:0] data0_fifo [0:143];
@@ -38,15 +38,18 @@ reg weight0_fifo_valid;
 `ifdef CMAC
 integer j;
 initial begin
-    for (j=0;j<16;j=j+1) begin data0_fifo[j] = 16'h3c00; weight0_fifo[j] = 16'h3c00; end
-    for (j=16;j<32;j=j+1) begin data0_fifo[j] = 16'h4000; weight0_fifo[j] = 16'h4000; end
-    for (j=32;j<48;j=j+1) begin data0_fifo[j] = 16'h4200; weight0_fifo[j] = 16'h4200; end
-    for (j=48;j<64;j=j+1) begin data0_fifo[j] = 16'h4400; weight0_fifo[j] = 16'h4400; end
-    for (j=64;j<80;j=j+1) begin data0_fifo[j] = 16'h4500; weight0_fifo[j] = 16'h4500; end
-    for (j=80;j<96;j=j+1) begin data0_fifo[j] = 16'h4600; weight0_fifo[j] = 16'h4600; end
-    for (j=96;j<112;j=j+1) begin data0_fifo[j] = 16'h4700; weight0_fifo[j] = 16'h4700; end
-    for (j=112;j<128;j=j+1) begin data0_fifo[j] = 16'h4800; weight0_fifo[j] = 16'h4800; end
-    for (j=128;j<144;j=j+1) begin data0_fifo[j] = 16'h4880; weight0_fifo[j] = 16'h4880; end
+	data0_fifo[0] = 16'h3c00; data0_fifo[1] = 16'h4000; data0_fifo[2] = 16'h4200;
+	data0_fifo[3] = 16'h4400; data0_fifo[4] = 16'h4500; data0_fifo[5] = 16'h4600;
+	data0_fifo[6] = 16'h4700; data0_fifo[7] = 16'h4800; data0_fifo[8] = 16'h4880;
+    for (j=0;j<16;j=j+1) begin weight0_fifo[j] = 16'h3c00; end
+    for (j=16;j<32;j=j+1) begin weight0_fifo[j] = 16'h4000; end
+    for (j=32;j<48;j=j+1) begin weight0_fifo[j] = 16'h4200; end
+    for (j=48;j<64;j=j+1) begin weight0_fifo[j] = 16'h4400; end
+    for (j=64;j<80;j=j+1) begin weight0_fifo[j] = 16'h4500; end
+    for (j=80;j<96;j=j+1) begin weight0_fifo[j] = 16'h4600; end
+    for (j=96;j<112;j=j+1) begin weight0_fifo[j] = 16'h4700; end
+    for (j=112;j<128;j=j+1) begin weight0_fifo[j] = 16'h4800; end
+    for (j=128;j<144;j=j+1) begin weight0_fifo[j] = 16'h4880; end
 	for (j=144;j<160;j=j+1) begin weight0_fifo[j] = 16'h3c00; end
 end
 `endif
@@ -88,16 +91,16 @@ engine engine_(
 	.conv_valid             (conv_valid),
 	.maxpool_valid          (maxpool_valid),
 	.avepool_valid          (avepool_valid),
+	.data_0                 (data_0),
+	.weight_0               (weight_0),
+	.data_1                 (data_1),
+	.weight_1               (weight_1),
 
 	//Data path from dma -> fifos
-	.p0_data_fifo_rd_en     (p0_data_fifo_rd_en),
-	.data_0                 (data_0),
-	.p0_weight_fifo_rd_en   (p0_weight_fifo_rd_en),
-	.weight_0               (weight_0),
-	.p1_data_fifo_rd_en     (p1_data_fifo_rd_en),
-	.data_1                 (data_1),
-	.p1_weight_fifo_rd_en   (p1_weight_fifo_rd_en),
-	.weight_1               (weight_1)
+	.p2_data_fifo_rd_en     (p2_data_fifo_rd_en),
+	.p3_weight_fifo_rd_en   (p3_weight_fifo_rd_en),
+	.p4_data_fifo_rd_en     (p4_data_fifo_rd_en),
+	.p5_weight_fifo_rd_en   (p5_weight_fifo_rd_en)
 	
 	//Outputs directly back to dma
 );
@@ -128,12 +131,12 @@ always @(posedge conv_valid) conv_ready <= 0;
 
 always @(posedge clk) begin
 	if(conv_ready) begin
-		if(p0_data_fifo_rd_en) begin 
+		if(p2_data_fifo_rd_en) begin 
 			data0_fifo_valid <= 1;
 			data_0 <= data0_fifo[m]; 
 			m <= m + 1; 
 		end else data0_fifo_valid <= 0;
-		if(p0_weight_fifo_rd_en) begin 
+		if(p3_weight_fifo_rd_en) begin 
 			weight0_fifo_valid <= 1;
 			weight_0 <= weight0_fifo[n]; 
 			n <= n + 1; 
@@ -161,7 +164,7 @@ always @(posedge avepool_valid) avepool_ready <= 0;
 
 always @(posedge clk) begin
 	if(avepool_ready) begin
-		if(p0_data_fifo_rd_en) begin 
+		if(p2_data_fifo_rd_en) begin 
 			data0_fifo_valid <= 1;
 			data_0 <= pooldata[15:0]; 
 			pooldata <= pooldata >> 16;
@@ -189,7 +192,7 @@ always @(posedge maxpool_valid) maxpool_ready <= 0;
 
 always @(posedge clk) begin
 	if(maxpool_ready) begin
-		if(p0_data_fifo_rd_en) begin 
+		if(p2_data_fifo_rd_en) begin 
 			data0_fifo_valid <= 1;
 			data_0 <= maxpooldata[15:0]; 
 			maxpooldata <= maxpooldata >> 16;
