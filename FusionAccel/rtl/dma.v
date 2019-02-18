@@ -40,7 +40,6 @@ module dma
 
 localparam 	FIFO_SIZE = 1024;
 localparam 	BURST_LEN = 6'd32;  // Number of 32bit(Port size) user words per DRAM command (Must be Multiple of 2)
-localparam 	PARA = 16;
 
 reg  [29:0] cmd_byte_addr_wr, cmd_byte_addr_rd;
 reg  [5:0]  burst_cnt;

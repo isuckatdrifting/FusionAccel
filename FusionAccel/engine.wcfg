@@ -10,7 +10,7 @@
          </top_modules>
       </db_ref>
    </db_ref_list>
-   <WVObjectSize size="140" />
+   <WVObjectSize size="137" />
    <wave_markers>
       <marker time="140000000" label="" />
    </wave_markers>
@@ -44,26 +44,6 @@
       <obj_property name="ObjectShortName">pool_burst_cnt[7:0]</obj_property>
       <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
    </wvobject>
-   <wvobject fp_name="/engine_tb/engine_/dma_p0_reads_en" type="logic" db_ref_id="1">
-      <obj_property name="ElementShortName">dma_p0_reads_en</obj_property>
-      <obj_property name="ObjectShortName">dma_p0_reads_en</obj_property>
-   </wvobject>
-   <wvobject fp_name="/engine_tb/p0_data_fifo_rd_en" type="logic" db_ref_id="1">
-      <obj_property name="ElementShortName">p0_data_fifo_rd_en</obj_property>
-      <obj_property name="ObjectShortName">p0_data_fifo_rd_en</obj_property>
-   </wvobject>
-   <wvobject fp_name="/engine_tb/p0_weight_fifo_rd_en" type="logic" db_ref_id="1">
-      <obj_property name="ElementShortName">p0_weight_fifo_rd_en</obj_property>
-      <obj_property name="ObjectShortName">p0_weight_fifo_rd_en</obj_property>
-   </wvobject>
-   <wvobject fp_name="/engine_tb/p1_data_fifo_rd_en" type="logic" db_ref_id="1">
-      <obj_property name="ElementShortName">p1_data_fifo_rd_en</obj_property>
-      <obj_property name="ObjectShortName">p1_data_fifo_rd_en</obj_property>
-   </wvobject>
-   <wvobject fp_name="/engine_tb/p1_weight_fifo_rd_en" type="logic" db_ref_id="1">
-      <obj_property name="ElementShortName">p1_weight_fifo_rd_en</obj_property>
-      <obj_property name="ObjectShortName">p1_weight_fifo_rd_en</obj_property>
-   </wvobject>
    <wvobject fp_name="/engine_tb/clk" type="logic" db_ref_id="1">
       <obj_property name="ElementShortName">clk</obj_property>
       <obj_property name="ObjectShortName">clk</obj_property>
@@ -92,14 +72,22 @@
       <obj_property name="ElementShortName">curr_state[3:0]</obj_property>
       <obj_property name="ObjectShortName">curr_state[3:0]</obj_property>
    </wvobject>
-   <wvobject fp_name="/engine_tb/engine_/p0_data_fifo_rd_en" type="logic" db_ref_id="1">
-      <obj_property name="ElementShortName">p0_data_fifo_rd_en</obj_property>
-      <obj_property name="ObjectShortName">p0_data_fifo_rd_en</obj_property>
-   </wvobject>
    <wvobject fp_name="/engine_tb/data_0" type="array" db_ref_id="1">
       <obj_property name="ElementShortName">data_0[15:0]</obj_property>
       <obj_property name="ObjectShortName">data_0[15:0]</obj_property>
       <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/conv_burst_cnt" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">conv_burst_cnt[7:0]</obj_property>
+      <obj_property name="ObjectShortName">conv_burst_cnt[7:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/p2_data_fifo_rd_en" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">p2_data_fifo_rd_en</obj_property>
+      <obj_property name="ObjectShortName">p2_data_fifo_rd_en</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/p3_weight_fifo_rd_en" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">p3_weight_fifo_rd_en</obj_property>
+      <obj_property name="ObjectShortName">p3_weight_fifo_rd_en</obj_property>
    </wvobject>
    <wvobject fp_name="/engine_tb/data0_fifo_valid" type="logic" db_ref_id="1">
       <obj_property name="ElementShortName">data0_fifo_valid</obj_property>
