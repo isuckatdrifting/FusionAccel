@@ -1,4 +1,7 @@
-module csb(
+module csb # (
+    parameter CMD_BURST_LEN = 3'd8
+)
+(
     input           clk,
     input           rst,
     input           op_en,
@@ -19,7 +22,6 @@ module csb(
     output          dma_p1_reads_en,
 
     output [2:0]    op_type,
-    output          padding,
     output [3:0]    stride,
     output [19:0]   op_num,
     output [29:0]   p2_start_addr,
@@ -27,7 +29,9 @@ module csb(
     output [29:0]   p4_start_addr,
     output [29:0]   p5_start_addr,
     output [31:0]   result_addr,
-    output          op_run,
+    output [3:0]    kernel_size,
+    output [7:0]    o_side_size,
+    output [15:0]   i_surf_size,
     output          engine_reset,
 
     output          irq
@@ -37,7 +41,6 @@ module csb(
 //Notes: Use Img2col(MEC) Convolution
 
 //TODO: Padding = 1 --> Add 0 in memory
-//TODO: Concatenation Layer
 
 //Compressed Commands from SDRAM    |MEM-Block|---------Address---------|---Space--|---Used-Space---|
 //|----------CMD TYPE----------|    |---------|-------------------------|----------|----------------|
@@ -48,22 +51,23 @@ module csb(
 //|      op_corner: 16Bit      |    |---------|-------------------------|----------|----------------|
 //|        op_side: 16Bit      |
 //|  input channel size: 16Bit |    
-//| output channel size: 16Bit |    |---------------------type------------------------|----op_type----|
+//| output channel size: 16Bit |    
+//|         kernel size:  8Bit |    |---------------------type------------------------|----op_type----|
 //|     input side size:  8Bit |    |IDLE                                             |      000      |
 //|    output side size:  8Bit |    |CONV1x1 + ReLU Activation                        |      001      |
-//| output surface size: 16Bit |    |CONV3x3 + ReLU Activation                        |      010      |
-//|   weight_start_addr: 32Bit |    |CONV3x3(with padding) & CONV1x1 + ReLU Activation|      011      |
-//|     data_start_addr: 32Bit |    |Max Pooling                                      |      100      |
-//|  write_back_address: 32Bit |    |Average Pooling                                  |      101      |
-//|-------Totally 224Bit-------|    |-------------------------------------------------|---------------| 
+//|  input surface size: 16Bit |    |CONV3x3 + ReLU Activation                        |      010      |
+//| output surface size: 16Bit |    |CONV3x3(with padding) & CONV1x1 + ReLU Activation|      011      |
+//|   weight_start_addr: 32Bit |    |Max Pooling                                      |      100      |
+//|     data_start_addr: 32Bit |    |Average Pooling                                  |      101      |
+//|  write_back_address: 32Bit |    |-------------------------------------------------|---------------| 
+//|-------Totally 256Bit-------|    
 
 //Handshake signals to submodules
 reg         conv_ready, maxpool_ready, avepool_ready;
 
 //Command Parsing
-localparam  CMD_BURST_LEN = 3'd6;
 reg         cmd_fifo_rd_en;
-reg [2:0]   cmd_burst_count;
+reg [3:0]   cmd_burst_count;
 reg         dma_p1_reads_en;
 
 //Commands
@@ -75,8 +79,8 @@ reg [15:0]  op_num_center;
 reg [15:0]  op_num_corner;
 reg [15:0]  op_num_side;
 reg [15:0]  i_channel_size, o_channel_size;
-reg [7:0]   i_side_size, o_side_size;
-reg [15:0]  o_surf_size;
+reg [7:0]   kernel_size, i_side_size, o_side_size;
+reg [15:0]  i_surf_size, o_surf_size;
 reg [31:0]  weight_start_addr;
 reg [31:0]  data_start_addr;
 reg [31:0]  result_addr;                //Output
@@ -95,9 +99,9 @@ reg         irq;                        //Output, interrupt signal
 
 //State Machine
 localparam  idle = 3'b000;
-localparam  cmd_collect = 3'b001; //Get command from SDRAM
+localparam  cmd_get = 3'b001; //Get command from SDRAM
 localparam  cmd_issue = 3'b010; //Generate DMA access commands
-localparam  wait_op = 3'b011; //Get done signals from submodule macs
+localparam  op_run = 3'b011; //Get done signals from submodule macs
 localparam  finish = 3'b100;
 // State jump triggers
 reg         cmd_collect_done;
@@ -119,23 +123,23 @@ always @ (*) begin
     next_state = idle;    //    Initialize
     case (curr_state)
         idle: begin
-            if(op_en) next_state = cmd_collect;
+            if(op_en) next_state = cmd_get;
             else next_state = idle;
         end
-        cmd_collect: begin
+        cmd_get: begin
             if(cmd_collect_done) next_state = cmd_issue;
-            else next_state = cmd_collect;
+            else next_state = cmd_get;
         end
         cmd_issue: begin
-            if(cmd_issue_done) next_state = wait_op;
+            if(cmd_issue_done) next_state = op_run;
             else next_state = cmd_issue;
         end
-        wait_op: begin
+        op_run: begin
             if(op_done) begin
                 if(cmd_fifo_empty) next_state = finish;
-                else next_state = cmd_collect;
+                else next_state = cmd_get;
             end
-            else next_state = wait_op;
+            else next_state = op_run;
         end
         finish: begin
 
@@ -151,7 +155,7 @@ always @ (posedge clk or posedge rst) begin
         dma_p1_reads_en <= 0;
     end else begin
         if(op_en) dma_p1_reads_en <= 1; //Assert to DMA readout, DMA writing data to FIFO
-        if(cmd_fifo_wr_count == cmd_size * 7) begin
+        if(cmd_fifo_wr_count == cmd_size * CMD_BURST_LEN) begin
             dma_p1_reads_en <= 0;       //Read command
         end
     end
@@ -161,12 +165,13 @@ end
 always @ (posedge clk or posedge rst) begin
     if (rst) begin
         cmd_fifo_rd_en <= 0;
-        cmd_burst_count <= 3'd0;
+        cmd_burst_count <= 4'd0;
         //Commands
         op_type <= 3'd0; stride <= 4'h0; padding <= 1'b0; op_num_center <= 16'h0000;
         op_num_corner <= 16'h0000; op_num_side <= 16'h0000;
         i_channel_size <= 16'h0000; o_channel_size <= 16'h0000;
-        i_side_size <= 8'h00; o_side_size <= 8'h00; o_surf_size <= 16'h0000;
+        i_side_size <= 8'h00; o_side_size <= 8'h00; kernel_size <= 8'h00;
+        i_surf_size <= 16'h0000; o_surf_size <= 16'h0000;
         data_start_addr <= 32'h0000_0000;
         weight_start_addr <= 32'h0000_0000;
         p2_start_addr <= 30'h0000_0000;
@@ -188,17 +193,18 @@ always @ (posedge clk or posedge rst) begin
             idle: begin
                 cmd_burst_count <= CMD_BURST_LEN;
             end
-            cmd_collect: begin
+            cmd_get: begin
                 engine_reset <= 1;
                 cmd_fifo_rd_en <= 1; //Assert to FIFO, CSB reading data from FIFO            
                 //Split cmds from fifo into separate attributes
                 cmd_burst_count <= cmd_burst_count - 1;
                 op_done <= 0;
                 case (cmd_burst_count)
-                    7: begin op_type <= cmd[2:0]; padding <= cmd[4]; stride <= cmd[11:8]; op_num_center <= cmd[31:16]; end
-                    6: begin op_num_corner <= cmd[15:0]; op_num_side <= cmd[31:16]; end
-                    5: begin i_channel_size <= cmd[15:0]; o_channel_size <= cmd[31:16]; end
-                    4: begin i_side_size <= cmd[7:0]; o_side_size <= cmd[15:8]; o_surf_size <= cmd[31:16]; end
+                    8: begin op_type <= cmd[2:0]; padding <= cmd[4]; stride <= cmd[11:8]; op_num_center <= cmd[31:16]; end
+                    7: begin op_num_corner <= cmd[15:0]; op_num_side <= cmd[31:16]; end
+                    6: begin i_channel_size <= cmd[15:0]; o_channel_size <= cmd[31:16]; end
+                    5: begin i_side_size <= cmd[7:0]; o_side_size <= cmd[15:8]; kernel_size <= cmd[23:16]; end
+                    4: begin i_surf_size <= cmd[15:0]; o_surf_size <= cmd[31:16]; end
                     3: begin weight_start_addr <= cmd; end
                     2: begin data_start_addr <= cmd; end
                     1: begin result_addr <= cmd; cmd_collect_done <= 1; cmd_fifo_rd_en <= 0; end
@@ -210,7 +216,8 @@ always @ (posedge clk or posedge rst) begin
                 cmd_burst_count <= CMD_BURST_LEN;
                 cmd_collect_done <= 0;
                 //Notes: Send out dma access signals(ready, addr) to submodules according to op_type to get data and weight
-                p3_start_addr <= weight_start_addr; p2_start_addr <= data_start_addr; op_num <= op_num_corner;
+                p3_start_addr <= weight_start_addr; p2_start_addr <= data_start_addr; 
+                op_num <= op_num_center; // three op_num* are the same 
                 case (op_type)
                     1,2,3: begin conv_ready <= 1; cmd_issue_done <= 1; end
                     4:begin maxpool_ready <= 1; cmd_issue_done <= 1; end
@@ -218,7 +225,7 @@ always @ (posedge clk or posedge rst) begin
                     default:;
                 endcase
             end
-            wait_op: begin
+            op_run: begin
                 cmd_issue_done <= 0; //Reset the registers in cmd_issue and wait for submodules to finish
                 if(conv_valid | maxpool_valid | avepool_valid) begin
                     done_surf_count <= done_surf_count + 1; 
@@ -231,18 +238,6 @@ always @ (posedge clk or posedge rst) begin
                         done_height_count <= done_height_count + 1;
                     end else begin
                         p2_start_addr <= p2_start_addr + {22'h00_0000, stride, 4'h0}; //Only add data addr, x16, 22+4+4
-                    end
-                    // Conditions for padding = 0/1
-                    if((done_width_count == 0 && done_height_count == 0) 
-                    || (done_width_count + 1 == o_side_size && done_height_count == 0) 
-                    || (done_width_count == 0 && done_height_count + 1 == o_side_size) 
-                    || (done_width_count + 1 == o_side_size && done_height_count + 1 == o_side_size)) begin
-                        op_num <= op_num_corner;
-                    end else if((done_width_count == 0 || done_width_count + 1 == o_side_size
-                                || done_height_count == 0 || done_height_count + 1 == o_side_size)) begin
-                        op_num <= op_num_side;
-                    end else begin
-                        op_num <= op_num_center;
                     end
                 end
                 if(done_surf_count + 1 == o_surf_size) begin

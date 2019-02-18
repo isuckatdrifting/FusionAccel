@@ -1,8 +1,6 @@
 module top 
 (
-    ///////////////////////////////////////
 	// Front Panel Interface
-	//////////////////////////////////////
 	input  wire [4:0]   okUH,
 	output wire [2:0]   okHU,
 	inout  wire [31:0]  okUHU,
@@ -34,12 +32,15 @@ module top
 );
 
 //--------------v1, Minimum Hardware Cores for SqueezeNet------------------//
+localparam CMD_BURST_LEN = 8,
+			CONV_BURST_LEN = 16,
+			POOL_BURST_LEN = 1;
+
 wire        c3_clk0;
 
 wire 		op_en;
 wire [6:0]  cmd_size;
 wire [2:0] 	op_type;
-wire 		padding;
 wire [3:0]  stride;
 wire [15:0] op_num;
 wire		engine_reset;
@@ -49,11 +50,16 @@ wire [15:0] p0_result_din, p1_result_din;
 wire 		p0_result_fifo_wr_en, p1_result_fifo_wr_en;
 wire [9:0] 	cmd_fifo_wr_count;
 wire [29:0] p2_start_addr, p3_start_addr, p4_start_addr, p5_start_addr, result_addr;
+wire [7:0]  kernel_size, o_side_size;
+wire [15:0] i_surf_size;
 
 //------------------------------------------------
 // Control Signal Block for all cores
 //------------------------------------------------
-csb csb_(
+csb # (
+	.CMD_BURST_LEN(CMD_BURST_LEN)
+)
+csb_(
     .clk					(c3_clk0),
     .rst					(ep00wire[3]),
 	.op_en					(ep00wire[4]),		// A wire from ep
@@ -73,7 +79,6 @@ csb csb_(
 	.dma_p1_reads_en		(dma_p1_reads_en),
 
 	.op_type				(op_type),
-	.padding				(padding),
 	.stride					(stride),
 	.op_num					(op_num),
 	.p2_start_addr			(p2_start_addr),
@@ -81,11 +86,18 @@ csb csb_(
 	.p4_start_addr			(p4_start_addr),
 	.p5_start_addr			(p5_start_addr),
     .result_addr			(result_addr),
+	.kernel_size			(kernel_size),
+	.o_side_size			(o_side_size),
+	.i_surf_size			(i_surf_size),
 	.engine_reset			(engine_reset),
 
     .irq					(irq));
 
-engine engine_(
+engine #(
+	.CONV_BURST_LEN(CONV_BURST_LEN),
+	.POOL_BURST_LEN(POOL_BURST_LEN)
+)
+engine_(
 	.clk					(c3_clk0),
 	.rst					(engine_reset),
 	//Control signals from csb
@@ -158,9 +170,7 @@ wire [6:0]  c3_p0_rd_count, c3_p1_rd_count, c3_p2_rd_count, c3_p3_rd_count, c3_p
 wire        c3_p0_rd_overflow, c3_p1_rd_overflow, c3_p2_rd_overflow, c3_p3_rd_overflow, c3_p4_rd_overflow, c3_p5_rd_overflow;
 wire        c3_p0_rd_error, c3_p1_rd_error, c3_p2_rd_error, c3_p3_rd_error, c3_p4_rd_error, c3_p5_rd_error;
 
-// Front Panel
-
-// Target interface bus:
+// Front Panel Target interface bus:
 wire         okClk;
 wire [112:0] okHE;
 wire [64:0]  okEH;
@@ -402,7 +412,12 @@ assign p0_ib_valid = dma_p0_writes_en ? p0_result_fifo_valid : pipe_in_valid;
 assign p0_ib_empty = dma_p0_writes_en ? p0_result_fifo_empty : pipe_in_empty;
 
 //TODO: Add input start address and parsing in dma
-dma dma_p0 ( // Read/Write, port0, pipeout read, pipein write, result_0 write
+dma #(
+	.CMD_BURST_LEN(CMD_BURST_LEN),
+	.CONV_BURST_LEN(CONV_BURST_LEN),
+	.POOL_BURST_LEN(POOL_BURST_LEN)
+)
+dma_p0 ( // Read/Write, port0, pipeout read, pipein write, result_0 write
 	.clk			(c3_clk0),
 	.reset			(ep00wire[2] | c3_rst0), 
 	.reads_en		(ep00wire[0]),			//in	-- okPipeOut/cmd/data0 FIFO
@@ -433,10 +448,20 @@ dma dma_p0 ( // Read/Write, port0, pipeout read, pipein write, result_0 write
 	.wr_full		(c3_p0_wr_full), 		//in		-- from MCB Port0
 	.wr_data		(c3_p0_wr_data), 		//out		-- to MCB Port0
 	.wr_mask		(c3_p0_wr_mask),		//out		-- to MCB Port0
-	.start_addr		(dma_p0_start_addr),	//in		-- from csb
-	.op_num			(dma_p0_op_num));		//in 		-- from csb
 
-dma dma_p1 ( // Read/Write, port1, cmd read, result1 write
+	.start_addr		(dma_p0_start_addr),	//in		-- from csb
+	.op_num			(dma_p0_op_num),		//in 		-- from csb
+	.op_type		(op_type),				//in		-- from csb
+	.kernel_size	(kernel_size),			//in		-- from csb
+	.o_side_size	(o_side_size),			//in		-- from csb
+	.i_surf_size	(i_surf_size));			//in		-- from csb
+
+dma #(
+	.CMD_BURST_LEN(CMD_BURST_LEN),
+	.CONV_BURST_LEN(CONV_BURST_LEN),
+	.POOL_BURST_LEN(POOL_BURST_LEN)
+)
+dma_p1 ( // Read/Write, port1, cmd read, result1 write
 	.clk			(c3_clk0),
 	.reset			(ep00wire[2] | c3_rst0), 
 	.reads_en		(dma_p1_reads_en),		//in		-- weight0
@@ -462,10 +487,20 @@ dma dma_p1 ( // Read/Write, port1, cmd read, result1 write
 	.cmd_instr		(c3_p1_cmd_instr),		//out		-- to MCB Port1
 	.cmd_byte_addr	(c3_p1_cmd_byte_addr), 	//out		-- to MCB Port1
 	.cmd_bl			(c3_p1_cmd_bl), 		//out		-- to MCB Port1
-	.start_addr		(dma_p1_start_addr),	//in		-- from csb
-	.op_num			(dma_p1_op_num));		//in 		-- from csb
 
-dma dma_p2 ( // Read Only, port2, conv3x3 data
+	.start_addr		(dma_p1_start_addr),	//in		-- from csb
+	.op_num			(dma_p1_op_num),		//in 		-- from csb
+	.op_type		(op_type),				//in		-- from csb
+	.kernel_size	(kernel_size),			//in		-- from csb
+	.o_side_size	(o_side_size),			//in		-- from csb
+	.i_surf_size	(i_surf_size));			//in		-- from csb
+
+dma #(
+	.CMD_BURST_LEN(CMD_BURST_LEN),
+	.CONV_BURST_LEN(CONV_BURST_LEN),
+	.POOL_BURST_LEN(POOL_BURST_LEN)
+)
+dma_p2 ( // Read Only, port2, conv3x3 data
 	.clk			(c3_clk0),
 	.reset			(ep00wire[2] | c3_rst0), 
 	.reads_en		(dma_p2_reads_en),		//in		-- data1
@@ -490,10 +525,20 @@ dma dma_p2 ( // Read Only, port2, conv3x3 data
 	.wr_full		(c3_p2_wr_full), 		//in		-- from MCB Port2
 	.wr_data		(c3_p2_wr_data), 		//out		-- to MCB Port2
 	.wr_mask		(c3_p2_wr_mask),		//out		-- to MCB Port2
-	.start_addr		(dma_p2_start_addr),	//in		-- from csb
-	.op_num			(dma_p2_op_num));		//in 		-- from csb
 
-dma dma_p3 ( // Read Only, port3, conv3x3 weight
+	.start_addr		(dma_p2_start_addr),	//in		-- from csb
+	.op_num			(dma_p2_op_num),		//in 		-- from csb
+	.op_type		(op_type),				//in		-- from csb
+	.kernel_size	(kernel_size),			//in		-- from csb
+	.o_side_size	(o_side_size),			//in		-- from csb
+	.i_surf_size	(i_surf_size));			//in		-- from csb
+
+dma #(
+	.CMD_BURST_LEN(CMD_BURST_LEN),
+	.CONV_BURST_LEN(CONV_BURST_LEN),
+	.POOL_BURST_LEN(POOL_BURST_LEN)
+)
+dma_p3 ( // Read Only, port3, conv3x3 weight
 	.clk			(c3_clk0),
 	.reset			(ep00wire[2] | c3_rst0), 
 	.reads_en		(dma_p3_reads_en),		//in		-- weight1
@@ -513,10 +558,20 @@ dma dma_p3 ( // Read Only, port3, conv3x3 weight
 	.cmd_instr		(c3_p3_cmd_instr),		//out		-- to MCB Port3
 	.cmd_byte_addr	(c3_p3_cmd_byte_addr), 	//out		-- to MCB Port3
 	.cmd_bl			(c3_p3_cmd_bl), 		//out		-- to MCB Port3
-	.start_addr		(dma_p3_start_addr),	//in		-- from csb
-	.op_num			(dma_p3_op_num));		//in 		-- from csb
 
-dma dma_p4 ( // Read Only, port4, conv1x1 data
+	.start_addr		(dma_p3_start_addr),	//in		-- from csb
+	.op_num			(dma_p3_op_num),		//in 		-- from csb
+	.op_type		(op_type),				//in		-- from csb
+	.kernel_size	(kernel_size),			//in		-- from csb
+	.o_side_size	(o_side_size),			//in		-- from csb
+	.i_surf_size	(i_surf_size));			//in		-- from csb
+
+dma #(
+	.CMD_BURST_LEN(CMD_BURST_LEN),
+	.CONV_BURST_LEN(CONV_BURST_LEN),
+	.POOL_BURST_LEN(POOL_BURST_LEN)
+)
+dma_p4 ( // Read Only, port4, conv1x1 data
 	.clk			(c3_clk0),
 	.reset			(ep00wire[2] | c3_rst0), 
 	.reads_en		(dma_p4_reads_en),		//in		-- weight1
@@ -536,10 +591,20 @@ dma dma_p4 ( // Read Only, port4, conv1x1 data
 	.cmd_instr		(c3_p4_cmd_instr),		//out		-- to MCB Port3
 	.cmd_byte_addr	(c3_p4_cmd_byte_addr), 	//out		-- to MCB Port3
 	.cmd_bl			(c3_p4_cmd_bl), 		//out		-- to MCB Port3
+	
 	.start_addr		(dma_p4_start_addr),	//in		-- from csb
-	.op_num			(dma_p4_op_num));		//in 		-- from csb
+	.op_num			(dma_p4_op_num),		//in 		-- from csb
+	.op_type		(op_type),				//in		-- from csb
+	.kernel_size	(kernel_size),			//in		-- from csb
+	.o_side_size	(o_side_size),			//in		-- from csb
+	.i_surf_size	(i_surf_size));			//in		-- from csb
 
-dma dma_p5 ( // Read Only, port5, conv1x1 weight
+dma #(
+	.CMD_BURST_LEN(CMD_BURST_LEN),
+	.CONV_BURST_LEN(CONV_BURST_LEN),
+	.POOL_BURST_LEN(POOL_BURST_LEN)
+)
+dma_p5 ( // Read Only, port5, conv1x1 weight
 	.clk			(c3_clk0),
 	.reset			(ep00wire[2] | c3_rst0), 
 	.reads_en		(dma_p5_reads_en),		//in		-- weight1
@@ -559,8 +624,13 @@ dma dma_p5 ( // Read Only, port5, conv1x1 weight
 	.cmd_instr		(c3_p5_cmd_instr),		//out		-- to MCB Port3
 	.cmd_byte_addr	(c3_p5_cmd_byte_addr), 	//out		-- to MCB Port3
 	.cmd_bl			(c3_p5_cmd_bl), 		//out		-- to MCB Port3
+
 	.start_addr		(dma_p5_start_addr),	//in		-- from csb
-	.op_num			(dma_p5_op_num));		//in 		-- from csb
+	.op_num			(dma_p5_op_num),		//in 		-- from csb
+	.op_type		(op_type),				//in		-- from csb
+	.kernel_size	(kernel_size),			//in		-- from csb
+	.o_side_size	(o_side_size),			//in		-- from csb
+	.i_surf_size	(i_surf_size));			//in		-- from csb
 	
 //Block Throttle
 always @(posedge okClk) begin
@@ -582,9 +652,7 @@ always @(posedge okClk) begin
 	end
 end
 
-//------------------------------------------------
 // PC Communication using Front Panel(TM)
-//------------------------------------------------
 
 // Instantiate the okHost and connect endpoints.
 //ep00wire: 0: pipe read, 1: pipe write, 2: reset pipefifos and dma, 3: reset csb and command fifos, 4: op_en

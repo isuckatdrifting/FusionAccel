@@ -27,8 +27,9 @@ class host:
 		self.buf = bytearray(self.memsize)
 		self.rbuf = bytearray(self.readsize)
 		# Run Parameters
-		self.weightsize = 2470992
-		self.imagesize = 309 * 512 # 227*227*3/512 = 154587/512 = 309...475 --> padding 37 0s at the end
+		self.commandsize = 65 * 256 # TODO: memory align and padding
+		self.weightsize = 2470992 # TODO: memory align and padding
+		self.imagesize = 309 * 512 # TODO: 227*227*3/512 = 154587/512 = 309...475 --> padding 37 0s at the end
 		self.outputsize = 4096
 		self.weight = bytearray() #dynamic array allocation
 		self.image = bytearray(self.imagesize)
