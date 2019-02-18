@@ -1,5 +1,9 @@
 //Instantiate 16CMACs for conv3x3, 16CMACs for conv1x1, maxpool and avepool in engine.
-module engine(
+module engine #(
+	parameter CONV_BURST_LEN = 16,
+	parameter POOL_BURST_LEN = 1
+)
+(
 	input 			clk,
 	input 			rst,
 	//Control signals from csb
@@ -37,8 +41,6 @@ module engine(
 	
 );
 
-localparam CONV_BURST_LEN = 8'd16;
-localparam POOL_BURST_LEN = 8'd1;
 localparam CONV1 = 1;
 localparam CONV3 = 2;
 localparam CONVP = 3;

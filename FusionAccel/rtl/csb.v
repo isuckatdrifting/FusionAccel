@@ -1,4 +1,7 @@
-module csb(
+module csb # (
+    parameter CMD_BURST_LEN = 3'd7
+)
+(
     input           clk,
     input           rst,
     input           op_en,
@@ -61,7 +64,6 @@ module csb(
 reg         conv_ready, maxpool_ready, avepool_ready;
 
 //Command Parsing
-localparam  CMD_BURST_LEN = 3'd6;
 reg         cmd_fifo_rd_en;
 reg [2:0]   cmd_burst_count;
 reg         dma_p1_reads_en;
@@ -151,7 +153,7 @@ always @ (posedge clk or posedge rst) begin
         dma_p1_reads_en <= 0;
     end else begin
         if(op_en) dma_p1_reads_en <= 1; //Assert to DMA readout, DMA writing data to FIFO
-        if(cmd_fifo_wr_count == cmd_size * 7) begin
+        if(cmd_fifo_wr_count == cmd_size * CMD_BURST_LEN) begin
             dma_p1_reads_en <= 0;       //Read command
         end
     end

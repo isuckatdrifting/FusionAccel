@@ -1,7 +1,11 @@
 `timescale 1ns/1ps
 //`default_nettype none
 
-module dma
+module dma # (
+	parameter CMD_BURST_LEN = 7,
+	parameter CONV_BURST_LEN = 16,
+	parameter POOL_BURST_LEN = 1
+)
 	(
 	input  wire          clk,
 	input  wire          reset,
@@ -35,7 +39,8 @@ module dma
 	output wire [3:0]    wr_mask,
 
 	input wire [29:0] 	 start_addr,
-	input wire [15:0] 	 op_num
+	input wire [15:0] 	 op_num,
+	input wire [2:0]     op_type
 	);
 
 localparam 	FIFO_SIZE = 1024;
@@ -43,6 +48,7 @@ localparam 	BURST_LEN = 6'd32;  // Number of 32bit(Port size) user words per DRA
 
 reg  [29:0] cmd_byte_addr_wr, cmd_byte_addr_rd;
 reg  [5:0]  burst_cnt;
+reg  [15:0] op_count;
 
 reg         write_mode;
 reg         read_mode;
@@ -103,10 +109,26 @@ always @ (*) begin
 
 		read_blob3: 	next_state = read_blob4;
 
-		read_blob4: 	if (burst_cnt == 0) begin
-							next_state = idle;
+		read_blob4: 	if(op_type == 3'b000) begin
+							if (burst_cnt == 0) begin
+								next_state = idle;
+							end else begin
+								next_state = read_blob2;
+							end
 						end else begin
-							next_state = read_blob2;
+							if (op_type == 3'b001 || op_type == 3'b010 || op_type == 3'b011) begin
+								if (op_count + BURST_LEN/CONV_BURST_LEN == op_num) begin
+									next_state = idle;
+								end else begin
+									next_state = read_blob2;
+								end
+							end else begin
+								if (op_count + BURST_LEN/POOL_BURST_LEN == op_num) begin
+									next_state = idle;
+								end else begin
+									next_state = read_blob2;
+								end
+							end
 						end
 
 		default:		next_state = idle;
@@ -117,6 +139,7 @@ end
 always @(posedge clk or posedge reset_d) begin
 	if (reset_d) begin
 		burst_cnt <= 0;
+		op_count <= 16'h0000;
 		cmd_byte_addr_wr <= start_addr;
 		cmd_byte_addr_rd <= start_addr;
 		cmd_instr <= 3'b000;
@@ -129,7 +152,7 @@ always @(posedge clk or posedge reset_d) begin
 		ob_we <= 1'b0;
 		case (curr_state)
 			idle: 			burst_cnt <= BURST_LEN;
-
+			//--------------------------Write--------------------------//
 			write_blob1: 	ib_re <= 1'b1;
 
 			write_blob2: 	if(ib_valid == 1) begin
@@ -144,10 +167,11 @@ always @(posedge clk or posedge reset_d) begin
 								cmd_byte_addr_wr <= cmd_byte_addr_wr + 4*BURST_LEN; //4Byte * BURST_LEN = Jump distance
 								cmd_instr <= 3'b000;
 							end
-
+			//--------------------------Read---------------------------//
 			read_blob1: 	begin
 								cmd_byte_addr <= cmd_byte_addr_rd;
 								cmd_byte_addr_rd <= cmd_byte_addr_rd + 4*BURST_LEN;
+								//TODO: Jump read at row-end
 								cmd_instr <= 3'b001;
 								cmd_en <= 1'b1;
 							end
@@ -157,7 +181,12 @@ always @(posedge clk or posedge reset_d) begin
 			read_blob3: 	begin
 								ob_data <= rd_data;
 								ob_we <= 1'b1;
-								burst_cnt <= burst_cnt - 1;
+								case (op_type)
+									0: burst_cnt <= burst_cnt - 1;
+									1,2,3: op_count <= op_count + BURST_LEN/CONV_BURST_LEN;
+									4,5: op_count <= op_count + BURST_LEN/POOL_BURST_LEN;
+									default:;
+								endcase
 							end
 
 			read_blob4:		;
