@@ -40,11 +40,15 @@ module dma # (
 
 	input wire [29:0] 	 start_addr,
 	input wire [15:0] 	 op_num,
-	input wire [2:0]     op_type
+	input wire [2:0]     op_type,
+	input wire [7:0]	 kernel_size,
+	input wire [7:0]	 o_side_size,
+	input wire [15:0]	 i_surf_size,
+	input wire 			 truncated_cube
 	);
 
 localparam 	FIFO_SIZE = 1024;
-localparam 	BURST_LEN = 6'd32;  // Number of 32bit(Port size) user words per DRAM command (Must be Multiple of 2)
+localparam 	BURST_LEN = 6'd16;  // Number of 32bit(Port size) user words per DRAM command (Must be Multiple of 2)
 
 reg  [29:0] cmd_byte_addr_wr, cmd_byte_addr_rd;
 reg  [5:0]  burst_cnt;
@@ -168,10 +172,9 @@ always @(posedge clk or posedge reset_d) begin
 								cmd_instr <= 3'b000;
 							end
 			//--------------------------Read---------------------------//
-			read_blob1: 	begin
+			read_blob1: 	begin // This state will only exist for one cycle
 								cmd_byte_addr <= cmd_byte_addr_rd;
 								cmd_byte_addr_rd <= cmd_byte_addr_rd + 4*BURST_LEN;
-								//TODO: Jump read at row-end
 								cmd_instr <= 3'b001;
 								cmd_en <= 1'b1;
 							end
