@@ -49,9 +49,10 @@ wire [31:0] p2_data_fifo_dout, p3_weight_fifo_dout, p4_data_fifo_dout, p5_weight
 wire [15:0] p0_result_din, p1_result_din;
 wire 		p0_result_fifo_wr_en, p1_result_fifo_wr_en;
 wire [9:0] 	cmd_fifo_wr_count;
-wire [29:0] p2_start_addr, p3_start_addr, p4_start_addr, p5_start_addr, result_addr;
+wire [29:0] p0_start_addr, p1_start_addr, p2_start_addr, p3_start_addr, p4_start_addr, p5_start_addr;
 wire [7:0]  kernel_size, o_side_size;
 wire [15:0] i_surf_size;
+wire [31:0] data_start_addr, weight_start_addr, result_start_addr;
 
 //------------------------------------------------
 // Control Signal Block for all cores
@@ -81,11 +82,9 @@ csb_(
 	.op_type				(op_type),
 	.stride					(stride),
 	.op_num					(op_num),
-	.p2_start_addr			(p2_start_addr),
-	.p3_start_addr			(p3_start_addr),
-	.p4_start_addr			(p4_start_addr),
-	.p5_start_addr			(p5_start_addr),
-    .result_addr			(result_addr),
+	.data_start_addr		(data_start_addr),
+	.weight_start_addr		(weight_start_addr),
+    .result_start_addr		(result_start_addr),
 	.kernel_size			(kernel_size),
 	.o_side_size			(o_side_size),
 	.i_surf_size			(i_surf_size),
@@ -112,6 +111,9 @@ engine_(
 	.avepool_valid			(avepool_valid),
 
 	//Data path from dma -> fifos
+	.data_start_addr		(data_start_addr),
+	.weight_start_addr		(weight_start_addr),
+	.result_start_addr		(result_start_addr),
 	.data_0					(p2_data_fifo_dout),
 	.weight_0				(p3_weight_fifo_dout),
 	.data_1					(p4_data_fifo_dout),
@@ -132,7 +134,14 @@ engine_(
 	.dma_p4_reads_en		(dma_p4_reads_en),
     .dma_p5_reads_en		(dma_p5_reads_en),
     .dma_p0_writes_en		(dma_p0_writes_en),
-    .dma_p1_writes_en		(dma_p1_writes_en)
+    .dma_p1_writes_en		(dma_p1_writes_en),
+
+	.p0_start_addr          (p0_start_addr),
+	.p1_start_addr          (p1_start_addr),
+	.p2_start_addr			(p2_start_addr),
+	.p3_start_addr			(p3_start_addr),
+	.p4_start_addr			(p4_start_addr),
+	.p5_start_addr			(p5_start_addr)
     
 );
 
@@ -450,11 +459,7 @@ dma_p0 ( // Read/Write, port0, pipeout read, pipein write, result_0 write
 	.wr_mask		(c3_p0_wr_mask),		//out		-- to MCB Port0
 
 	.start_addr		(dma_p0_start_addr),	//in		-- from csb
-	.op_num			(dma_p0_op_num),		//in 		-- from csb
-	.op_type		(op_type),				//in		-- from csb
-	.kernel_size	(kernel_size),			//in		-- from csb
-	.o_side_size	(o_side_size),			//in		-- from csb
-	.i_surf_size	(i_surf_size));			//in		-- from csb
+	.op_type		(op_type));				//in		-- from csb
 
 dma #(
 	.CMD_BURST_LEN(CMD_BURST_LEN),
@@ -489,11 +494,7 @@ dma_p1 ( // Read/Write, port1, cmd read, result1 write
 	.cmd_bl			(c3_p1_cmd_bl), 		//out		-- to MCB Port1
 
 	.start_addr		(dma_p1_start_addr),	//in		-- from csb
-	.op_num			(dma_p1_op_num),		//in 		-- from csb
-	.op_type		(op_type),				//in		-- from csb
-	.kernel_size	(kernel_size),			//in		-- from csb
-	.o_side_size	(o_side_size),			//in		-- from csb
-	.i_surf_size	(i_surf_size));			//in		-- from csb
+	.op_type		(op_type));				//in		-- from csb
 
 dma #(
 	.CMD_BURST_LEN(CMD_BURST_LEN),
@@ -527,11 +528,7 @@ dma_p2 ( // Read Only, port2, conv3x3 data
 	.wr_mask		(c3_p2_wr_mask),		//out		-- to MCB Port2
 
 	.start_addr		(dma_p2_start_addr),	//in		-- from csb
-	.op_num			(dma_p2_op_num),		//in 		-- from csb
-	.op_type		(op_type),				//in		-- from csb
-	.kernel_size	(kernel_size),			//in		-- from csb
-	.o_side_size	(o_side_size),			//in		-- from csb
-	.i_surf_size	(i_surf_size));			//in		-- from csb
+	.op_type		(op_type));				//in		-- from csb
 
 dma #(
 	.CMD_BURST_LEN(CMD_BURST_LEN),
@@ -560,11 +557,7 @@ dma_p3 ( // Read Only, port3, conv3x3 weight
 	.cmd_bl			(c3_p3_cmd_bl), 		//out		-- to MCB Port3
 
 	.start_addr		(dma_p3_start_addr),	//in		-- from csb
-	.op_num			(dma_p3_op_num),		//in 		-- from csb
-	.op_type		(op_type),				//in		-- from csb
-	.kernel_size	(kernel_size),			//in		-- from csb
-	.o_side_size	(o_side_size),			//in		-- from csb
-	.i_surf_size	(i_surf_size));			//in		-- from csb
+	.op_type		(op_type));				//in		-- from csb
 
 dma #(
 	.CMD_BURST_LEN(CMD_BURST_LEN),
@@ -593,11 +586,7 @@ dma_p4 ( // Read Only, port4, conv1x1 data
 	.cmd_bl			(c3_p4_cmd_bl), 		//out		-- to MCB Port3
 	
 	.start_addr		(dma_p4_start_addr),	//in		-- from csb
-	.op_num			(dma_p4_op_num),		//in 		-- from csb
-	.op_type		(op_type),				//in		-- from csb
-	.kernel_size	(kernel_size),			//in		-- from csb
-	.o_side_size	(o_side_size),			//in		-- from csb
-	.i_surf_size	(i_surf_size));			//in		-- from csb
+	.op_type		(op_type));				//in		-- from csb
 
 dma #(
 	.CMD_BURST_LEN(CMD_BURST_LEN),
@@ -626,11 +615,7 @@ dma_p5 ( // Read Only, port5, conv1x1 weight
 	.cmd_bl			(c3_p5_cmd_bl), 		//out		-- to MCB Port3
 
 	.start_addr		(dma_p5_start_addr),	//in		-- from csb
-	.op_num			(dma_p5_op_num),		//in 		-- from csb
-	.op_type		(op_type),				//in		-- from csb
-	.kernel_size	(kernel_size),			//in		-- from csb
-	.o_side_size	(o_side_size),			//in		-- from csb
-	.i_surf_size	(i_surf_size));			//in		-- from csb
+	.op_type		(op_type));				//in		-- from csb
 	
 //Block Throttle
 always @(posedge okClk) begin

@@ -24,11 +24,9 @@ module csb # (
     output [2:0]    op_type,
     output [3:0]    stride,
     output [19:0]   op_num,
-    output [29:0]   p2_start_addr,
-    output [29:0]   p3_start_addr,
-    output [29:0]   p4_start_addr,
-    output [29:0]   p5_start_addr,
-    output [31:0]   result_addr,
+    output [31:0]   data_start_addr,
+    output [31:0]   weight_start_addr,
+    output [31:0]   result_start_addr,
     output [3:0]    kernel_size,
     output [7:0]    o_side_size,
     output [15:0]   i_surf_size,
@@ -83,14 +81,9 @@ reg [7:0]   kernel_size, i_side_size, o_side_size;
 reg [15:0]  i_surf_size, o_surf_size;
 reg [31:0]  weight_start_addr;
 reg [31:0]  data_start_addr;
-reg [31:0]  result_addr;                //Output
-reg [29:0]  p2_start_addr;              //Output to DMA, burst start address. 
-reg [29:0]  p3_start_addr;
-reg [29:0]  p4_start_addr;
-reg [29:0]  p5_start_addr;
+reg [31:0]  result_start_addr;                //Output
 
 reg [7:0]   done_width_count;           // from 0 to o_side_size
-reg [7:0]   done_height_count;          // from 0 to o_side_size
 reg [15:0]  done_surf_count;            // from 0 to o_surf_size
 reg [15:0]  done_channel_count;         // from 0 to o_channel_size, step = PARA = 16
 reg         engine_reset;
@@ -174,14 +167,10 @@ always @ (posedge clk or posedge rst) begin
         i_surf_size <= 16'h0000; o_surf_size <= 16'h0000;
         data_start_addr <= 32'h0000_0000;
         weight_start_addr <= 32'h0000_0000;
-        p2_start_addr <= 30'h0000_0000;
-        p3_start_addr <= 30'h0000_0000;
-        p4_start_addr <= 30'h0000_0000;
-        p5_start_addr <= 30'h0000_0000;
-        result_addr <= 32'h0000_0000;
+        result_start_addr <= 32'h0000_0000;
 
         op_num <= 16'h0000;
-        done_width_count <= 8'h00; done_height_count <= 8'h00;
+        done_width_count <= 8'h00;
         done_surf_count <= 16'h0000; done_channel_count <= 16'h0000; 
         conv_ready <= 0; maxpool_ready <= 0; avepool_ready <= 0;
         cmd_collect_done <= 0; cmd_issue_done <= 0; op_done <= 0;
@@ -207,7 +196,7 @@ always @ (posedge clk or posedge rst) begin
                     4: begin i_surf_size <= cmd[15:0]; o_surf_size <= cmd[31:16]; end
                     3: begin weight_start_addr <= cmd; end
                     2: begin data_start_addr <= cmd; end
-                    1: begin result_addr <= cmd; cmd_collect_done <= 1; cmd_fifo_rd_en <= 0; end
+                    1: begin result_start_addr <= cmd; cmd_collect_done <= 1; cmd_fifo_rd_en <= 0; end
                     default: ;
                 endcase 
             end
@@ -216,8 +205,7 @@ always @ (posedge clk or posedge rst) begin
                 cmd_burst_count <= CMD_BURST_LEN;
                 cmd_collect_done <= 0;
                 //Notes: Send out dma access signals(ready, addr) to submodules according to op_type to get data and weight
-                p3_start_addr <= weight_start_addr; p2_start_addr <= data_start_addr; 
-                op_num <= op_num_center; // three op_num* are the same 
+                op_num <= op_num_center; // three op_num* are the same. TODO: check if these variables are necessary.
                 case (op_type)
                     1,2,3: begin conv_ready <= 1; cmd_issue_done <= 1; end
                     4:begin maxpool_ready <= 1; cmd_issue_done <= 1; end
@@ -229,22 +217,13 @@ always @ (posedge clk or posedge rst) begin
                 cmd_issue_done <= 0; //Reset the registers in cmd_issue and wait for submodules to finish
                 if(conv_valid | maxpool_valid | avepool_valid) begin
                     done_surf_count <= done_surf_count + 1; 
-                    // Notes: in-convolution next-row logic in dma
-                    // data cube start_address parsing
+                    // Notes: in-convolution next-row logic in engine
                     done_width_count <= done_width_count + 1;
-                    if(done_width_count + 1 == o_side_size) begin // stride & next row conditions
-                        p2_start_addr <= p2_start_addr + {6'h00, op_num, 4'h0}; // Jump @ end, 6+20+4
-                        done_width_count <= 8'h00;
-                        done_height_count <= done_height_count + 1;
-                    end else begin
-                        p2_start_addr <= p2_start_addr + {22'h00_0000, stride, 4'h0}; //Only add data addr, x16, 22+4+4
-                    end
                 end
                 if(done_surf_count + 1 == o_surf_size) begin
                     done_channel_count <= done_channel_count + 16; // parallelism is 16
                     done_surf_count <= 0;
                     done_width_count <= 0;
-                    done_height_count <= 0;
                 end
                 if(done_channel_count + 16 == o_channel_size) begin
                     if(conv_valid) begin conv_ready <= 0; end

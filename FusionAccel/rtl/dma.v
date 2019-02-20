@@ -39,11 +39,7 @@ module dma # (
 	output wire [3:0]    wr_mask,
 
 	input wire [29:0] 	 start_addr,
-	input wire [15:0] 	 op_num,
-	input wire [2:0]     op_type,
-	input wire [7:0]	 kernel_size,
-	input wire [7:0]	 o_side_size,
-	input wire [15:0]	 i_surf_size
+	input wire [2:0]     op_type
 	);
 
 localparam 	FIFO_SIZE = 1024;
@@ -71,10 +67,14 @@ localparam idle = 0,
            read_blob1 = 4,
            read_blob2 = 5,
            read_blob3 = 6,
-           read_blob4 = 7;
+           read_blob4 = 7,
+		   read_block1 = 8,
+		   read_block2 = 9,
+		   read_block3 = 10,
+		   read_block4 = 11;
 
-reg [2:0] 	curr_state;
-reg [2:0] 	next_state;
+reg [3:0] 	curr_state;
+reg [3:0] 	next_state;
 
 //    Current State, non-blocking
 always @ (posedge clk or posedge reset_d)    begin
@@ -92,46 +92,36 @@ always @ (*) begin
 		idle: 			if (calib_done == 1 && write_mode == 1 && (ib_count >= BURST_LEN)) begin
 							next_state = write_blob1;
 						end else if (calib_done == 1 && read_mode == 1 && (ob_count < (FIFO_SIZE - 1 - BURST_LEN))) begin
-							next_state = read_blob1;
+							if(op_type == 3'b000) next_state = read_blob1;
+							else next_state = read_block1;
 						end else begin
 							next_state = idle;
 						end
 
 		write_blob1: 	next_state = write_blob2;
-
 		write_blob2: 	if(ib_valid == 1) next_state = write_blob3;
 						else next_state = write_blob2;
-
 		write_blob3: 	if(burst_cnt == 0) next_state = idle;
 						else next_state = write_blob1;
 
 		read_blob1: 	next_state = read_blob2;
-
 		read_blob2: 	if(rd_empty == 0) next_state = read_blob3;
 						else next_state = read_blob2;
-
 		read_blob3: 	next_state = read_blob4;
-
-		read_blob4: 	if(op_type == 3'b000) begin
-							if (burst_cnt == 0) begin
-								next_state = idle;
-							end else begin
-								next_state = read_blob2;
-							end
+		read_blob4: 	if (burst_cnt == 0) begin
+							next_state = idle;
 						end else begin
-							if (op_type == 3'b001 || op_type == 3'b010 || op_type == 3'b011) begin
-								if (op_count + BURST_LEN/CONV_BURST_LEN == op_num) begin
-									next_state = idle;
-								end else begin
-									next_state = read_blob2;
-								end
-							end else begin
-								if (op_count + BURST_LEN/POOL_BURST_LEN == op_num) begin
-									next_state = idle;
-								end else begin
-									next_state = read_blob2;
-								end
-							end
+							next_state = read_blob2;
+						end
+
+		read_block1:	next_state = read_block2;
+		read_block2:	if(rd_empty == 0) next_state = read_block3;
+						else next_state = read_block3;
+		read_block3:	next_state = read_block4;
+		read_block4:	if (burst_cnt == 0) begin
+							next_state = idle;
+						end else begin
+							next_state = read_blob2;
 						end
 
 		default:		next_state = idle;
@@ -155,43 +145,46 @@ always @(posedge clk or posedge reset_d) begin
 		ob_we <= 1'b0;
 		case (curr_state)
 			idle: 			burst_cnt <= BURST_LEN;
-			//--------------------------Write--------------------------//
+			//--------------------------Write Blob--------------------------//
 			write_blob1: 	ib_re <= 1'b1;
-
 			write_blob2: 	if(ib_valid == 1) begin
 								wr_data <= ib_data;
 								wr_en <= 1'b1;
 								burst_cnt <= burst_cnt - 1;
 							end
-
-			write_blob3:	if (burst_cnt == 0) begin
+			write_blob3:	if(burst_cnt == 0) begin
 								cmd_en <= 1'b1;
 								cmd_byte_addr <= cmd_byte_addr_wr;
 								cmd_byte_addr_wr <= cmd_byte_addr_wr + 4*BURST_LEN; //4Byte * BURST_LEN = Jump distance
 								cmd_instr <= 3'b000;
 							end
-			//--------------------------Read---------------------------//
-			read_blob1: 	begin // This state will only exist for one cycle
+			//--------------------------Read Blob---------------------------// read size = 4Byte * BURST_LEN
+			read_blob1: 	begin // This state will only exist for one cycle. for blob read/write, self increment in dma.
 								cmd_byte_addr <= cmd_byte_addr_rd;
 								cmd_byte_addr_rd <= cmd_byte_addr_rd + 4*BURST_LEN;
 								cmd_instr <= 3'b001;
 								cmd_en <= 1'b1;
 							end
-
 			read_blob2:		if(rd_empty == 0) rd_en <= 1'b1;
-
 			read_blob3: 	begin
 								ob_data <= rd_data;
 								ob_we <= 1'b1;
-								case (op_type)
-									0: burst_cnt <= burst_cnt - 1;
-									1,2,3: op_count <= op_count + BURST_LEN/CONV_BURST_LEN;
-									4,5: op_count <= op_count + BURST_LEN/POOL_BURST_LEN;
-									default:;
-								endcase
+								burst_cnt <= burst_cnt - 1;
 							end
-
 			read_blob4:		;
+			//--------------------------Read Block---------------------------// read size = 4Byte * BURST_LEN
+			read_block1:	begin // This state will only exist for one cycle. for blob read/write, start addr from engine output.
+								cmd_byte_addr <= start_addr;
+								cmd_instr <= 3'b001;
+								cmd_en <= 1'b1;
+							end
+			read_block2:	if(rd_empty == 0) rd_en <= 1'b1;
+			read_block3:	begin
+								ob_data <= rd_data;
+								ob_we <= 1'b1;
+								burst_cnt <= burst_cnt - 1;
+							end
+			read_block4:	;
 			default:;
 		endcase
 	end
