@@ -41,9 +41,9 @@ module engine #(
 	
 );
 
-localparam CONV1 = 1;
-localparam CONV3 = 2;
-localparam CONVP = 3;
+localparam CONV_CH0 = 1;
+localparam CONV_CH1 = 2;
+localparam CONV_DUAL = 3;
 localparam MPOOL = 4;
 localparam APOOL = 5;
 
@@ -85,15 +85,15 @@ reg			dma_p0_writes_en, dma_p1_writes_en, dma_p2_reads_en, dma_p3_reads_en, dma_
 
 always @(op_type or conv_valid_0 or conv_valid_1 or avepool_valid_0 or maxpool_valid_0) begin
 	case(op_type)
-		CONV1: begin
+		CONV_CH1: begin
 			if(conv_valid_1 == 16'hffff) conv_finish = 1;
 			else conv_finish = 0;
 		end
-		CONV3: begin
+		CONV_CH0: begin
 			if(conv_valid_0 == 16'hffff) conv_finish = 1;
 			else conv_finish = 0;
 		end
-		CONVP: begin
+		CONV_DUAL: begin
 			if(conv_valid_0 == 16'hffff && conv_valid_1 == 16'hffff) conv_finish = 1;
 			else conv_finish = 0;
 		end
@@ -261,22 +261,7 @@ always @ (posedge clk or posedge rst) begin
 			end
 			conv_busy: begin
 				case (op_type)
-					CONV1: begin 
-						dma_p4_reads_en <= 1; dma_p5_reads_en <= 1;
-						conv_burst_cnt <= conv_burst_cnt + 1;
-						conv_ready_1[conv_burst_cnt] <= 1; 
-						if(conv_burst_cnt < CONV_BURST_LEN) begin 
-							p5_weight_fifo_rd_en <= 1;
-						end else begin
-							p5_weight_fifo_rd_en <= 0;
-						end
-						if(conv_burst_cnt == 1) begin
-							p4_data_fifo_rd_en <= 1;
-						end else begin
-							p4_data_fifo_rd_en <= 0;
-						end
-					end
-					CONV3: begin 
+					CONV_CH0: begin 
 						dma_p2_reads_en <= 1; dma_p3_reads_en <= 1;
 						conv_burst_cnt <= conv_burst_cnt + 1;
 						conv_ready_0[conv_burst_cnt] <= 1;
@@ -291,7 +276,22 @@ always @ (posedge clk or posedge rst) begin
 							p2_data_fifo_rd_en <= 0;
 						end
 					end
-					CONVP: begin 
+					CONV_CH1: begin 
+						dma_p4_reads_en <= 1; dma_p5_reads_en <= 1;
+						conv_burst_cnt <= conv_burst_cnt + 1;
+						conv_ready_1[conv_burst_cnt] <= 1; 
+						if(conv_burst_cnt < CONV_BURST_LEN) begin 
+							p5_weight_fifo_rd_en <= 1;
+						end else begin
+							p5_weight_fifo_rd_en <= 0;
+						end
+						if(conv_burst_cnt == 1) begin
+							p4_data_fifo_rd_en <= 1;
+						end else begin
+							p4_data_fifo_rd_en <= 0;
+						end
+					end
+					CONV_DUAL: begin 
 						dma_p2_reads_en <= 1; dma_p3_reads_en <= 1; dma_p4_reads_en <= 1; dma_p5_reads_en <= 1;
 						conv_burst_cnt <= conv_burst_cnt + 1;
 						conv_ready_0[conv_burst_cnt] <= 1; conv_ready_1[conv_burst_cnt] <= 1; 
@@ -348,22 +348,7 @@ always @ (posedge clk or posedge rst) begin
 			end
 			writeback: begin
 				case (op_type)
-					CONV1: begin
-						dma_p1_writes_en <= 1;
-						if(conv_wb_burst_cnt < CONV_BURST_LEN) begin
-							p1_result_fifo_wr_en <= 1;
-							conv_wb_burst_cnt <= conv_wb_burst_cnt + 1;
-							p1_result <= conv_result_1[conv_wb_burst_cnt];
-						end else begin
-							p1_result_fifo_wr_en <= 0;
-							conv_wb_burst_cnt <= 0;
-							p1_result <= 16'h0000;
-						end
-						if(conv_wb_burst_cnt == CONV_BURST_LEN - 1) begin
-							writeback_finish <= 1;
-						end
-					end
-					CONV3: begin
+					CONV_CH0: begin
 						dma_p0_writes_en <= 1;
 						if(conv_wb_burst_cnt < CONV_BURST_LEN) begin
 							p0_result_fifo_wr_en <= 1;
@@ -378,7 +363,22 @@ always @ (posedge clk or posedge rst) begin
 							writeback_finish <= 1;
 						end
 					end
-					CONVP: begin
+					CONV_CH1: begin
+						dma_p1_writes_en <= 1;
+						if(conv_wb_burst_cnt < CONV_BURST_LEN) begin
+							p1_result_fifo_wr_en <= 1;
+							conv_wb_burst_cnt <= conv_wb_burst_cnt + 1;
+							p1_result <= conv_result_1[conv_wb_burst_cnt];
+						end else begin
+							p1_result_fifo_wr_en <= 0;
+							conv_wb_burst_cnt <= 0;
+							p1_result <= 16'h0000;
+						end
+						if(conv_wb_burst_cnt == CONV_BURST_LEN - 1) begin
+							writeback_finish <= 1;
+						end
+					end
+					CONV_DUAL: begin
 						dma_p0_writes_en <= 1; dma_p1_writes_en <= 1;
 						if(conv_wb_burst_cnt < CONV_BURST_LEN) begin
 							p0_result_fifo_wr_en <= 1; p1_result_fifo_wr_en <= 1;
@@ -430,9 +430,9 @@ always @ (posedge clk or posedge rst) begin
 			end
 			finish: begin
 				case(op_type)
-					CONV1:conv_valid <= 1;
-					CONV3:conv_valid <= 1;
-					CONVP:conv_valid <= 1;
+					CONV_CH0:conv_valid <= 1;
+					CONV_CH1:conv_valid <= 1;
+					CONV_DUAL:conv_valid <= 1;
 					MPOOL:maxpool_valid <= 1;
 					APOOL:avepool_valid <= 1;
 					default:;

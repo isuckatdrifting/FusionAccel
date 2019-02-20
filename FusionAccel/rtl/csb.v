@@ -29,7 +29,6 @@ module csb # (
     output [29:0]   p4_start_addr,
     output [29:0]   p5_start_addr,
     output [31:0]   result_addr,
-    output          truncated_cube,
     output [3:0]    kernel_size,
     output [7:0]    o_side_size,
     output [15:0]   i_surf_size,
@@ -42,7 +41,6 @@ module csb # (
 //Notes: Use Img2col(MEC) Convolution
 
 //TODO: Padding = 1 --> Add 0 in memory
-//TODO: Concatenation Layer
 
 //Compressed Commands from SDRAM    |MEM-Block|---------Address---------|---Space--|---Used-Space---|
 //|----------CMD TYPE----------|    |---------|-------------------------|----------|----------------|
@@ -90,7 +88,6 @@ reg [29:0]  p2_start_addr;              //Output to DMA, burst start address.
 reg [29:0]  p3_start_addr;
 reg [29:0]  p4_start_addr;
 reg [29:0]  p5_start_addr;
-reg [2:0]   truncated_cube; // new-row logic is different if truncated cube is enabled.
 
 reg [7:0]   done_width_count;           // from 0 to o_side_size
 reg [7:0]   done_height_count;          // from 0 to o_side_size
@@ -102,9 +99,9 @@ reg         irq;                        //Output, interrupt signal
 
 //State Machine
 localparam  idle = 3'b000;
-localparam  cmd_collect = 3'b001; //Get command from SDRAM
+localparam  cmd_get = 3'b001; //Get command from SDRAM
 localparam  cmd_issue = 3'b010; //Generate DMA access commands
-localparam  wait_op = 3'b011; //Get done signals from submodule macs
+localparam  op_run = 3'b011; //Get done signals from submodule macs
 localparam  finish = 3'b100;
 // State jump triggers
 reg         cmd_collect_done;
@@ -126,23 +123,23 @@ always @ (*) begin
     next_state = idle;    //    Initialize
     case (curr_state)
         idle: begin
-            if(op_en) next_state = cmd_collect;
+            if(op_en) next_state = cmd_get;
             else next_state = idle;
         end
-        cmd_collect: begin
+        cmd_get: begin
             if(cmd_collect_done) next_state = cmd_issue;
-            else next_state = cmd_collect;
+            else next_state = cmd_get;
         end
         cmd_issue: begin
-            if(cmd_issue_done) next_state = wait_op;
+            if(cmd_issue_done) next_state = op_run;
             else next_state = cmd_issue;
         end
-        wait_op: begin
+        op_run: begin
             if(op_done) begin
                 if(cmd_fifo_empty) next_state = finish;
-                else next_state = cmd_collect;
+                else next_state = cmd_get;
             end
-            else next_state = wait_op;
+            else next_state = op_run;
         end
         finish: begin
 
@@ -188,7 +185,6 @@ always @ (posedge clk or posedge rst) begin
         done_surf_count <= 16'h0000; done_channel_count <= 16'h0000; 
         conv_ready <= 0; maxpool_ready <= 0; avepool_ready <= 0;
         cmd_collect_done <= 0; cmd_issue_done <= 0; op_done <= 0;
-        truncated_cube <= 0;
 
         engine_reset <= 1;
         irq <= 0;
@@ -197,7 +193,7 @@ always @ (posedge clk or posedge rst) begin
             idle: begin
                 cmd_burst_count <= CMD_BURST_LEN;
             end
-            cmd_collect: begin
+            cmd_get: begin
                 engine_reset <= 1;
                 cmd_fifo_rd_en <= 1; //Assert to FIFO, CSB reading data from FIFO            
                 //Split cmds from fifo into separate attributes
@@ -229,7 +225,7 @@ always @ (posedge clk or posedge rst) begin
                     default:;
                 endcase
             end
-            wait_op: begin
+            op_run: begin
                 cmd_issue_done <= 0; //Reset the registers in cmd_issue and wait for submodules to finish
                 if(conv_valid | maxpool_valid | avepool_valid) begin
                     done_surf_count <= done_surf_count + 1; 

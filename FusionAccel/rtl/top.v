@@ -52,7 +52,6 @@ wire [9:0] 	cmd_fifo_wr_count;
 wire [29:0] p2_start_addr, p3_start_addr, p4_start_addr, p5_start_addr, result_addr;
 wire [7:0]  kernel_size, o_side_size;
 wire [15:0] i_surf_size;
-wire	    truncated_cube;
 
 //------------------------------------------------
 // Control Signal Block for all cores
@@ -87,7 +86,6 @@ csb_(
 	.p4_start_addr			(p4_start_addr),
 	.p5_start_addr			(p5_start_addr),
     .result_addr			(result_addr),
-	.truncated_cube			(truncated_cube),
 	.kernel_size			(kernel_size),
 	.o_side_size			(o_side_size),
 	.i_surf_size			(i_surf_size),
@@ -456,8 +454,7 @@ dma_p0 ( // Read/Write, port0, pipeout read, pipein write, result_0 write
 	.op_type		(op_type),				//in		-- from csb
 	.kernel_size	(kernel_size),			//in		-- from csb
 	.o_side_size	(o_side_size),			//in		-- from csb
-	.i_surf_size	(i_surf_size),			//in		-- from csb
-	.truncated_cube (truncated_cube));		//in		-- from csb
+	.i_surf_size	(i_surf_size));			//in		-- from csb
 
 dma #(
 	.CMD_BURST_LEN(CMD_BURST_LEN),
@@ -496,8 +493,7 @@ dma_p1 ( // Read/Write, port1, cmd read, result1 write
 	.op_type		(op_type),				//in		-- from csb
 	.kernel_size	(kernel_size),			//in		-- from csb
 	.o_side_size	(o_side_size),			//in		-- from csb
-	.i_surf_size	(i_surf_size),			//in		-- from csb
-	.truncated_cube (truncated_cube));		//in		-- from csb
+	.i_surf_size	(i_surf_size));			//in		-- from csb
 
 dma #(
 	.CMD_BURST_LEN(CMD_BURST_LEN),
@@ -535,8 +531,7 @@ dma_p2 ( // Read Only, port2, conv3x3 data
 	.op_type		(op_type),				//in		-- from csb
 	.kernel_size	(kernel_size),			//in		-- from csb
 	.o_side_size	(o_side_size),			//in		-- from csb
-	.i_surf_size	(i_surf_size),			//in		-- from csb
-	.truncated_cube (truncated_cube));		//in		-- from csb
+	.i_surf_size	(i_surf_size));			//in		-- from csb
 
 dma #(
 	.CMD_BURST_LEN(CMD_BURST_LEN),
@@ -569,8 +564,7 @@ dma_p3 ( // Read Only, port3, conv3x3 weight
 	.op_type		(op_type),				//in		-- from csb
 	.kernel_size	(kernel_size),			//in		-- from csb
 	.o_side_size	(o_side_size),			//in		-- from csb
-	.i_surf_size	(i_surf_size),			//in		-- from csb
-	.truncated_cube (truncated_cube));		//in		-- from csb
+	.i_surf_size	(i_surf_size));			//in		-- from csb
 
 dma #(
 	.CMD_BURST_LEN(CMD_BURST_LEN),
@@ -603,8 +597,7 @@ dma_p4 ( // Read Only, port4, conv1x1 data
 	.op_type		(op_type),				//in		-- from csb
 	.kernel_size	(kernel_size),			//in		-- from csb
 	.o_side_size	(o_side_size),			//in		-- from csb
-	.i_surf_size	(i_surf_size),			//in		-- from csb
-	.truncated_cube (truncated_cube));		//in		-- from csb
+	.i_surf_size	(i_surf_size));			//in		-- from csb
 
 dma #(
 	.CMD_BURST_LEN(CMD_BURST_LEN),
@@ -637,8 +630,7 @@ dma_p5 ( // Read Only, port5, conv1x1 weight
 	.op_type		(op_type),				//in		-- from csb
 	.kernel_size	(kernel_size),			//in		-- from csb
 	.o_side_size	(o_side_size),			//in		-- from csb
-	.i_surf_size	(i_surf_size),			//in		-- from csb
-	.truncated_cube (truncated_cube));		//in		-- from csb
+	.i_surf_size	(i_surf_size));			//in		-- from csb
 	
 //Block Throttle
 always @(posedge okClk) begin

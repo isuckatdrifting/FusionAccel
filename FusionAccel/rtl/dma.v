@@ -2,7 +2,7 @@
 //`default_nettype none
 
 module dma # (
-	parameter CMD_BURST_LEN = 7,
+	parameter CMD_BURST_LEN = 8,
 	parameter CONV_BURST_LEN = 16,
 	parameter POOL_BURST_LEN = 1
 )
@@ -43,8 +43,7 @@ module dma # (
 	input wire [2:0]     op_type,
 	input wire [7:0]	 kernel_size,
 	input wire [7:0]	 o_side_size,
-	input wire [15:0]	 i_surf_size,
-	input wire 			 truncated_cube
+	input wire [15:0]	 i_surf_size
 	);
 
 localparam 	FIFO_SIZE = 1024;
