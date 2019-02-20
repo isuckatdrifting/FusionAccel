@@ -14,6 +14,9 @@ module engine #(
 	input [31:0] 	op_num,
 
 	//Data path from dma -> fifos
+	input [31:0]	data_start_addr,
+	input [31:0]	weight_start_addr,
+	input [31:0]    result_start_addr,
 	input [15:0] 	data_0,
 	input [15:0] 	weight_0,
 	input [15:0] 	data_1,
@@ -26,6 +29,13 @@ module engine #(
 	output 			conv_valid,
 	output 			maxpool_valid,
 	output 			avepool_valid,
+	
+	output [29:0]   p0_start_addr,
+	output [29:0]   p1_start_addr,
+	output [29:0]   p2_start_addr,
+    output [29:0]   p3_start_addr,
+    output [29:0]   p4_start_addr,
+    output [29:0]   p5_start_addr,
 	//Outputs write back
 	output [15:0]	p0_result,
 	output [15:0]	p1_result,
@@ -38,7 +48,6 @@ module engine #(
     output          dma_p5_reads_en,
 	output          dma_p0_writes_en,
 	output          dma_p1_writes_en
-	
 );
 
 localparam CONV_CH0 = 1;
@@ -82,6 +91,13 @@ reg			p0_result_fifo_wr_en, p1_result_fifo_wr_en;
 
 //DMA enable signal
 reg			dma_p0_writes_en, dma_p1_writes_en, dma_p2_reads_en, dma_p3_reads_en, dma_p4_reads_en, dma_p5_reads_en;
+
+reg [29:0]  p0_start_addr;              //Output to DMA, burst start address. 
+reg [29:0]  p1_start_addr;
+reg [29:0]  p2_start_addr;
+reg [29:0]  p3_start_addr;
+reg [29:0]  p4_start_addr;
+reg [29:0]  p5_start_addr;
 
 always @(op_type or conv_valid_0 or conv_valid_1 or avepool_valid_0 or maxpool_valid_0) begin
 	case(op_type)
@@ -248,6 +264,10 @@ always @ (posedge clk or posedge rst) begin
 		p0_result <= 16'h0000; p1_result <= 16'h0000;
 		dma_p2_reads_en <= 0; dma_p3_reads_en <= 0;
         dma_p4_reads_en <= 0; dma_p5_reads_en <= 0;
+		p2_start_addr <= 30'h0000_0000;
+        p3_start_addr <= 30'h0000_0000;
+        p4_start_addr <= 30'h0000_0000;
+        p5_start_addr <= 30'h0000_0000;
 	end else begin
 		for(a=0;a<CONV_BURST_LEN;a=a+1) begin: clear_conv_ready
 			if(conv_valid_0[a]) conv_ready_0[a] <= 0;
@@ -257,6 +277,16 @@ always @ (posedge clk or posedge rst) begin
 			if(maxpool_valid_0[a]) maxpool_ready_0[a] <= 0;
 		end
 		case (curr_state)
+		/*
+        // data cube start_address parsing		
+		if(done_width_count + 1 == o_side_size) begin // stride & next row conditions
+			p2_start_addr <= p2_start_addr + {6'h00, op_num, 4'h0}; // Jump @ end, 6+20+4
+			done_width_count <= 8'h00;
+			done_height_count <= done_height_count + 1;
+		end else begin
+			p2_start_addr <= p2_start_addr + {22'h00_0000, stride, 4'h0}; //Only add data addr, x16, 22+4+4
+		end
+		*/
 			idle: begin
 			end
 			conv_busy: begin
@@ -347,6 +377,9 @@ always @ (posedge clk or posedge rst) begin
 				dma_p2_reads_en <= 0;
 			end
 			writeback: begin
+				// Load the next data. 0: center, 1: side, 2:corner
+				// Jump to the next row, input: o_side_size
+				// Jump to the next surface
 				case (op_type)
 					CONV_CH0: begin
 						dma_p0_writes_en <= 1;
