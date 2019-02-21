@@ -14,11 +14,9 @@ module csb # (
     output          avepool_ready,
 
     //FIFO Interface
-    input  [9:0]    cmd_fifo_wr_count,
+    input           dma_p1_ob_we,
     input  [31:0]   cmd,
-    input           cmd_fifo_empty,
     input  [6:0]    cmd_size,   //total command size received from okHost after loading memory.
-    output          cmd_fifo_rd_en,
     output          dma_p1_reads_en,
 
     output [2:0]    op_type,
@@ -65,7 +63,6 @@ module csb # (
 reg         conv_ready, maxpool_ready, avepool_ready;
 
 //Command Parsing
-reg         cmd_fifo_rd_en;
 reg [3:0]   cmd_burst_count;
 reg         dma_p1_reads_en;
 
@@ -87,6 +84,7 @@ reg [31:0]  result_start_addr;                //Output
 reg [7:0]   done_width_count;           // from 0 to o_side_size
 reg [15:0]  done_surf_count;            // from 0 to o_surf_size
 reg [15:0]  done_channel_count;         // from 0 to o_channel_size, step = PARA = 16
+reg [6:0]   done_cmd_count;
 reg         engine_reset;
 
 reg         irq;                        //Output, interrupt signal
@@ -130,7 +128,7 @@ always @ (*) begin
         end
         op_run: begin
             if(op_done) begin
-                if(cmd_fifo_empty) next_state = finish;
+                if(done_cmd_count == cmd_size) next_state = finish;
                 else next_state = cmd_get;
             end
             else next_state = op_run;
@@ -143,22 +141,9 @@ always @ (*) begin
     endcase
 end
 
-//DMA Accesss commands
-always @ (posedge clk or posedge rst) begin
-    if(rst) begin
-        dma_p1_reads_en <= 0;
-    end else begin
-        if(op_en) dma_p1_reads_en <= 1; //Assert to DMA readout, DMA writing data to FIFO
-        if(cmd_fifo_wr_count == cmd_size * CMD_BURST_LEN) begin
-            dma_p1_reads_en <= 0;       //Read command
-        end
-    end
-end
-
 //    Output, non-blocking, Command issue, Interface with FIFO
 always @ (posedge clk or posedge rst) begin
     if (rst) begin
-        cmd_fifo_rd_en <= 0;
         cmd_burst_count <= 4'd0;
         //Commands
         op_type <= 3'd0; stride <= 4'h0; padding <= 1'b0; op_num_center <= 16'h0000;
@@ -169,10 +154,11 @@ always @ (posedge clk or posedge rst) begin
         data_start_addr <= 32'h0000_0000;
         weight_start_addr <= 32'h0000_0000;
         result_start_addr <= 32'h0000_0000;
+        dma_p1_reads_en <= 0;
 
         op_num <= 16'h0000;
-        done_width_count <= 8'h00;
-        done_surf_count <= 16'h0000; done_channel_count <= 16'h0000; 
+        done_width_count <= 8'h00; done_surf_count <= 16'h0000; 
+        done_channel_count <= 16'h0000; done_cmd_count <= 8'd0;
         conv_ready <= 0; maxpool_ready <= 0; avepool_ready <= 0;
         cmd_collect_done <= 0; cmd_issue_done <= 0; op_done <= 0;
 
@@ -185,11 +171,11 @@ always @ (posedge clk or posedge rst) begin
             end
             cmd_get: begin
                 engine_reset <= 1;
-                cmd_fifo_rd_en <= 1; //Assert to FIFO, CSB reading data from FIFO            
-                //Split cmds from fifo into separate attributes
-                cmd_burst_count <= cmd_burst_count - 1;
-                op_done <= 0;
-                case (cmd_burst_count)
+                dma_p1_reads_en <= 1;
+                if(dma_p1_ob_we) begin
+                    cmd_burst_count <= cmd_burst_count - 1;
+                end
+                case (cmd_burst_count) //Split cmds from fifo into separate attributes
                     8: begin op_type <= cmd[2:0]; padding <= cmd[4]; stride <= cmd[11:8]; op_num_center <= cmd[31:16]; end
                     7: begin op_num_corner <= cmd[15:0]; op_num_side <= cmd[31:16]; end
                     6: begin i_channel_size <= cmd[15:0]; o_channel_size <= cmd[31:16]; end
@@ -197,9 +183,10 @@ always @ (posedge clk or posedge rst) begin
                     4: begin i_surf_size <= cmd[15:0]; o_surf_size <= cmd[31:16]; end
                     3: begin weight_start_addr <= cmd; end
                     2: begin data_start_addr <= cmd; end
-                    1: begin result_start_addr <= cmd; cmd_collect_done <= 1; cmd_fifo_rd_en <= 0; end
+                    1: begin result_start_addr <= cmd; cmd_collect_done <= 1; dma_p1_reads_en <= 0; end
                     default: ;
-                endcase 
+                endcase
+                op_done <= 0;
             end
             cmd_issue: begin
                 engine_reset <= 0;
@@ -231,6 +218,7 @@ always @ (posedge clk or posedge rst) begin
                     if(maxpool_valid) begin maxpool_ready <= 0; end
                     if(avepool_valid) begin avepool_ready <= 0;end
                     op_done <= 1; // op_done only issues for once after the whole operation is done
+                    done_cmd_count <= done_cmd_count + 1;
                 end
             end
             finish: begin

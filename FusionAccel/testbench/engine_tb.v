@@ -5,37 +5,57 @@
 
 module engine_tb;
 
-reg clk;
-reg rst;
-reg conv_ready;
-reg maxpool_ready;
-reg avepool_ready;
-reg [2:0] op_type;
-reg [31:0] op_num;
+reg 			clk;
+//Control signals csb->engine
+reg 			rst;
+reg 			conv_ready;
+reg 			maxpool_ready;
+reg 			avepool_ready;
+reg [2:0] 	op_type;
+reg			padding;
+reg [31:0] 	op_num;
+reg [31:0]	data_start_addr;
+reg [31:0]	weight_start_addr;
+reg [31:0]    result_start_addr;
+//Response signals engine->csb
+wire 			conv_valid;
+wire 			maxpool_valid;
+wire 			avepool_valid;
+//Data path engine->dma
+wire [15:0]	p0_result;
+wire [15:0]	p1_result;
+wire			p0_result_fifo_wr_en;
+wire			p1_result_fifo_wr_en;
+//Command path engine->dma
+wire          dma_p0_writes_en;
+wire          dma_p1_writes_en;
+wire          dma_p2_reads_en;
+wire          dma_p3_reads_en;
+wire          dma_p4_reads_en;
+wire          dma_p5_reads_en;
+wire [29:0]   p0_addr;
+wire [29:0]   p1_addr;
+wire [29:0]   p2_addr;
+wire [29:0]   p3_addr;
+wire [29:0]   p4_addr;
+wire [29:0]   p5_addr;
+//Data path dma->engine
+reg [15:0] 	dma_p2_ob_data;
+reg [15:0] 	dma_p3_ob_data;
+reg [15:0] 	dma_p4_ob_data;
+reg [15:0] 	dma_p5_ob_data;
+reg 			dma_p2_ob_we;
+reg 			dma_p3_ob_we;
+reg 			dma_p4_ob_we;
+reg 			dma_p5_ob_we;
 
-wire conv_valid;
-wire maxpool_valid;
-wire avepool_valid;
-
-wire p2_data_fifo_rd_en;
-reg [15:0] data_0;
-wire p3_weight_fifo_rd_en;
-reg [15:0] weight_0;
-wire p4_data_fifo_rd_en;
-reg [15:0] data_1;
-wire p5_weight_fifo_rd_en;
-reg [15:0] weight_1;
-
+reg [2:0] p2_state;
+reg [2:0] p3_state;
+`ifdef CMAC
 reg [15:0] data0_fifo [0:143];
 reg [15:0] weight0_fifo [0:159];
 reg [15:0] data1_fifo [0:143];
 reg [15:0] weight1_fifo [0:143];
-reg [169*16-1:0] pooldata;
-reg [9*16-1:0] maxpooldata;
-reg data0_fifo_valid;
-reg weight0_fifo_valid;
-
-`ifdef CMAC
 integer j;
 initial begin
 	data0_fifo[0] = 16'h3c00; data0_fifo[1] = 16'h4000; data0_fifo[2] = 16'h4200;
@@ -55,6 +75,7 @@ end
 `endif
 
 `ifdef SACP
+reg [169*16-1:0] pooldata;
 initial begin
 	pooldata = {16'h3757, 16'h39da, 16'h3b67, 16'h3376, 16'h3bb5, 16'h30da, 16'h3b8a, 16'h2675, 16'h3454, 16'h2d3e, 16'h39d1, 16'h3614, 16'h36dd,
 16'h304e, 16'h3023, 16'h3b02, 16'h3367, 16'h3b9d, 16'h32ff, 16'h387e, 16'h384d, 16'h3812, 16'h3bad, 16'h3587, 16'h33f5, 16'h3ab1,
@@ -74,35 +95,58 @@ end
 
 `ifdef SCMP
 initial begin
+	reg [9*16-1:0] maxpooldata;
 	maxpooldata = {16'h4880, 16'h4400, 16'h4600, 16'h4880, 16'h4200, 16'h4700, 16'h3c00, 16'h4000, 16'h4500}; //9,4,6,8,3,7,1,2,5
 end
 `endif
 
-engine engine_(
-	.clk                    (clk),
-	.rst                    (rst),
-	//Control signals from csb
-	.conv_ready             (conv_ready),
-	.maxpool_ready          (maxpool_ready),
-	.avepool_ready          (avepool_ready),
-	.op_type                (op_type),
-	.op_num                 (op_num),
-
-	.conv_valid             (conv_valid),
-	.maxpool_valid          (maxpool_valid),
-	.avepool_valid          (avepool_valid),
-	.data_0                 (data_0),
-	.weight_0               (weight_0),
-	.data_1                 (data_1),
-	.weight_1               (weight_1),
-
-	//Data path from dma -> fifos
-	.p2_data_fifo_rd_en     (p2_data_fifo_rd_en),
-	.p3_weight_fifo_rd_en   (p3_weight_fifo_rd_en),
-	.p4_data_fifo_rd_en     (p4_data_fifo_rd_en),
-	.p5_weight_fifo_rd_en   (p5_weight_fifo_rd_en)
-	
-	//Outputs directly back to dma
+engine #(
+	.CONV_BURST_LEN(16),
+	.POOL_BURST_LEN(1)
+)
+engine_(
+	.clk					(clk),
+//Control signals csb->engine
+	.rst					(rst),
+	.conv_ready				(conv_ready),
+	.maxpool_ready			(maxpool_ready),
+	.avepool_ready			(avepool_ready),
+	.op_type				(op_type),
+	.op_num					(op_num),
+	.data_start_addr		(data_start_addr),
+	.weight_start_addr		(weight_start_addr),
+	.result_start_addr		(result_start_addr),
+//Response signals engine->csb
+	.conv_valid				(conv_valid),
+	.maxpool_valid			(maxpool_valid),
+	.avepool_valid			(avepool_valid),
+//Data path engine->dma
+	.p0_result				(p0_result),
+	.p1_result				(p1_result),
+	.p0_result_fifo_wr_en	(p0_result_fifo_wr_en),
+	.p1_result_fifo_wr_en	(p1_result_fifo_wr_en),
+//Command path engine->dma
+	.dma_p0_writes_en		(dma_p0_writes_en),
+    .dma_p1_writes_en		(dma_p1_writes_en),
+	.dma_p2_reads_en		(dma_p2_reads_en),
+    .dma_p3_reads_en		(dma_p3_reads_en),
+	.dma_p4_reads_en		(dma_p4_reads_en),
+    .dma_p5_reads_en		(dma_p5_reads_en),
+	.p0_addr          		(p0_addr),
+	.p1_addr          		(p1_addr),
+	.p2_addr				(p2_addr),
+	.p3_addr				(p3_addr),
+	.p4_addr				(p4_addr),
+	.p5_addr				(p5_addr),
+//Data path dma->engine
+	.dma_p2_ob_data			(dma_p2_ob_data),
+	.dma_p3_ob_data			(dma_p3_ob_data),
+	.dma_p4_ob_data			(dma_p4_ob_data),
+	.dma_p5_ob_data			(dma_p5_ob_data),
+	.dma_p2_ob_we			(dma_p2_ob_we),
+	.dma_p3_ob_we			(dma_p3_ob_we),
+	.dma_p4_ob_we			(dma_p4_ob_we),
+	.dma_p5_ob_we			(dma_p5_ob_we)
 );
 
 always #5 clk = ~clk;
@@ -116,13 +160,15 @@ initial begin
     op_num = 0;
     conv_ready = 0;
     op_type = 0;
-	data0_fifo_valid = 0;
-	weight0_fifo_valid = 0;
-	data_0 <= 16'h0000;
-	weight_0 <= 16'h0000;
+	dma_p2_ob_data = 16'h0000;
+	dma_p3_ob_data = 16'h0000;
+	dma_p2_ob_we = 0;
+	dma_p3_ob_we = 0;
+	p2_state = 0;
+	p3_state = 0;
     #20 rst = 1;
     #10 rst = 0;
-    #100 op_num = 9; op_type = 2;
+    #100 op_num = 9; op_type = 1;
     #10 conv_ready = 1; 
 
 end
@@ -131,16 +177,24 @@ always @(posedge conv_valid) conv_ready <= 0;
 
 always @(posedge clk) begin
 	if(conv_ready) begin
-		if(p2_data_fifo_rd_en) begin 
-			data0_fifo_valid <= 1;
-			data_0 <= data0_fifo[m]; 
-			m <= m + 1; 
-		end else data0_fifo_valid <= 0;
-		if(p3_weight_fifo_rd_en) begin 
-			weight0_fifo_valid <= 1;
-			weight_0 <= weight0_fifo[n]; 
-			n <= n + 1; 
-		end else weight0_fifo_valid <= 0;
+		if(dma_p2_reads_en) begin 
+			if(p2_state < 2) p2_state <= p2_state + 1;
+			else p2_state = 0;
+			if(p2_state == 1) begin
+				dma_p2_ob_we <= 1;
+				dma_p2_ob_data <= data0_fifo[m]; 
+				m <= m + 1; 
+			end else dma_p2_ob_we <= 0;
+		end
+		if(dma_p3_reads_en) begin 
+			if(p3_state < 2) p3_state <= p3_state + 1;
+			else p3_state = 0;
+			if(p3_state == 1) begin
+				dma_p3_ob_we <= 1;
+				dma_p3_ob_data <= weight0_fifo[n]; 
+				n <= n + 1; 
+			end else dma_p3_ob_we <= 0;
+		end
 	end
 end
 `endif

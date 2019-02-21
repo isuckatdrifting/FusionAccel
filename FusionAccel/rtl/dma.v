@@ -16,7 +16,6 @@ module dma # (
 	input  wire [31:0]   ib_data,
 	input  wire [9:0]    ib_count,
 	input  wire          ib_valid,
-	input  wire          ib_empty,
 	//DDR Output Buffer (ob_)
 	output reg           ob_we,
 	output reg  [31:0]   ob_data,
@@ -90,12 +89,14 @@ always @ (*) begin
 	next_state = idle;    // Initialize
 	case (curr_state)
 		// only start writing when initialization done
-		idle: 			if (calib_done == 1 && write_mode == 1 && (ib_count >= BLOB_BURST_LEN)) begin
-							if(op_type == 3'b000) next_state = write_blob1;
-							else next_state = write_block1;
-						end else if (calib_done == 1 && read_mode == 1 && (ob_count < (FIFO_SIZE - 1 - BLOB_BURST_LEN))) begin
-							if(op_type == 3'b000) next_state = read_blob1;
-							else next_state = read_block1;
+		idle: 			if (calib_done == 1 && write_mode == 1) begin
+							if(op_type == 3'b000) begin
+								if(ib_count >= BLOB_BURST_LEN) next_state = write_blob1;
+							end else next_state = write_block1;
+						end else if (calib_done == 1 && read_mode == 1) begin
+							if(op_type == 3'b000) begin
+								if(ob_count < (FIFO_SIZE - 1 - BLOB_BURST_LEN)) next_state = read_blob1;
+							end else next_state = read_block1;
 						end else begin
 							next_state = idle;
 						end
