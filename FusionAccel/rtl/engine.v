@@ -5,50 +5,50 @@ module engine #(
 )
 (
 	input 			clk,
+//Control signals csb->engine
 	input 			rst,
-	//Control signals from csb
 	input 			conv_ready,
 	input 			maxpool_ready,
 	input 			avepool_ready,
 	input [2:0] 	op_type,
 	input			padding,
 	input [31:0] 	op_num,
-
-	//Data path from dma -> fifos
 	input [31:0]	data_start_addr,
 	input [31:0]	weight_start_addr,
 	input [31:0]    result_start_addr,
-	input [15:0] 	data_0,
-	input [15:0] 	weight_0,
-	input [15:0] 	data_1,
-	input [15:0] 	weight_1,
-
-	output 			p2_data_fifo_rd_en,
-	output 			p3_weight_fifo_rd_en,
-	output 			p4_data_fifo_rd_en,
-	output 			p5_weight_fifo_rd_en,
+//Response signals engine->csb
 	output 			conv_valid,
 	output 			maxpool_valid,
 	output 			avepool_valid,
-	
-	output [29:0]   p0_start_addr,
-	output [29:0]   p1_start_addr,
-	output [29:0]   p2_start_addr,
-    output [29:0]   p3_start_addr,
-    output [29:0]   p4_start_addr,
-    output [29:0]   p5_start_addr,
-	//Outputs write back
-	output [15:0]	p0_result,
-	output [15:0]	p1_result,
-	output			p0_result_fifo_wr_en,
-	output			p1_result_fifo_wr_en,
-
+//Command path engine->dma
 	output          dma_p0_writes_en,
 	output          dma_p1_writes_en,
     output          dma_p2_reads_en,
     output          dma_p3_reads_en,
     output          dma_p4_reads_en,
-    output          dma_p5_reads_en
+    output          dma_p5_reads_en,
+	output [29:0]   p0_addr,
+	output [29:0]   p1_addr,
+	output [29:0]   p2_addr,
+    output [29:0]   p3_addr,
+    output [29:0]   p4_addr,
+    output [29:0]   p5_addr,
+//Data path dma->engine
+	input [15:0] 	dma_p2_ob_data,
+	input [15:0] 	dma_p3_ob_data,
+	input [15:0] 	dma_p4_ob_data,
+	input [15:0] 	dma_p5_ob_data,
+	input			dma_p0_ib_re,
+	input			dma_p1_ib_re,
+	input 			dma_p2_ob_we,
+	input 			dma_p3_ob_we,
+	input 			dma_p4_ob_we,
+	input 			dma_p5_ob_we,
+//Data path engine->dma
+	output [15:0]	dma_p0_ib_data,
+	output [15:0]	dma_p1_ib_data,
+	output			dma_p0_ib_valid,
+	output			dma_p1_ib_valid
 );
 
 localparam CONV_CH0 = 1;
@@ -67,9 +67,9 @@ reg  [POOL_BURST_LEN-1:0] maxpool_ready_0, avepool_ready_0;
 wire [POOL_BURST_LEN-1:0] rdy_maxpool, rdy_avepool;
 wire [POOL_BURST_LEN-1:0] maxpool_valid_0, avepool_valid_0;
 
-reg  [15:0] d0 [0:CONV_BURST_LEN-1];
+reg  [15:0] d0;
 reg  [15:0] w0 [0:CONV_BURST_LEN-1];
-reg  [15:0] d1 [0:CONV_BURST_LEN-1];
+reg  [15:0] d1;
 reg  [15:0] w1 [0:CONV_BURST_LEN-1];
 reg  [15:0] mp [0:POOL_BURST_LEN-1];
 reg  [15:0] ap [0:POOL_BURST_LEN-1];
@@ -79,26 +79,19 @@ wire [15:0] conv_result_1 [0:CONV_BURST_LEN-1];
 wire [15:0] maxpool_result [0:POOL_BURST_LEN-1];
 wire [15:0] avepool_result [0:POOL_BURST_LEN-1];
 
-reg  [15:0] conv_count [0:CONV_BURST_LEN-1];
-reg  [15:0] pool_count [0:POOL_BURST_LEN-1];
 reg 		conv_finish;
 reg 		conv_valid;
 reg 		avepool_finish, maxpool_finish;
 reg 		avepool_valid, maxpool_valid;
 reg			writeback_finish;
-reg 		p2_data_fifo_rd_en, p4_data_fifo_rd_en, p3_weight_fifo_rd_en, p5_weight_fifo_rd_en;
-reg	 [15:0] p0_result, p1_result;
-reg			p0_result_fifo_wr_en, p1_result_fifo_wr_en;
 
 //DMA enable signal
 reg			dma_p0_writes_en, dma_p1_writes_en, dma_p2_reads_en, dma_p3_reads_en, dma_p4_reads_en, dma_p5_reads_en;
 
-reg [29:0]  p0_start_addr;              //Output to DMA, burst start address. 
-reg [29:0]  p1_start_addr;
-reg [29:0]  p2_start_addr;
-reg [29:0]  p3_start_addr;
-reg [29:0]  p4_start_addr;
-reg [29:0]  p5_start_addr;
+reg [29:0]  p0_addr, p1_addr, p2_addr, p3_addr, p4_addr, p5_addr;              //Output to DMA, burst start address. 
+reg [29:0]  data_start_addr_buf, weight_start_addr_buf;
+reg [15:0]  dma_p0_ib_data, dma_p1_ib_data;
+reg			dma_p0_ib_valid, dma_p1_ib_valid;
 
 always @(op_type or conv_valid_0 or conv_valid_1 or avepool_valid_0 or maxpool_valid_0) begin
 	case(op_type)
@@ -132,7 +125,7 @@ end
 genvar i;
 generate 
 	for (i = 0; i < CONV_BURST_LEN; i = i + 1) begin
-		cmac cmac_0(.clk(clk), .rst(~conv_ready), .data(d0[i]), .weight(w0[i]), .result(conv_result_0[i]), .conv_ready(conv_ready_0[i]), .op_num(op_num), .rdy_acc(rdy_acc_0[i]), .conv_valid(conv_valid_0[i]));
+		cmac cmac_0(.clk(clk), .rst(~conv_ready), .data(d0), .weight(w0[i]), .result(conv_result_0[i]), .conv_ready(conv_ready_0[i]), .op_num(op_num), .rdy_acc(rdy_acc_0[i]), .conv_valid(conv_valid_0[i]));
 	end 
 endgenerate
 
@@ -140,7 +133,7 @@ endgenerate
 genvar j;
 generate 
 	for (j = 0; j < CONV_BURST_LEN; j = j + 1) begin
-		cmac cmac_1(.clk(clk), .rst(~conv_ready), .data(d1[j]), .weight(w1[j]), .result(conv_result_1[j]), .conv_ready(conv_ready_1[j]), .op_num(op_num), .rdy_acc(rdy_acc_1[j]), .conv_valid(conv_valid_1[j]));
+		cmac cmac_1(.clk(clk), .rst(~conv_ready), .data(d1), .weight(w1[j]), .result(conv_result_1[j]), .conv_ready(conv_ready_1[j]), .op_num(op_num), .rdy_acc(rdy_acc_1[j]), .conv_valid(conv_valid_1[j]));
 	end 
 endgenerate
 
@@ -254,21 +247,32 @@ always @ (posedge clk or posedge rst) begin
 		conv_ready_1 <= 16'h0000;
 		avepool_ready_0 <= 0;
 		maxpool_ready_0 <= 0;
-		p2_data_fifo_rd_en <= 0;
-		p4_data_fifo_rd_en <= 0;
-		p3_weight_fifo_rd_en <= 0;
-		p5_weight_fifo_rd_en <= 0;
 		conv_valid <= 0;
 		avepool_valid <= 0;
 		maxpool_valid <= 0;
-		p0_result_fifo_wr_en <= 0; p1_result_fifo_wr_en <= 0;
-		p0_result <= 16'h0000; p1_result <= 16'h0000;
+		dma_p0_writes_en <= 0; dma_p1_writes_en <= 0;
 		dma_p2_reads_en <= 0; dma_p3_reads_en <= 0;
         dma_p4_reads_en <= 0; dma_p5_reads_en <= 0;
-		p2_start_addr <= 30'h0000_0000;
-        p3_start_addr <= 30'h0000_0000;
-        p4_start_addr <= 30'h0000_0000;
-        p5_start_addr <= 30'h0000_0000;
+		p0_addr <= 30'h0000_0000;
+		p1_addr <= 30'h0000_0000;
+		p2_addr <= 30'h0000_0000;
+        p3_addr <= 30'h0000_0000;
+        p4_addr <= 30'h0000_0000;
+        p5_addr <= 30'h0000_0000;
+		data_start_addr_buf <= 30'h0000_0000;
+		weight_start_addr_buf <= 30'h0000_0000;
+		d0 <= 16'h0000; d1 <= 16'h0000;
+		for(a=0;a<CONV_BURST_LEN;a=a+1) begin
+			w0[a] <= 16'h0000; w1[a] <= 16'h0000;
+		end
+		for(a=0;a<POOL_BURST_LEN;a=a+1) begin
+			mp[a] <= 16'h0000;
+		end
+		for(a=0;a<POOL_BURST_LEN;a=a+1) begin
+			ap[a] <= 16'h0000;
+		end
+		dma_p0_ib_data <= 16'h0000; dma_p1_ib_data <= 16'h0000;
+		dma_p0_ib_valid <= 0; dma_p1_ib_valid <= 0;
 	end else begin
 		for(a=0;a<CONV_BURST_LEN;a=a+1) begin: clear_conv_ready
 			if(conv_valid_0[a]) conv_ready_0[a] <= 0;
@@ -279,51 +283,40 @@ always @ (posedge clk or posedge rst) begin
 		end
 		case (curr_state)
 			idle: begin
+				data_start_addr_buf <= data_start_addr;
+				weight_start_addr_buf <= weight_start_addr;
 			end
-			conv_busy: begin	//Note that FIFO read and DMA start_addr are asynchronous
+			conv_busy: begin	//Load data/weight to cmac/sacc/scmp, TODO: merge these state machines
 				case (op_type)
 					CONV_CH0: begin // TODO: Update start addr @ the same edge of reads_en, data read is `PARA times slower than weight read
-						dma_p2_reads_en <= 1; dma_p3_reads_en <= 1;
-						p2_start_addr <= data_start_addr; p3_start_addr <= weight_start_addr;
-						conv_burst_cnt <= conv_burst_cnt + 1;
-						conv_ready_0[conv_burst_cnt] <= 1;
-						if(conv_burst_cnt < CONV_BURST_LEN) begin 
-							p3_weight_fifo_rd_en <= 1;
-						end else begin
-							p3_weight_fifo_rd_en <= 0;
+						if(conv_burst_cnt == 0) begin
+							dma_p2_reads_en <= 1; dma_p3_reads_en <= 1;
 						end
-						if(conv_burst_cnt == 1) begin
-							p2_data_fifo_rd_en <= 1;
-						end else begin
-							p2_data_fifo_rd_en <= 0;
+						if(conv_burst_cnt == 1) dma_p2_reads_en <= 0;
+						if(conv_burst_cnt == 16) dma_p3_reads_en <= 0;						
+						p2_addr <= data_start_addr_buf; p3_addr <= weight_start_addr_buf;  //<---
+						if(dma_p3_ob_we) begin // @ this edge dma_p3_ob_data is also updated.
+							conv_burst_cnt <= conv_burst_cnt + 1;
+							conv_ready_0[conv_burst_cnt] <= 1;
+							w0[conv_burst_cnt] <= dma_p3_ob_data; //input weight
+						end
+						if(dma_p2_ob_we) begin
+							d0 <= dma_p2_ob_data; //input data
 						end
 					end
 					CONV_CH1: begin 
 						dma_p4_reads_en <= 1; dma_p5_reads_en <= 1;
-						conv_burst_cnt <= conv_burst_cnt + 1;
-						conv_ready_1[conv_burst_cnt] <= 1; 
-						if(conv_burst_cnt < CONV_BURST_LEN) begin 
-							p5_weight_fifo_rd_en <= 1;
-						end else begin
-							p5_weight_fifo_rd_en <= 0;
+						if(dma_p5_ob_we) begin // @ this edge dma_p3_ob_data is also updated.
+							conv_burst_cnt <= conv_burst_cnt + 1;
+							conv_ready_1[conv_burst_cnt] <= 1; 
+							w1[conv_burst_cnt] <= dma_p5_ob_data; //input weight
 						end
-						if(conv_burst_cnt == 1) begin
-							p4_data_fifo_rd_en <= 1;
-						end else begin
-							p4_data_fifo_rd_en <= 0;
+						if(dma_p4_ob_we) begin
+							d1 <= dma_p3_ob_data; //input data
 						end
 					end
 					CONV_DUAL: begin 
-						dma_p2_reads_en <= 1; dma_p3_reads_en <= 1; dma_p4_reads_en <= 1; dma_p5_reads_en <= 1;
-						conv_burst_cnt <= conv_burst_cnt + 1;
-						conv_ready_0[conv_burst_cnt] <= 1; conv_ready_1[conv_burst_cnt] <= 1; 
-						if(conv_burst_cnt < CONV_BURST_LEN) begin 
-							p2_data_fifo_rd_en <= 1; p3_weight_fifo_rd_en <= 1;
-							p4_data_fifo_rd_en <= 1; p5_weight_fifo_rd_en <= 1; 
-						end else begin
-							p2_data_fifo_rd_en <= 0; p3_weight_fifo_rd_en <= 0;
-							p4_data_fifo_rd_en <= 0; p5_weight_fifo_rd_en <= 0; 
-						end
+						
 					end
 					default:;
 				endcase
@@ -335,12 +328,11 @@ always @ (posedge clk or posedge rst) begin
 			maxpool_busy: begin
 				case(op_type)
 					MPOOL: begin
-						pool_burst_cnt <= pool_burst_cnt + 1;
-						maxpool_ready_0[pool_burst_cnt] <= 1;
-						if(pool_burst_cnt < POOL_BURST_LEN) begin
-							p2_data_fifo_rd_en <= 1;
-						end else begin
-							p2_data_fifo_rd_en <= 0;
+						dma_p2_reads_en <= 1; // TODO: change the dma port to p3 if enabling para
+						if(dma_p2_ob_we) begin
+							pool_burst_cnt <= pool_burst_cnt + 1;
+							maxpool_ready_0[pool_burst_cnt] <= 1;
+							mp[pool_burst_cnt] <= dma_p2_ob_data;
 						end
 					end
 					default:;
@@ -353,12 +345,11 @@ always @ (posedge clk or posedge rst) begin
 			avepool_busy: begin
 				case (op_type)
 					APOOL: begin
-						pool_burst_cnt <= pool_burst_cnt + 1;
-						avepool_ready_0[pool_burst_cnt] <= 1;
-						if(pool_burst_cnt < POOL_BURST_LEN) begin
-							p2_data_fifo_rd_en <= 1;
-						end else begin
-							p2_data_fifo_rd_en <= 0;
+						dma_p2_reads_en <= 1; // TODO: change the dma port to p3 if enabling para
+						if(dma_p2_ob_we) begin
+							pool_burst_cnt <= pool_burst_cnt + 1;
+							avepool_ready_0[pool_burst_cnt] <= 1;
+							ap[pool_burst_cnt] <= dma_p2_ob_data;
 						end
 					end
 					default: ;
@@ -374,77 +365,59 @@ always @ (posedge clk or posedge rst) begin
 				// Jump to the next surface
 				case (op_type)
 					CONV_CH0: begin
-						dma_p0_writes_en <= 1; // TODO: Update start addr @ the same edge of writes_en
-						if(conv_wb_burst_cnt < CONV_BURST_LEN) begin
-							p0_result_fifo_wr_en <= 1;
+						if(conv_wb_burst_cnt == 0) dma_p0_writes_en <= 1; // TODO: Update start addr @ the same edge of writes_en
+						if(dma_p0_ib_re) begin
+							dma_p0_ib_data <= conv_result_0[conv_wb_burst_cnt];
+							dma_p0_ib_valid <= 1;
 							conv_wb_burst_cnt <= conv_wb_burst_cnt + 1;
-							p0_result <= conv_result_0[conv_wb_burst_cnt];
 						end else begin
-							p0_result_fifo_wr_en <= 0;
+							dma_p0_ib_valid <= 0;
 							conv_wb_burst_cnt <= 0;
-							p0_result <= 16'h0000;
 						end
 						if(conv_wb_burst_cnt == CONV_BURST_LEN - 1) begin
 							writeback_finish <= 1;
 						end
 					end
 					CONV_CH1: begin
-						dma_p1_writes_en <= 1;
-						if(conv_wb_burst_cnt < CONV_BURST_LEN) begin
-							p1_result_fifo_wr_en <= 1;
+						if(conv_wb_burst_cnt == 0) dma_p1_writes_en <= 1; // TODO: Update start addr @ the same edge of writes_en
+						if(dma_p1_ib_re) begin
+							dma_p1_ib_data <= conv_result_1[conv_wb_burst_cnt];
+							dma_p1_ib_valid <= 1;
 							conv_wb_burst_cnt <= conv_wb_burst_cnt + 1;
-							p1_result <= conv_result_1[conv_wb_burst_cnt];
 						end else begin
-							p1_result_fifo_wr_en <= 0;
+							dma_p1_ib_valid <= 0;
 							conv_wb_burst_cnt <= 0;
-							p1_result <= 16'h0000;
 						end
 						if(conv_wb_burst_cnt == CONV_BURST_LEN - 1) begin
 							writeback_finish <= 1;
 						end
 					end
 					CONV_DUAL: begin
-						dma_p0_writes_en <= 1; dma_p1_writes_en <= 1;
-						if(conv_wb_burst_cnt < CONV_BURST_LEN) begin
-							p0_result_fifo_wr_en <= 1; p1_result_fifo_wr_en <= 1;
-							conv_wb_burst_cnt <= conv_wb_burst_cnt + 1;
-							p0_result <= conv_result_0[conv_wb_burst_cnt];
-							p1_result <= conv_result_1[conv_wb_burst_cnt];
-						end else begin
-							p0_result_fifo_wr_en <= 0; p1_result_fifo_wr_en <= 0;
-							conv_wb_burst_cnt <= 0;
-							p0_result <= 16'h0000; p1_result <= 16'h0000;
-						end
-						if(conv_wb_burst_cnt == CONV_BURST_LEN - 1) begin
-							writeback_finish <= 1;
-						end
+						
 					end
 					MPOOL: begin
-						dma_p0_writes_en <= 1;
-						if(pool_wb_burst_cnt < POOL_BURST_LEN) begin
-							p0_result_fifo_wr_en <= 1;
+						if(pool_wb_burst_cnt == 0) dma_p0_writes_en <= 1; // TODO: Update start addr @ the same edge of writes_en
+						if(dma_p0_ib_re) begin
+							dma_p0_ib_data <= maxpool_result[pool_wb_burst_cnt];
+							dma_p0_ib_valid <= 1;
 							pool_wb_burst_cnt <= pool_wb_burst_cnt + 1;
-							p0_result <= maxpool_result[pool_wb_burst_cnt];
-							writeback_finish <= 1;
 						end else begin
-							p0_result_fifo_wr_en <= 0;
+							dma_p0_ib_valid <= 0;
 							pool_wb_burst_cnt <= 0;
-							p0_result <= 16'h0000;
 						end
 						if(pool_wb_burst_cnt == POOL_BURST_LEN - 1) begin
 							writeback_finish <= 1;
 						end
 					end
 					APOOL: begin
-						dma_p0_writes_en <= 1;
-						if(pool_wb_burst_cnt < POOL_BURST_LEN) begin
-							p0_result_fifo_wr_en <= 1;
+						if(pool_wb_burst_cnt == 0) dma_p0_writes_en <= 1; // TODO: Update start addr @ the same edge of writes_en
+						if(dma_p0_ib_re) begin
+							dma_p0_ib_data <= avepool_result[pool_wb_burst_cnt];
+							dma_p0_ib_valid <= 1;
 							pool_wb_burst_cnt <= pool_wb_burst_cnt + 1;
-							p0_result <= avepool_result[pool_wb_burst_cnt];
 						end else begin
-							p0_result_fifo_wr_en <= 0;
+							dma_p0_ib_valid <= 0;
 							pool_wb_burst_cnt <= 0;
-							p0_result <= 16'h0000;
 						end
 						if(pool_wb_burst_cnt == POOL_BURST_LEN - 1) begin
 							writeback_finish <= 1;
@@ -469,68 +442,16 @@ always @ (posedge clk or posedge rst) begin
 				/*
 				// data cube start_address parsing		
 				if(done_width_count + 1 == o_side_size) begin // stride & next row conditions
-					p2_start_addr <= p2_start_addr + {6'h00, op_num, 4'h0}; // Jump @ end, 6+20+4
+					p2_addr <= p2_addr + {6'h00, op_num, 4'h0}; // Jump @ end, 6+20+4
 					done_width_count <= 8'h00;
 					done_height_count <= done_height_count + 1;
 				end else begin
-					p2_start_addr <= p2_start_addr + {22'h00_0000, stride, 4'h0}; //Only add data addr, x16, 22+4+4
+					p2_addr <= p2_addr + {22'h00_0000, stride, 4'h0}; //Only add data addr, x16, 22+4+4
 				end
 				*/
 			end
 			default:;
 		endcase
-	end
-end
-
-integer b;
-always@(posedge clk) begin
-	if(!conv_ready) begin
-		for(b=0;b<CONV_BURST_LEN;b=b+1) begin
-			d0[b] <= 16'h0000; w0[b] <= 16'h0000;
-			d1[b] <= 16'h0000; w1[b] <= 16'h0000;
-			conv_count[b] <= op_num;
-		end
-	end else begin
-		if(conv_burst_cnt >= 2 && conv_burst_cnt <= CONV_BURST_LEN + 1) begin
-			d0[conv_burst_cnt-2] <= data_0;
-			w0[conv_burst_cnt-2] <= weight_0;
-			d1[conv_burst_cnt-2] <= data_1; // TODO: parallel convolution start in csb
-			w1[conv_burst_cnt-2] <= weight_1;
-			if(conv_count[conv_burst_cnt-2] != 0)
-				conv_count[conv_burst_cnt-2] <= conv_count[conv_burst_cnt-2] - 1;
-		end
-	end
-end
-
-integer c;
-always@(posedge clk) begin
-	if(!avepool_ready) begin
-		for(c=0;c<POOL_BURST_LEN;c=c+1) begin
-			ap[c] <= 16'h0000;
-			pool_count[c] <= op_num;
-		end
-	end else begin
-		if(pool_burst_cnt >= 2 && pool_burst_cnt <= POOL_BURST_LEN + 1) begin
-			ap[pool_burst_cnt-2] <= data_0;
-			if(pool_count[pool_burst_cnt-2] != 0)
-				pool_count[pool_burst_cnt-2] <= pool_count[pool_burst_cnt-2] - 1;
-		end
-	end
-end
-
-integer d;
-always@(posedge clk) begin
-	if(!maxpool_ready) begin
-		for(d=0;d<POOL_BURST_LEN;d=d+1) begin
-			mp[d] <= 16'h0000;
-			pool_count[d] <= op_num;
-		end
-	end else begin
-		if(pool_burst_cnt >= 2 && pool_burst_cnt <= POOL_BURST_LEN + 1) begin
-			mp[pool_burst_cnt-2] <= data_0;
-			if(pool_count[pool_burst_cnt-2] != 0)
-				pool_count[pool_burst_cnt-2] <= pool_count[pool_burst_cnt-2] - 1;
-		end
 	end
 end
 endmodule
