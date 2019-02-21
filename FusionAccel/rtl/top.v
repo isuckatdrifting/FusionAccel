@@ -34,7 +34,8 @@ module top
 //--------------v1, Minimum Hardware Cores for SqueezeNet------------------//
 localparam CMD_BURST_LEN = 8,
 			CONV_BURST_LEN = 16,
-			POOL_BURST_LEN = 1;
+			POOL_BURST_LEN = 1,
+			BLOB_BURST_LEN = 32;
 
 wire        c3_clk0;
 
@@ -422,9 +423,8 @@ assign p0_ib_empty = dma_p0_writes_en ? p0_result_fifo_empty : pipe_in_empty;
 
 //TODO: Add input start address and parsing in dma
 dma #(
-	.CMD_BURST_LEN(CMD_BURST_LEN),
-	.CONV_BURST_LEN(CONV_BURST_LEN),
-	.POOL_BURST_LEN(POOL_BURST_LEN)
+	.BLOB_BURST_LEN(BLOB_BURST_LEN),
+	.BLOCK_BURST_LEN(1)
 )
 dma_p0 ( // Read/Write, port0, pipeout read, pipein write, result_0 write
 	.clk			(c3_clk0),
@@ -462,9 +462,8 @@ dma_p0 ( // Read/Write, port0, pipeout read, pipein write, result_0 write
 	.op_type		(op_type));				//in		-- from csb
 
 dma #(
-	.CMD_BURST_LEN(CMD_BURST_LEN),
-	.CONV_BURST_LEN(CONV_BURST_LEN),
-	.POOL_BURST_LEN(POOL_BURST_LEN)
+	.BLOB_BURST_LEN(BLOB_BURST_LEN),
+	.BLOCK_BURST_LEN(1)
 )
 dma_p1 ( // Read/Write, port1, cmd read, result1 write
 	.clk			(c3_clk0),
@@ -497,11 +496,10 @@ dma_p1 ( // Read/Write, port1, cmd read, result1 write
 	.op_type		(op_type));				//in		-- from csb
 
 dma #(
-	.CMD_BURST_LEN(CMD_BURST_LEN),
-	.CONV_BURST_LEN(CONV_BURST_LEN),
-	.POOL_BURST_LEN(POOL_BURST_LEN)
+	.BLOB_BURST_LEN(BLOB_BURST_LEN),
+	.BLOCK_BURST_LEN(1)
 )
-dma_p2 ( // Read Only, port2, conv3x3 data
+dma_p2 ( // Read Only, port2, conv3x3 data, maxpool, avepool data
 	.clk			(c3_clk0),
 	.reset			(ep00wire[2] | c3_rst0), 
 	.reads_en		(dma_p2_reads_en),		//in		-- data1
@@ -531,9 +529,8 @@ dma_p2 ( // Read Only, port2, conv3x3 data
 	.op_type		(op_type));				//in		-- from csb
 
 dma #(
-	.CMD_BURST_LEN(CMD_BURST_LEN),
-	.CONV_BURST_LEN(CONV_BURST_LEN),
-	.POOL_BURST_LEN(POOL_BURST_LEN)
+	.BLOB_BURST_LEN(BLOB_BURST_LEN),
+	.BLOCK_BURST_LEN(CONV_BURST_LEN)
 )
 dma_p3 ( // Read Only, port3, conv3x3 weight
 	.clk			(c3_clk0),
@@ -560,9 +557,8 @@ dma_p3 ( // Read Only, port3, conv3x3 weight
 	.op_type		(op_type));				//in		-- from csb
 
 dma #(
-	.CMD_BURST_LEN(CMD_BURST_LEN),
-	.CONV_BURST_LEN(CONV_BURST_LEN),
-	.POOL_BURST_LEN(POOL_BURST_LEN)
+	.BLOB_BURST_LEN(BLOB_BURST_LEN),
+	.BLOCK_BURST_LEN(1)
 )
 dma_p4 ( // Read Only, port4, conv1x1 data
 	.clk			(c3_clk0),
@@ -589,9 +585,8 @@ dma_p4 ( // Read Only, port4, conv1x1 data
 	.op_type		(op_type));				//in		-- from csb
 
 dma #(
-	.CMD_BURST_LEN(CMD_BURST_LEN),
-	.CONV_BURST_LEN(CONV_BURST_LEN),
-	.POOL_BURST_LEN(POOL_BURST_LEN)
+	.BLOB_BURST_LEN(BLOB_BURST_LEN),
+	.BLOCK_BURST_LEN(CONV_BURST_LEN)
 )
 dma_p5 ( // Read Only, port5, conv1x1 weight
 	.clk			(c3_clk0),

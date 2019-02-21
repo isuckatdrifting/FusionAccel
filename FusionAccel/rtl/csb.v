@@ -22,6 +22,7 @@ module csb # (
     output          dma_p1_reads_en,
 
     output [2:0]    op_type,
+    output          padding,
     output [3:0]    stride,
     output [19:0]   op_num,
     output [31:0]   data_start_addr,
@@ -38,7 +39,7 @@ module csb # (
 //Notes: CMD Fifo: WR clock domain: c3clk0, RD clock domain: clk.
 //Notes: Use Img2col(MEC) Convolution
 
-//TODO: Padding = 1 --> Add 0 in memory
+//TODO: Padding = 1 --> totally 9 conditions.
 
 //Compressed Commands from SDRAM    |MEM-Block|---------Address---------|---Space--|---Used-Space---|
 //|----------CMD TYPE----------|    |---------|-------------------------|----------|----------------|

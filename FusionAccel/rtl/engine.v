@@ -11,6 +11,7 @@ module engine #(
 	input 			maxpool_ready,
 	input 			avepool_ready,
 	input [2:0] 	op_type,
+	input			padding,
 	input [31:0] 	op_num,
 
 	//Data path from dma -> fifos
@@ -42,12 +43,12 @@ module engine #(
 	output			p0_result_fifo_wr_en,
 	output			p1_result_fifo_wr_en,
 
+	output          dma_p0_writes_en,
+	output          dma_p1_writes_en,
     output          dma_p2_reads_en,
     output          dma_p3_reads_en,
     output          dma_p4_reads_en,
-    output          dma_p5_reads_en,
-	output          dma_p0_writes_en,
-	output          dma_p1_writes_en
+    output          dma_p5_reads_en
 );
 
 localparam CONV_CH0 = 1;
@@ -277,22 +278,13 @@ always @ (posedge clk or posedge rst) begin
 			if(maxpool_valid_0[a]) maxpool_ready_0[a] <= 0;
 		end
 		case (curr_state)
-		/*
-        // data cube start_address parsing		
-		if(done_width_count + 1 == o_side_size) begin // stride & next row conditions
-			p2_start_addr <= p2_start_addr + {6'h00, op_num, 4'h0}; // Jump @ end, 6+20+4
-			done_width_count <= 8'h00;
-			done_height_count <= done_height_count + 1;
-		end else begin
-			p2_start_addr <= p2_start_addr + {22'h00_0000, stride, 4'h0}; //Only add data addr, x16, 22+4+4
-		end
-		*/
 			idle: begin
 			end
-			conv_busy: begin
+			conv_busy: begin	//Note that FIFO read and DMA start_addr are asynchronous
 				case (op_type)
-					CONV_CH0: begin 
+					CONV_CH0: begin // TODO: Update start addr @ the same edge of reads_en, data read is `PARA times slower than weight read
 						dma_p2_reads_en <= 1; dma_p3_reads_en <= 1;
+						p2_start_addr <= data_start_addr; p3_start_addr <= weight_start_addr;
 						conv_burst_cnt <= conv_burst_cnt + 1;
 						conv_ready_0[conv_burst_cnt] <= 1;
 						if(conv_burst_cnt < CONV_BURST_LEN) begin 
@@ -382,7 +374,7 @@ always @ (posedge clk or posedge rst) begin
 				// Jump to the next surface
 				case (op_type)
 					CONV_CH0: begin
-						dma_p0_writes_en <= 1;
+						dma_p0_writes_en <= 1; // TODO: Update start addr @ the same edge of writes_en
 						if(conv_wb_burst_cnt < CONV_BURST_LEN) begin
 							p0_result_fifo_wr_en <= 1;
 							conv_wb_burst_cnt <= conv_wb_burst_cnt + 1;
@@ -473,6 +465,17 @@ always @ (posedge clk or posedge rst) begin
 				writeback_finish <= 0;
 				dma_p0_writes_en <= 0;
 				dma_p1_writes_en <= 0;
+				// dma start addr update logic
+				/*
+				// data cube start_address parsing		
+				if(done_width_count + 1 == o_side_size) begin // stride & next row conditions
+					p2_start_addr <= p2_start_addr + {6'h00, op_num, 4'h0}; // Jump @ end, 6+20+4
+					done_width_count <= 8'h00;
+					done_height_count <= done_height_count + 1;
+				end else begin
+					p2_start_addr <= p2_start_addr + {22'h00_0000, stride, 4'h0}; //Only add data addr, x16, 22+4+4
+				end
+				*/
 			end
 			default:;
 		endcase
