@@ -42,6 +42,7 @@ wire        c3_clk0;
 wire 		op_en;
 wire [6:0]  cmd_size;
 wire [2:0] 	op_type;
+wire		padding;
 wire [3:0]  stride;
 wire [15:0] op_num;
 wire		engine_reset;
@@ -56,12 +57,8 @@ wire [31:0] data_start_addr, weight_start_addr, result_start_addr;
 //output MUX
 
 wire [31:0] dma_p0_ib_data, dma_p1_ib_data, dma_p2_ob_data, dma_p3_ob_data, dma_p4_ob_data, dma_p5_ob_data;
-wire [29:0] dma_p0_start_addr, dma_p1_start_addr, dma_p2_start_addr, dma_p3_start_addr, dma_p4_start_addr,  dma_p5_start_addr;
-
-assign dma_p2_start_addr = ep00wire[4]?p2_start_addr:30'h0000_0000;
-assign dma_p3_start_addr = ep00wire[4]?p3_start_addr:30'h0000_0000;
-assign dma_p4_start_addr = ep00wire[4]?p4_start_addr:30'h0000_0000;
-assign dma_p5_start_addr = ep00wire[4]?p5_start_addr:30'h0000_0000;
+wire [29:0] p0_addr, p1_addr, p2_addr, p3_addr, p4_addr, p5_addr;
+wire		dma_p0_ib_re, dma_p1_ib_re, dma_p2_ob_we, dma_p3_ob_we, dma_p4_ob_we, dma_p5_ob_we;
 
 //------------------------------------------------
 // Control Signal Block for all cores
@@ -74,12 +71,8 @@ csb_(
     .rst					(ep00wire[3]),
 	.op_en					(ep00wire[4]),		// A wire from ep
 
-    .conv_valid				(conv_valid),
-	.conv_ready				(conv_ready),
-    .maxpool_valid			(maxpool_valid),
-	.maxpool_ready			(maxpool_ready),
-	.avepool_valid			(avepool_valid),
-	.avepool_ready			(avepool_ready),
+    .engine_valid			(engine_valid),
+	.engine_ready			(engine_ready),
 
 	.dma_p1_ob_we			(dma_p1_ob_we),
 	.cmd					(dma_p1_ob_data),
@@ -87,6 +80,7 @@ csb_(
 	.dma_p1_reads_en		(dma_p1_reads_en),
 
 	.op_type				(op_type),
+	.padding				(padding),
 	.stride					(stride),
 	.op_num					(op_num),
 	.data_start_addr		(data_start_addr),
@@ -107,18 +101,15 @@ engine_(
 	.clk					(c3_clk0),
 //Control signals csb->engine
 	.rst					(engine_reset),
-	.conv_ready				(conv_ready),
-	.maxpool_ready			(maxpool_ready),
-	.avepool_ready			(avepool_ready),
+	.engine_ready			(engine_ready),
 	.op_type				(op_type),
+	.padding				(padding),
 	.op_num					(op_num),
 	.data_start_addr		(data_start_addr),
 	.weight_start_addr		(weight_start_addr),
 	.result_start_addr		(result_start_addr),
 //Response signals engine->csb
-	.conv_valid				(conv_valid),
-	.maxpool_valid			(maxpool_valid),
-	.avepool_valid			(avepool_valid),
+	.engine_valid			(engine_valid),
 //Command path engine->dma
 	.dma_p0_writes_en		(dma_p0_writes_en),
     .dma_p1_writes_en		(dma_p1_writes_en),
@@ -126,12 +117,12 @@ engine_(
     .dma_p3_reads_en		(dma_p3_reads_en),
 	.dma_p4_reads_en		(dma_p4_reads_en),
     .dma_p5_reads_en		(dma_p5_reads_en),
-	.p0_addr          		(p0_start_addr),//TODO: update this wire name
-	.p1_addr          		(p1_start_addr),
-	.p2_addr				(p2_start_addr),
-	.p3_addr				(p3_start_addr),
-	.p4_addr				(p4_start_addr),
-	.p5_addr				(p5_start_addr),
+	.p0_addr          		(p0_addr),			//TODO: update this wire name
+	.p1_addr          		(p1_addr),			//TODO: Add input start address and parsing in dma
+	.p2_addr				(p2_addr),
+	.p3_addr				(p3_addr),
+	.p4_addr				(p4_addr),
+	.p5_addr				(p5_addr),
 //Data path dma->engine
 	.dma_p2_ob_data			(dma_p2_ob_data),
 	.dma_p3_ob_data			(dma_p3_ob_data),
@@ -400,11 +391,11 @@ memc3_inst (
 	.c3_p5_rd_overflow      (c3_p5_rd_overflow),
 	.c3_p5_rd_error         (c3_p5_rd_error));
 
+assign dma_p0_ib_re = dma_p0_writes_en ? p0_ib_re : 0;
 assign pipe_in_read = dma_p0_writes_en ? 0 : p0_ib_re;
 assign p0_ib_data = dma_p0_writes_en ? dma_p0_ib_data : pipe_in_data; // TODO: Update this mux logic after updating engine-dma
 assign p0_ib_valid = dma_p0_writes_en ? dma_p0_ib_valid : pipe_in_valid;
 
-//TODO: Add input start address and parsing in dma
 dma #(
 	.BLOB_BURST_LEN(BLOB_BURST_LEN),
 	.BLOCK_BURST_LEN(1)
@@ -440,7 +431,7 @@ dma_p0 ( // Read/Write, port0, pipeout read, pipein write, result_0 write
 	.wr_data		(c3_p0_wr_data), 		//out		-- to MCB Port0
 	.wr_mask		(c3_p0_wr_mask),		//out		-- to MCB Port0
 
-	.start_addr		(dma_p0_start_addr),	//in		-- from csb
+	.start_addr		(p0_addr),	//in		-- from csb
 	.op_type		(op_type));				//in		-- from csb
 
 dma #(
@@ -473,7 +464,7 @@ dma_p1 ( // Read/Write, port1, cmd read, result1 write
 	.cmd_byte_addr	(c3_p1_cmd_byte_addr), 	//out		-- to MCB Port1
 	.cmd_bl			(c3_p1_cmd_bl), 		//out		-- to MCB Port1
 
-	.start_addr		(dma_p1_start_addr),	//in		-- from csb
+	.start_addr		(p1_addr),	//in		-- from csb
 	.op_type		(op_type));				//in		-- from csb
 
 dma #(
@@ -506,7 +497,7 @@ dma_p2 ( // Read Only, port2, conv3x3 data, maxpool, avepool data
 	.wr_data		(c3_p2_wr_data), 		//out		-- to MCB Port2
 	.wr_mask		(c3_p2_wr_mask),		//out		-- to MCB Port2
 
-	.start_addr		(dma_p2_start_addr),	//in		-- from csb
+	.start_addr		(p2_addr),				//in		-- from csb
 	.op_type		(op_type));				//in		-- from csb
 
 dma #(
@@ -534,7 +525,7 @@ dma_p3 ( // Read Only, port3, conv3x3 weight
 	.cmd_byte_addr	(c3_p3_cmd_byte_addr), 	//out		-- to MCB Port3
 	.cmd_bl			(c3_p3_cmd_bl), 		//out		-- to MCB Port3
 
-	.start_addr		(dma_p3_start_addr),	//in		-- from csb
+	.start_addr		(p3_addr),				//in		-- from csb
 	.op_type		(op_type));				//in		-- from csb
 
 dma #(
@@ -562,7 +553,7 @@ dma_p4 ( // Read Only, port4, conv1x1 data
 	.cmd_byte_addr	(c3_p4_cmd_byte_addr), 	//out		-- to MCB Port3
 	.cmd_bl			(c3_p4_cmd_bl), 		//out		-- to MCB Port3
 	
-	.start_addr		(dma_p4_start_addr),	//in		-- from csb
+	.start_addr		(p4_addr),				//in		-- from csb
 	.op_type		(op_type));				//in		-- from csb
 
 dma #(
@@ -590,7 +581,7 @@ dma_p5 ( // Read Only, port5, conv1x1 weight
 	.cmd_byte_addr	(c3_p5_cmd_byte_addr), 	//out		-- to MCB Port3
 	.cmd_bl			(c3_p5_cmd_bl), 		//out		-- to MCB Port3
 
-	.start_addr		(dma_p5_start_addr),	//in		-- from csb
+	.start_addr		(p5_addr),				//in		-- from csb
 	.op_type		(op_type));				//in		-- from csb
 	
 //Block Throttle

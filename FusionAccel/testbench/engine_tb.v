@@ -8,9 +8,7 @@ module engine_tb;
 reg 			clk;
 //Control signals csb->engine
 reg 			rst;
-reg 			conv_ready;
-reg 			maxpool_ready;
-reg 			avepool_ready;
+reg 			engine_ready;
 reg [2:0] 	op_type;
 reg			padding;
 reg [31:0] 	op_num;
@@ -18,14 +16,8 @@ reg [31:0]	data_start_addr;
 reg [31:0]	weight_start_addr;
 reg [31:0]    result_start_addr;
 //Response signals engine->csb
-wire 			conv_valid;
-wire 			maxpool_valid;
-wire 			avepool_valid;
+wire 			engine_valid;
 //Data path engine->dma
-wire [15:0]	p0_result;
-wire [15:0]	p1_result;
-wire			p0_result_fifo_wr_en;
-wire			p1_result_fifo_wr_en;
 //Command path engine->dma
 wire          dma_p0_writes_en;
 wire          dma_p1_writes_en;
@@ -40,17 +32,23 @@ wire [29:0]   p3_addr;
 wire [29:0]   p4_addr;
 wire [29:0]   p5_addr;
 //Data path dma->engine
+
 reg [15:0] 	dma_p2_ob_data;
 reg [15:0] 	dma_p3_ob_data;
 reg [15:0] 	dma_p4_ob_data;
 reg [15:0] 	dma_p5_ob_data;
+reg			dma_p0_ib_re;
+reg			dma_p1_ib_re;
 reg 			dma_p2_ob_we;
 reg 			dma_p3_ob_we;
 reg 			dma_p4_ob_we;
 reg 			dma_p5_ob_we;
+wire [15:0]	dma_p0_ib_data;
+wire [15:0]	dma_p1_ib_data;
+wire			dma_p0_ib_valid;
+wire			dma_p1_ib_valid;
 
-reg [2:0] p2_state;
-reg [2:0] p3_state;
+reg [2:0] p0_state, p1_state, p2_state, p3_state;
 `ifdef CMAC
 reg [15:0] data0_fifo [0:143];
 reg [15:0] weight0_fifo [0:159];
@@ -108,23 +106,14 @@ engine_(
 	.clk					(clk),
 //Control signals csb->engine
 	.rst					(rst),
-	.conv_ready				(conv_ready),
-	.maxpool_ready			(maxpool_ready),
-	.avepool_ready			(avepool_ready),
+	.engine_ready			(engine_ready),
 	.op_type				(op_type),
 	.op_num					(op_num),
 	.data_start_addr		(data_start_addr),
 	.weight_start_addr		(weight_start_addr),
 	.result_start_addr		(result_start_addr),
 //Response signals engine->csb
-	.conv_valid				(conv_valid),
-	.maxpool_valid			(maxpool_valid),
-	.avepool_valid			(avepool_valid),
-//Data path engine->dma
-	.p0_result				(p0_result),
-	.p1_result				(p1_result),
-	.p0_result_fifo_wr_en	(p0_result_fifo_wr_en),
-	.p1_result_fifo_wr_en	(p1_result_fifo_wr_en),
+	.engine_valid			(engine_valid),
 //Command path engine->dma
 	.dma_p0_writes_en		(dma_p0_writes_en),
     .dma_p1_writes_en		(dma_p1_writes_en),
@@ -143,13 +132,21 @@ engine_(
 	.dma_p3_ob_data			(dma_p3_ob_data),
 	.dma_p4_ob_data			(dma_p4_ob_data),
 	.dma_p5_ob_data			(dma_p5_ob_data),
+	.dma_p0_ib_re			(dma_p0_ib_re),
+	.dma_p1_ib_re			(dma_p1_ib_re),
 	.dma_p2_ob_we			(dma_p2_ob_we),
 	.dma_p3_ob_we			(dma_p3_ob_we),
 	.dma_p4_ob_we			(dma_p4_ob_we),
-	.dma_p5_ob_we			(dma_p5_ob_we)
+	.dma_p5_ob_we			(dma_p5_ob_we),
+	.dma_p0_ib_data			(dma_p0_ib_data),
+	.dma_p1_ib_data			(dma_p1_ib_data),
+	.dma_p0_ib_valid		(dma_p0_ib_valid),
+	.dma_p1_ib_valid		(dma_p1_ib_valid)
 );
 
 always #5 clk = ~clk;
+always @(posedge engine_valid) engine_ready <= 0;
+
 `ifdef CMAC
 integer m,n;
 initial begin
@@ -158,25 +155,23 @@ initial begin
     m = 0;
 	n = 0;
     op_num = 0;
-    conv_ready = 0;
+    engine_ready = 0;
     op_type = 0;
 	dma_p2_ob_data = 16'h0000;
 	dma_p3_ob_data = 16'h0000;
 	dma_p2_ob_we = 0;
 	dma_p3_ob_we = 0;
-	p2_state = 0;
-	p3_state = 0;
+	dma_p0_ib_re = 0;
+	dma_p1_ib_re = 0;
+	p0_state = 0; p1_state = 0; p2_state = 0; p3_state = 0;
     #20 rst = 1;
     #10 rst = 0;
     #100 op_num = 9; op_type = 1;
-    #10 conv_ready = 1; 
-
+    #10 engine_ready = 1; 
 end
 
-always @(posedge conv_valid) conv_ready <= 0;
-
 always @(posedge clk) begin
-	if(conv_ready) begin
+	if(engine_ready) begin
 		if(dma_p2_reads_en) begin 
 			if(p2_state < 2) p2_state <= p2_state + 1;
 			else p2_state = 0;
@@ -195,6 +190,20 @@ always @(posedge clk) begin
 				n <= n + 1; 
 			end else dma_p3_ob_we <= 0;
 		end
+		if(dma_p0_writes_en) begin 
+			if(p0_state < 2) p0_state <= p0_state + 1;
+			else p0_state = 0;
+			if(p0_state == 1) begin
+				dma_p0_ib_re <= 1;
+			end else dma_p0_ib_re <= 0;
+		end
+		if(dma_p1_writes_en) begin 
+			if(p1_state < 2) p1_state <= p1_state + 1;
+			else p1_state = 0;
+			if(p1_state == 1) begin
+				dma_p1_ib_re <= 1;
+			end else dma_p1_ib_re <= 0;
+		end
 	end
 end
 `endif
@@ -204,7 +213,7 @@ initial begin
     rst = 1;
     clk = 0;
     op_num = 0;
-    avepool_ready = 0;
+    engine_ready = 0;
     op_type = 0;
 	data0_fifo_valid = 0;
 	data_0 = 16'h0000;
@@ -214,10 +223,8 @@ initial begin
     #10 avepool_ready = 1; 
 end
 
-always @(posedge avepool_valid) avepool_ready <= 0;
-
 always @(posedge clk) begin
-	if(avepool_ready) begin
+	if(engine_ready) begin
 		if(p2_data_fifo_rd_en) begin 
 			data0_fifo_valid <= 1;
 			data_0 <= pooldata[15:0]; 
@@ -232,7 +239,7 @@ initial begin
     rst = 1;
     clk = 0;
     op_num = 0;
-    maxpool_ready = 0;
+    engine_ready = 0;
     op_type = 0;
 	data0_fifo_valid = 0;
 	data_0 = 16'h0000;
@@ -242,10 +249,8 @@ initial begin
     #10 maxpool_ready = 1; 
 end
 
-always @(posedge maxpool_valid) maxpool_ready <= 0;
-
 always @(posedge clk) begin
-	if(maxpool_ready) begin
+	if(engine_ready) begin
 		if(p2_data_fifo_rd_en) begin 
 			data0_fifo_valid <= 1;
 			data_0 <= maxpooldata[15:0]; 
