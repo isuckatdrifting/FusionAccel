@@ -76,11 +76,7 @@ comparator your_instance_name (
   .operation(operation), // input [5 : 0] operation
   .operation_nd(operation_nd), // input operation_nd
   .operation_rfd(operation_rfd), // output operation_rfd
-  .clk(clk), // input clk
-  .sclr(sclr), // input sclr
-  .ce(ce), // input ce
   .result(result), // output [0 : 0] result
-  .invalid_op(invalid_op), // output invalid_op
   .rdy(rdy) // output rdy
 );
 // INST_TAG_END ------ End INSTANTIATION Template ---------

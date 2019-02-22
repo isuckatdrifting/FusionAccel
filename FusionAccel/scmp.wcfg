@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wave_config>
+   <wave_state>
+   </wave_state>
+   <db_ref_list>
+      <db_ref path="C:/Users/shish/source/repos/FusionAccel/FusionAccel/scmp_tb_isim_beh.wdb" id="1" type="auto">
+         <top_modules>
+            <top_module name="glbl" />
+            <top_module name="scmp_tb" />
+         </top_modules>
+      </db_ref>
+   </db_ref_list>
+   <WVObjectSize size="14" />
+   <wvobject fp_name="/scmp_tb/clk" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">clk</obj_property>
+      <obj_property name="ObjectShortName">clk</obj_property>
+   </wvobject>
+   <wvobject fp_name="/scmp_tb/rst" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">rst</obj_property>
+      <obj_property name="ObjectShortName">rst</obj_property>
+   </wvobject>
+   <wvobject fp_name="/scmp_tb/data_fifo" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">data_fifo[0:8,15:0]</obj_property>
+      <obj_property name="ObjectShortName">data_fifo[0:8,15:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/scmp_tb/pool_valid" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">pool_valid</obj_property>
+      <obj_property name="ObjectShortName">pool_valid</obj_property>
+   </wvobject>
+   <wvobject fp_name="/scmp_tb/data_ready" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">data_ready</obj_property>
+      <obj_property name="ObjectShortName">data_ready</obj_property>
+   </wvobject>
+   <wvobject fp_name="/scmp_tb/data_valid" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">data_valid</obj_property>
+      <obj_property name="ObjectShortName">data_valid</obj_property>
+   </wvobject>
+   <wvobject fp_name="/scmp_tb/cmp_ready" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">cmp_ready</obj_property>
+      <obj_property name="ObjectShortName">cmp_ready</obj_property>
+   </wvobject>
+   <wvobject fp_name="/scmp_tb/data" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">data[15:0]</obj_property>
+      <obj_property name="ObjectShortName">data[15:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/scmp_tb/scmp_/a_cmp" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">a_cmp[15:0]</obj_property>
+      <obj_property name="ObjectShortName">a_cmp[15:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/scmp_tb/scmp_/b_cmp" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">b_cmp[15:0]</obj_property>
+      <obj_property name="ObjectShortName">b_cmp[15:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/scmp_tb/scmp_/tmp" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">tmp[15:0]</obj_property>
+      <obj_property name="ObjectShortName">tmp[15:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/scmp_tb/scmp_/result_cmp" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">result_cmp</obj_property>
+      <obj_property name="ObjectShortName">result_cmp</obj_property>
+   </wvobject>
+   <wvobject fp_name="/scmp_tb/result" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">result[15:0]</obj_property>
+      <obj_property name="ObjectShortName">result[15:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/scmp_tb/pool_ready" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">pool_ready</obj_property>
+      <obj_property name="ObjectShortName">pool_ready</obj_property>
+   </wvobject>
+</wave_config>

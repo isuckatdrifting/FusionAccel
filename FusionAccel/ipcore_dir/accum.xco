@@ -1,7 +1,7 @@
 ##############################################################
 #
 # Xilinx Core Generator version 14.7
-# Date: Tue Jan 15 02:38:13 2019
+# Date: Fri Feb 22 09:23:48 2019
 #
 ##############################################################
 #
@@ -44,16 +44,16 @@ CSET add_sub_value=Add
 CSET c_a_exponent_width=5
 CSET c_a_fraction_width=11
 CSET c_compare_operation=Programmable
-CSET c_has_ce=true
+CSET c_has_ce=false
 CSET c_has_divide_by_zero=false
-CSET c_has_invalid_op=true
+CSET c_has_invalid_op=false
 CSET c_has_operation_nd=true
 CSET c_has_operation_rfd=true
-CSET c_has_overflow=true
+CSET c_has_overflow=false
 CSET c_has_rdy=true
 CSET c_has_sclr=true
-CSET c_has_underflow=true
-CSET c_latency=8
+CSET c_has_underflow=false
+CSET c_latency=0
 CSET c_mult_usage=No_Usage
 CSET c_optimization=Speed_Optimized
 CSET c_rate=1
@@ -61,7 +61,7 @@ CSET c_result_exponent_width=5
 CSET c_result_fraction_width=11
 CSET c_speed=Maximum_speed
 CSET component_name=accum
-CSET maximum_latency=true
+CSET maximum_latency=false
 CSET operation_type=Add_Subtract
 CSET result_precision_type=Custom
 # END Parameters
@@ -69,4 +69,4 @@ CSET result_precision_type=Custom
 MISC pkg_timestamp=2012-07-02T11:22:24Z
 # END Extra information
 GENERATE
-# CRC:  cd99a5c
+# CRC: 1bf88929
