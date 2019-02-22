@@ -75,13 +75,7 @@ accum your_instance_name (
   .b(b), // input [15 : 0] b
   .operation_nd(operation_nd), // input operation_nd
   .operation_rfd(operation_rfd), // output operation_rfd
-  .clk(clk), // input clk
-  .sclr(sclr), // input sclr
-  .ce(ce), // input ce
   .result(result), // output [15 : 0] result
-  .underflow(underflow), // output underflow
-  .overflow(overflow), // output overflow
-  .invalid_op(invalid_op), // output invalid_op
   .rdy(rdy) // output rdy
 );
 // INST_TAG_END ------ End INSTANTIATION Template ---------

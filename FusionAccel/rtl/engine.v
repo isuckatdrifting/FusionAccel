@@ -144,6 +144,8 @@ generate
 	end
 endgenerate
 
+//TODO: Instatiate Data FIFO and Weight FIFO
+
 //State Machine
 localparam idle = 4'b0000;
 localparam busy = 4'b0001;

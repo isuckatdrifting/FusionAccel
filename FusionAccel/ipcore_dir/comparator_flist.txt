@@ -1,8 +1,5 @@
 # Output products list for <comparator>
-_xmsgs/pn_parser.xmsgs
-comparator/doc/floating_point_ds335.pdf
-comparator/doc/floating_point_v5_0_readme.txt
-comparator/doc/floating_point_v5_0_vinfo.html
+_xmsgs\pn_parser.xmsgs
 comparator.asy
 comparator.gise
 comparator.ngc
@@ -11,5 +8,8 @@ comparator.v
 comparator.veo
 comparator.xco
 comparator.xise
+comparator\doc\floating_point_ds335.pdf
+comparator\doc\floating_point_v5_0_readme.txt
+comparator\doc\floating_point_v5_0_vinfo.html
 comparator_flist.txt
 comparator_xmdf.tcl

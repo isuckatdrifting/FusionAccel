@@ -1,8 +1,5 @@
 # Output products list for <divider>
-_xmsgs/pn_parser.xmsgs
-divider/doc/floating_point_ds335.pdf
-divider/doc/floating_point_v5_0_readme.txt
-divider/doc/floating_point_v5_0_vinfo.html
+_xmsgs\pn_parser.xmsgs
 divider.asy
 divider.gise
 divider.ngc
@@ -11,5 +8,8 @@ divider.v
 divider.veo
 divider.xco
 divider.xise
+divider\doc\floating_point_ds335.pdf
+divider\doc\floating_point_v5_0_readme.txt
+divider\doc\floating_point_v5_0_vinfo.html
 divider_flist.txt
 divider_xmdf.tcl

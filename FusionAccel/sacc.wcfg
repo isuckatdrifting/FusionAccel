@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wave_config>
+   <wave_state>
+   </wave_state>
+   <db_ref_list>
+      <db_ref path="C:/Users/shish/source/repos/FusionAccel/FusionAccel/sacc_tb_isim_beh.wdb" id="1" type="auto">
+         <top_modules>
+            <top_module name="glbl" />
+            <top_module name="sacc_tb" />
+         </top_modules>
+      </db_ref>
+   </db_ref_list>
+   <WVObjectSize size="17" />
+   <wvobject fp_name="/sacc_tb/clk" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">clk</obj_property>
+      <obj_property name="ObjectShortName">clk</obj_property>
+   </wvobject>
+   <wvobject fp_name="/sacc_tb/rst" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">rst</obj_property>
+      <obj_property name="ObjectShortName">rst</obj_property>
+   </wvobject>
+   <wvobject fp_name="/sacc_tb/pool_valid" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">pool_valid</obj_property>
+      <obj_property name="ObjectShortName">pool_valid</obj_property>
+   </wvobject>
+   <wvobject fp_name="/sacc_tb/data" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">data[15:0]</obj_property>
+      <obj_property name="ObjectShortName">data[15:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/sacc_tb/data_ready" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">data_ready</obj_property>
+      <obj_property name="ObjectShortName">data_ready</obj_property>
+   </wvobject>
+   <wvobject fp_name="/sacc_tb/data_valid" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">data_valid</obj_property>
+      <obj_property name="ObjectShortName">data_valid</obj_property>
+   </wvobject>
+   <wvobject fp_name="/sacc_tb/sacc_/a_acc" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">a_acc[15:0]</obj_property>
+      <obj_property name="ObjectShortName">a_acc[15:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/sacc_tb/sacc_/b_acc" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">b_acc[15:0]</obj_property>
+      <obj_property name="ObjectShortName">b_acc[15:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/sacc_tb/sacc_/result_acc" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">result_acc[15:0]</obj_property>
+      <obj_property name="ObjectShortName">result_acc[15:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/sacc_tb/acc_ready" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">acc_ready</obj_property>
+      <obj_property name="ObjectShortName">acc_ready</obj_property>
+   </wvobject>
+   <wvobject fp_name="/sacc_tb/sacc_/operation_rfd_div" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">operation_rfd_div</obj_property>
+      <obj_property name="ObjectShortName">operation_rfd_div</obj_property>
+   </wvobject>
+   <wvobject fp_name="/sacc_tb/sacc_/operation_nd_div" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">operation_nd_div</obj_property>
+      <obj_property name="ObjectShortName">operation_nd_div</obj_property>
+   </wvobject>
+   <wvobject fp_name="/sacc_tb/sacc_/a_div" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">a_div[15:0]</obj_property>
+      <obj_property name="ObjectShortName">a_div[15:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/sacc_tb/sacc_/b_div" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">b_div[15:0]</obj_property>
+      <obj_property name="ObjectShortName">b_div[15:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/sacc_tb/sacc_/result_div" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">result_div[15:0]</obj_property>
+      <obj_property name="ObjectShortName">result_div[15:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/sacc_tb/pool_ready" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">pool_ready</obj_property>
+      <obj_property name="ObjectShortName">pool_ready</obj_property>
+   </wvobject>
+   <wvobject fp_name="/sacc_tb/result" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">result[15:0]</obj_property>
+      <obj_property name="ObjectShortName">result[15:0]</obj_property>
+   </wvobject>
+</wave_config>

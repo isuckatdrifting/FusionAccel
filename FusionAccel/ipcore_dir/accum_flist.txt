@@ -1,8 +1,5 @@
 # Output products list for <accum>
-_xmsgs/pn_parser.xmsgs
-accum/doc/floating_point_ds335.pdf
-accum/doc/floating_point_v5_0_readme.txt
-accum/doc/floating_point_v5_0_vinfo.html
+_xmsgs\pn_parser.xmsgs
 accum.asy
 accum.gise
 accum.ngc
@@ -11,5 +8,8 @@ accum.v
 accum.veo
 accum.xco
 accum.xise
+accum\doc\floating_point_ds335.pdf
+accum\doc\floating_point_v5_0_readme.txt
+accum\doc\floating_point_v5_0_vinfo.html
 accum_flist.txt
 accum_xmdf.tcl
