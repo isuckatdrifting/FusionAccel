@@ -7,9 +7,7 @@ module engine #(
 	input 			clk,
 //Control signals csb->engine
 	input 			rst,
-	input 			conv_ready,
-	input 			maxpool_ready,
-	input 			avepool_ready,
+	input 			engine_ready,
 	input [2:0] 	op_type,
 	input			padding,
 	input [31:0] 	op_num,
@@ -17,9 +15,7 @@ module engine #(
 	input [31:0]	weight_start_addr,
 	input [31:0]    result_start_addr,
 //Response signals engine->csb
-	output 			conv_valid,
-	output 			maxpool_valid,
-	output 			avepool_valid,
+	output 			engine_valid,
 //Command path engine->dma
 	output          dma_p0_writes_en,
 	output          dma_p1_writes_en,
@@ -79,11 +75,8 @@ wire [15:0] conv_result_1 [0:CONV_BURST_LEN-1];
 wire [15:0] maxpool_result [0:POOL_BURST_LEN-1];
 wire [15:0] avepool_result [0:POOL_BURST_LEN-1];
 
-reg 		conv_finish;
-reg 		conv_valid;
-reg 		avepool_finish, maxpool_finish;
-reg 		avepool_valid, maxpool_valid;
-reg			writeback_finish;
+reg 		engine_valid;
+reg 		engine_finish, writeback_finish;
 
 //DMA enable signal
 reg			dma_p0_writes_en, dma_p1_writes_en, dma_p2_reads_en, dma_p3_reads_en, dma_p4_reads_en, dma_p5_reads_en;
@@ -93,29 +86,29 @@ reg [29:0]  data_start_addr_buf, weight_start_addr_buf;
 reg [15:0]  dma_p0_ib_data, dma_p1_ib_data;
 reg			dma_p0_ib_valid, dma_p1_ib_valid;
 
-always @(op_type or conv_valid_0 or conv_valid_1 or avepool_valid_0 or maxpool_valid_0) begin
+always @(op_type or conv_valid_0 or conv_valid_1 or avepool_valid_0 or maxpool_valid_0) begin //TODO: Use better finish signals
 	case(op_type)
-		CONV_CH1: begin
-			if(conv_valid_1 == 16'hffff) conv_finish = 1;
-			else conv_finish = 0;
-		end
 		CONV_CH0: begin
-			if(conv_valid_0 == 16'hffff) conv_finish = 1;
-			else conv_finish = 0;
+			if(conv_valid_0 == 16'hffff) engine_finish = 1;
+			else engine_finish = 0;
+		end
+		CONV_CH1: begin
+			if(conv_valid_1 == 16'hffff) engine_finish = 1;
+			else engine_finish = 0;
 		end
 		CONV_DUAL: begin
-			if(conv_valid_0 == 16'hffff && conv_valid_1 == 16'hffff) conv_finish = 1;
-			else conv_finish = 0;
+			if(conv_valid_0 == 16'hffff && conv_valid_1 == 16'hffff) engine_finish = 1;
+			else engine_finish = 0;
 		end
 		MPOOL: begin
-			if(maxpool_valid_0 == 1) maxpool_finish = 1;
-			else maxpool_finish = 0;
+			if(maxpool_valid_0 == 1) engine_finish = 1;
+			else engine_finish = 0;
 		end
 		APOOL: begin
-			if(avepool_valid_0 == 1) avepool_finish = 1;
-			else avepool_finish = 0;
+			if(avepool_valid_0 == 1) engine_finish = 1;
+			else engine_finish = 0;
 		end
-		default: begin conv_finish = 0; avepool_finish = 0; maxpool_finish = 0; end
+		default: begin engine_finish = 0; end
 	endcase
 end
 
@@ -125,7 +118,7 @@ end
 genvar i;
 generate 
 	for (i = 0; i < CONV_BURST_LEN; i = i + 1) begin
-		cmac cmac_0(.clk(clk), .rst(~conv_ready), .data(d0), .weight(w0[i]), .result(conv_result_0[i]), .conv_ready(conv_ready_0[i]), .op_num(op_num), .rdy_acc(rdy_acc_0[i]), .conv_valid(conv_valid_0[i]));
+		cmac cmac_0(.clk(clk), .rst(~engine_ready), .data(d0), .weight(w0[i]), .result(conv_result_0[i]), .conv_ready(conv_ready_0[i]), .op_num(op_num), .rdy_acc(rdy_acc_0[i]), .conv_valid(conv_valid_0[i]));
 	end 
 endgenerate
 
@@ -133,34 +126,30 @@ endgenerate
 genvar j;
 generate 
 	for (j = 0; j < CONV_BURST_LEN; j = j + 1) begin
-		cmac cmac_1(.clk(clk), .rst(~conv_ready), .data(d1), .weight(w1[j]), .result(conv_result_1[j]), .conv_ready(conv_ready_1[j]), .op_num(op_num), .rdy_acc(rdy_acc_1[j]), .conv_valid(conv_valid_1[j]));
+		cmac cmac_1(.clk(clk), .rst(~engine_ready), .data(d1), .weight(w1[j]), .result(conv_result_1[j]), .conv_ready(conv_ready_1[j]), .op_num(op_num), .rdy_acc(rdy_acc_1[j]), .conv_valid(conv_valid_1[j]));
 	end 
 endgenerate
 
 genvar k;
 generate
 	for (k = 0; k < POOL_BURST_LEN; k = k + 1) begin
-		sacc sacc_(.clk(clk), .rst(~avepool_ready), .data(ap[k]), .result(avepool_result[k]), .pool_ready(avepool_ready_0[k]), .op_num(op_num), .rdy(rdy_avepool[k]), .pool_valid(avepool_valid_0[k]));
+		sacc sacc_(.clk(clk), .rst(~engine_ready), .data(ap[k]), .result(avepool_result[k]), .pool_ready(avepool_ready_0[k]), .op_num(op_num), .rdy(rdy_avepool[k]), .pool_valid(avepool_valid_0[k]));
 	end
 endgenerate
 
 genvar l;
 generate
 	for (l = 0; l < POOL_BURST_LEN; l = l + 1) begin
-		scmp scmp_(.clk(clk), .rst(~maxpool_ready), .data(mp[l]), .result(maxpool_result[l]), .pool_ready(maxpool_ready_0[l]), .op_num(op_num), .rdy_cmp(rdy_maxpool[l]), .pool_valid(maxpool_valid_0[l]));
+		scmp scmp_(.clk(clk), .rst(~engine_ready), .data(mp[l]), .result(maxpool_result[l]), .pool_ready(maxpool_ready_0[l]), .op_num(op_num), .rdy_cmp(rdy_maxpool[l]), .pool_valid(maxpool_valid_0[l]));
 	end
 endgenerate
 
 //State Machine
 localparam idle = 4'b0000;
-localparam conv_busy = 4'b0001;
-localparam conv_clear = 4'b0010;
-localparam maxpool_busy = 4'b0011;
-localparam maxpool_clear = 4'b0100;
-localparam avepool_busy = 4'b0101;
-localparam avepool_clear = 4'b0110;
-localparam writeback = 4'b0111;
-localparam finish = 4'b1000;
+localparam busy = 4'b0001;
+localparam clear = 4'b0010;
+localparam writeback = 4'b0011;
+localparam finish = 4'b0100;
 
 reg [3:0] curr_state;
 reg [3:0] next_state;
@@ -178,48 +167,20 @@ always @ (*) begin
     next_state = idle;    //    Initialize
     case (curr_state)
         idle: begin
-            if(conv_ready) next_state = conv_busy;
-			else if(avepool_ready) next_state = avepool_busy;
-			else if(maxpool_ready) next_state = maxpool_busy;
+            if(engine_ready) next_state = busy;
             else next_state = idle;
         end
-        conv_busy: begin
-            if(conv_burst_cnt == CONV_BURST_LEN) next_state = conv_clear;
-            else next_state = conv_busy;
+        busy: begin
+            if(conv_burst_cnt == CONV_BURST_LEN || pool_burst_cnt == POOL_BURST_LEN) next_state = clear;
+            else next_state = busy;
         end
-		conv_clear: begin
-			if(conv_finish) begin 
+		clear: begin
+			if(engine_finish) begin 
 				next_state = writeback;
-			end else if (rdy_acc_0[0]) begin // use the first mac in the pipeline as flag
-				next_state = conv_busy;
+			end else if (rdy_acc_0[0] | rdy_maxpool[0] | rdy_avepool[0]) begin // use the first mac in the pipeline as flag
+				next_state = busy;
 			end else begin
-				next_state = conv_clear;
-			end
-		end
-		maxpool_busy: begin
-			if(pool_burst_cnt == POOL_BURST_LEN) next_state = maxpool_clear;
-			else next_state = maxpool_busy;
-		end
-		maxpool_clear: begin
-			if(maxpool_finish) begin
-				next_state = writeback;
-			end else if (rdy_maxpool[0]) begin
-				next_state = maxpool_busy;
-			end else begin
-				next_state = maxpool_clear;
-			end
-		end
-		avepool_busy: begin
-            if(pool_burst_cnt == POOL_BURST_LEN) next_state = avepool_clear;
-            else next_state = avepool_busy;
-        end
-		avepool_clear: begin
-			if(avepool_finish) begin 
-				next_state = writeback;
-			end else if (rdy_avepool[0]) begin
-				next_state = avepool_busy;
-			end else begin
-				next_state = avepool_clear;
+				next_state = clear;
 			end
 		end
 		writeback: begin
@@ -247,9 +208,7 @@ always @ (posedge clk or posedge rst) begin
 		conv_ready_1 <= 16'h0000;
 		avepool_ready_0 <= 0;
 		maxpool_ready_0 <= 0;
-		conv_valid <= 0;
-		avepool_valid <= 0;
-		maxpool_valid <= 0;
+		engine_valid <= 0;
 		dma_p0_writes_en <= 0; dma_p1_writes_en <= 0;
 		dma_p2_reads_en <= 0; dma_p3_reads_en <= 0;
         dma_p4_reads_en <= 0; dma_p5_reads_en <= 0;
@@ -286,14 +245,14 @@ always @ (posedge clk or posedge rst) begin
 				data_start_addr_buf <= data_start_addr;
 				weight_start_addr_buf <= weight_start_addr;
 			end
-			conv_busy: begin	//Load data/weight to cmac/sacc/scmp, TODO: merge these state machines
+			busy: begin	//Load data/weight to cmac/sacc/scmp, TODO: optimize logic here to pass timing closure --> not using index, better way to control the cmac array
 				case (op_type)
 					CONV_CH0: begin // TODO: Update start addr @ the same edge of reads_en, data read is `PARA times slower than weight read
 						if(conv_burst_cnt == 0) begin
 							dma_p2_reads_en <= 1; dma_p3_reads_en <= 1;
 						end
 						if(conv_burst_cnt == 1) dma_p2_reads_en <= 0;
-						if(conv_burst_cnt == 16) dma_p3_reads_en <= 0;						
+						if(conv_burst_cnt == CONV_BURST_LEN) dma_p3_reads_en <= 0;						
 						p2_addr <= data_start_addr_buf; p3_addr <= weight_start_addr_buf;  //<---
 						if(dma_p3_ob_we) begin // @ this edge dma_p3_ob_data is also updated.
 							conv_burst_cnt <= conv_burst_cnt + 1;
@@ -305,28 +264,23 @@ always @ (posedge clk or posedge rst) begin
 						end
 					end
 					CONV_CH1: begin 
-						dma_p4_reads_en <= 1; dma_p5_reads_en <= 1;
+						if(conv_burst_cnt == 0) begin
+							dma_p4_reads_en <= 1; dma_p5_reads_en <= 1;
+						end
+						if(conv_burst_cnt == 1) dma_p4_reads_en <= 0;
+						if(conv_burst_cnt == CONV_BURST_LEN) dma_p5_reads_en <= 0;	
 						if(dma_p5_ob_we) begin // @ this edge dma_p3_ob_data is also updated.
 							conv_burst_cnt <= conv_burst_cnt + 1;
 							conv_ready_1[conv_burst_cnt] <= 1; 
 							w1[conv_burst_cnt] <= dma_p5_ob_data; //input weight
 						end
 						if(dma_p4_ob_we) begin
-							d1 <= dma_p3_ob_data; //input data
+							d1 <= dma_p4_ob_data; //input data
 						end
 					end
 					CONV_DUAL: begin 
 						
 					end
-					default:;
-				endcase
-			end
-			conv_clear: begin
-				conv_burst_cnt <= 0;
-				dma_p2_reads_en <= 0; dma_p3_reads_en <= 0; dma_p4_reads_en <= 0; dma_p5_reads_en <= 0;
-			end
-			maxpool_busy: begin
-				case(op_type)
 					MPOOL: begin
 						dma_p2_reads_en <= 1; // TODO: change the dma port to p3 if enabling para
 						if(dma_p2_ob_we) begin
@@ -335,15 +289,6 @@ always @ (posedge clk or posedge rst) begin
 							mp[pool_burst_cnt] <= dma_p2_ob_data;
 						end
 					end
-					default:;
-				endcase
-			end
-			maxpool_clear: begin
-				pool_burst_cnt <= 0;
-				dma_p2_reads_en <= 0;
-			end
-			avepool_busy: begin
-				case (op_type)
 					APOOL: begin
 						dma_p2_reads_en <= 1; // TODO: change the dma port to p3 if enabling para
 						if(dma_p2_ob_we) begin
@@ -352,12 +297,12 @@ always @ (posedge clk or posedge rst) begin
 							ap[pool_burst_cnt] <= dma_p2_ob_data;
 						end
 					end
-					default: ;
+					default:;
 				endcase
 			end
-			avepool_clear: begin
-				pool_burst_cnt <= 0;
-				dma_p2_reads_en <= 0;
+			clear: begin
+				conv_burst_cnt <= 0; pool_burst_cnt <= 0;
+				dma_p2_reads_en <= 0; dma_p3_reads_en <= 0; dma_p4_reads_en <= 0; dma_p5_reads_en <= 0;
 			end
 			writeback: begin
 				// Load the next data. 0: center, 1: side, 2:corner
@@ -372,10 +317,10 @@ always @ (posedge clk or posedge rst) begin
 							conv_wb_burst_cnt <= conv_wb_burst_cnt + 1;
 						end else begin
 							dma_p0_ib_valid <= 0;
-							conv_wb_burst_cnt <= 0;
 						end
 						if(conv_wb_burst_cnt == CONV_BURST_LEN - 1) begin
 							writeback_finish <= 1;
+							conv_wb_burst_cnt <= 0;
 						end
 					end
 					CONV_CH1: begin
@@ -386,10 +331,10 @@ always @ (posedge clk or posedge rst) begin
 							conv_wb_burst_cnt <= conv_wb_burst_cnt + 1;
 						end else begin
 							dma_p1_ib_valid <= 0;
-							conv_wb_burst_cnt <= 0;
 						end
 						if(conv_wb_burst_cnt == CONV_BURST_LEN - 1) begin
 							writeback_finish <= 1;
+							conv_wb_burst_cnt <= 0;
 						end
 					end
 					CONV_DUAL: begin
@@ -403,10 +348,10 @@ always @ (posedge clk or posedge rst) begin
 							pool_wb_burst_cnt <= pool_wb_burst_cnt + 1;
 						end else begin
 							dma_p0_ib_valid <= 0;
-							pool_wb_burst_cnt <= 0;
 						end
 						if(pool_wb_burst_cnt == POOL_BURST_LEN - 1) begin
 							writeback_finish <= 1;
+							pool_wb_burst_cnt <= 0;
 						end
 					end
 					APOOL: begin
@@ -417,24 +362,17 @@ always @ (posedge clk or posedge rst) begin
 							pool_wb_burst_cnt <= pool_wb_burst_cnt + 1;
 						end else begin
 							dma_p0_ib_valid <= 0;
-							pool_wb_burst_cnt <= 0;
 						end
 						if(pool_wb_burst_cnt == POOL_BURST_LEN - 1) begin
 							writeback_finish <= 1;
+							pool_wb_burst_cnt <= 0;
 						end
 					end
 					default:;
 				endcase
 			end
 			finish: begin
-				case(op_type)
-					CONV_CH0:conv_valid <= 1;
-					CONV_CH1:conv_valid <= 1;
-					CONV_DUAL:conv_valid <= 1;
-					MPOOL:maxpool_valid <= 1;
-					APOOL:avepool_valid <= 1;
-					default:;
-				endcase
+				engine_valid <= 1;
 				writeback_finish <= 0;
 				dma_p0_writes_en <= 0;
 				dma_p1_writes_en <= 0;

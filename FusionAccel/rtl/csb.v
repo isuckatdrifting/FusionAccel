@@ -6,12 +6,8 @@ module csb # (
     input           rst,
     input           op_en,
 
-    input           conv_valid,
-    output          conv_ready,
-    input           maxpool_valid,
-    output          maxpool_ready,
-    input           avepool_valid,
-    output          avepool_ready,
+    input           engine_valid,
+    output          engine_ready,
 
     //FIFO Interface
     input           dma_p1_ob_we,
@@ -60,7 +56,7 @@ module csb # (
 //|-------Totally 256Bit-------|    
 
 //Handshake signals to submodules
-reg         conv_ready, maxpool_ready, avepool_ready;
+reg         engine_ready;
 
 //Command Parsing
 reg [3:0]   cmd_burst_count;
@@ -159,7 +155,7 @@ always @ (posedge clk or posedge rst) begin
         op_num <= 16'h0000;
         done_width_count <= 8'h00; done_surf_count <= 16'h0000; 
         done_channel_count <= 16'h0000; done_cmd_count <= 8'd0;
-        conv_ready <= 0; maxpool_ready <= 0; avepool_ready <= 0;
+        engine_ready <= 0;
         cmd_collect_done <= 0; cmd_issue_done <= 0; op_done <= 0;
 
         engine_reset <= 1;
@@ -194,16 +190,11 @@ always @ (posedge clk or posedge rst) begin
                 cmd_collect_done <= 0;
                 //Notes: Send out dma access signals(ready, addr) to submodules according to op_type to get data and weight
                 op_num <= op_num_center; // three op_num* are the same. TODO: check if these variables are necessary.
-                case (op_type)
-                    1,2,3: begin conv_ready <= 1; cmd_issue_done <= 1; end
-                    4:begin maxpool_ready <= 1; cmd_issue_done <= 1; end
-                    5:begin avepool_ready <= 1; cmd_issue_done <= 1; end
-                    default:;
-                endcase
+                engine_ready <= 1; cmd_issue_done <= 1;
             end
             op_run: begin
                 cmd_issue_done <= 0; //Reset the registers in cmd_issue and wait for submodules to finish
-                if(conv_valid | maxpool_valid | avepool_valid) begin
+                if(engine_valid) begin
                     done_surf_count <= done_surf_count + 1; 
                     // Notes: in-convolution next-row logic in engine
                     done_width_count <= done_width_count + 1;
@@ -214,9 +205,7 @@ always @ (posedge clk or posedge rst) begin
                     done_width_count <= 0;
                 end
                 if(done_channel_count + 16 == o_channel_size) begin
-                    if(conv_valid) begin conv_ready <= 0; end
-                    if(maxpool_valid) begin maxpool_ready <= 0; end
-                    if(avepool_valid) begin avepool_ready <= 0;end
+                    if(engine_valid) begin engine_ready <= 0; end
                     op_done <= 1; // op_done only issues for once after the whole operation is done
                     done_cmd_count <= done_cmd_count + 1;
                 end
