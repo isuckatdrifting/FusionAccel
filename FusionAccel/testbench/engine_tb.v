@@ -8,7 +8,7 @@ module engine_tb;
 reg 			clk;
 //Control signals csb->engine
 reg 			rst;
-reg 			engine_ready;
+reg 			engine_valid;
 reg [2:0] 	op_type;
 reg			padding;
 reg [31:0] 	op_num;
@@ -16,7 +16,7 @@ reg [31:0]	data_start_addr;
 reg [31:0]	weight_start_addr;
 reg [31:0]    result_start_addr;
 //Response signals engine->csb
-wire 			engine_valid;
+wire 			engine_ready;
 //Data path engine->dma
 //Command path engine->dma
 wire          dma_p0_writes_en;
@@ -106,14 +106,14 @@ engine_(
 	.clk					(clk),
 //Control signals csb->engine
 	.rst					(rst),
-	.engine_ready			(engine_ready),
+	.engine_valid			(engine_valid),
 	.op_type				(op_type),
 	.op_num					(op_num),
 	.data_start_addr		(data_start_addr),
 	.weight_start_addr		(weight_start_addr),
 	.result_start_addr		(result_start_addr),
 //Response signals engine->csb
-	.engine_valid			(engine_valid),
+	.engine_ready			(engine_ready),
 //Command path engine->dma
 	.dma_p0_writes_en		(dma_p0_writes_en),
     .dma_p1_writes_en		(dma_p1_writes_en),
@@ -145,7 +145,7 @@ engine_(
 );
 
 always #5 clk = ~clk;
-always @(posedge engine_valid) engine_ready <= 0;
+always @(posedge engine_ready) engine_valid <= 0; // pull down engine_valid after the whole op is done
 
 `ifdef CMAC
 integer m,n;
@@ -155,7 +155,7 @@ initial begin
     m = 0;
 	n = 0;
     op_num = 0;
-    engine_ready = 0;
+    engine_valid = 0;
     op_type = 0;
 	dma_p2_ob_data = 16'h0000;
 	dma_p3_ob_data = 16'h0000;
@@ -167,11 +167,11 @@ initial begin
     #20 rst = 1;
     #10 rst = 0;
     #100 op_num = 9; op_type = 1;
-    #10 engine_ready = 1; 
+    #10 engine_valid = 1; 
 end
 
 always @(posedge clk) begin
-	if(engine_ready) begin
+	if(engine_valid) begin
 		if(dma_p2_reads_en) begin 
 			if(p2_state < 2) p2_state <= p2_state + 1;
 			else p2_state = 0;
@@ -213,7 +213,7 @@ initial begin
     rst = 1;
     clk = 0;
     op_num = 0;
-    engine_ready = 0;
+    engine_valid = 0;
     op_type = 0;
 	data0_fifo_valid = 0;
 	data_0 = 16'h0000;
@@ -224,7 +224,7 @@ initial begin
 end
 
 always @(posedge clk) begin
-	if(engine_ready) begin
+	if(engine_valid) begin
 		if(p2_data_fifo_rd_en) begin 
 			data0_fifo_valid <= 1;
 			data_0 <= pooldata[15:0]; 
@@ -239,7 +239,7 @@ initial begin
     rst = 1;
     clk = 0;
     op_num = 0;
-    engine_ready = 0;
+    engine_valid = 0;
     op_type = 0;
 	data0_fifo_valid = 0;
 	data_0 = 16'h0000;
@@ -250,7 +250,7 @@ initial begin
 end
 
 always @(posedge clk) begin
-	if(engine_ready) begin
+	if(engine_valid) begin
 		if(p2_data_fifo_rd_en) begin 
 			data0_fifo_valid <= 1;
 			data_0 <= maxpooldata[15:0]; 

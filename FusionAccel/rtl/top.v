@@ -117,7 +117,7 @@ engine_(
     .dma_p3_reads_en		(dma_p3_reads_en),
 	.dma_p4_reads_en		(dma_p4_reads_en),
     .dma_p5_reads_en		(dma_p5_reads_en),
-	.p0_addr          		(p0_addr),			//TODO: update this wire name
+	.p0_addr          		(p0_addr),
 	.p1_addr          		(p1_addr),			//TODO: Add input start address and parsing in dma
 	.p2_addr				(p2_addr),
 	.p3_addr				(p3_addr),
