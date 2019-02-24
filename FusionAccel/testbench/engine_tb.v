@@ -15,6 +15,7 @@ reg [31:0] 	op_num;
 reg [31:0]	data_start_addr;
 reg [31:0]	weight_start_addr;
 reg [31:0]    result_start_addr;
+reg [7:0]  i_channel;
 //Response signals engine->csb
 wire 			engine_ready;
 //Data path engine->dma
@@ -50,25 +51,33 @@ wire			dma_p1_ib_valid;
 
 reg [2:0] p0_state, p1_state, p2_state, p3_state;
 `ifdef CMAC
-reg [15:0] data0_fifo [0:143];
-reg [15:0] weight0_fifo [0:159];
-reg [15:0] data1_fifo [0:143];
-reg [15:0] weight1_fifo [0:143];
+reg [15:0] data [0:74];
+reg [15:0] weight [0:26];
 integer j;
 initial begin
-	data0_fifo[0] = 16'h3c00; data0_fifo[1] = 16'h4000; data0_fifo[2] = 16'h4200;
-	data0_fifo[3] = 16'h4400; data0_fifo[4] = 16'h4500; data0_fifo[5] = 16'h4600;
-	data0_fifo[6] = 16'h4700; data0_fifo[7] = 16'h4800; data0_fifo[8] = 16'h4880;
-    for (j=0;j<16;j=j+1) begin weight0_fifo[j] = 16'h3c00; end
-    for (j=16;j<32;j=j+1) begin weight0_fifo[j] = 16'h4000; end
-    for (j=32;j<48;j=j+1) begin weight0_fifo[j] = 16'h4200; end
-    for (j=48;j<64;j=j+1) begin weight0_fifo[j] = 16'h4400; end
-    for (j=64;j<80;j=j+1) begin weight0_fifo[j] = 16'h4500; end
-    for (j=80;j<96;j=j+1) begin weight0_fifo[j] = 16'h4600; end
-    for (j=96;j<112;j=j+1) begin weight0_fifo[j] = 16'h4700; end
-    for (j=112;j<128;j=j+1) begin weight0_fifo[j] = 16'h4800; end
-    for (j=128;j<144;j=j+1) begin weight0_fifo[j] = 16'h4880; end
-	for (j=144;j<160;j=j+1) begin weight0_fifo[j] = 16'h3c00; end
+data[0] = 16'h3a07; data[1] = 16'h3413; data[2] = 16'h382f; data[3] = 16'h378a; data[4] = 16'h2d2d;
+data[5] = 16'h3af5; data[6] = 16'h2e19; data[7] = 16'h38db; data[8] = 16'h3ba1; data[9] = 16'h344b;
+data[10] = 16'h38fd; data[11] = 16'h392b; data[12] = 16'h357a; data[13] = 16'h3733; data[14] = 16'h37d3;
+data[15] = 16'h3ab5; data[16] = 16'h3abe; data[17] = 16'h3a2f; data[18] = 16'h32ba; data[19] = 16'h1012;
+data[20] = 16'h33d4; data[21] = 16'h3bee; data[22] = 16'h3850; data[23] = 16'h3764; data[24] = 16'h36c3;
+data[25] = 16'h33d2; data[26] = 16'h384e; data[27] = 16'h375a; data[28] = 16'h31f6; data[29] = 16'h34d0;
+data[30] = 16'h3a67; data[31] = 16'h348f; data[32] = 16'h3667; data[33] = 16'h3927; data[34] = 16'h292e;
+data[35] = 16'h305f; data[36] = 16'h3b41; data[37] = 16'h39d9; data[38] = 16'h3702; data[39] = 16'h39b1;
+data[40] = 16'h3982; data[41] = 16'h3ad2; data[42] = 16'h3971; data[43] = 16'h3a0a; data[44] = 16'h3296;
+data[45] = 16'h304e; data[46] = 16'h357a; data[47] = 16'h3653; data[48] = 16'h3b74; data[49] = 16'h3b13;
+data[50] = 16'h3231; data[51] = 16'h3a94; data[52] = 16'h3ae9; data[53] = 16'h381a; data[54] = 16'h362a;
+data[55] = 16'h2f07; data[56] = 16'h2b95; data[57] = 16'h2392; data[58] = 16'h3979; data[59] = 16'h35b6;
+data[60] = 16'h3a87; data[61] = 16'h38f1; data[62] = 16'h3734; data[63] = 16'h3a8d; data[64] = 16'h33be;
+data[65] = 16'h29be; data[66] = 16'h3a19; data[67] = 16'h37e1; data[68] = 16'h3561; data[69] = 16'h2f33;
+data[70] = 16'h3168; data[71] = 16'h3720; data[72] = 16'h31fe; data[73] = 16'h39c0; data[74] = 16'h2847;
+
+
+weight[0] = 16'h3bd2; weight[1] = 16'h36c1; weight[2] = 16'h2e79; weight[3] = 16'h3623; weight[4] = 16'h376d;
+weight[5] = 16'h3b55; weight[6] = 16'h3a80; weight[7] = 16'h27e7; weight[8] = 16'h2107; weight[9] = 16'h2d87;
+weight[10] = 16'h38b4; weight[11] = 16'h36b9; weight[12] = 16'h39b8; weight[13] = 16'h3172; weight[14] = 16'h3983;
+weight[15] = 16'h2e00; weight[16] = 16'h2d8c; weight[17] = 16'h380a; weight[18] = 16'h37e6; weight[19] = 16'h39cc;
+weight[20] = 16'h3919; weight[21] = 16'h35fc; weight[22] = 16'h27ab; weight[23] = 16'h3979; weight[24] = 16'h2005;
+weight[25] = 16'h3a07; weight[26] = 16'h38f5;
 end
 `endif
 
@@ -99,8 +108,7 @@ end
 `endif
 
 engine #(
-	.CONV_BURST_LEN(16),
-	.POOL_BURST_LEN(1)
+	.BURST_LEN(16)
 )
 engine_(
 	.clk					(clk),
@@ -112,6 +120,7 @@ engine_(
 	.data_start_addr		(data_start_addr),
 	.weight_start_addr		(weight_start_addr),
 	.result_start_addr		(result_start_addr),
+	.i_channel				(i_channel),
 //Response signals engine->csb
 	.engine_ready			(engine_ready),
 //Command path engine->dma
@@ -148,12 +157,11 @@ always #5 clk = ~clk;
 always @(posedge engine_ready) engine_valid <= 0; // pull down engine_valid after the whole op is done
 
 `ifdef CMAC
-integer m,n;
+integer m,n,offset;
 initial begin
     rst = 1;
     clk = 0;
-    m = 0;
-	n = 0;
+    m = 0; n = 0; offset = 0;
     op_num = 0;
     engine_valid = 0;
     op_type = 0;
@@ -164,9 +172,10 @@ initial begin
 	dma_p0_ib_re = 0;
 	dma_p1_ib_re = 0;
 	p0_state = 0; p1_state = 0; p2_state = 0; p3_state = 0;
+	i_channel = 0;
     #20 rst = 1;
     #10 rst = 0;
-    #100 op_num = 9; op_type = 1;
+    #100 op_num = 27; op_type = 1; i_channel = 3;
     #10 engine_valid = 1; 
 end
 
@@ -177,8 +186,12 @@ always @(posedge clk) begin
 			else p2_state = 0;
 			if(p2_state == 1) begin
 				dma_p2_ob_we <= 1;
-				dma_p2_ob_data <= data0_fifo[m]; 
+				dma_p2_ob_data <= data[m]; 
 				m <= m + 1; 
+				if(m == offset + 45) begin
+					m <= offset + 1;
+					offset <= offset + 1;
+				end
 			end else dma_p2_ob_we <= 0;
 		end
 		if(dma_p3_reads_en) begin 
@@ -186,8 +199,9 @@ always @(posedge clk) begin
 			else p3_state = 0;
 			if(p3_state == 1) begin
 				dma_p3_ob_we <= 1;
-				dma_p3_ob_data <= weight0_fifo[n]; 
+				dma_p3_ob_data <= weight[n]; 
 				n <= n + 1; 
+				if(n==26) n <= 0;
 			end else dma_p3_ob_we <= 0;
 		end
 		if(dma_p0_writes_en) begin 
