@@ -5,30 +5,29 @@ module cmac(
     input  [15:0]   weight,
     output [15:0]   result,
     input           conv_valid,
-    output          data_ready,
-    input           data_valid,
+    input           data_ready,
+    output          data_valid,
     output          conv_ready
 );
 
 reg [15:0]  result;
 reg [15:0]  a_mult, b_mult, a_acc, b_acc;
-reg         conv_ready;
+wire         conv_ready;
 
 reg         operation_nd_acc;
-wire        data_ready, operation_rfd_acc;
-wire        mult_ready, acc_ready;
+wire        operation_rfd_mult, operation_rfd_acc;
+wire        mult_ready;
 wire [15:0] result_mult, result_acc;
 
-multiplier mult_ (.a(a_mult), .b(b_mult), .operation_nd(data_valid), .operation_rfd(data_ready),
+multiplier mult_ (.a(a_mult), .b(b_mult), .operation_nd(data_ready), .operation_rfd(data_valid),
 .result(result_mult), .rdy(mult_ready));
 
 accum acc_ (.a(a_acc), .b(b_acc), .operation_nd(operation_nd_acc), .operation_rfd(operation_rfd_acc),
-.result(result_acc), .rdy(acc_ready));
+.result(result_acc), .rdy(conv_ready));
 
 always @ (posedge clk or posedge rst) begin
     if (rst) begin
         result <= 0;
-        conv_ready <= 0;
         operation_nd_acc <= 0;
         a_mult <= 0; b_mult <= 0;
         a_acc <= 0; b_acc <= 0;
