@@ -94,8 +94,7 @@ csb_(
     .irq					(irq));
 
 engine #(
-	.CONV_BURST_LEN(CONV_BURST_LEN),
-	.POOL_BURST_LEN(POOL_BURST_LEN)
+	.BURST_LEN(CONV_BURST_LEN)
 )
 engine_(
 	.clk					(c3_clk0),

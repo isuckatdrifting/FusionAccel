@@ -54,7 +54,7 @@ localparam APOOL = 5;
 
 reg  conv_rst, psum_rst, maxpool_rst, avepool_rst;
 reg  conv_valid, maxpool_valid, avepool_valid;
-wire [BURST_LEN - 1:0] cmac_data_valid, avepool_data_valid, maxpool_data_valid, psum_data_valid;
+wire [BURST_LEN-1:0] cmac_data_valid, avepool_data_valid, maxpool_data_valid, psum_data_valid;
 reg  cmac_data_ready, avepool_data_ready, maxpool_data_ready, psum_data_ready;
 wire [BURST_LEN-1:0] cmac_ready, psum_ready;
 wire maxpool_ready, avepool_ready;
@@ -67,13 +67,6 @@ reg  [15:0] wbuf [0:BURST_LEN-1]; // serial
 reg  [15:0] data [0:BURST_LEN-1]; // parallel
 reg  [15:0] weight [0:BURST_LEN-1]; // parallel
 reg  [7:0]  dma_p2_burst_cnt, dma_p3_burst_cnt; // de-serializer counter, burst cache 16 data, then send to operation unit.
-
-//Writeback BUF
-wire [15:0] conv_result [0:BURST_LEN-1]; // parallel
-wire [15:0] maxpool_result [0:BURST_LEN-1]; // parallel
-wire [15:0] avepool_result [0:BURST_LEN-1]; // parallel
-reg  [15:0] rbuf [0:BURST_LEN-1]; // serial
-reg  [7:0]  conv_wb_burst_cnt, pool_wb_burst_cnt; // serializer counter, burst cache 16 data, then send to writeback.
 
 //Ping-pong registers
 reg  [15:0] cache [0:2][0:BURST_LEN-1];
@@ -93,11 +86,18 @@ reg			psum_enable;
 reg  [15:0] sum [0:127];
 reg  [15:0] fsum_a;
 reg  [15:0] fsum_b;
-reg  [15:0] fsum_result;
+wire [15:0] fsum_result;
 reg  [7:0]  fsum_count;
 wire        fsum_data_valid;
 reg			fsum_data_ready;
 wire		fsum_ready;
+
+//Writeback BUF
+wire [15:0] conv_result [0:BURST_LEN-1]; // parallel
+wire [15:0] maxpool_result [0:BURST_LEN-1]; // parallel
+wire [15:0] avepool_result [0:BURST_LEN-1]; // parallel
+reg  [15:0] rbuf [0:BURST_LEN-1]; // serial
+reg  [7:0]  conv_wb_burst_cnt, pool_wb_burst_cnt; // serializer counter, burst cache 16 data, then send to writeback.
 
 reg 		engine_ready;
 
@@ -109,14 +109,14 @@ reg [15:0]  dma_p0_ib_data, dma_p1_ib_data;
 reg			dma_p0_ib_valid, dma_p1_ib_valid;
 
 wire [7:0]  para;
-assign para = i_channel > 16? para: i_channel;
-// TODO: Generate accumulator for atom(1 * 1 * channel) and cube(k * k * channel), this data path is dedicated to convolution only.
+assign para = i_channel > 16? 16: i_channel;
+// NOTES: Generate accumulator for atom(1 * 1 * channel) and cube(k * k * channel), this data path is dedicated to convolution only.
 // NOTES: deserializer for write back is only enabled in pooling
 
 genvar i;
 generate 
 	for (i = 0; i < BURST_LEN; i = i + 1) begin: gencmac
-		cmac cmac_(.clk(clk), .rst(rst), .rst_acc(conv_rst), .data(data[i]), .weight(weight[i]), .result(conv_result[i]), .conv_valid(conv_valid), .data_ready(cmac_data_ready), .data_valid(cmac_data_valid[i]), .conv_ready(cmac_ready[i])); // TODO: reset cmac with rst signals after finish an atom
+		cmac cmac_(.clk(clk), .rst(rst), .rst_acc(conv_rst), .data(data[i]), .weight(weight[i]), .result(conv_result[i]), .conv_valid(conv_valid), .data_ready(cmac_data_ready), .data_valid(cmac_data_valid[i]), .conv_ready(cmac_ready[i]));
 	end 
 endgenerate
 
@@ -215,7 +215,7 @@ always @ (posedge clk or posedge rst) begin
 		end
 		dma_p0_ib_data <= 16'h0000; dma_p1_ib_data <= 16'h0000;
 		dma_p0_ib_valid <= 0; dma_p1_ib_valid <= 0;
-		conv_rst <= 1; psum_rst = 1; maxpool_rst <= 1; avepool_rst <= 1;
+		conv_rst <= 1; psum_rst <= 1; maxpool_rst <= 1; avepool_rst <= 1;
 		cmac_data_ready <= 0; psum_data_ready <= 0;
 		op_count <= 0; psum_count <= 0; cache_sel <= 0; atom_count <= 0;
 		for(a=0;a<128;a=a+1)begin
@@ -257,7 +257,7 @@ always @ (posedge clk or posedge rst) begin
 						if(dma_p2_burst_cnt == para) begin
 							conv_valid <= 1;
 							if(&cmac_data_valid) begin
-								for(a=0;a<para;a=a+1) begin
+								for(a=0;a<BURST_LEN;a=a+1) begin
 									data[a] <= dbuf[a]; weight[a] <= wbuf[a]; //Load data/weight to cmac/sacc/scmp
 								end
 								cmac_data_ready <= 1;
@@ -285,7 +285,7 @@ always @ (posedge clk or posedge rst) begin
 						if(atom_count == i_kernel) begin
 							//update ping-pong cache and selector
 							if(&cmac_ready) begin
-								for(a=0;a<para;a=a+1) begin
+								for(a=0;a<BURST_LEN;a=a+1) begin
 									cache[cache_sel][a] <= conv_result[a];
 								end
 								cache_update <= 1;
@@ -299,7 +299,7 @@ always @ (posedge clk or posedge rst) begin
 									if(psum_enable) psum_index <= psum_index + 1;
 								end
 								else psum_count <= psum_count + 1;
-								for(a=0;a<para;a=a+1) begin
+								for(a=0;a<BURST_LEN;a=a+1) begin
 									psum_a[a] <= psum_result[a];
 									psum_b[a] <= cache[psum_count][a];
 								end
@@ -307,7 +307,7 @@ always @ (posedge clk or posedge rst) begin
 								if(psum_count==0) psum_rst <= 0;
 							end
 							if(psum_rst) begin
-								for(a=0;a<para;a=a+1) begin //NOTES: clear sum
+								for(a=0;a<BURST_LEN;a=a+1) begin //NOTES: clear sum
 									psum_a[a] <= 16'h0000;
 								end
 							end

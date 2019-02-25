@@ -595,6 +595,7 @@
    <wvobject fp_name="/engine_tb/engine_/psum_index" type="array" db_ref_id="1">
       <obj_property name="ElementShortName">psum_index[7:0]</obj_property>
       <obj_property name="ObjectShortName">psum_index[7:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
    </wvobject>
    <wvobject fp_name="divider303" type="divider">
       <obj_property name="label">SUM</obj_property>
