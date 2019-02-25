@@ -80,10 +80,12 @@ reg  [15:0] psum_a [0:BURST_LEN-1]; // parallel
 reg  [15:0] psum_b [0:BURST_LEN-1]; // parallel
 reg  [7:0]  psum_index;
 reg  [7:0]  psum_count;
-reg			psum_enable;
+reg			fsum_enable;
 
 //Full sum registers
-reg  [15:0] sum [0:127];
+reg			psum_update;
+reg			fsum_rst;
+reg  [15:0] sum [0:127]; //max support 128 x 128 output side
 reg  [15:0] fsum_a;
 reg  [15:0] fsum_b;
 wire [15:0] fsum_result;
@@ -191,7 +193,7 @@ always @ (*) begin
     endcase
 end
 //    Output, non-blocking
-//TODO: Use MEC convolution: 3x3 kernel in PARA -> channel += PARA -> next_line, cache -> next_gemm
+//NOTES: Use MEC convolution: 3x3 kernel in PARA -> channel += PARA -> next_line, cache -> next_gemm
 //NOTES: ping-pong line cache, pipeline weight-mac
 //NOTES: Sum point is ready only after the all channel 3x3 kernel mac is complete
 //FIXME: Padding Layer: dual channel write back
@@ -221,8 +223,9 @@ always @ (posedge clk or posedge rst) begin
 		for(a=0;a<128;a=a+1)begin
 			sum[a] <= 16'h0000;
 		end
-		psum_enable <= 0; psum_index <= 8'hff;
-		cache_update <= 0;
+		fsum_rst <= 0;
+		fsum_enable <= 0; psum_index <= 8'hff;
+		cache_update <= 0; psum_update <= 0;
 		fsum_data_ready <= 0; fsum_count <= 0;
 		fsum_a <= 16'h0000; fsum_b <= 16'h0000;
 		
@@ -254,7 +257,7 @@ always @ (posedge clk or posedge rst) begin
 						if(dma_p2_burst_cnt == 0) begin
 							cmac_data_ready <= 0;
 						end
-						if(dma_p2_burst_cnt == para) begin
+						if(dma_p2_burst_cnt == para) begin // one point channel operation, channel stride = para
 							conv_valid <= 1;
 							if(&cmac_data_valid) begin
 								for(a=0;a<BURST_LEN;a=a+1) begin
@@ -277,10 +280,10 @@ always @ (posedge clk or posedge rst) begin
 								endcase
 							end
 						end
-
 						if(&cmac_ready) begin
 							conv_rst <= 0;
 						end
+						//partial sum //TODO: next channel para operation
 						psum_data_ready <= cache_update;
 						if(atom_count == i_kernel) begin
 							//update ping-pong cache and selector
@@ -296,14 +299,13 @@ always @ (posedge clk or posedge rst) begin
 								if(psum_count + 1 == para) begin
 									psum_count <= 0;
 									cache_update <= 0;
-									if(psum_enable) psum_index <= psum_index + 1;
+									if(fsum_enable) psum_index <= psum_index + 1;
 								end
 								else psum_count <= psum_count + 1;
 								for(a=0;a<BURST_LEN;a=a+1) begin
 									psum_a[a] <= psum_result[a];
 									psum_b[a] <= cache[psum_count][a];
 								end
-								sum[psum_index] <= psum_result[0];
 								if(psum_count==0) psum_rst <= 0;
 							end
 							if(psum_rst) begin
@@ -312,7 +314,30 @@ always @ (posedge clk or posedge rst) begin
 								end
 							end
 							if(cache_sel + 1 == para) begin
-								psum_enable <= 1;
+								fsum_enable <= 1;
+							end
+						end
+						//full channel sum stored in -> sum
+						fsum_data_ready <= psum_update;
+						if(fsum_enable) begin
+							if(psum_count + 1 == para) begin
+								psum_update <= 1;
+							end
+							if(psum_update) begin
+								if(fsum_count == 0) begin
+									fsum_a <= sum[psum_index];
+								end else begin
+									fsum_a <= fsum_result;
+								end
+								fsum_count <= fsum_count + 1;
+								fsum_b <= psum_result[fsum_count];
+							end
+							if(fsum_count + 1 == para) begin
+								psum_update <= 0;
+								fsum_count <= 0;
+							end
+							if(fsum_data_ready && fsum_count == 0) begin
+								sum[psum_index] <= fsum_result;
 							end
 						end
 					end
