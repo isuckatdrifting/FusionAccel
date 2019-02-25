@@ -1,17 +1,19 @@
 `timescale 1ns/1ns 
+`define FFD 1
 module cmac_tb;
 
 reg clk;
 reg rst;
+reg rst_acc;
 reg [15:0] data;
 reg [15:0] weight;
 wire [15:0] result;
 reg conv_valid;
 wire conv_ready;
-wire data_ready;
-reg data_valid;
+reg data_ready;
+wire data_valid;
 
-reg [15:0] data_fifo [0:8];
+reg [15:0] data_fifo [0:9];
 reg [15:0] weight_fifo [0:9];
 
 initial begin
@@ -30,6 +32,7 @@ end
 cmac cmac_(
     .clk        (clk),
     .rst        (rst),
+    .rst_acc    (rst_acc),
     .data       (data),
     .weight     (weight),
     .result     (result),
@@ -45,24 +48,29 @@ initial begin
     rst = 1;
     clk = 0;
     i = 0;
+    rst_acc = 0;
     conv_valid = 0;
     data = 16'h0000;
     weight = 16'h0000;
-    data_valid = 0;
-    #20 rst = 1;
-    #10 rst = 0;
+    data_ready = 0;
     #100 conv_valid = 1;
+    #125 rst_acc = 1;
+    #10 rst_acc = 0;
 end
 
-always @(posedge conv_ready) conv_valid <= 0;
+//always @(posedge conv_ready) conv_valid <= 0;
 
 always @(posedge clk) begin
-    if(data_ready && conv_valid) begin
-        data_valid <= 1;
+    if(rst) rst <= 0;
+    if(data_valid && conv_valid) begin
+        data_ready <= #`FFD 1;
         data <= data_fifo[i];
         weight <= weight_fifo[i];
-        if(i < 10) i <= i + 1;
-        else data_valid <= 0;
+        if(i < 9) begin
+            i <= i + 1;
+        end else begin
+            i <= 0;
+        end
     end
 end
 
