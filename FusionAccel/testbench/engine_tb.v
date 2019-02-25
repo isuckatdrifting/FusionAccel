@@ -16,7 +16,8 @@ reg [31:0]	data_start_addr;
 reg [31:0]	weight_start_addr;
 reg [31:0]  result_start_addr;
 reg [7:0]  	i_kernel;
-reg [7:0]  	i_channel;
+reg [15:0]  i_channel;
+reg [15:0]  o_channel;
 reg [7:0]   o_side;
 //Response signals engine->csb
 wire 		engine_ready;
@@ -125,6 +126,7 @@ engine_(
 	.i_kernel				(i_kernel),
 	.i_channel				(i_channel),
 	.o_side					(o_side),
+	.o_channel				(o_channel),
 //Response signals engine->csb
 	.engine_ready			(engine_ready),
 //Command path engine->dma
@@ -176,11 +178,10 @@ initial begin
 	dma_p0_ib_re = 0;
 	dma_p1_ib_re = 0;
 	p0_state = 0; p1_state = 0; p2_state = 0; p3_state = 0;
-	i_channel = 0; i_kernel = 0;
-	o_side = 0;
+	i_channel = 0; i_kernel = 0; o_side = 0; o_channel = 0;
     #20 rst = 1;
     #10 rst = 0;
-    #100 op_num = 27; op_type = 1; i_channel = 3; i_kernel = 3; o_side = 3;
+    #100 op_num = 27; op_type = 1; i_channel = 3; i_kernel = 3; o_side = 3; o_channel = 1;
     #10 engine_valid = 1; 
 end
 
