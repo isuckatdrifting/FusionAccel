@@ -12,7 +12,9 @@ module engine #(  //Instantiate 16CMACs for conv3x3, 16CMACs for conv1x1, maxpoo
 	input [31:0]	data_start_addr,
 	input [31:0]	weight_start_addr,
 	input [31:0]    result_start_addr,
+	input [7:0]		i_kernel,
 	input [7:0]     i_channel,
+	input [7:0]		o_side,
 //Response signals engine->csb
 	output 			engine_ready,
 //Command path engine->dma
@@ -50,11 +52,12 @@ localparam CONV = 1;
 localparam MPOOL = 4;
 localparam APOOL = 5;
 
-reg  conv_rst, maxpool_rst, avepool_rst;
+reg  conv_rst, psum_rst, maxpool_rst, avepool_rst;
 reg  conv_valid, maxpool_valid, avepool_valid;
-wire [BURST_LEN - 1:0] cmac_data_valid, avepool_data_valid, maxpool_data_valid;
-reg  cmac_data_ready, avepool_data_ready, maxpool_data_ready;
-wire conv_ready, maxpool_ready, avepool_ready;
+wire [BURST_LEN-1:0] cmac_data_valid, avepool_data_valid, maxpool_data_valid, psum_data_valid;
+reg  cmac_data_ready, avepool_data_ready, maxpool_data_ready, psum_data_ready;
+wire [BURST_LEN-1:0] cmac_ready, psum_ready;
+wire maxpool_ready, avepool_ready;
 reg  [31:0] op_count;
 
 //Data BUF and Weight BUF of serializer
@@ -65,16 +68,36 @@ reg  [15:0] data [0:BURST_LEN-1]; // parallel
 reg  [15:0] weight [0:BURST_LEN-1]; // parallel
 reg  [7:0]  dma_p2_burst_cnt, dma_p3_burst_cnt; // de-serializer counter, burst cache 16 data, then send to operation unit.
 
+//Ping-pong registers
+reg  [15:0] cache [0:2][0:BURST_LEN-1];
+reg  [7:0]  atom_count;
+reg  [7:0]  cache_sel;
+reg         cache_update;
+
+//Line partial sum registers
+wire [15:0] psum_result [0:BURST_LEN-1]; // parallel
+reg  [15:0] psum_a [0:BURST_LEN-1]; // parallel
+reg  [15:0] psum_b [0:BURST_LEN-1]; // parallel
+reg  [7:0]  psum_index;
+reg  [7:0]  psum_count;
+reg			psum_enable;
+
+//Full sum registers
+reg  [15:0] sum [0:127];
+reg  [15:0] fsum_a;
+reg  [15:0] fsum_b;
+wire [15:0] fsum_result;
+reg  [7:0]  fsum_count;
+wire        fsum_data_valid;
+reg			fsum_data_ready;
+wire		fsum_ready;
+
 //Writeback BUF
 wire [15:0] conv_result [0:BURST_LEN-1]; // parallel
 wire [15:0] maxpool_result [0:BURST_LEN-1]; // parallel
 wire [15:0] avepool_result [0:BURST_LEN-1]; // parallel
 reg  [15:0] rbuf [0:BURST_LEN-1]; // serial
 reg  [7:0]  conv_wb_burst_cnt, pool_wb_burst_cnt; // serializer counter, burst cache 16 data, then send to writeback.
-
-//Ping-pong registers
-reg  [15:0] cache [0:2];
-reg  [0:2]  cache_sel;
 
 reg 		engine_ready;
 
@@ -86,16 +109,26 @@ reg [15:0]  dma_p0_ib_data, dma_p1_ib_data;
 reg			dma_p0_ib_valid, dma_p1_ib_valid;
 
 wire [7:0]  para;
-assign para = i_channel > 16? para: i_channel;
-// TODO: Generate accumulator for atom(1 * 1 * channel) and cube(k * k * channel), this data path is dedicated to convolution only.
+assign para = i_channel > 16? 16: i_channel;
+// NOTES: Generate accumulator for atom(1 * 1 * channel) and cube(k * k * channel), this data path is dedicated to convolution only.
 // NOTES: deserializer for write back is only enabled in pooling
 
 genvar i;
 generate 
 	for (i = 0; i < BURST_LEN; i = i + 1) begin: gencmac
-		cmac cmac_(.clk(clk), .rst(conv_rst), .data(data[i]), .weight(weight[i]), .result(conv_result[i]), .conv_valid(conv_valid), .data_ready(cmac_data_ready), .data_valid(cmac_data_valid[i]), .conv_ready(conv_ready)); // TODO: reset cmac with rst signals after finish an atom
+		cmac cmac_(.clk(clk), .rst(rst), .rst_acc(conv_rst), .data(data[i]), .weight(weight[i]), .result(conv_result[i]), .conv_valid(conv_valid), .data_ready(cmac_data_ready), .data_valid(cmac_data_valid[i]), .conv_ready(cmac_ready[i]));
 	end 
 endgenerate
+
+genvar j;
+generate 
+	for (j = 0; j < BURST_LEN; j = j + 1) begin: genpsum
+		accum psum_ (.a(psum_a[j]), .b(psum_b[j]), .operation_nd(psum_data_ready), .operation_rfd(psum_data_valid[j]), .result(psum_result[j]), .rdy(psum_ready[j]));
+	end 
+endgenerate
+
+accum fsum_ (.a(fsum_a), .b(fsum_b), .operation_nd(fsum_data_ready), .operation_rfd(fsum_data_valid), .result(fsum_result), .rdy(fsum_ready));
+
 genvar k;
 generate
 	for (k = 0; k < BURST_LEN; k = k + 1) begin: gensacc
@@ -115,9 +148,8 @@ localparam idle = 4'b0000;
 localparam deser = 4'b0001;
 localparam busy = 4'b0010;
 localparam clear = 4'b0011;
-localparam sum = 4'b0100;
-localparam write = 4'b0101;
-localparam finish = 4'b0110;
+localparam write = 4'b0100;
+localparam finish = 4'b0101;
 
 reg [3:0] curr_state;
 reg [3:0] next_state;
@@ -139,19 +171,14 @@ always @ (*) begin
             else next_state = idle;
         end
 		deser: begin
-			if(dma_p2_burst_cnt == para) next_state = busy;
-			else next_state = deser;
+			next_state = deser;
 		end
         busy: begin
-            /*if(conv_ready)*/ next_state = clear;
-            //else next_state = busy;
+            next_state = clear;
         end
 		clear: begin
-			if(op_count == op_num) next_state = sum; // One point in the output matrix is finished
-			else next_state = deser;
-		end
-		sum: begin
-			next_state = write;
+			if(psum_index + 1 == o_side) next_state = write;
+			next_state = deser;
 		end
 		write: begin
 			if(conv_wb_burst_cnt == BURST_LEN) next_state = finish;
@@ -164,10 +191,10 @@ always @ (*) begin
     endcase
 end
 //    Output, non-blocking
-//TODO: Use MEC convolution: 3x3 kernel in PARA -> channel += PARA -> next_line -> next_gemm
-//TODO: ping-pong line cache, pipeline weight-mac
+//TODO: Use MEC convolution: 3x3 kernel in PARA -> channel += PARA -> next_line, cache -> next_gemm
+//NOTES: ping-pong line cache, pipeline weight-mac
 //NOTES: Sum point is ready only after the all channel 3x3 kernel mac is complete
-//FIXME: Padding Layer: Load the next data. 0: center, 1: side, 2:corner
+//FIXME: Padding Layer: dual channel write back
 integer a;
 always @ (posedge clk or posedge rst) begin
 	if(rst) begin
@@ -183,24 +210,33 @@ always @ (posedge clk or posedge rst) begin
 		for(a=0;a<BURST_LEN;a=a+1) begin
 			data[a] <= 16'h0000; weight[a] <= 16'h0000;
 			dbuf[a] <= 16'h0000; wbuf[a] <= 16'h0000;
+			cache[0][a] <= 0; cache[1][a] <= 0; cache[2][a] <= 0;
+			psum_a[a] <= 16'h0000; psum_b[a] <= 16'h0000;
 		end
 		dma_p0_ib_data <= 16'h0000; dma_p1_ib_data <= 16'h0000;
 		dma_p0_ib_valid <= 0; dma_p1_ib_valid <= 0;
-		conv_rst <= 1; maxpool_rst <= 1; avepool_rst <= 1;
-		cmac_data_ready <= 0;
-		op_count <= 0;
+		conv_rst <= 1; psum_rst <= 1; maxpool_rst <= 1; avepool_rst <= 1;
+		cmac_data_ready <= 0; psum_data_ready <= 0;
+		op_count <= 0; psum_count <= 0; cache_sel <= 0; atom_count <= 0;
+		for(a=0;a<128;a=a+1)begin
+			sum[a] <= 16'h0000;
+		end
+		psum_enable <= 0; psum_index <= 8'hff;
+		cache_update <= 0;
+		fsum_data_ready <= 0; fsum_count <= 0;
+		fsum_a <= 16'h0000; fsum_b <= 16'h0000;
+		
 	end else begin
 		case (curr_state)
 			idle: begin
-				conv_rst <= 1; maxpool_rst <= 1; avepool_rst <= 1;
+				conv_rst <= 1; psum_rst <= 1; maxpool_rst <= 1; avepool_rst <= 1;
 				data_start_addr_buf <= data_start_addr;
 				weight_start_addr_buf <= weight_start_addr;
 				op_count <= 0;
 			end
 			deser: begin // de-serialize cache dma output to buffer
-				conv_rst <= 0;
 				case (op_type) 
-					CONV: begin //FIXME: reuse data and start new pipeline
+					CONV: begin
 						p2_addr <= data_start_addr_buf; p3_addr <= weight_start_addr_buf;//TODO: Update start addr @ the same edge of reads_en
 						// enable data read and weight read
 						if(dma_p2_burst_cnt == 0) dma_p2_reads_en <= 1;
@@ -215,38 +251,79 @@ always @ (posedge clk or posedge rst) begin
 							dma_p3_burst_cnt <= dma_p3_burst_cnt + 1;
 							wbuf[dma_p3_burst_cnt] <= dma_p3_ob_data; // deserialize weight to wbuf
 						end
+						if(dma_p2_burst_cnt == 0) begin
+							cmac_data_ready <= 0;
+						end
+						if(dma_p2_burst_cnt == para) begin
+							conv_valid <= 1;
+							if(&cmac_data_valid) begin
+								for(a=0;a<BURST_LEN;a=a+1) begin
+									data[a] <= dbuf[a]; weight[a] <= wbuf[a]; //Load data/weight to cmac/sacc/scmp
+								end
+								cmac_data_ready <= 1;
+							end
+							dma_p2_burst_cnt <= 0; dma_p3_burst_cnt <= 0;
+							dma_p2_reads_en <= 0; dma_p3_reads_en <= 0; dma_p4_reads_en <= 0; dma_p5_reads_en <= 0;
+							op_count <= op_count + para; // FIXME: increment after done sum
+							atom_count <= atom_count + 1;
+							if(atom_count == i_kernel) begin
+								atom_count <= 1;
+								conv_rst <= 1;
+								case(cache_sel)
+									0: cache_sel <= 1;
+									1: cache_sel <= 2;
+									2: cache_sel <= 0;
+									default:;
+								endcase
+							end
+						end
+
+						if(&cmac_ready) begin
+							conv_rst <= 0;
+						end
+						psum_data_ready <= cache_update;
+						if(atom_count == i_kernel) begin
+							//update ping-pong cache and selector
+							if(&cmac_ready) begin
+								for(a=0;a<BURST_LEN;a=a+1) begin
+									cache[cache_sel][a] <= conv_result[a];
+								end
+								cache_update <= 1;
+								psum_rst <= 1;
+							end
+							//cache sum								
+							if(cache_update) begin
+								if(psum_count + 1 == para) begin
+									psum_count <= 0;
+									cache_update <= 0;
+									if(psum_enable) psum_index <= psum_index + 1;
+								end
+								else psum_count <= psum_count + 1;
+								for(a=0;a<BURST_LEN;a=a+1) begin
+									psum_a[a] <= psum_result[a];
+									psum_b[a] <= cache[psum_count][a];
+								end
+								sum[psum_index] <= psum_result[0];
+								if(psum_count==0) psum_rst <= 0;
+							end
+							if(psum_rst) begin
+								for(a=0;a<BURST_LEN;a=a+1) begin //NOTES: clear sum
+									psum_a[a] <= 16'h0000;
+								end
+							end
+							if(cache_sel + 1 == para) begin
+								psum_enable <= 1;
+							end
+						end
 					end
 				
 				endcase
 			end
-			busy: begin	//Load data/weight to cmac/sacc/scmp
-				case (op_type)
-					CONV: begin 
-						conv_valid <= 1;
-						if(&cmac_data_valid) begin
-							for(a=0;a<para;a=a+1) begin
-								data[a] <= dbuf[a]; weight[a] <= wbuf[a];
-							end
-							cmac_data_ready <= 1;
-						end
-					end
-					MPOOL: begin
-					end
-					APOOL: begin
-					end
-					default:;
-				endcase
+			busy: begin	
+				
 			end
 			clear: begin
-				cmac_data_ready <= 0;
-				dma_p2_burst_cnt <= 0; dma_p3_burst_cnt <= 0;
-				dma_p2_reads_en <= 0; dma_p3_reads_en <= 0; dma_p4_reads_en <= 0; dma_p5_reads_en <= 0;
-				op_count <= op_count + para;
-			end
-			sum: begin //TODO: reset cmac after finish one atom convolution (clear accumulator), TODO: use line accumulator (sum of 3) and pipeline it
-				for(a=0;a<BURST_LEN;a=a+1) begin
-					rbuf[a] <= conv_result[a];
-				end
+				
 			end
 			write: begin
 				case (op_type)

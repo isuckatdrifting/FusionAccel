@@ -5,33 +5,35 @@
 
 module engine_tb;
 
-reg 			clk;
+reg 		clk;
 //Control signals csb->engine
-reg 			rst;
-reg 			engine_valid;
+reg 		rst;
+reg 		engine_valid;
 reg [2:0] 	op_type;
 reg			padding;
 reg [31:0] 	op_num;
 reg [31:0]	data_start_addr;
 reg [31:0]	weight_start_addr;
-reg [31:0]    result_start_addr;
-reg [7:0]  i_channel;
+reg [31:0]  result_start_addr;
+reg [7:0]  	i_kernel;
+reg [7:0]  	i_channel;
+reg [7:0]   o_side;
 //Response signals engine->csb
-wire 			engine_ready;
+wire 		engine_ready;
 //Data path engine->dma
 //Command path engine->dma
-wire          dma_p0_writes_en;
-wire          dma_p1_writes_en;
-wire          dma_p2_reads_en;
-wire          dma_p3_reads_en;
-wire          dma_p4_reads_en;
-wire          dma_p5_reads_en;
-wire [29:0]   p0_addr;
-wire [29:0]   p1_addr;
-wire [29:0]   p2_addr;
-wire [29:0]   p3_addr;
-wire [29:0]   p4_addr;
-wire [29:0]   p5_addr;
+wire        dma_p0_writes_en;
+wire        dma_p1_writes_en;
+wire        dma_p2_reads_en;
+wire        dma_p3_reads_en;
+wire        dma_p4_reads_en;
+wire        dma_p5_reads_en;
+wire [29:0] p0_addr;
+wire [29:0] p1_addr;
+wire [29:0] p2_addr;
+wire [29:0] p3_addr;
+wire [29:0] p4_addr;
+wire [29:0] p5_addr;
 //Data path dma->engine
 
 reg [15:0] 	dma_p2_ob_data;
@@ -40,14 +42,14 @@ reg [15:0] 	dma_p4_ob_data;
 reg [15:0] 	dma_p5_ob_data;
 reg			dma_p0_ib_re;
 reg			dma_p1_ib_re;
-reg 			dma_p2_ob_we;
-reg 			dma_p3_ob_we;
-reg 			dma_p4_ob_we;
-reg 			dma_p5_ob_we;
+reg 		dma_p2_ob_we;
+reg 		dma_p3_ob_we;
+reg 		dma_p4_ob_we;
+reg 		dma_p5_ob_we;
 wire [15:0]	dma_p0_ib_data;
 wire [15:0]	dma_p1_ib_data;
-wire			dma_p0_ib_valid;
-wire			dma_p1_ib_valid;
+wire		dma_p0_ib_valid;
+wire		dma_p1_ib_valid;
 
 reg [2:0] p0_state, p1_state, p2_state, p3_state;
 `ifdef CMAC
@@ -120,7 +122,9 @@ engine_(
 	.data_start_addr		(data_start_addr),
 	.weight_start_addr		(weight_start_addr),
 	.result_start_addr		(result_start_addr),
+	.i_kernel				(i_kernel),
 	.i_channel				(i_channel),
+	.o_side					(o_side),
 //Response signals engine->csb
 	.engine_ready			(engine_ready),
 //Command path engine->dma
@@ -172,10 +176,11 @@ initial begin
 	dma_p0_ib_re = 0;
 	dma_p1_ib_re = 0;
 	p0_state = 0; p1_state = 0; p2_state = 0; p3_state = 0;
-	i_channel = 0;
+	i_channel = 0; i_kernel = 0;
+	o_side = 0;
     #20 rst = 1;
     #10 rst = 0;
-    #100 op_num = 27; op_type = 1; i_channel = 3;
+    #100 op_num = 27; op_type = 1; i_channel = 3; i_kernel = 3; o_side = 3;
     #10 engine_valid = 1; 
 end
 
