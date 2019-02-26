@@ -13,6 +13,7 @@ import struct
 bit_directory = 'C:/Users/shish/source/repos/FusionAccel/scripts/top.bit'
 weight_directory = 'C:/Users/shish/source/repos/FusionAccel/scripts/tmp/weight.txt'
 image_directory = ''
+# 0: run, 1: test, 2: sanity
 test_enable = 1
 
 class host:
@@ -35,6 +36,11 @@ class host:
 		self.image = bytearray(self.imagesize)
 		self.output = bytearray(self.outputsize)
 		self.command = bytearray()
+		# Sanity test parameters
+		self.sanity_image = bytearray()
+		self.sanity_command = bytearray()
+		self.sanity_weight = bytearray()
+		self.sanity_output = bytearray()
 		return
 
 	def InitializeDevice(self):

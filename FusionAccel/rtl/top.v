@@ -32,7 +32,7 @@ module top
 );
 
 //--------------v1, Minimum Hardware Cores for SqueezeNet------------------//
-localparam CMD_BURST_LEN = 8,
+localparam CMD_BURST_LEN = 6,
 			CONV_BURST_LEN = 16,
 			POOL_BURST_LEN = 1,
 			BLOB_BURST_LEN = 32;
@@ -41,21 +41,22 @@ wire        c3_clk0;
 
 wire 		op_en;
 wire [6:0]  cmd_size;
+// Command wires
 wire [2:0] 	op_type;
 wire		padding;
 wire [3:0]  stride;
-wire [15:0] op_num;
+wire [7:0]  kernel;
+wire [15:0] i_channel, o_channel;
+wire [7:0]  i_side, o_side;
+wire [31:0] data_start_addr, weight_start_addr, result_start_addr;
+
 wire		engine_reset;
 wire [31:0] cmd_fifo_dout;
 wire [31:0] p2_data_fifo_dout, p3_weight_fifo_dout, p4_data_fifo_dout, p5_weight_fifo_dout;
 wire [9:0] 	cmd_fifo_wr_count;
 wire [29:0] p0_start_addr, p1_start_addr, p2_start_addr, p3_start_addr, p4_start_addr, p5_start_addr;
-wire [7:0]  kernel_size, o_side_size;
-wire [15:0] i_surf_size;
-wire [31:0] data_start_addr, weight_start_addr, result_start_addr;
 
 //output MUX
-
 wire [31:0] dma_p0_ib_data, dma_p1_ib_data, dma_p2_ob_data, dma_p3_ob_data, dma_p4_ob_data, dma_p5_ob_data;
 wire [29:0] p0_addr, p1_addr, p2_addr, p3_addr, p4_addr, p5_addr;
 wire		dma_p0_ib_re, dma_p1_ib_re, dma_p2_ob_we, dma_p3_ob_we, dma_p4_ob_we, dma_p5_ob_we;
@@ -82,13 +83,14 @@ csb_(
 	.op_type				(op_type),
 	.padding				(padding),
 	.stride					(stride),
-	.op_num					(op_num),
+	.kernel					(kernel),
+	.i_channel				(i_channel),
+	.o_channel				(o_channel),
+	.i_side					(i_side),
+	.o_side					(o_side),
 	.data_start_addr		(data_start_addr),
 	.weight_start_addr		(weight_start_addr),
     .result_start_addr		(result_start_addr),
-	.kernel_size			(kernel_size),
-	.o_side_size			(o_side_size),
-	.i_surf_size			(i_surf_size),
 	.engine_reset			(engine_reset),
 
     .irq					(irq));
@@ -103,7 +105,11 @@ engine_(
 	.engine_ready			(engine_ready),
 	.op_type				(op_type),
 	.padding				(padding),
-	.op_num					(op_num),
+	.kernel					(kernel),
+	.i_channel				(i_channel),
+	.o_channel				(o_channel),
+	.i_side					(i_side),
+	.o_side					(o_side),
 	.data_start_addr		(data_start_addr),
 	.weight_start_addr		(weight_start_addr),
 	.result_start_addr		(result_start_addr),
@@ -117,7 +123,7 @@ engine_(
 	.dma_p4_reads_en		(dma_p4_reads_en),
     .dma_p5_reads_en		(dma_p5_reads_en),
 	.p0_addr          		(p0_addr),
-	.p1_addr          		(p1_addr),			//TODO: Add input start address and parsing in dma
+	.p1_addr          		(p1_addr),
 	.p2_addr				(p2_addr),
 	.p3_addr				(p3_addr),
 	.p4_addr				(p4_addr),
