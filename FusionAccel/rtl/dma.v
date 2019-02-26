@@ -143,8 +143,8 @@ always @(posedge clk or posedge reset_d) begin
 		blob_burst_cnt <= 0;
 		block_burst_cnt <= 0;
 		op_count <= 16'h0000;
-		cmd_byte_addr_wr <= start_addr;
-		cmd_byte_addr_rd <= start_addr;
+		cmd_byte_addr_wr <= 0;
+		cmd_byte_addr_rd <= 0;
 		cmd_instr <= 3'b000;
 		cmd_byte_addr <= 30'b0;
 	end else begin

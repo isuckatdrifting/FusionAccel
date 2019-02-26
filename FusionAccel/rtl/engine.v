@@ -251,7 +251,7 @@ always @ (posedge clk or posedge rst) begin
 								data_addr_block <= data_addr_block + para;
 								if(atom_count + 1 == kernel) begin
 									//jump to the next row
-									data_addr_block <= data_addr_block + (i_side - kernel) * para;
+									//data_addr_block <= data_addr_block + (i_side - kernel) * para;
 
 								end
 							end
