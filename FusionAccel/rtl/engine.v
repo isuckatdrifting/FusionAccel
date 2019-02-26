@@ -8,14 +8,14 @@ module engine #(  //Instantiate 16CMACs for conv3x3, 16CMACs for conv1x1, maxpoo
 	input 			engine_valid,
 	input [2:0] 	op_type,
 	input			padding,
-	input [31:0] 	op_num,
+	input [7:0]		kernel,
+	input [15:0]    i_channel,
+	input [15:0]	o_channel,
+	input [7:0]	    i_side,
+	input [7:0]		o_side,
 	input [31:0]	data_start_addr,
 	input [31:0]	weight_start_addr,
 	input [31:0]    result_start_addr,
-	input [7:0]		i_kernel,
-	input [15:0]    i_channel,
-	input [7:0]		o_side,
-	input [15:0]	o_channel,
 //Response signals engine->csb
 	output 			engine_ready,
 //Command path engine->dma
@@ -111,7 +111,7 @@ reg 		engine_ready;
 //DMA enable signal
 reg			dma_p0_writes_en, dma_p1_writes_en, dma_p2_reads_en, dma_p3_reads_en, dma_p4_reads_en, dma_p5_reads_en;
 reg [29:0]  p0_addr, p1_addr, p2_addr, p3_addr, p4_addr, p5_addr;              //Output to DMA, burst start address. 
-reg [29:0]  data_start_addr_buf, weight_start_addr_buf;
+reg [29:0]  gemm_addr, data_addr_block, weight_addr_block, data_addr_offset, weight_addr_offset;
 reg [15:0]  dma_p0_ib_data, dma_p1_ib_data;
 reg			dma_p0_ib_valid, dma_p1_ib_valid;
 
@@ -152,8 +152,9 @@ endgenerate
 
 //State Machine
 localparam idle = 4'b0000;
-localparam deser = 4'b0001;
-localparam finish = 4'b0010;
+localparam gemm_busy = 4'b0001;
+localparam gemm_clear = 4'b0010;
+localparam finish = 4'b0011;
 
 reg [3:0] curr_state;
 reg [3:0] next_state;
@@ -171,12 +172,15 @@ always @ (*) begin
     next_state = idle;    //    Initialize
     case (curr_state)
         idle: begin
-            if(engine_valid) next_state = deser;
+            if(engine_valid) next_state = gemm_busy;
             else next_state = idle;
         end
-		deser: begin
+		gemm_busy: begin
 			if(engine_ready) next_state = finish;
-			else next_state = deser;
+			else next_state = gemm_busy;
+		end
+		gemm_clear: begin
+			next_state = gemm_busy;
 		end
 		finish: begin
 		end
@@ -199,7 +203,9 @@ always @ (posedge clk or posedge rst) begin
         dma_p4_reads_en <= 0; dma_p5_reads_en <= 0;
 		p0_addr <= 30'h0000_0000; p1_addr <= 30'h0000_0000; p2_addr <= 30'h0000_0000; 
 		p3_addr <= 30'h0000_0000; p4_addr <= 30'h0000_0000; p5_addr <= 30'h0000_0000;
-		data_start_addr_buf <= 30'h0000_0000; weight_start_addr_buf <= 30'h0000_0000;
+		gemm_addr <= 30'h0000_0000;
+		data_addr_block <= 30'h0000_0000; weight_addr_block <= 30'h0000_0000;
+		data_addr_offset <= 30'h0000_0000; weight_addr_offset <= 30'h0000_0000;
 		for(a=0;a<BURST_LEN;a=a+1) begin
 			data[a] <= 16'h0000; weight[a] <= 16'h0000;
 			dbuf[a] <= 16'h0000; wbuf[a] <= 16'h0000;
@@ -225,14 +231,12 @@ always @ (posedge clk or posedge rst) begin
 		case (curr_state)
 			idle: begin
 				conv_rst <= 1; psum_rst <= 1; maxpool_rst <= 1; avepool_rst <= 1;
-				data_start_addr_buf <= data_start_addr;
-				weight_start_addr_buf <= weight_start_addr;
-				i_channel_count <= 0;
+				data_addr_block <= data_start_addr; weight_addr_block <= weight_start_addr;
 			end
-			deser: begin // de-serialize cache dma output to buffer
+			gemm_busy: begin // de-serialize cache dma output to buffer
 				case (op_type) 
 					CONV: begin
-						p2_addr <= data_start_addr_buf; p3_addr <= weight_start_addr_buf;//TODO: Update start addr @ the same edge of reads_en
+						p2_addr <= data_addr_block + data_addr_offset; p3_addr <= weight_addr_block + weight_addr_offset;//TODO: Update start addr @ the same edge of reads_en
 						// PIPELINE STEP1: enable data read and weight read, (this part is the slowest and defines the pipeline available timing space)
 						if(dma_p2_burst_cnt == 0) dma_p2_reads_en <= 1;
 						if(dma_p3_burst_cnt == 0) dma_p3_reads_en <= 1;
@@ -241,10 +245,21 @@ always @ (posedge clk or posedge rst) begin
 						if(dma_p2_ob_we) begin
 							dma_p2_burst_cnt <= dma_p2_burst_cnt + 1;
 							dbuf[dma_p2_burst_cnt] <= dma_p2_ob_data; // deserialize data to dbuf
+							data_addr_offset <= data_addr_offset + 1;
+							if(data_addr_offset + 1 == para) begin
+								data_addr_offset <= 0;
+								data_addr_block <= data_addr_block + para;
+								if(atom_count + 1 == kernel) begin
+									//jump to the next row
+									data_addr_block <= data_addr_block + (i_side - kernel) * para;
+
+								end
+							end
 						end
 						if(dma_p3_ob_we) begin // @ this edge dma_p3_ob_data is also updated.
 							dma_p3_burst_cnt <= dma_p3_burst_cnt + 1;
 							wbuf[dma_p3_burst_cnt] <= dma_p3_ob_data; // deserialize weight to wbuf
+							weight_addr_offset <= weight_addr_offset + 1;
 						end
 						if(dma_p2_burst_cnt == 0) begin
 							cmac_data_ready <= 0;
@@ -261,7 +276,7 @@ always @ (posedge clk or posedge rst) begin
 							dma_p2_burst_cnt <= 0; dma_p3_burst_cnt <= 0;
 							dma_p2_reads_en <= 0; dma_p3_reads_en <= 0; dma_p4_reads_en <= 0; dma_p5_reads_en <= 0;
 							atom_count <= atom_count + 1;
-							if(atom_count == i_kernel) begin
+							if(atom_count == kernel) begin
 								atom_count <= 1;
 								conv_rst <= 1;
 								case(cache_sel)
@@ -277,7 +292,7 @@ always @ (posedge clk or posedge rst) begin
 						end
 						//PIPELINE STEP3: cache sum of atoms, partial sum of caches --> surface conv temp sum
 						psum_data_ready <= cache_update;
-						if(atom_count == i_kernel) begin
+						if(atom_count == kernel) begin
 							//update ping-pong cache and selector
 							if(&cmac_ready) begin
 								for(a=0;a<BURST_LEN;a=a+1) begin
@@ -286,7 +301,7 @@ always @ (posedge clk or posedge rst) begin
 								cache_update <= 1;
 								psum_rst <= 1;
 							end
-							//cache sum								
+							//cache sum, TODO: sum is enabled less frequently for stride > 1; TODO: clear cache after finishing each channel group in a gemm					
 							if(cache_update) begin
 								if(psum_count + 1 == para) begin
 									psum_count <= 0;
@@ -314,7 +329,7 @@ always @ (posedge clk or posedge rst) begin
 								if(psum_count==0) psum_rst <= 0;
 							end
 							if(psum_rst) begin
-								for(a=0;a<BURST_LEN;a=a+1) begin //NOTES: clear sum
+								for(a=0;a<BURST_LEN;a=a+1) begin //NOTES: clear partial sum
 									psum_a[a] <= 16'h0000;
 								end
 							end
@@ -322,7 +337,7 @@ always @ (posedge clk or posedge rst) begin
 								fsum_enable <= 1;
 							end
 						end
-						//PIPELINE STEP4: full channel sum stored in -> sum, sum all channels and write back
+						//PIPELINE STEP4: full channel sum stored in -> sum, sum all channels and write back, TODO: bias operation
 						fsum_data_ready <= psum_update;
 						if(fsum_enable) begin
 							if(psum_count + 1 == para) begin
@@ -363,9 +378,15 @@ always @ (posedge clk or posedge rst) begin
 								end
 							end
 						end
-						//PIPELINE STEP5: TODO: jump to next weight group
+						//PIPELINE STEP5: Go to the next gemm, gemm clear
+						//PIPELINE STEP6: TODO: jump to next weight group
 					end
 				endcase
+			end
+			gemm_clear: begin
+				//updating gemm addr and data addr_block, TODO: stride = 2
+				gemm_addr <= gemm_addr + para;
+				data_addr_block <= gemm_addr + para;
 			end
 			finish: begin
 				layer_finish <= 0;

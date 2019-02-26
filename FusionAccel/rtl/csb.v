@@ -1,13 +1,13 @@
 module csb # (
-    parameter CMD_BURST_LEN = 3'd8
+    parameter CMD_BURST_LEN = 3'd6
 )
 (
     input           clk,
     input           rst,
     input           op_en,
 
-    input           engine_valid,
-    output          engine_ready,
+    input           engine_ready,
+    output          engine_valid,
 
     //FIFO Interface
     input           dma_p1_ob_we,
@@ -18,13 +18,14 @@ module csb # (
     output [2:0]    op_type,
     output          padding,
     output [3:0]    stride,
-    output [19:0]   op_num,
+    output [3:0]    kernel,
+    output [15:0]   i_channel,
+    output [15:0]   o_channel,
+    output [7:0]    i_side,
+    output [7:0]    o_side,
     output [31:0]   data_start_addr,
     output [31:0]   weight_start_addr,
     output [31:0]   result_start_addr,
-    output [3:0]    kernel_size,
-    output [7:0]    o_side_size,
-    output [15:0]   i_surf_size,
     output          engine_reset,
 
     output          irq
@@ -33,53 +34,39 @@ module csb # (
 //Notes: CMD Fifo: WR clock domain: c3clk0, RD clock domain: clk.
 //Notes: Use Img2col(MEC) Convolution
 
-//TODO: Padding = 1 --> totally 9 conditions.
-
 //Compressed Commands from SDRAM    |MEM-Block|---------Address---------|---Space--|---Used-Space---|
 //|----------CMD TYPE----------|    |---------|-------------------------|----------|----------------|
 //|        op_type:  3Bit(1Bit)|    |   Cmd   | 0x000_0000 - 0x000_007f |    128   |                |
 //|    padding = 1:  1Bit(3Bit)|    |  Weight | 0x000_1000 - 0x009_D3FF |1280k / 2 |1231552+CONVBIAS|
 //|         stride:  4Bit(4Bit)|    |  Image  | 0x00A_0000 - 0x00B_1F1B | 147k / 2 |                |
-//|      op_center: 16Bit      |    |  Outbuf | 0x00C_0000 - 0x7ff_ffff | 125M-128 |    3071416     |
-//|      op_corner: 16Bit      |    |---------|-------------------------|----------|----------------|
-//|        op_side: 16Bit      |
-//|  input channel size: 16Bit |    
+//|         kernel size:  8Bit |    |  Outbuf | 0x00C_0000 - 0x7ff_ffff | 125M-128 |    3071416     |
+//|  input channel size: 16Bit |    |---------|-------------------------|----------|----------------|
 //| output channel size: 16Bit |    
-//|         kernel size:  8Bit |    |---------------------type------------------------|----op_type----|
-//|     input side size:  8Bit |    |IDLE                                             |      000      |
-//|    output side size:  8Bit |    |CONV1x1 + ReLU Activation                        |      001      |
-//|  input surface size: 16Bit |    |CONV3x3 + ReLU Activation                        |      010      |
-//| output surface size: 16Bit |    |CONV3x3(with padding) & CONV1x1 + ReLU Activation|      011      |
-//|   weight_start_addr: 32Bit |    |Max Pooling                                      |      100      |
-//|     data_start_addr: 32Bit |    |Average Pooling                                  |      101      |
-//|  write_back_address: 32Bit |    |-------------------------------------------------|---------------| 
-//|-------Totally 256Bit-------|    
+//|     input side size:  8Bit |(16)|---------------------type------------------------|----op_type----|
+//|    output side size:  8Bit |    |IDLE                                             |      000      |
+//|   weight_start_addr: 32Bit |    |Convolution + ReLU Activation                    |      001      |
+//|     data_start_addr: 32Bit |    |Max Pooling                                      |      100      |
+//|  write_back_address: 32Bit |    |Average Pooling                                  |      101      |
+//|-------Totally 192Bit-------|    |-------------------------------------------------|---------------|    
 
 //Handshake signals to submodules
-reg         engine_ready;
+reg         engine_valid;
 
 //Command Parsing
 reg [3:0]   cmd_burst_count;
 reg         dma_p1_reads_en;
 
-//Commands
-reg [2:0]   op_type;                    //Output
+//Output Command
+reg [2:0]   op_type;
 reg         padding;
 reg [3:0]   stride;
-reg [15:0]  op_num;                     //Output
-reg [15:0]  op_num_center;
-reg [15:0]  op_num_corner;
-reg [15:0]  op_num_side;
-reg [15:0]  i_channel_size, o_channel_size;
-reg [7:0]   kernel_size, i_side_size, o_side_size;
-reg [15:0]  i_surf_size, o_surf_size;
+reg [7:0]   kernel;
+reg [15:0]  i_channel, o_channel;
+reg [7:0]   i_side, o_side;
 reg [31:0]  weight_start_addr;
 reg [31:0]  data_start_addr;
-reg [31:0]  result_start_addr;                //Output
+reg [31:0]  result_start_addr;
 
-reg [7:0]   done_width_count;           // from 0 to o_side_size
-reg [15:0]  done_surf_count;            // from 0 to o_surf_size
-reg [15:0]  done_channel_count;         // from 0 to o_channel_size, step = PARA = 16
 reg [6:0]   done_cmd_count;
 reg         engine_reset;
 
@@ -142,20 +129,15 @@ always @ (posedge clk or posedge rst) begin
     if (rst) begin
         cmd_burst_count <= 4'd0;
         //Commands
-        op_type <= 3'd0; stride <= 4'h0; padding <= 1'b0; op_num_center <= 16'h0000;
-        op_num_corner <= 16'h0000; op_num_side <= 16'h0000;
-        i_channel_size <= 16'h0000; o_channel_size <= 16'h0000;
-        i_side_size <= 8'h00; o_side_size <= 8'h00; kernel_size <= 8'h00;
-        i_surf_size <= 16'h0000; o_surf_size <= 16'h0000;
+        op_type <= 3'd0; stride <= 4'h0; padding <= 1'b0; kernel <= 8'h00;
+        i_channel <= 16'h0000; o_channel <= 16'h0000;
+        i_side <= 8'h00; o_side <= 8'h00;
         data_start_addr <= 32'h0000_0000;
         weight_start_addr <= 32'h0000_0000;
         result_start_addr <= 32'h0000_0000;
         dma_p1_reads_en <= 0;
 
-        op_num <= 16'h0000;
-        done_width_count <= 8'h00; done_surf_count <= 16'h0000; 
-        done_channel_count <= 16'h0000; done_cmd_count <= 8'd0;
-        engine_ready <= 0;
+        done_cmd_count <= 8'd0; engine_valid <= 0;
         cmd_collect_done <= 0; cmd_issue_done <= 0; op_done <= 0;
 
         engine_reset <= 1;
@@ -172,11 +154,9 @@ always @ (posedge clk or posedge rst) begin
                     cmd_burst_count <= cmd_burst_count - 1;
                 end
                 case (cmd_burst_count) //Split cmds from fifo into separate attributes
-                    8: begin op_type <= cmd[2:0]; padding <= cmd[4]; stride <= cmd[11:8]; op_num_center <= cmd[31:16]; end
-                    7: begin op_num_corner <= cmd[15:0]; op_num_side <= cmd[31:16]; end
-                    6: begin i_channel_size <= cmd[15:0]; o_channel_size <= cmd[31:16]; end
-                    5: begin i_side_size <= cmd[7:0]; o_side_size <= cmd[15:8]; kernel_size <= cmd[23:16]; end
-                    4: begin i_surf_size <= cmd[15:0]; o_surf_size <= cmd[31:16]; end
+                    6: begin op_type <= cmd[2:0]; padding <= cmd[4]; stride <= cmd[11:8]; kernel <= cmd[23:16]; end
+                    5: begin i_channel <= cmd[15:0]; o_channel <= cmd[31:16]; end
+                    4: begin i_side <= cmd[7:0]; o_side <= cmd[15:8]; end
                     3: begin weight_start_addr <= cmd; end
                     2: begin data_start_addr <= cmd; end
                     1: begin result_start_addr <= cmd; cmd_collect_done <= 1; dma_p1_reads_en <= 0; end
@@ -188,25 +168,12 @@ always @ (posedge clk or posedge rst) begin
                 engine_reset <= 0;
                 cmd_burst_count <= CMD_BURST_LEN;
                 cmd_collect_done <= 0;
-                //Notes: Send out dma access signals(ready, addr) to submodules according to op_type to get data and weight
-                op_num <= op_num_center; // three op_num* are the same. TODO: check if these variables are necessary.
-                engine_ready <= 1; cmd_issue_done <= 1;
+                engine_valid <= 1; cmd_issue_done <= 1; // start engine
             end
             op_run: begin
                 cmd_issue_done <= 0; //Reset the registers in cmd_issue and wait for submodules to finish
-                if(engine_valid) begin
-                    done_surf_count <= done_surf_count + 1; 
-                    // Notes: in-convolution next-row logic in engine
-                    done_width_count <= done_width_count + 1;
-                end
-                if(done_surf_count + 1 == o_surf_size) begin
-                    done_channel_count <= done_channel_count + 16; // parallelism is 16
-                    done_surf_count <= 0;
-                    done_width_count <= 0;
-                end
-                if(done_channel_count + 16 == o_channel_size) begin
-                    if(engine_valid) begin engine_ready <= 0; end
-                    op_done <= 1; // op_done only issues for once after the whole operation is done
+                if(engine_ready) begin
+                    engine_valid <= 0;
                     done_cmd_count <= done_cmd_count + 1;
                 end
             end
