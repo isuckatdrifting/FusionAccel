@@ -254,7 +254,7 @@ always @ (posedge clk or posedge rst) begin
 								if(atom_count + 1 == kernel) begin
 									atom_count <= 0;
 								end
-								if(line_count == 0) begin
+								if(cache_count[0] == 0) begin //FIXME: logic is not good, maybe stride = 2 will fail
 									conv_rst <= 1;
 								end
 								for(a=0;a<3;a=a+1) begin
