@@ -11,7 +11,9 @@ reg 		rst;
 reg 		engine_valid;
 reg [2:0] 	op_type;
 reg			padding;
+reg	[3:0]	stride;
 reg [7:0]  	kernel;
+reg [7:0]	kernel_size;
 reg [15:0]  i_channel;
 reg [15:0]  o_channel;
 reg [7:0]	i_side;
@@ -118,14 +120,17 @@ engine_(
 	.rst					(rst),
 	.engine_valid			(engine_valid),
 	.op_type				(op_type),
-	.data_start_addr		(data_start_addr),
-	.weight_start_addr		(weight_start_addr),
-	.result_start_addr		(result_start_addr),
+	.padding				(padding),
+	.stride					(stride),
 	.kernel					(kernel),
+	.kernel_size			(kernel_size),
 	.i_channel				(i_channel),
 	.o_channel				(o_channel),
 	.i_side					(i_side),
 	.o_side					(o_side),
+	.data_start_addr		(data_start_addr),
+	.weight_start_addr		(weight_start_addr),
+	.result_start_addr		(result_start_addr),
 //Response signals engine->csb
 	.engine_ready			(engine_ready),
 //Command path engine->dma
@@ -168,7 +173,7 @@ initial begin
     clk = 0;
     m = 0; n = 0; offset = 0;
     engine_valid = 0;
-    op_type = 0; kernel = 0; i_channel = 0; o_channel = 0; i_side = 0; o_side = 0; 
+    op_type = 0; padding = 0; stride = 0; kernel = 0; kernel_size = 0; i_channel = 0; o_channel = 0; i_side = 0; o_side = 0; 
 	dma_p2_ob_data = 16'h0000;
 	dma_p3_ob_data = 16'h0000;
 	dma_p2_ob_we = 0;
@@ -178,7 +183,7 @@ initial begin
 	p0_state = 0; p1_state = 0; p2_state = 0; p3_state = 0;
     #20 rst = 1;
     #10 rst = 0;
-    #100 op_type = 1; kernel = 3; i_channel = 3; o_channel = 1; i_side = 5; o_side = 3; 
+    #100 op_type = 1; padding = 0; stride = 1; kernel = 3; kernel_size = 9; i_channel = 3; o_channel = 1; i_side = 5; o_side = 3; 
     #10 engine_valid = 1; 
 end
 

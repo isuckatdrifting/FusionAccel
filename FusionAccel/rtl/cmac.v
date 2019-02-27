@@ -7,6 +7,7 @@ module cmac(
     input  [15:0]   data,
     input  [15:0]   weight,
     output [15:0]   result,
+    input           tmp_sum,
     input           conv_valid,
     input           data_ready,
     output          data_valid,
