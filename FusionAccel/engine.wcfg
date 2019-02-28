@@ -10,7 +10,7 @@
          </top_modules>
       </db_ref>
    </db_ref_list>
-   <WVObjectSize size="65" />
+   <WVObjectSize size="62" />
    <wvobject fp_name="/engine_tb/engine_/clk" type="logic" db_ref_id="1">
       <obj_property name="ElementShortName">clk</obj_property>
       <obj_property name="ObjectShortName">clk</obj_property>
@@ -1335,6 +1335,15 @@
       <obj_property name="ObjectShortName">fsum_result[15:0]</obj_property>
       <obj_property name="Radix">HEXRADIX</obj_property>
    </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/fsum_index" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">fsum_index[7:0]</obj_property>
+      <obj_property name="ObjectShortName">fsum_index[7:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/fsum_ready" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">fsum_ready</obj_property>
+      <obj_property name="ObjectShortName">fsum_ready</obj_property>
+   </wvobject>
    <wvobject fp_name="divider303" type="divider">
       <obj_property name="label">SUM</obj_property>
       <obj_property name="DisplayName">label</obj_property>
@@ -1345,31 +1354,6 @@
       <obj_property name="ElementShortName">sum[0:127,15:0]</obj_property>
       <obj_property name="ObjectShortName">sum[0:127,15:0]</obj_property>
       <obj_property name="Radix">HEXRADIX</obj_property>
-   </wvobject>
-   <wvobject fp_name="/engine_tb/engine_/fsum_data_ready" type="logic" db_ref_id="1">
-      <obj_property name="ElementShortName">fsum_data_ready</obj_property>
-      <obj_property name="ObjectShortName">fsum_data_ready</obj_property>
-   </wvobject>
-   <wvobject fp_name="/engine_tb/engine_/fsum_a" type="array" db_ref_id="1">
-      <obj_property name="ElementShortName">fsum_a[15:0]</obj_property>
-      <obj_property name="ObjectShortName">fsum_a[15:0]</obj_property>
-      <obj_property name="Radix">HEXRADIX</obj_property>
-   </wvobject>
-   <wvobject fp_name="/engine_tb/engine_/fsum_b" type="array" db_ref_id="1">
-      <obj_property name="ElementShortName">fsum_b[15:0]</obj_property>
-      <obj_property name="ObjectShortName">fsum_b[15:0]</obj_property>
-      <obj_property name="Radix">HEXRADIX</obj_property>
-   </wvobject>
-   <wvobject fp_name="/engine_tb/engine_/fsum_result" type="array" db_ref_id="1">
-      <obj_property name="ElementShortName">fsum_result[15:0]</obj_property>
-      <obj_property name="ObjectShortName">fsum_result[15:0]</obj_property>
-      <obj_property name="Radix">HEXRADIX</obj_property>
-   </wvobject>
-   <wvobject fp_name="divider193" type="divider">
-      <obj_property name="label">Writeback</obj_property>
-      <obj_property name="DisplayName">label</obj_property>
-      <obj_property name="BkColor">128 128 255</obj_property>
-      <obj_property name="TextColor">230 230 230</obj_property>
    </wvobject>
    <wvobject fp_name="/engine_tb/engine_/writeback_en" type="logic" db_ref_id="1">
       <obj_property name="ElementShortName">writeback_en</obj_property>
