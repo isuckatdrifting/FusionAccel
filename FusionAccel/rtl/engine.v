@@ -68,9 +68,12 @@ reg  [15:0] wbuf [0:BURST_LEN*9-1]; // serial
 
 reg  [15:0] data [0:BURST_LEN-1]; // parallel
 reg  [15:0] weight [0:BURST_LEN-1]; // parallel 3x3xBURST_LEN
+reg  [15:0] tmp_sum [0:BURST_LEN-1];
 reg  [7:0]  dma_p2_burst_cnt, dma_p3_burst_cnt, dma_p3_offset; // de-serializer counter, burst cache 16 data, then send to operation unit.
 
 //pipeline registers
+reg  [7:0]  quark_count;
+reg  [7:0]  elec_count;
 reg  [7:0]  atom_count;
 reg  [7:0]  line_count;
 reg  [7:0]  cache_count [0:2]; //FIXME: use max conv side support defined in include files.
@@ -80,10 +83,12 @@ reg  [2:0]  cache_sel;
 reg         cache_update;
 
 reg			fsum_enable;
+reg  [15:0] psum [0:BURST_LEN-1];
 
 //Full sum registers
 reg			fsum_rst;
 reg  [15:0] sum [0:127]; //max support 128 x 128 output side
+reg  [7:0]  sum_index;
 reg  [15:0] fsum_a;
 reg  [15:0] fsum_b;
 wire [15:0] fsum_result;
@@ -121,7 +126,7 @@ assign para = i_channel > 16? 16: i_channel;
 genvar i;
 generate 
 	for (i = 0; i < BURST_LEN; i = i + 1) begin: gencmac
-		cmac cmac_(.clk(clk), .rst(rst), .rst_acc(conv_rst), .data(data[i]), .weight(weight[i]), .result(conv_result[i]), .tmp_sum(), .conv_valid(conv_valid), .data_ready(cmac_data_ready), .data_valid(cmac_data_valid[i]), .conv_ready(cmac_ready[i]));
+		cmac cmac_(.clk(clk), .rst(rst), .data(data[i]), .weight(weight[i]), .result(conv_result[i]), .tmp_sum(16'h0000), .conv_valid(conv_valid), .data_ready(cmac_data_ready), .data_valid(cmac_data_valid[i]), .conv_ready(cmac_ready[i]));
 	end 
 endgenerate
 
@@ -201,6 +206,7 @@ always @ (posedge clk or posedge rst) begin
 			data[a] <= 16'h0000; weight[a] <= 16'h0000;
 			dbuf[a] <= 16'h0000; 
 			cache[0][a] <= 0; cache[1][a] <= 0; cache[2][a] <= 0;
+			tmp_sum[a] <= 16'h0000;
 		end
 		for(a=0;a<BURST_LEN*9;a=a+1) begin
 			wbuf[a] <= 16'h0000;
@@ -211,9 +217,9 @@ always @ (posedge clk or posedge rst) begin
 		end
 		dma_p0_ib_data <= 16'h0000; dma_p1_ib_data <= 16'h0000;
 		dma_p0_ib_valid <= 0; dma_p1_ib_valid <= 0;
-		conv_rst <= 1; maxpool_rst <= 1; avepool_rst <= 1;
+		 maxpool_rst <= 1; avepool_rst <= 1;
 		cmac_data_ready <= 0; 
-		i_channel_count <= 0; o_channel_count <= 0; cache_sel <= 3'b000; atom_count <= 0; line_count <= 0;
+		i_channel_count <= 0; o_channel_count <= 0; cache_sel <= 3'b000; quark_count <= 0; elec_count <= 0; atom_count <= 0; line_count <= 0;
 		for(a=0;a<128;a=a+1)begin //FIXME: hardcode
 			sum[a] <= 16'h0000;
 		end
@@ -223,11 +229,12 @@ always @ (posedge clk or posedge rst) begin
 		fsum_data_ready <= 0; fsum_count <= 0;
 		fsum_a <= 16'h0000; fsum_b <= 16'h0000;
 		gemm_count <= 0; layer_finish <= 0;
+		sum_index <= 0;
 		writeback_en <= 0;
 	end else begin
 		case (curr_state)
 			idle: begin
-				conv_rst <= 1; maxpool_rst <= 1; avepool_rst <= 1;
+				maxpool_rst <= 1; avepool_rst <= 1;
 				data_addr_block <= data_start_addr; weight_addr_block <= weight_start_addr;
 			end
 			gemm_busy: begin // de-serialize cache dma output to buffer
@@ -245,17 +252,15 @@ always @ (posedge clk or posedge rst) begin
 								// PIPELINE STEP2: Load data/weight to cmac/sacc/scmp
 								if(&cmac_data_valid) begin
 									for(a=0;a<BURST_LEN;a=a+1) begin
-										data[a] <= dbuf[a]; weight[a] <= wbuf[a+cache_count[0]*BURST_LEN];//FIXME: load wbuf according to select signal
+										data[a] <= dbuf[a]; weight[a] <= wbuf[a+cache_count[elec_count]*BURST_LEN];//FIXME: load wbuf according to select signal
 									end
 									cmac_data_ready <= 1;
+									elec_count <= elec_count + 1;
 								end
 								atom_count <= atom_count + 1;
 								line_count <= line_count + 1;
 								if(atom_count + 1 == kernel) begin
 									atom_count <= 0;
-								end
-								if(cache_count[0] == 0) begin //FIXME: logic is not good, maybe stride = 2 will fail
-									conv_rst <= 1;
 								end
 								for(a=0;a<3;a=a+1) begin
 									if(line_count + 1 <= kernel * stride * a) begin
@@ -271,7 +276,21 @@ always @ (posedge clk or posedge rst) begin
 										end
 									end
 								end
+								if(line_count + 1 == kernel * i_side) begin
+									line_count <= 0;
+									for(a=0;a<3;a=a+1) begin
+										cache_count[a] <= 0; //clear the counter and start a new channel group
+									end
+								end
 								// PIPELINE STEP3: TODO: Partial SUM, CMAC multi-use logic
+								for(a=0;a<3;a=a+1) begin
+									if(cache_count[a] + 1 == kernel_size) begin
+										sum_index <= sum_index + 1;
+										if(sum_index + 1 == o_side) begin
+											sum_index <= 0;
+										end
+									end
+								end
 								// PIPELINE STEP4: full channel sum stored in -> sum, sum all channels and write back, TODO: bias operation
 								// PIPELINE STEP5: Go to the next gemm, gemm clear
 								// PIPELINE STEP6: TODO: jump to next weight group
@@ -296,13 +315,14 @@ always @ (posedge clk or posedge rst) begin
 							weight_addr_offset <= weight_addr_offset + 1;
 						end
 						if(dma_p3_offset == kernel_size) begin
-							dma_p3_reads_en <= 0; // sync reset
+							dma_p3_reads_en <= 0; // sync reset to generate a 1-cycle pulse
 						end
-						if(dma_p2_burst_cnt == 0) begin
-							cmac_data_ready <= 0; // sync reset
+						if(conv_valid && cmac_data_ready) begin
+							elec_count <= elec_count + 1;
 						end
-						if(&cmac_ready) begin
-							conv_rst <= 0; // sync reset
+						if(elec_count == kernel) begin
+							elec_count <= 0;
+							cmac_data_ready <= 0;
 						end
 
 						/*
