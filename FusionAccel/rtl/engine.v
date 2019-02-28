@@ -63,36 +63,35 @@ wire [BURST_LEN-1:0] cmac_ready;
 wire maxpool_ready, avepool_ready;
 
 //Data BUF and Weight BUF of serializer
-reg  [15:0] dbuf [0:BURST_LEN-1]; // serial
-reg  [15:0] wbuf [0:BURST_LEN*9-1]; // serial
+reg  [15:0] dbuf [0:BURST_LEN-1]; 	// serial buffer
+reg  [15:0] wbuf [0:BURST_LEN*9-1]; // serial buffer
 
-reg  [15:0] data [0:BURST_LEN-1]; // parallel
-wire [15:0] weight [0:BURST_LEN-1]; // parallel 3x3xBURST_LEN
-reg  [15:0] tmp_sum [0:BURST_LEN-1];
+reg  [15:0] data [0:BURST_LEN-1]; 	// parallel
+wire [15:0] weight [0:BURST_LEN-1]; // parallel 3x3xBURST_LEN, wired out from cache
+wire [15:0] tmp_sum [0:BURST_LEN-1];// paralle, wired out from cache_sum
 reg  [7:0]  dma_p2_burst_cnt, dma_p3_burst_cnt, dma_p3_offset; // de-serializer counter, burst cache 16 data, then send to operation unit.
 
 //pipeline registers
-reg  [7:0]  quark_count;
-reg  [7:0]  elec_count;
-reg  [7:0]  atom_count;
-reg  [7:0]  line_count;
-reg  [7:0]  cache_count [0:2]; //FIXME: use max conv side support defined in include files.
-reg  [7:0]  idle_count [0:2];
-reg  [15:0] cache [0:2][0:BURST_LEN-1];
+reg  [7:0]  atom_count;						//Notes: atom count is used only in address parsing, it is not used in operation logic
+reg  [7:0]  elec_count;						//FIXME: change this name
+reg  [7:0]  line_count;						//NOTES: counter for one gemm line, range:(0, kernel * o_side)
+reg  [7:0]  cache_count [0:2]; 				//FIXME: use max conv side support defined in include files.
+reg  [7:0]  idle_count [0:2]; 				//NOTES: counter for stride 
+reg  [7:0]  result_count;					//NOTES: counter for results in single cmac reuse
+reg  [7:0]  sum_count [0:2];				//NOTES: counter for results in a kernel_size
+reg  [7:0]  sum_index;						//NOTES: counter for the nth kernel sum to psum
+reg  [15:0] cache [0:2][0:BURST_LEN-1];		//NOTES: memory for cache cmac reuse input weight
+reg  [15:0] cache_sum [0:2][0:BURST_LEN-1];	//NOTES: memory for cache cmac reuse input tmp_sum
+reg  [15:0] cmac_sum [0:2][0:BURST_LEN-1];	//NOTES: memory for cache cmac reuse output sum
 reg  [2:0]  cache_sel;
-reg         cache_update;
 
-reg			fsum_enable;
-reg  [15:0] psum [0:BURST_LEN-1];
+reg  [15:0] psum [0:BURST_LEN-1];			//NOTES: registers for 16-channel sum output, it is selected from the memory cmac_sum
 
 //Full sum registers
-reg			fsum_rst;
 reg  [15:0] sum [0:127]; //max support 128 x 128 output side
-reg  [7:0]  sum_index;
 reg  [15:0] fsum_a;
 reg  [15:0] fsum_b;
 wire [15:0] fsum_result;
-reg  [7:0]  fsum_count;
 wire        fsum_data_valid;
 reg			fsum_data_ready;
 wire		fsum_ready;
@@ -126,7 +125,7 @@ assign para = i_channel > 16? 16: i_channel;
 genvar i;
 generate 
 	for (i = 0; i < BURST_LEN; i = i + 1) begin: gencmac
-		cmac cmac_(.clk(clk), .rst(rst), .data(data[i]), .weight(weight[i]), .result(conv_result[i]), .tmp_sum(16'h0000), .conv_valid(conv_valid), .data_ready(cmac_data_ready), .data_valid(cmac_data_valid[i]), .conv_ready(cmac_ready[i]));
+		cmac cmac_(.clk(clk), .rst(rst), .data(data[i]), .weight(weight[i]), .result(conv_result[i]), .tmp_sum(tmp_sum[i]), .conv_valid(conv_valid), .data_ready(cmac_data_ready), .data_valid(cmac_data_valid[i]), .conv_ready(cmac_ready[i]));
 	end 
 endgenerate
 
@@ -189,14 +188,17 @@ end
 //NOTES: ping-pong line cache, pipeline weight-mac
 //NOTES: Sum point is ready only after the all channel 3x3 kernel mac is complete
 //TODO: Padding Layer: dual channel write back address parsing
+
+//NOTES: weight and tmp_sum is directly from the registers
 genvar m;
 generate
-for(m=0;m<BURST_LEN;m=m+1) begin: weight_to_cmac
-	assign weight[m] = cache[elec_count][m];
-end
+	for(m=0;m<BURST_LEN;m=m+1) begin: weight_to_cmac
+		assign weight[m] = cache[elec_count][m];
+		assign tmp_sum[m] = cache_sum[elec_count][m];
+	end
 endgenerate
 
-integer a;
+integer a,b;
 always @ (posedge clk or posedge rst) begin
 	if(rst) begin
 		dma_p2_burst_cnt <= 0; dma_p3_burst_cnt <= 0; dma_p3_offset <= 0;
@@ -209,34 +211,35 @@ always @ (posedge clk or posedge rst) begin
 		gemm_addr <= 30'h0000_0000;
 		data_addr_block <= 30'h0000_0000; weight_addr_block <= 30'h0000_0000;
 		data_addr_offset <= 30'h0000_0000; weight_addr_offset <= 30'h0000_0000;
+		dma_p0_ib_data <= 16'h0000; dma_p1_ib_data <= 16'h0000;
+		dma_p0_ib_valid <= 0; dma_p1_ib_valid <= 0;
+		maxpool_rst <= 1; avepool_rst <= 1;
 		for(a=0;a<BURST_LEN;a=a+1) begin
-			data[a] <= 16'h0000; //weight[a] <= 16'h0000;
 			dbuf[a] <= 16'h0000; 
+			data[a] <= 16'h0000;
 			cache[0][a] <= 0; cache[1][a] <= 0; cache[2][a] <= 0;
-			tmp_sum[a] <= 16'h0000;
+			cache_sum[0][a] <= 0; cache_sum[1][a] <= 0; cache_sum[2][a] <= 0;
+			cmac_sum[0][a] <= 0; cmac_sum[1][a] <= 0; cmac_sum[2][a] <= 0;
+			psum[a] <= 16'h0000;
 		end
 		for(a=0;a<BURST_LEN*9;a=a+1) begin
 			wbuf[a] <= 16'h0000;
 		end
 		for(a=0;a<3;a=a+1) begin
-			cache_count[a] <= 16'h0000;
-			idle_count[a] <= 16'h0000;
+			cache_count[a] <= 8'h00;
+			idle_count[a] <= 8'h00;
+			sum_count[a] <= 8'h00;
 		end
-		dma_p0_ib_data <= 16'h0000; dma_p1_ib_data <= 16'h0000;
-		dma_p0_ib_valid <= 0; dma_p1_ib_valid <= 0;
-		 maxpool_rst <= 1; avepool_rst <= 1;
-		cmac_data_ready <= 0; cmac_enable <= 0;
-		i_channel_count <= 0; o_channel_count <= 0; cache_sel <= 3'b000; quark_count <= 0; elec_count <= 0; atom_count <= 0; line_count <= 0;
 		for(a=0;a<128;a=a+1)begin //FIXME: hardcode
 			sum[a] <= 16'h0000;
 		end
-		fsum_rst <= 0;
-		fsum_enable <= 0;
-		cache_update <= 0;
-		fsum_data_ready <= 0; fsum_count <= 0;
+		cmac_data_ready <= 0; cmac_enable <= 0;
+		i_channel_count <= 0; o_channel_count <= 0; cache_sel <= 3'b000; elec_count <= 0; atom_count <= 0; line_count <= 0; result_count <= 0;
+		sum_index <= 0;
+		
+		fsum_data_ready <= 0;
 		fsum_a <= 16'h0000; fsum_b <= 16'h0000;
 		gemm_count <= 0; layer_finish <= 0;
-		sum_index <= 0;
 		writeback_en <= 0;
 	end else begin
 		case (curr_state)
@@ -248,21 +251,18 @@ always @ (posedge clk or posedge rst) begin
 				case (op_type) 
 					CONV: begin
 						p2_addr <= data_addr_block + data_addr_offset; p3_addr <= weight_addr_block + weight_addr_offset;//TODO: Update start addr @ the same edge of reads_en
-						// PIPELINE STEP1: enable data read and weight read, (this part is the slowest and defines the pipeline available timing space)
 						if(dma_p2_burst_cnt == 0) dma_p2_reads_en <= 1;
 						if(dma_p3_burst_cnt == 0) dma_p3_reads_en <= 1;
+
+						//***PIPELINE STEP1: enable data read and weight read (this part is the slowest and defines the pipeline available timing space)
 						if(dma_p2_ob_we) begin
 							dma_p2_burst_cnt <= dma_p2_burst_cnt + 1;
-							if(dma_p2_burst_cnt + 1 == para) begin
+							if(dma_p2_burst_cnt + 1 == para) begin	//NOTES: start cmac when finishing reading the first atom (1x1xpara)
 								dma_p2_burst_cnt <= 0;
 								conv_valid <= 1;
-								// PIPELINE STEP2: Load data/weight to cmac/sacc/scmp
 								if(&cmac_data_valid) begin
-									cmac_enable <= 1;
+									cmac_enable <= 1;	//NOTES: use this signal to latch buffer
 								end
-								// PIPELINE STEP4: full channel sum stored in -> sum, sum all channels and write back, TODO: bias operation
-								// PIPELINE STEP5: Go to the next gemm, gemm clear
-								// PIPELINE STEP6: TODO: jump to next weight group
 							end
 							dbuf[dma_p2_burst_cnt] <= dma_p2_ob_data; // deserialize data to dbuf
 							data_addr_offset <= data_addr_offset + 1;
@@ -275,7 +275,19 @@ always @ (posedge clk or posedge rst) begin
 								end
 							end
 						end
-						// Generate data ready signal for cmac
+						if(dma_p3_ob_we) begin // @ this edge dma_p3_ob_data is also updated.
+							if(dma_p3_burst_cnt + 1 == para) begin
+								dma_p3_burst_cnt <= 0;
+								dma_p3_offset <= dma_p3_offset + 1;
+							end else dma_p3_burst_cnt <= dma_p3_burst_cnt + 1;
+							wbuf[dma_p3_offset * BURST_LEN + dma_p3_burst_cnt] <= dma_p3_ob_data; // wbuf is fixed in a channel operation of a GEMM //FIXME: replace multiplication of reg with new input
+							weight_addr_offset <= weight_addr_offset + 1;
+						end
+						if(dma_p3_offset == kernel_size) begin
+							dma_p3_reads_en <= 0; // force sync reset to generate a 1-cycle pulse
+						end
+
+						//***PIPELINE STEP1.5: Generate data ready signal for cmac
 						if(cmac_enable) begin
 							cmac_data_ready <= 1;
 						end
@@ -287,14 +299,20 @@ always @ (posedge clk or posedge rst) begin
 							cmac_data_ready <= 0;
 						end
 						
+						//***PIPELINE STEP2: start passing deserialized data and weight to cmac/sacc/scmp (including weight reuse) TODO: use cache_sel to enable partial sum
 						if(cmac_enable) begin
 							for(a=0;a<BURST_LEN;a=a+1) begin
-								data[a] <= dbuf[a]; //FIXME: load wbuf according to select signal
+								data[a] <= dbuf[a];
 							end
 							for(a=0;a<BURST_LEN;a=a+1) begin
-								cache[0][a] <= wbuf[a+cache_count[0]*BURST_LEN];
+								cache[0][a] <= wbuf[a+cache_count[0]*BURST_LEN]; //FIXME: replace multiplication of reg with new input
 								cache[1][a] <= wbuf[a+cache_count[1]*BURST_LEN];
 								cache[2][a] <= wbuf[a+cache_count[2]*BURST_LEN];
+							end
+							for(a=0;a<BURST_LEN;a=a+1) begin
+								cache_sum[0][a] <= cmac_sum[0][a];
+								cache_sum[1][a] <= cmac_sum[1][a];
+								cache_sum[2][a] <= cmac_sum[2][a];
 							end
 							atom_count <= atom_count + 1;
 							line_count <= line_count + 1;
@@ -302,79 +320,60 @@ always @ (posedge clk or posedge rst) begin
 								atom_count <= 0;
 							end
 							for(a=0;a<3;a=a+1) begin
-								if(line_count + 1 <= kernel * stride * a) begin
+								if(line_count + 1 <= kernel * stride * a) begin //FIXME: replace multiplication of reg with new input
 									cache_count[a] <= 0;
-								end else if(cache_count[a] + 1 < kernel_size)begin
+								end else if(cache_count[a] + 1 < kernel_size) begin
 									cache_count[a] <= cache_count[a] + 1;
 								end else begin
-									if(idle_count[a] == (stride - 1) * kernel) begin
+									cache_count[a] <= 0;
+									if(idle_count[a] == (stride - 1) * kernel) begin //FIXME: replace multiplication of reg with new input
 										idle_count[a] <= 0;
-										cache_count[a] <= 0;
+										//cache_count[a] <= 0;
 									end else begin
 										idle_count[a] <= idle_count[a] + 1;
 									end
 								end
 							end
-							if(line_count + 1 == kernel * i_side) begin
+							if(line_count + 1 == kernel * i_side) begin //FIXME: replace multiplication of reg with new input
 								line_count <= 0;
 								for(a=0;a<3;a=a+1) begin
 									cache_count[a] <= 0; //clear the counter and start a new channel group
 								end
 							end
-							// PIPELINE STEP3: TODO: Partial SUM, CMAC multi-use logic
-							for(a=0;a<3;a=a+1) begin
-								if(cache_count[a] + 1 == kernel_size) begin
-									sum_index <= sum_index + 1;
-									if(sum_index + 1 == o_side) begin
-										sum_index <= 0;
-									end
-								end
-							end
-						end
-
-						if(dma_p3_ob_we) begin // @ this edge dma_p3_ob_data is also updated.
-							if(dma_p3_burst_cnt + 1 == para) begin
-								dma_p3_burst_cnt <= 0;
-								dma_p3_offset <= dma_p3_offset + 1;
-							end else dma_p3_burst_cnt <= dma_p3_burst_cnt + 1;
-							wbuf[dma_p3_offset * BURST_LEN + dma_p3_burst_cnt] <= dma_p3_ob_data; // wbuf is fixed in a channel operation of a GEMM
-							weight_addr_offset <= weight_addr_offset + 1;
-						end
-						if(dma_p3_offset == kernel_size) begin
-							dma_p3_reads_en <= 0; // sync reset to generate a 1-cycle pulse
 						end
 						if(dma_p2_burst_cnt == 0) begin
 							cmac_enable <= 0; // sync reset to generate a 1-cycle pulse
 						end
 
+						//***PIPELINE STEP3: TODO: Partial SUM of para outputs
+						if(result_count + 1 == kernel + stride - 1) begin
+							result_count <= 0;
+							for(a=0;a<3;a=a+1) begin
+								sum_count[a] <= cache_count[a];
+							end
+							for(a=0;a<3;a=a+1) begin
+								if(sum_count[a] + 1 == kernel_size) begin
+									sum_index <= sum_index + 1;
+									if(sum_index + 1 == o_side) begin
+										sum_index <= 0;
+									end
+									for(b=0;b<BURST_LEN;b=b+1) begin
+										psum[b] <= cmac_sum[a][b];
+									end
+								end
+							end
+						end else if(&cmac_ready) begin
+							result_count <= result_count + 1;
+						end
+						if(&cmac_ready) begin
+							for(a=0;a<BURST_LEN;a=a+1) begin
+								cmac_sum[result_count][a] <= conv_result[a];
+							end
+						end
+						// PIPELINE STEP4: full channel sum stored in -> sum, sum all channels and write back, TODO: bias operation
+						// PIPELINE STEP5: Go to the next gemm, gemm clear
+						// PIPELINE STEP6: TODO: jump to next weight group
 						/*
-						fsum_data_ready <= psum_update;
-						if(fsum_enable) begin
-							if(psum_count + 1 == para) begin
-								psum_update <= 1;
-							end
-							if(psum_update) begin
-								if(fsum_count == 0) begin
-									fsum_a <= sum[psum_index];
-								end else begin
-									fsum_a <= fsum_result;
-								end
-								fsum_count <= fsum_count + 1;
-								fsum_b <= psum_result[fsum_count];
-							end
-							if(fsum_count + 1 == para) begin
-								psum_update <= 0;
-								fsum_count <= 0;
-							end
-							if(fsum_data_ready && fsum_count == 0) begin
-								sum[psum_index] <= fsum_result;
-								if(gemm_count == o_side && i_channel_count + para >= i_channel) begin
-									gemm_count <= 0;
-								end
-								if(i_channel_count + para >= i_channel) begin //FIXME: writeback o_side outputs
-									writeback_en <= 1;
-								end
-							end
 							if(writeback_en) begin
 								dma_p0_writes_en <= 1; // TODO: Update start addr @ the same edge of writes_en
 								if(dma_p0_ib_re) begin

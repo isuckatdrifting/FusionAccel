@@ -10,7 +10,7 @@
          </top_modules>
       </db_ref>
    </db_ref_list>
-   <WVObjectSize size="56" />
+   <WVObjectSize size="65" />
    <wvobject fp_name="/engine_tb/engine_/clk" type="logic" db_ref_id="1">
       <obj_property name="ElementShortName">clk</obj_property>
       <obj_property name="ObjectShortName">clk</obj_property>
@@ -828,9 +828,10 @@
       <obj_property name="ElementShortName">data_valid</obj_property>
       <obj_property name="ObjectShortName">data_valid</obj_property>
    </wvobject>
-   <wvobject fp_name="/engine_tb/engine_/\gencmac[0].cmac_ /data_ready" type="logic" db_ref_id="1">
-      <obj_property name="ElementShortName">data_ready</obj_property>
-      <obj_property name="ObjectShortName">data_ready</obj_property>
+   <wvobject fp_name="/engine_tb/engine_/tmp_sum" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">tmp_sum[0:15,15:0]</obj_property>
+      <obj_property name="ObjectShortName">tmp_sum[0:15,15:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
    </wvobject>
    <wvobject fp_name="/engine_tb/engine_/data" type="array" db_ref_id="1">
       <obj_property name="ElementShortName">data[0:15,15:0]</obj_property>
@@ -994,6 +995,15 @@
          <obj_property name="Radix">HEXRADIX</obj_property>
       </wvobject>
    </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/\gencmac[0].cmac_ /data_ready" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">data_ready</obj_property>
+      <obj_property name="ObjectShortName">data_ready</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/\gencmac[0].cmac_ /tmp_sum" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">tmp_sum[15:0]</obj_property>
+      <obj_property name="ObjectShortName">tmp_sum[15:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
    <wvobject fp_name="/engine_tb/engine_/\gencmac[0].cmac_ /data" type="array" db_ref_id="1">
       <obj_property name="ElementShortName">data[15:0]</obj_property>
       <obj_property name="ObjectShortName">data[15:0]</obj_property>
@@ -1038,10 +1048,86 @@
       <obj_property name="ObjectShortName">result[15:0]</obj_property>
       <obj_property name="Radix">HEXRADIX</obj_property>
    </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/cmac_sum" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">cmac_sum[0:2,0:15,15:0]</obj_property>
+      <obj_property name="ObjectShortName">cmac_sum[0:2,0:15,15:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+      <wvobject fp_name="/engine_tb/engine_/cmac_sum[0]" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">[0,0:15,15:0]</obj_property>
+         <obj_property name="ObjectShortName">cmac_sum[0,0:15,15:0]</obj_property>
+         <obj_property name="Radix">HEXRADIX</obj_property>
+      </wvobject>
+      <wvobject fp_name="/engine_tb/engine_/cmac_sum[1]" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">[1,0:15,15:0]</obj_property>
+         <obj_property name="ObjectShortName">cmac_sum[1,0:15,15:0]</obj_property>
+         <obj_property name="Radix">HEXRADIX</obj_property>
+      </wvobject>
+      <wvobject fp_name="/engine_tb/engine_/cmac_sum[2]" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">[2,0:15,15:0]</obj_property>
+         <obj_property name="ObjectShortName">cmac_sum[2,0:15,15:0]</obj_property>
+         <obj_property name="Radix">HEXRADIX</obj_property>
+      </wvobject>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/cache_sum" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">cache_sum[0:2,0:15,15:0]</obj_property>
+      <obj_property name="ObjectShortName">cache_sum[0:2,0:15,15:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+      <wvobject fp_name="/engine_tb/engine_/cache_sum[0]" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">[0,0:15,15:0]</obj_property>
+         <obj_property name="ObjectShortName">cache_sum[0,0:15,15:0]</obj_property>
+         <obj_property name="Radix">HEXRADIX</obj_property>
+      </wvobject>
+      <wvobject fp_name="/engine_tb/engine_/cache_sum[1]" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">[1,0:15,15:0]</obj_property>
+         <obj_property name="ObjectShortName">cache_sum[1,0:15,15:0]</obj_property>
+         <obj_property name="Radix">HEXRADIX</obj_property>
+      </wvobject>
+      <wvobject fp_name="/engine_tb/engine_/cache_sum[2]" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">[2,0:15,15:0]</obj_property>
+         <obj_property name="ObjectShortName">cache_sum[2,0:15,15:0]</obj_property>
+         <obj_property name="Radix">HEXRADIX</obj_property>
+      </wvobject>
+   </wvobject>
    <wvobject fp_name="/engine_tb/engine_/cmac_ready" type="array" db_ref_id="1">
       <obj_property name="ElementShortName">cmac_ready[15:0]</obj_property>
       <obj_property name="ObjectShortName">cmac_ready[15:0]</obj_property>
       <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/result_count" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">result_count[7:0]</obj_property>
+      <obj_property name="ObjectShortName">result_count[7:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/sum_count" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">sum_count[0:2,7:0]</obj_property>
+      <obj_property name="ObjectShortName">sum_count[0:2,7:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+      <wvobject fp_name="/engine_tb/engine_/sum_count[0]" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">[0,7:0]</obj_property>
+         <obj_property name="ObjectShortName">sum_count[0,7:0]</obj_property>
+         <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+         <obj_property name="UseCustomSignalColor">true</obj_property>
+         <obj_property name="CustomSignalColor">#ffa500</obj_property>
+      </wvobject>
+      <wvobject fp_name="/engine_tb/engine_/sum_count[1]" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">[1,7:0]</obj_property>
+         <obj_property name="ObjectShortName">sum_count[1,7:0]</obj_property>
+         <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+         <obj_property name="UseCustomSignalColor">true</obj_property>
+         <obj_property name="CustomSignalColor">#ffa500</obj_property>
+      </wvobject>
+      <wvobject fp_name="/engine_tb/engine_/sum_count[2]" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">[2,7:0]</obj_property>
+         <obj_property name="ObjectShortName">sum_count[2,7:0]</obj_property>
+         <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+         <obj_property name="UseCustomSignalColor">true</obj_property>
+         <obj_property name="CustomSignalColor">#ffa500</obj_property>
+      </wvobject>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/sum_index" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">sum_index[7:0]</obj_property>
+      <obj_property name="ObjectShortName">sum_index[7:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
    </wvobject>
    <wvobject fp_name="divider87" type="divider">
       <obj_property name="label">Counters</obj_property>
@@ -1082,6 +1168,10 @@
          <obj_property name="ObjectShortName">idle_count[2,7:0]</obj_property>
          <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
       </wvobject>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/cache_disable" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">cache_disable[2:0]</obj_property>
+      <obj_property name="ObjectShortName">cache_disable[2:0]</obj_property>
    </wvobject>
    <wvobject fp_name="/engine_tb/engine_/cache_count" type="array" db_ref_id="1">
       <obj_property name="ElementShortName">cache_count[0:2,7:0]</obj_property>
@@ -1129,11 +1219,6 @@
          <obj_property name="Radix">HEXRADIX</obj_property>
       </wvobject>
    </wvobject>
-   <wvobject fp_name="/engine_tb/engine_/sum_index" type="array" db_ref_id="1">
-      <obj_property name="ElementShortName">sum_index[7:0]</obj_property>
-      <obj_property name="ObjectShortName">sum_index[7:0]</obj_property>
-      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
-   </wvobject>
    <wvobject fp_name="/engine_tb/engine_/cache_sel" type="array" db_ref_id="1">
       <obj_property name="ElementShortName">cache_sel[2:0]</obj_property>
       <obj_property name="ObjectShortName">cache_sel[2:0]</obj_property>
@@ -1142,6 +1227,97 @@
    <wvobject fp_name="/engine_tb/engine_/cache_update" type="logic" db_ref_id="1">
       <obj_property name="ElementShortName">cache_update</obj_property>
       <obj_property name="ObjectShortName">cache_update</obj_property>
+   </wvobject>
+   <wvobject fp_name="divider311" type="divider">
+      <obj_property name="label">PSUM</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <obj_property name="BkColor">128 128 255</obj_property>
+      <obj_property name="TextColor">230 230 230</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/psum" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">psum[0:15,15:0]</obj_property>
+      <obj_property name="ObjectShortName">psum[0:15,15:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+      <wvobject fp_name="/engine_tb/engine_/psum[0]" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">[0,15:0]</obj_property>
+         <obj_property name="ObjectShortName">psum[0,15:0]</obj_property>
+         <obj_property name="Radix">HEXRADIX</obj_property>
+      </wvobject>
+      <wvobject fp_name="/engine_tb/engine_/psum[1]" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">[1,15:0]</obj_property>
+         <obj_property name="ObjectShortName">psum[1,15:0]</obj_property>
+         <obj_property name="Radix">HEXRADIX</obj_property>
+      </wvobject>
+      <wvobject fp_name="/engine_tb/engine_/psum[2]" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">[2,15:0]</obj_property>
+         <obj_property name="ObjectShortName">psum[2,15:0]</obj_property>
+         <obj_property name="Radix">HEXRADIX</obj_property>
+      </wvobject>
+      <wvobject fp_name="/engine_tb/engine_/psum[3]" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">[3,15:0]</obj_property>
+         <obj_property name="ObjectShortName">psum[3,15:0]</obj_property>
+         <obj_property name="Radix">HEXRADIX</obj_property>
+      </wvobject>
+      <wvobject fp_name="/engine_tb/engine_/psum[4]" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">[4,15:0]</obj_property>
+         <obj_property name="ObjectShortName">psum[4,15:0]</obj_property>
+         <obj_property name="Radix">HEXRADIX</obj_property>
+      </wvobject>
+      <wvobject fp_name="/engine_tb/engine_/psum[5]" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">[5,15:0]</obj_property>
+         <obj_property name="ObjectShortName">psum[5,15:0]</obj_property>
+         <obj_property name="Radix">HEXRADIX</obj_property>
+      </wvobject>
+      <wvobject fp_name="/engine_tb/engine_/psum[6]" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">[6,15:0]</obj_property>
+         <obj_property name="ObjectShortName">psum[6,15:0]</obj_property>
+         <obj_property name="Radix">HEXRADIX</obj_property>
+      </wvobject>
+      <wvobject fp_name="/engine_tb/engine_/psum[7]" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">[7,15:0]</obj_property>
+         <obj_property name="ObjectShortName">psum[7,15:0]</obj_property>
+         <obj_property name="Radix">HEXRADIX</obj_property>
+      </wvobject>
+      <wvobject fp_name="/engine_tb/engine_/psum[8]" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">[8,15:0]</obj_property>
+         <obj_property name="ObjectShortName">psum[8,15:0]</obj_property>
+         <obj_property name="Radix">HEXRADIX</obj_property>
+      </wvobject>
+      <wvobject fp_name="/engine_tb/engine_/psum[9]" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">[9,15:0]</obj_property>
+         <obj_property name="ObjectShortName">psum[9,15:0]</obj_property>
+         <obj_property name="Radix">HEXRADIX</obj_property>
+      </wvobject>
+      <wvobject fp_name="/engine_tb/engine_/psum[10]" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">[10,15:0]</obj_property>
+         <obj_property name="ObjectShortName">psum[10,15:0]</obj_property>
+         <obj_property name="Radix">HEXRADIX</obj_property>
+      </wvobject>
+      <wvobject fp_name="/engine_tb/engine_/psum[11]" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">[11,15:0]</obj_property>
+         <obj_property name="ObjectShortName">psum[11,15:0]</obj_property>
+         <obj_property name="Radix">HEXRADIX</obj_property>
+      </wvobject>
+      <wvobject fp_name="/engine_tb/engine_/psum[12]" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">[12,15:0]</obj_property>
+         <obj_property name="ObjectShortName">psum[12,15:0]</obj_property>
+         <obj_property name="Radix">HEXRADIX</obj_property>
+      </wvobject>
+      <wvobject fp_name="/engine_tb/engine_/psum[13]" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">[13,15:0]</obj_property>
+         <obj_property name="ObjectShortName">psum[13,15:0]</obj_property>
+         <obj_property name="Radix">HEXRADIX</obj_property>
+      </wvobject>
+      <wvobject fp_name="/engine_tb/engine_/psum[14]" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">[14,15:0]</obj_property>
+         <obj_property name="ObjectShortName">psum[14,15:0]</obj_property>
+         <obj_property name="Radix">HEXRADIX</obj_property>
+      </wvobject>
+      <wvobject fp_name="/engine_tb/engine_/psum[15]" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">[15,15:0]</obj_property>
+         <obj_property name="ObjectShortName">psum[15,15:0]</obj_property>
+         <obj_property name="Radix">HEXRADIX</obj_property>
+      </wvobject>
    </wvobject>
    <wvobject fp_name="divider303" type="divider">
       <obj_property name="label">SUM</obj_property>
