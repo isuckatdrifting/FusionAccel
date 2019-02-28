@@ -1169,10 +1169,6 @@
          <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
       </wvobject>
    </wvobject>
-   <wvobject fp_name="/engine_tb/engine_/cache_disable" type="array" db_ref_id="1">
-      <obj_property name="ElementShortName">cache_disable[2:0]</obj_property>
-      <obj_property name="ObjectShortName">cache_disable[2:0]</obj_property>
-   </wvobject>
    <wvobject fp_name="/engine_tb/engine_/cache_count" type="array" db_ref_id="1">
       <obj_property name="ElementShortName">cache_count[0:2,7:0]</obj_property>
       <obj_property name="ObjectShortName">cache_count[0:2,7:0]</obj_property>
@@ -1223,10 +1219,6 @@
       <obj_property name="ElementShortName">cache_sel[2:0]</obj_property>
       <obj_property name="ObjectShortName">cache_sel[2:0]</obj_property>
       <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
-   </wvobject>
-   <wvobject fp_name="/engine_tb/engine_/cache_update" type="logic" db_ref_id="1">
-      <obj_property name="ElementShortName">cache_update</obj_property>
-      <obj_property name="ObjectShortName">cache_update</obj_property>
    </wvobject>
    <wvobject fp_name="divider311" type="divider">
       <obj_property name="label">PSUM</obj_property>
@@ -1319,33 +1311,44 @@
          <obj_property name="Radix">HEXRADIX</obj_property>
       </wvobject>
    </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/fsum_data_ready" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">fsum_data_ready</obj_property>
+      <obj_property name="ObjectShortName">fsum_data_ready</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/fsum_count" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">fsum_count[15:0]</obj_property>
+      <obj_property name="ObjectShortName">fsum_count[15:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/fsum_a" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">fsum_a[15:0]</obj_property>
+      <obj_property name="ObjectShortName">fsum_a[15:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/fsum_b" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">fsum_b[15:0]</obj_property>
+      <obj_property name="ObjectShortName">fsum_b[15:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/fsum_result" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">fsum_result[15:0]</obj_property>
+      <obj_property name="ObjectShortName">fsum_result[15:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
    <wvobject fp_name="divider303" type="divider">
       <obj_property name="label">SUM</obj_property>
       <obj_property name="DisplayName">label</obj_property>
       <obj_property name="BkColor">128 128 255</obj_property>
       <obj_property name="TextColor">230 230 230</obj_property>
    </wvobject>
-   <wvobject fp_name="/engine_tb/engine_/fsum_enable" type="logic" db_ref_id="1">
-      <obj_property name="ElementShortName">fsum_enable</obj_property>
-      <obj_property name="ObjectShortName">fsum_enable</obj_property>
-   </wvobject>
    <wvobject fp_name="/engine_tb/engine_/sum" type="array" db_ref_id="1">
       <obj_property name="ElementShortName">sum[0:127,15:0]</obj_property>
       <obj_property name="ObjectShortName">sum[0:127,15:0]</obj_property>
       <obj_property name="Radix">HEXRADIX</obj_property>
    </wvobject>
-   <wvobject fp_name="/engine_tb/engine_/fsum_rst" type="logic" db_ref_id="1">
-      <obj_property name="ElementShortName">fsum_rst</obj_property>
-      <obj_property name="ObjectShortName">fsum_rst</obj_property>
-   </wvobject>
    <wvobject fp_name="/engine_tb/engine_/fsum_data_ready" type="logic" db_ref_id="1">
       <obj_property name="ElementShortName">fsum_data_ready</obj_property>
       <obj_property name="ObjectShortName">fsum_data_ready</obj_property>
-   </wvobject>
-   <wvobject fp_name="/engine_tb/engine_/fsum_count" type="array" db_ref_id="1">
-      <obj_property name="ElementShortName">fsum_count[7:0]</obj_property>
-      <obj_property name="ObjectShortName">fsum_count[7:0]</obj_property>
-      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
    </wvobject>
    <wvobject fp_name="/engine_tb/engine_/fsum_a" type="array" db_ref_id="1">
       <obj_property name="ElementShortName">fsum_a[15:0]</obj_property>
