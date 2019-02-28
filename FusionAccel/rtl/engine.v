@@ -92,7 +92,10 @@ reg  [15:0] sum [0:127]; //max support 128 x 128 output side
 reg  [15:0] fsum_a;
 reg  [15:0] fsum_b;
 wire [15:0] fsum_result;
+reg  [15:0] fsum_count;
+reg  [7:0]  fsum_index;
 wire        fsum_data_valid;
+reg			fsum_enable;
 reg			fsum_data_ready;
 wire		fsum_ready;
 
@@ -238,7 +241,7 @@ always @ (posedge clk or posedge rst) begin
 		sum_index <= 0;
 		
 		fsum_data_ready <= 0;
-		fsum_a <= 16'h0000; fsum_b <= 16'h0000;
+		fsum_a <= 16'h0000; fsum_b <= 16'h0000; fsum_count <= 8'h00; fsum_enable <= 0; fsum_index <= 0;
 		gemm_count <= 0; layer_finish <= 0;
 		writeback_en <= 0;
 	end else begin
@@ -325,10 +328,9 @@ always @ (posedge clk or posedge rst) begin
 								end else if(cache_count[a] + 1 < kernel_size) begin
 									cache_count[a] <= cache_count[a] + 1;
 								end else begin
-									cache_count[a] <= 0;
 									if(idle_count[a] == (stride - 1) * kernel) begin //FIXME: replace multiplication of reg with new input
 										idle_count[a] <= 0;
-										//cache_count[a] <= 0;
+										cache_count[a] <= 0;
 									end else begin
 										idle_count[a] <= idle_count[a] + 1;
 									end
@@ -345,7 +347,7 @@ always @ (posedge clk or posedge rst) begin
 							cmac_enable <= 0; // sync reset to generate a 1-cycle pulse
 						end
 
-						//***PIPELINE STEP3: TODO: Partial SUM of para outputs
+						//***PIPELINE STEP3: Partial SUM of para outputs
 						if(result_count + 1 == kernel + stride - 1) begin
 							result_count <= 0;
 							for(a=0;a<3;a=a+1) begin
@@ -360,6 +362,7 @@ always @ (posedge clk or posedge rst) begin
 									for(b=0;b<BURST_LEN;b=b+1) begin
 										psum[b] <= cmac_sum[a][b];
 									end
+									fsum_enable <= 1; //Trigger for channel partial sum
 								end
 							end
 						end else if(&cmac_ready) begin
@@ -371,6 +374,23 @@ always @ (posedge clk or posedge rst) begin
 							end
 						end
 						// PIPELINE STEP4: full channel sum stored in -> sum, sum all channels and write back, TODO: bias operation
+						// channel partial sum logic
+						fsum_data_ready <= fsum_enable;
+						fsum_b <= psum[fsum_count];
+						if(fsum_enable) begin //FIXME: delay one cycle -> data ready
+							if(fsum_count == 0) fsum_a <= sum[sum_index]; //accumulating
+							else fsum_a <= fsum_result;
+							fsum_count <= fsum_count + 1;
+						end
+						if(fsum_count + 1 == para) begin
+							fsum_count <= 0;
+							fsum_enable <= 0;
+						end
+						if(fsum_ready) begin
+							if(fsum_count == 0) fsum_index <= sum_index; //pipeline index sampling (delay align)
+							sum[fsum_index] <= fsum_result; //overwrite mode
+						end
+						
 						// PIPELINE STEP5: Go to the next gemm, gemm clear
 						// PIPELINE STEP6: TODO: jump to next weight group
 						/*
