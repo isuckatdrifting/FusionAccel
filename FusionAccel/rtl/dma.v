@@ -1,10 +1,8 @@
+`include "macros.vh"
 `timescale 1ns/1ps
 //`default_nettype none
 
-module dma # (
-	parameter BLOB_BURST_LEN = 32, // Number of 32bit(Port size) user words per DRAM command (Must be Multiple of 2)
-	parameter BLOCK_BURST_LEN = 1
-)
+module dma 
 	(
 	input  wire          clk,
 	input  wire          reset,
@@ -50,7 +48,7 @@ reg         write_mode;
 reg         read_mode;
 reg         reset_d;
 
-assign cmd_bl = (op_type == 3'b000) ? (BLOB_BURST_LEN - 1) : (BLOCK_BURST_LEN - 1);
+assign cmd_bl = (op_type == 3'b000) ? (`BLOB_BURST_LEN - 1) : (`BLOCK_BURST_LEN - 1);
 assign wr_mask = 4'b0000;
 //Synchronous control signals
 always @(posedge clk) write_mode <= writes_en;
@@ -91,11 +89,11 @@ always @ (*) begin
 		// only start writing when initialization done
 		idle: 			if (calib_done == 1 && write_mode == 1) begin
 							if(op_type == 3'b000) begin
-								if(ib_count >= BLOB_BURST_LEN) next_state = write_blob1;
+								if(ib_count >= `BLOB_BURST_LEN) next_state = write_blob1;
 							end else next_state = write_block1;
 						end else if (calib_done == 1 && read_mode == 1) begin
 							if(op_type == 3'b000) begin
-								if(ob_count < (FIFO_SIZE - 1 - BLOB_BURST_LEN)) next_state = read_blob1;
+								if(ob_count < (FIFO_SIZE - 1 - `BLOB_BURST_LEN)) next_state = read_blob1;
 							end else next_state = read_block1;
 						end else begin
 							next_state = idle;
@@ -155,8 +153,8 @@ always @(posedge clk or posedge reset_d) begin
 		ob_we <= 1'b0;
 		case (curr_state)
 			idle: 			begin
-								blob_burst_cnt <= BLOB_BURST_LEN;
-								block_burst_cnt <= BLOCK_BURST_LEN;
+								blob_burst_cnt <= `BLOB_BURST_LEN;
+								block_burst_cnt <= `BLOCK_BURST_LEN;
 							end
 			//--------------------------Write Blob--------------------------//
 			write_blob1: 	ib_re <= 1'b1;
@@ -168,13 +166,13 @@ always @(posedge clk or posedge reset_d) begin
 			write_blob3:	if(blob_burst_cnt == 0) begin
 								cmd_en <= 1'b1;
 								cmd_byte_addr <= cmd_byte_addr_wr;
-								cmd_byte_addr_wr <= cmd_byte_addr_wr + 4*BLOB_BURST_LEN; //4Byte * BLOB_BURST_LEN = Jump distance
+								cmd_byte_addr_wr <= cmd_byte_addr_wr + 4*`BLOB_BURST_LEN; //4Byte * `BLOB_BURST_LEN = Jump distance
 								cmd_instr <= 3'b000;
 							end
-			//--------------------------Read Blob---------------------------// read size = 4Byte * BLOB_BURST_LEN
+			//--------------------------Read Blob---------------------------// read size = 4Byte * `BLOB_BURST_LEN
 			read_blob1: 	begin // This state will only exist for one cycle. for blob read/write, self increment in dma.
 								cmd_byte_addr <= cmd_byte_addr_rd;
-								cmd_byte_addr_rd <= cmd_byte_addr_rd + 4*BLOB_BURST_LEN;
+								cmd_byte_addr_rd <= cmd_byte_addr_rd + 4*`BLOB_BURST_LEN;
 								cmd_instr <= 3'b001;
 								cmd_en <= 1'b1;
 							end
@@ -185,7 +183,7 @@ always @(posedge clk or posedge reset_d) begin
 								blob_burst_cnt <= blob_burst_cnt - 1;
 							end
 			read_blob4:		;
-			//--------------------------Write Block--------------------------// write size = 4Byte * BLOCK_BURST_LEN
+			//--------------------------Write Block--------------------------// write size = 4Byte * `BLOCK_BURST_LEN
 			write_block1: 	ib_re <= 1'b1;
 			write_block2: 	if(ib_valid == 1) begin
 								wr_data <= ib_data;
@@ -197,7 +195,7 @@ always @(posedge clk or posedge reset_d) begin
 								cmd_byte_addr <= start_addr;
 								cmd_instr <= 3'b000;
 							end
-			//--------------------------Read Block---------------------------// read size = 4Byte * BLOCK_BURST_LEN
+			//--------------------------Read Block---------------------------// read size = 4Byte * `BLOCK_BURST_LEN
 			read_block1:	begin // This state will only exist for one cycle. for blob read/write, start addr from engine output.
 								cmd_byte_addr <= start_addr;
 								cmd_instr <= 3'b001;

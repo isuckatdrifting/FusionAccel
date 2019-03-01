@@ -1,6 +1,5 @@
-module csb # (
-    parameter CMD_BURST_LEN = 3'd6
-)
+`include "macros.vh"
+module csb 
 (
     input           clk,
     input           rst,
@@ -145,7 +144,7 @@ always @ (posedge clk or posedge rst) begin
     end else begin
         case (curr_state)
             idle: begin
-                cmd_burst_count <= CMD_BURST_LEN;
+                cmd_burst_count <= `CMD_BURST_LEN;
             end
             cmd_get: begin
                 engine_reset <= 1;
@@ -154,19 +153,19 @@ always @ (posedge clk or posedge rst) begin
                     cmd_burst_count <= cmd_burst_count - 1;
                 end
                 case (cmd_burst_count) //Split cmds from fifo into separate attributes
-                    6: begin op_type <= cmd[2:0]; padding <= cmd[4]; stride <= cmd[11:8]; kernel <= cmd[23:16]; end
-                    5: begin i_channel <= cmd[15:0]; o_channel <= cmd[31:16]; end
-                    4: begin i_side <= cmd[7:0]; o_side <= cmd[15:8]; end
-                    3: begin weight_start_addr <= cmd; end
-                    2: begin data_start_addr <= cmd; end
-                    1: begin result_start_addr <= cmd; cmd_collect_done <= 1; dma_p1_reads_en <= 0; end
+                    4'd6: begin op_type <= cmd[2:0]; padding <= cmd[4]; stride <= cmd[11:8]; kernel <= cmd[23:16]; end
+                    4'd5: begin i_channel <= cmd[15:0]; o_channel <= cmd[31:16]; end
+                    4'd4: begin i_side <= cmd[7:0]; o_side <= cmd[15:8]; end
+                    4'd3: begin weight_start_addr <= cmd; end
+                    4'd2: begin data_start_addr <= cmd; end
+                    4'd1: begin result_start_addr <= cmd; cmd_collect_done <= 1; dma_p1_reads_en <= 0; end
                     default: ;
                 endcase
                 op_done <= 0;
             end
             cmd_issue: begin
                 engine_reset <= 0;
-                cmd_burst_count <= CMD_BURST_LEN;
+                cmd_burst_count <= `CMD_BURST_LEN;
                 cmd_collect_done <= 0;
                 engine_valid <= 1; cmd_issue_done <= 1; // start engine
             end

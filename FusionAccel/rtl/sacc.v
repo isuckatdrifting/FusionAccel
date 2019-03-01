@@ -26,11 +26,11 @@ divider div_(.a(a_div), .b(b_div), .operation_nd(operation_nd_div), .operation_r
 always @ (posedge clk or posedge rst) begin
     if (rst) begin
         operation_nd_div <= 1'b0;
-        result <= 0;
+        result <= 16'h0000;
         pool_ready <= 0;
-        a_div <= 0;
+        a_div <= 16'h0000;
         b_div <= 16'h3c00;
-        a_acc <= 0; b_acc <= 0;
+        a_acc <= 16'h0000; b_acc <= 16'h0000;
     end else begin
         if(data_ready) begin a_acc <= result_acc; b_acc <= data; end
         operation_nd_div <= acc_ready; // sync, one cycle delay
