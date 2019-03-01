@@ -182,7 +182,7 @@ always @ (*) begin
 end
 //    Output, non-blocking
 //NOTES: Use MEC convolution: 3x3 kernel in PARA -> channel += PARA -> next_line, cache -> next_gemm
-//NOTES: ping-pong line cache, pipeline weight-mac
+//NOTES: pipeline weight-mac and sum
 //NOTES: Sum point is ready only after the all channel 3x3 kernel mac is complete
 //TODO: Padding Layer: dual channel write back address parsing
 
@@ -351,22 +351,6 @@ always @ (posedge clk or posedge rst) begin
 									sum_index <= sum_index + 1;
 									if(sum_index + 1 == o_side) begin
 										sum_index <= 0;
-										if(i_channel_count + para < i_channel) begin
-											i_channel_count <= i_channel_count + para; 
-										end else begin
-											i_channel_count <= 0;
-											gemm_count <= gemm_count + 1;//TODO: gemm addr parsing //NOTES: Go to the next gemm, gemm clear
-											//updating gemm addr and data addr_block, TODO: stride = 2
-											gemm_addr <= gemm_addr + para;
-											data_addr_block <= gemm_addr + para;
-											if(gemm_count + 1 == o_side) begin
-												gemm_count <= 0;
-												o_channel_count <= o_channel_count + 1; //NOTES: start the next weight group
-												if(o_channel_count + 1 == o_channel) begin
-													layer_finish <= 1;//FIXME: move this gemm logic to after-writeback 
-												end
-											end
-										end
 									end
 									for(b=0;b<BURST_LEN;b=b+1) begin
 										psum[b] <= cmac_sum[a][b];
@@ -374,6 +358,7 @@ always @ (posedge clk or posedge rst) begin
 									fsum_enable <= 1; //Trigger for channel partial sum
 								end
 							end
+							
 						end else if(&cmac_ready) begin
 							result_count <= result_count + 1;
 						end
@@ -401,6 +386,24 @@ always @ (posedge clk or posedge rst) begin
 							dma_p0_ib_data <= fsum_result; //FIXME: call sum[fsum_index]
 							if(i_channel_count + para == i_channel) begin
 								dma_p0_writes_en <= 1; // TODO: Update start addr @ the same edge of writes_en
+							end
+						end
+						if(fsum_index + 1 == o_side && fsum_ready && fsum_count == 0) begin
+							if(i_channel_count + para < i_channel) begin
+								i_channel_count <= i_channel_count + para; 
+							end else begin
+								i_channel_count <= 0;
+								gemm_count <= gemm_count + 1;//TODO: gemm addr parsing //NOTES: Go to the next gemm, gemm clear
+								//updating gemm addr and data addr_block, TODO: stride = 2
+								gemm_addr <= gemm_addr + para;
+								data_addr_block <= gemm_addr + para;
+								if(gemm_count + 1 == o_side) begin
+									gemm_count <= 0;
+									o_channel_count <= o_channel_count + 1; //NOTES: start the next weight group
+									if(o_channel_count + 1 == o_channel) begin
+										layer_finish <= 1;//FIXME: move this gemm logic to after-writeback 
+									end
+								end
 							end
 						end
 						if(dma_p0_ib_re) begin
