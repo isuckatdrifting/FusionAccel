@@ -10,7 +10,7 @@
          </top_modules>
       </db_ref>
    </db_ref_list>
-   <WVObjectSize size="62" />
+   <WVObjectSize size="69" />
    <wvobject fp_name="/engine_tb/engine_/clk" type="logic" db_ref_id="1">
       <obj_property name="ElementShortName">clk</obj_property>
       <obj_property name="ObjectShortName">clk</obj_property>
@@ -1220,8 +1220,8 @@
       <obj_property name="ObjectShortName">cache_sel[2:0]</obj_property>
       <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
    </wvobject>
-   <wvobject fp_name="divider311" type="divider">
-      <obj_property name="label">PSUM</obj_property>
+   <wvobject fp_name="divider303" type="divider">
+      <obj_property name="label">SUM</obj_property>
       <obj_property name="DisplayName">label</obj_property>
       <obj_property name="BkColor">128 128 255</obj_property>
       <obj_property name="TextColor">230 230 230</obj_property>
@@ -1344,19 +1344,51 @@
       <obj_property name="ElementShortName">fsum_ready</obj_property>
       <obj_property name="ObjectShortName">fsum_ready</obj_property>
    </wvobject>
-   <wvobject fp_name="divider303" type="divider">
-      <obj_property name="label">SUM</obj_property>
-      <obj_property name="DisplayName">label</obj_property>
-      <obj_property name="BkColor">128 128 255</obj_property>
-      <obj_property name="TextColor">230 230 230</obj_property>
-   </wvobject>
    <wvobject fp_name="/engine_tb/engine_/sum" type="array" db_ref_id="1">
       <obj_property name="ElementShortName">sum[0:127,15:0]</obj_property>
       <obj_property name="ObjectShortName">sum[0:127,15:0]</obj_property>
       <obj_property name="Radix">HEXRADIX</obj_property>
    </wvobject>
-   <wvobject fp_name="/engine_tb/engine_/writeback_en" type="logic" db_ref_id="1">
-      <obj_property name="ElementShortName">writeback_en</obj_property>
-      <obj_property name="ObjectShortName">writeback_en</obj_property>
+   <wvobject fp_name="/engine_tb/engine_/i_channel_count" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">i_channel_count[15:0]</obj_property>
+      <obj_property name="ObjectShortName">i_channel_count[15:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/gemm_count" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">gemm_count[7:0]</obj_property>
+      <obj_property name="ObjectShortName">gemm_count[7:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/o_channel_count" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">o_channel_count[15:0]</obj_property>
+      <obj_property name="ObjectShortName">o_channel_count[15:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/layer_finish" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">layer_finish</obj_property>
+      <obj_property name="ObjectShortName">layer_finish</obj_property>
+   </wvobject>
+   <wvobject fp_name="divider329" type="divider">
+      <obj_property name="label">Writeback</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+      <obj_property name="BkColor">128 128 255</obj_property>
+      <obj_property name="TextColor">230 230 230</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/dma_p0_writes_en" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">dma_p0_writes_en</obj_property>
+      <obj_property name="ObjectShortName">dma_p0_writes_en</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/dma_p0_ib_re" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">dma_p0_ib_re</obj_property>
+      <obj_property name="ObjectShortName">dma_p0_ib_re</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/dma_p0_ib_valid" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">dma_p0_ib_valid</obj_property>
+      <obj_property name="ObjectShortName">dma_p0_ib_valid</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/dma_p0_ib_data" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">dma_p0_ib_data[15:0]</obj_property>
+      <obj_property name="ObjectShortName">dma_p0_ib_data[15:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
    </wvobject>
 </wave_config>

@@ -70,6 +70,10 @@ reg  [15:0] data [0:BURST_LEN-1]; 	// parallel
 wire [15:0] weight [0:BURST_LEN-1]; // parallel 3x3xBURST_LEN, wired out from cache
 wire [15:0] tmp_sum [0:BURST_LEN-1];// paralle, wired out from cache_sum
 reg  [7:0]  dma_p2_burst_cnt, dma_p3_burst_cnt, dma_p3_offset; // de-serializer counter, burst cache 16 data, then send to operation unit.
+//Result registers of cmac/sacc/scmp
+wire [15:0] conv_result [0:BURST_LEN-1]; // parallel
+wire [15:0] maxpool_result [0:BURST_LEN-1]; // parallel
+wire [15:0] avepool_result [0:BURST_LEN-1]; // parallel
 
 //pipeline registers
 reg  [7:0]  atom_count;						//Notes: atom count is used only in address parsing, it is not used in operation logic
@@ -104,12 +108,6 @@ reg  [15:0] i_channel_count;
 reg  [7:0]  gemm_count;
 reg  [15:0] o_channel_count;
 reg			layer_finish;
-
-//Writeback BUF
-reg			writeback_en;
-wire [15:0] conv_result [0:BURST_LEN-1]; // parallel
-wire [15:0] maxpool_result [0:BURST_LEN-1]; // parallel
-wire [15:0] avepool_result [0:BURST_LEN-1]; // parallel
 
 reg 		engine_ready;
 
@@ -151,7 +149,6 @@ endgenerate
 //State Machine
 localparam idle = 4'b0000;
 localparam gemm_busy = 4'b0001;
-localparam gemm_clear = 4'b0010;
 localparam finish = 4'b0011;
 
 reg [3:0] curr_state;
@@ -176,9 +173,6 @@ always @ (*) begin
 		gemm_busy: begin
 			if(engine_ready) next_state = finish;
 			else next_state = gemm_busy;
-		end
-		gemm_clear: begin
-			next_state = gemm_busy;
 		end
 		finish: begin
 		end
@@ -243,7 +237,6 @@ always @ (posedge clk or posedge rst) begin
 		fsum_data_ready <= 0;
 		fsum_a <= 16'h0000; fsum_b <= 16'h0000; fsum_count <= 8'h00; fsum_enable <= 0; fsum_index <= 0;
 		gemm_count <= 0; layer_finish <= 0;
-		writeback_en <= 0;
 	end else begin
 		case (curr_state)
 			idle: begin
@@ -358,6 +351,22 @@ always @ (posedge clk or posedge rst) begin
 									sum_index <= sum_index + 1;
 									if(sum_index + 1 == o_side) begin
 										sum_index <= 0;
+										if(i_channel_count + para < i_channel) begin
+											i_channel_count <= i_channel_count + para; 
+										end else begin
+											i_channel_count <= 0;
+											gemm_count <= gemm_count + 1;//TODO: gemm addr parsing //NOTES: Go to the next gemm, gemm clear
+											//updating gemm addr and data addr_block, TODO: stride = 2
+											gemm_addr <= gemm_addr + para;
+											data_addr_block <= gemm_addr + para;
+											if(gemm_count + 1 == o_side) begin
+												gemm_count <= 0;
+												o_channel_count <= o_channel_count + 1; //NOTES: start the next weight group
+												if(o_channel_count + 1 == o_channel) begin
+													layer_finish <= 1;//FIXME: move this gemm logic to after-writeback 
+												end
+											end
+										end
 									end
 									for(b=0;b<BURST_LEN;b=b+1) begin
 										psum[b] <= cmac_sum[a][b];
@@ -389,32 +398,19 @@ always @ (posedge clk or posedge rst) begin
 						if(fsum_ready) begin
 							if(fsum_count == 0) fsum_index <= sum_index; //pipeline index sampling (delay align)
 							sum[fsum_index] <= fsum_result; //overwrite mode
-						end
-						
-						// PIPELINE STEP5: Go to the next gemm, gemm clear
-						// PIPELINE STEP6: TODO: jump to next weight group
-						/*
-							if(writeback_en) begin
+							dma_p0_ib_data <= fsum_result; //FIXME: call sum[fsum_index]
+							if(i_channel_count + para == i_channel) begin
 								dma_p0_writes_en <= 1; // TODO: Update start addr @ the same edge of writes_en
-								if(dma_p0_ib_re) begin
-									dma_p0_ib_data <= sum[psum_index];
-									dma_p0_ib_valid <= 1;
-									if(psum_index + para == o_side && o_channel_count + 1 == o_channel) begin
-										layer_finish <= 1;
-									end
-								end else begin
-									dma_p0_ib_valid <= 0;
-								end
 							end
 						end
-						*/
+						if(dma_p0_ib_re) begin
+							dma_p0_writes_en <= 0;
+							dma_p0_ib_valid <= 1;
+						end else begin
+							dma_p0_ib_valid <= 0;
+						end
 					end
 				endcase
-			end
-			gemm_clear: begin
-				//updating gemm addr and data addr_block, TODO: stride = 2
-				gemm_addr <= gemm_addr + para;
-				data_addr_block <= gemm_addr + para;
 			end
 			finish: begin
 				layer_finish <= 0;
