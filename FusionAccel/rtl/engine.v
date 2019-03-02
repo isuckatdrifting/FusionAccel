@@ -312,9 +312,15 @@ always @ (posedge clk or posedge rst) begin
 								conv_valid <= 1;
 								if(&cmac_data_valid) begin
 									cmac_enable <= 1;	//NOTES: use this signal to latch buffer
-									for(a=0;a<3;a=a+1) 
-										if (line_count + 1 > stride2 * a && cache_count[a] == 0 && idle_count[a] == 0 && (kernel - stride) >= a) begin
-											cache_sel[a] <= 1;
+									//for(a=0;a<3;a=a+1) 
+										if (line_count + 1 > 0 && cache_count[0] == 0 && idle_count[0] == 0 && (kernel - stride) >= 0) begin
+											cache_sel[0] <= 1;
+										end
+										if (line_count + 1 > stride2 && cache_count[1] == 0 && idle_count[1] == 0 && (kernel - stride) >= 1) begin
+											cache_sel[1] <= 1;
+										end
+										if (line_count + 1 > stride2 + stride2 && cache_count[2] == 0 && idle_count[2] == 0 && (kernel - stride) >= 2) begin
+											cache_sel[2] <= 1;
 										end
 								end
 							end
@@ -359,11 +365,17 @@ always @ (posedge clk or posedge rst) begin
 						
 						//==================== PIPELINE STEP2: start passing deserialized data and weight to cmac/sacc/scmp (including weight reuse)
 						if(cmac_enable) begin
-							for(a=0;a<3;a=a+1) begin
-								if(line_count + 1 <= stride2 * a || cache_count[a] + 1 == kernel_size) begin
-									cache_sel[a] <= 0;
+							//for(a=0;a<3;a=a+1) begin
+								if(line_count + 1 <= 0 || cache_count[0] + 1 == kernel_size) begin
+									cache_sel[0] <= 0;
 								end
-							end
+								if(line_count + 1 <= stride2 || cache_count[1] + 1 == kernel_size) begin
+									cache_sel[1] <= 0;
+								end
+								if(line_count + 1 <= stride2 + stride2 || cache_count[2] + 1 == kernel_size) begin
+									cache_sel[2] <= 0;
+								end
+							//end
 							for(a=0;a<`BURST_LEN;a=a+1) begin
 								data[a] <= dbuf[a];
 							end
@@ -382,20 +394,44 @@ always @ (posedge clk or posedge rst) begin
 							if(atom_count + 1 == kernel) begin
 								atom_count <= 0;
 							end
-							for(a=0;a<3;a=a+1) begin
-								if(line_count + 1 <= stride2 * a) begin //FIXME: replace multiplication of reg with new input
-									cache_count[a] <= 0;
-								end else if(cache_count[a] + 1 < kernel_size && idle_count[a] == 0 && (kernel - stride) >= a) begin
-									cache_count[a] <= cache_count[a] + 1;
+							//for(a=0;a<3;a=a+1) begin
+								if(line_count + 1 <= 0) begin //FIXME: replace multiplication of reg with new input
+									cache_count[0] <= 0;
+								end else if(cache_count[0] + 1 < kernel_size && idle_count[0] == 0 && (kernel - stride) >= 0) begin
+									cache_count[0] <= cache_count[0] + 1;
 								end else begin
-									cache_count[a] <= 0;
-									if(idle_count[a] + kernel == stride2) begin //FIXME: replace multiplication of reg with new input
-										idle_count[a] <= 0;
+									cache_count[0] <= 0;
+									if(idle_count[0] + kernel == stride2) begin //FIXME: replace multiplication of reg with new input
+										idle_count[0] <= 0;
 									end else begin
-										idle_count[a] <= idle_count[a] + 1;
+										idle_count[0] <= idle_count[0] + 1;
 									end
 								end
-							end
+								if(line_count + 1 <= stride2) begin //FIXME: replace multiplication of reg with new input
+									cache_count[1] <= 0;
+								end else if(cache_count[1] + 1 < kernel_size && idle_count[1] == 0 && (kernel - stride) >= 1) begin
+									cache_count[1] <= cache_count[1] + 1;
+								end else begin
+									cache_count[1] <= 0;
+									if(idle_count[1] + kernel == stride2) begin //FIXME: replace multiplication of reg with new input
+										idle_count[1] <= 0;
+									end else begin
+										idle_count[1] <= idle_count[1] + 1;
+									end
+								end
+								if(line_count + 1 <= stride2 + stride2) begin //FIXME: replace multiplication of reg with new input
+									cache_count[2] <= 0;
+								end else if(cache_count[2] + 1 < kernel_size && idle_count[2] == 0 && (kernel - stride) >= 2) begin
+									cache_count[2] <= cache_count[2] + 1;
+								end else begin
+									cache_count[2] <= 0;
+									if(idle_count[2] + kernel == stride2) begin //FIXME: replace multiplication of reg with new input
+										idle_count[2] <= 0;
+									end else begin
+										idle_count[2] <= idle_count[2] + 1;
+									end
+								end
+							//end
 							if(line_count + 1 == stride3) begin //FIXME: replace multiplication of reg with new input
 								line_count <= 0;
 								for(a=0;a<3;a=a+1) begin
