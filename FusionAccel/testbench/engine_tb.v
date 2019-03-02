@@ -183,7 +183,7 @@ initial begin
 	p0_state = 0; p1_state = 0; p2_state = 0; p3_state = 0;
     #20 rst = 1;
     #10 rst = 0;
-    #100 op_type = 1; padding = 0; stride = 1; kernel = 3; kernel_size = 9; i_channel = 3; o_channel = 1; i_side = 5; o_side = 3; 
+    #100 op_type = 1; padding = 0; stride = 2; kernel = 3; kernel_size = 9; i_channel = 3; o_channel = 1; i_side = 227; o_side = 113; 
     #10 engine_valid = 1; 
 end
 

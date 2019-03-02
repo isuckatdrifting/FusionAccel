@@ -10,7 +10,7 @@
          </top_modules>
       </db_ref>
    </db_ref_list>
-   <WVObjectSize size="20" />
+   <WVObjectSize size="21" />
    <wvobject fp_name="/cmac_tb/clk" type="logic" db_ref_id="1">
       <obj_property name="ElementShortName">clk</obj_property>
       <obj_property name="ObjectShortName">clk</obj_property>
@@ -19,9 +19,10 @@
       <obj_property name="ElementShortName">rst</obj_property>
       <obj_property name="ObjectShortName">rst</obj_property>
    </wvobject>
-   <wvobject fp_name="/cmac_tb/cmac_/rst_acc" type="logic" db_ref_id="1">
-      <obj_property name="ElementShortName">rst_acc</obj_property>
-      <obj_property name="ObjectShortName">rst_acc</obj_property>
+   <wvobject fp_name="/cmac_tb/cmac_/tmp_sum" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">tmp_sum[15:0]</obj_property>
+      <obj_property name="ObjectShortName">tmp_sum[15:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
    </wvobject>
    <wvobject fp_name="/cmac_tb/data" type="array" db_ref_id="1">
       <obj_property name="ElementShortName">data[15:0]</obj_property>
@@ -85,6 +86,11 @@
    <wvobject fp_name="/cmac_tb/cmac_/b_acc" type="array" db_ref_id="1">
       <obj_property name="ElementShortName">b_acc[15:0]</obj_property>
       <obj_property name="ObjectShortName">b_acc[15:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/cmac_tb/cmac_/result_acc" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">result_acc[15:0]</obj_property>
+      <obj_property name="ObjectShortName">result_acc[15:0]</obj_property>
       <obj_property name="Radix">HEXRADIX</obj_property>
    </wvobject>
    <wvobject fp_name="/cmac_tb/result" type="array" db_ref_id="1">

@@ -78,7 +78,7 @@ wire [15:0] avepool_result [0:BURST_LEN-1]; // parallel
 //pipeline registers
 reg  [7:0]  atom_count;						//Notes: atom count is used only in address parsing, it is not used in operation logic
 reg  [7:0]  elec_count;						//FIXME: change this name
-reg  [7:0]  line_count;						//NOTES: counter for one gemm line, range:(0, kernel * o_side)
+reg  [15:0] line_count;						//NOTES: counter for one gemm line, range:(0, kernel * o_side)
 reg  [7:0]  cache_count [0:2]; 				//FIXME: use max conv side support defined in include files.
 reg  [7:0]  idle_count [0:2]; 				//NOTES: counter for stride 
 reg  [7:0]  result_count;					//NOTES: counter for results in single cmac reuse
@@ -93,6 +93,7 @@ reg  [15:0] psum [0:BURST_LEN-1];			//NOTES: registers for 16-channel sum output
 
 //Full sum registers
 reg  [15:0] sum [0:127]; //max support 128 x 128 output side
+reg  [2:0]  sum_id;
 reg  [15:0] fsum_a;
 reg  [15:0] fsum_b;
 wire [15:0] fsum_result;
@@ -236,6 +237,7 @@ always @ (posedge clk or posedge rst) begin
 		
 		fsum_data_ready <= 0;
 		fsum_a <= 16'h0000; fsum_b <= 16'h0000; fsum_count <= 8'h00; fsum_enable <= 0; fsum_index <= 0;
+		sum_id <= 0;
 		gemm_count <= 0; layer_finish <= 0;
 	end else begin
 		case (curr_state)
@@ -258,6 +260,11 @@ always @ (posedge clk or posedge rst) begin
 								conv_valid <= 1;
 								if(&cmac_data_valid) begin
 									cmac_enable <= 1;	//NOTES: use this signal to latch buffer
+									for(a=0;a<3;a=a+1) 
+										if (line_count + 1 > kernel * stride * a && cache_count[a] == 0 && idle_count[a] == 0 && (kernel - stride) >= a) begin
+											cache_sel[a] <= 1; //FIXME: disable cache_sel at the end of a line
+											sum_id <= a;
+										end
 								end
 							end
 							dbuf[dma_p2_burst_cnt] <= dma_p2_ob_data; // deserialize data to dbuf
@@ -290,20 +297,25 @@ always @ (posedge clk or posedge rst) begin
 						if(cmac_data_ready) begin
 							elec_count <= elec_count + 1;
 						end
-						if(elec_count + 1 == kernel) begin
+						if(elec_count + 1 == kernel - stride + 1) begin
 							elec_count <= 0;
 							cmac_data_ready <= 0;
 						end
 						
 						//***PIPELINE STEP2: start passing deserialized data and weight to cmac/sacc/scmp (including weight reuse) TODO: use cache_sel to enable partial sum
 						if(cmac_enable) begin
+							for(a=0;a<3;a=a+1) begin
+								if(line_count + 1 <= kernel * stride * a || cache_count[a] + 1 == kernel_size) begin
+									cache_sel[a] <= 0;
+								end
+							end
 							for(a=0;a<BURST_LEN;a=a+1) begin
 								data[a] <= dbuf[a];
 							end
 							for(a=0;a<BURST_LEN;a=a+1) begin
-								cache[0][a] <= wbuf[a+cache_count[0]*BURST_LEN]; //FIXME: replace multiplication of reg with new input
-								cache[1][a] <= wbuf[a+cache_count[1]*BURST_LEN];
-								cache[2][a] <= wbuf[a+cache_count[2]*BURST_LEN];
+								cache[0][a] <= cache_sel[0]?wbuf[a+cache_count[0]*BURST_LEN]:16'h0000; //FIXME: replace multiplication of reg with new input
+								cache[1][a] <= cache_sel[1]?wbuf[a+cache_count[1]*BURST_LEN]:16'h0000;
+								cache[2][a] <= cache_sel[2]?wbuf[a+cache_count[2]*BURST_LEN]:16'h0000;
 							end
 							for(a=0;a<BURST_LEN;a=a+1) begin
 								cache_sum[0][a] <= cmac_sum[0][a];
@@ -318,12 +330,12 @@ always @ (posedge clk or posedge rst) begin
 							for(a=0;a<3;a=a+1) begin
 								if(line_count + 1 <= kernel * stride * a) begin //FIXME: replace multiplication of reg with new input
 									cache_count[a] <= 0;
-								end else if(cache_count[a] + 1 < kernel_size) begin
+								end else if(cache_count[a] + 1 < kernel_size && idle_count[a] == 0) begin
 									cache_count[a] <= cache_count[a] + 1;
 								end else begin
+									cache_count[a] <= 0;
 									if(idle_count[a] == (stride - 1) * kernel) begin //FIXME: replace multiplication of reg with new input
 										idle_count[a] <= 0;
-										cache_count[a] <= 0;
 									end else begin
 										idle_count[a] <= idle_count[a] + 1;
 									end
@@ -341,19 +353,19 @@ always @ (posedge clk or posedge rst) begin
 						end
 
 						//***PIPELINE STEP3: Partial SUM of para outputs
-						if(result_count + 1 == kernel + stride - 1) begin
+						if(result_count + 1 == kernel - stride + 1) begin
 							result_count <= 0;
 							for(a=0;a<3;a=a+1) begin
 								sum_count[a] <= cache_count[a];
 							end
 							for(a=0;a<3;a=a+1) begin
 								if(sum_count[a] + 1 == kernel_size) begin
-									sum_index <= sum_index + 1;
+									sum_index <= sum_index + 1; //FIXME: stride > 1
 									if(sum_index + 1 == o_side) begin
 										sum_index <= 0;
 									end
 									for(b=0;b<BURST_LEN;b=b+1) begin
-										psum[b] <= cmac_sum[a][b];
+										psum[b] <= cmac_sum[a][b]; //FIXME: stride > 1
 									end
 									fsum_enable <= 1; //Trigger for channel partial sum
 								end
