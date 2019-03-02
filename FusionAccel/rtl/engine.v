@@ -9,6 +9,10 @@ module engine  //Instantiate 16CMACs for conv3x3, 16CMACs for conv1x1, maxpool a
 	input			padding,
 	input [3:0]		stride,		//TODO: valid check: stride < padding
 	input [7:0]		kernel,
+	input [15:0]	stride1,	//kernel * para
+	input [15:0]	stride2,	//kernel * stride
+	input [15:0]	stride3,	//kernel * i_side
+	input [15:0]    stride4,    //para * i_side
 	input [7:0]		kernel_size,
 	input [15:0]    i_channel,
 	input [15:0]	o_channel,
@@ -113,7 +117,7 @@ reg 		engine_ready;
 //DMA enable signal
 reg			dma_p0_writes_en, dma_p1_writes_en, dma_p2_reads_en, dma_p3_reads_en, dma_p4_reads_en, dma_p5_reads_en;
 reg [29:0]  p0_addr, p1_addr, p2_addr, p3_addr, p4_addr, p5_addr;              //Output to DMA, burst start address. 
-reg [29:0]  gemm_addr, data_addr_block, weight_addr_block, data_addr_offset, weight_addr_offset;
+reg [29:0]  gemm_addr, data_addr_block, weight_addr_block, result_addr_block, data_addr_offset, weight_addr_offset, result_addr_offset;
 reg [15:0]  dma_p0_ib_data, dma_p1_ib_data;
 reg			dma_p0_ib_valid, dma_p1_ib_valid;
 
@@ -146,10 +150,11 @@ generate
 endgenerate
 
 //State Machine
-localparam idle = 4'b0000;
-localparam gemm_busy = 4'b0001;
-localparam gemm_clear = 4'b0010;
-localparam finish = 4'b0011;
+localparam init = 4'b0000;
+localparam idle = 4'b0001;
+localparam gemm_busy = 4'b0010;
+localparam gemm_clear = 4'b0011;
+localparam finish = 4'b0100;
 
 reg [3:0] curr_state;
 reg [3:0] next_state;
@@ -157,18 +162,23 @@ reg [3:0] next_state;
 //    Current State, non-blocking
 always @ (posedge clk or posedge rst)    begin
     if (rst)
-        curr_state    <= idle;
+        curr_state    <= init;
     else
         curr_state    <= next_state;
 end
 
 //    Status Jump, blocking
 always @ (*) begin
-    next_state = idle;    //    Initialize
+    next_state = init;    //    Initialize
     case (curr_state)
+		init: begin
+			if(engine_valid) next_state = idle;
+			else next_state = init;
+		end
         idle: begin
-            if(engine_valid) next_state = gemm_busy;
-            else next_state = idle;
+            next_state = gemm_busy;
+			//if(engine_valid) next_state = gemm_busy;
+            //else next_state = idle;
         end
 		gemm_busy: begin
 			if(fsum_index == o_side) next_state = gemm_clear;
@@ -180,7 +190,7 @@ always @ (*) begin
 		finish: begin
 		end
         default:
-            next_state = idle;
+            next_state = init;
     endcase
 end
 //NOTES: MEC convolution: k * k kernel in PARA -> finish the line -> next channel group(channel += PARA) -> next_gemm
@@ -238,17 +248,20 @@ always @ (posedge clk or posedge rst) begin
 		p0_addr <= 30'h0000_0000; p1_addr <= 30'h0000_0000; p2_addr <= 30'h0000_0000; 
 		p3_addr <= 30'h0000_0000; p4_addr <= 30'h0000_0000; p5_addr <= 30'h0000_0000;
 		gemm_addr <= 30'h0000_0000;
-		data_addr_block <= 30'h0000_0000; weight_addr_block <= 30'h0000_0000;
-		data_addr_offset <= 30'h0000_0000; weight_addr_offset <= 30'h0000_0000;
-		for(a=0;a<128;a=a+1)begin //FIXME: hardcode
+		data_addr_block <= 30'h0000_0000; weight_addr_block <= 30'h0000_0000; result_addr_block <= 30'h0000_0000;
+		data_addr_offset <= 30'h0000_0000; weight_addr_offset <= 30'h0000_0000; result_addr_offset <= 30'h0000_0000;
+		for (a=0; a<128; a=a+1) begin //FIXME: hardcode
 			sum[a] <= 16'h0000;
 		end
 		i_channel_count <= 16'h0000; gemm_count <= 8'h00; o_channel_count <= 16'h0000; layer_finish <= 0;
 	end else begin
 		case (curr_state)
+			init: begin
+				data_addr_block <= data_start_addr; weight_addr_block <= weight_start_addr; result_addr_block <= result_addr_offset;
+				gemm_addr <= data_start_addr;
+			end
 			//==================== Clear all registers except cross-channel registers ====================
 			idle: begin 
-				//data_addr_block <= data_start_addr; weight_addr_block <= weight_start_addr;
 				conv_valid <= 0; avepool_valid <= 0; maxpool_valid <= 0; engine_ready <= 0;
 				dma_p2_burst_cnt <= 16'h0000; dma_p3_burst_cnt <= 16'h0000; dma_p3_offset <= 0;
 				dma_p0_writes_en <= 0; dma_p1_writes_en <= 0;
@@ -300,7 +313,7 @@ always @ (posedge clk or posedge rst) begin
 								if(&cmac_data_valid) begin
 									cmac_enable <= 1;	//NOTES: use this signal to latch buffer
 									for(a=0;a<3;a=a+1) 
-										if (line_count + 1 > kernel * stride * a && cache_count[a] == 0 && idle_count[a] == 0 && (kernel - stride) >= a) begin
+										if (line_count + 1 > stride2 * a && cache_count[a] == 0 && idle_count[a] == 0 && (kernel - stride) >= a) begin
 											cache_sel[a] <= 1;
 										end
 								end
@@ -312,7 +325,7 @@ always @ (posedge clk or posedge rst) begin
 								data_addr_block <= data_addr_block + para;
 								if(atom_count + 1 == kernel) begin
 									//jump to the next row
-									//data_addr_block <= data_addr_block + (i_side - kernel) * para;
+									data_addr_block <= data_addr_block + stride4 - stride2; //(i_side - kernel) * para;
 								end
 							end
 						end
@@ -321,8 +334,12 @@ always @ (posedge clk or posedge rst) begin
 								dma_p3_burst_cnt <= 0;
 								dma_p3_offset <= dma_p3_offset + 1;
 							end else dma_p3_burst_cnt <= dma_p3_burst_cnt + 1;
-							wbuf[dma_p3_offset * `BURST_LEN + dma_p3_burst_cnt] <= dma_p3_ob_data; // wbuf is fixed in a channel operation of a GEMM //FIXME: replace multiplication of reg with new input
+							wbuf[{dma_p3_offset[3:0],4'b0000} + dma_p3_burst_cnt] <= dma_p3_ob_data; // wbuf is fixed in a channel operation of a GEMM //FIXME: replace multiplication of reg with new input
 							weight_addr_offset <= weight_addr_offset + 1;
+							if(weight_addr_offset + 1 == para) begin
+								weight_addr_offset <= 0;
+								weight_addr_block <= weight_addr_block + para;
+							end
 						end
 						if(dma_p3_offset == kernel_size) begin
 							dma_p3_reads_en <= 0; // force sync reset to generate a 1-cycle pulse
@@ -343,7 +360,7 @@ always @ (posedge clk or posedge rst) begin
 						//==================== PIPELINE STEP2: start passing deserialized data and weight to cmac/sacc/scmp (including weight reuse)
 						if(cmac_enable) begin
 							for(a=0;a<3;a=a+1) begin
-								if(line_count + 1 <= kernel * stride * a || cache_count[a] + 1 == kernel_size) begin
+								if(line_count + 1 <= stride2 * a || cache_count[a] + 1 == kernel_size) begin
 									cache_sel[a] <= 0;
 								end
 							end
@@ -351,9 +368,9 @@ always @ (posedge clk or posedge rst) begin
 								data[a] <= dbuf[a];
 							end
 							for(a=0;a<`BURST_LEN;a=a+1) begin
-								weight_cache[0][a] <= cache_sel[0]?wbuf[a+cache_count[0]*`BURST_LEN]:16'h0000; //FIXME: replace multiplication of reg with new input
-								weight_cache[1][a] <= cache_sel[1]?wbuf[a+cache_count[1]*`BURST_LEN]:16'h0000;
-								weight_cache[2][a] <= cache_sel[2]?wbuf[a+cache_count[2]*`BURST_LEN]:16'h0000;
+								weight_cache[0][a] <= cache_sel[0]?wbuf[a+{cache_count[0][3:0], 4'b0000}]:16'h0000; //FIXME: replace multiplication of reg with new input
+								weight_cache[1][a] <= cache_sel[1]?wbuf[a+{cache_count[1][3:0], 4'b0000}]:16'h0000;
+								weight_cache[2][a] <= cache_sel[2]?wbuf[a+{cache_count[2][3:0], 4'b0000}]:16'h0000;
 							end
 							for(a=0;a<`BURST_LEN;a=a+1) begin
 								cache_sum[0][a] <= cmac_sum[0][a];
@@ -366,20 +383,20 @@ always @ (posedge clk or posedge rst) begin
 								atom_count <= 0;
 							end
 							for(a=0;a<3;a=a+1) begin
-								if(line_count + 1 <= kernel * stride * a) begin //FIXME: replace multiplication of reg with new input
+								if(line_count + 1 <= stride2 * a) begin //FIXME: replace multiplication of reg with new input
 									cache_count[a] <= 0;
 								end else if(cache_count[a] + 1 < kernel_size && idle_count[a] == 0 && (kernel - stride) >= a) begin
 									cache_count[a] <= cache_count[a] + 1;
 								end else begin
 									cache_count[a] <= 0;
-									if(idle_count[a] + kernel == kernel * stride) begin //FIXME: replace multiplication of reg with new input
+									if(idle_count[a] + kernel == stride2) begin //FIXME: replace multiplication of reg with new input
 										idle_count[a] <= 0;
 									end else begin
 										idle_count[a] <= idle_count[a] + 1;
 									end
 								end
 							end
-							if(line_count + 1 == kernel * i_side) begin //FIXME: replace multiplication of reg with new input
+							if(line_count + 1 == stride3) begin //FIXME: replace multiplication of reg with new input
 								line_count <= 0;
 								for(a=0;a<3;a=a+1) begin
 									cache_count[a] <= 0; //clear the counter and start a new channel group
@@ -445,13 +462,13 @@ always @ (posedge clk or posedge rst) begin
 			//==================== Update cross-channel counters and address
 			gemm_clear: begin
 				if(i_channel_count + para < i_channel) begin
-					i_channel_count <= i_channel_count + para; 
+					i_channel_count <= i_channel_count + para; // within channel operation the address is not updated
 				end else begin
 					i_channel_count <= 0;
-					gemm_count <= gemm_count + 1;//TODO: gemm addr parsing //NOTES: a gemm is finished
-					//updating gemm addr and data addr_block
-					gemm_addr <= gemm_addr + para; //TODO: stride = 2
-					data_addr_block <= gemm_addr + para;
+					gemm_count <= gemm_count + 1; //TODO: gemm addr parsing //NOTES: a gemm is finished
+					//updating gemm addr only after finishing the whole line + channel and data addr_block
+					gemm_addr <= gemm_addr + stride1; //NOTES: kernel > stride >= 1
+					data_addr_block <= gemm_addr + stride1;
 					if(gemm_count + 1 == o_side) begin
 						gemm_count <= 0;
 						o_channel_count <= o_channel_count + 1; //NOTES: start the next weight group

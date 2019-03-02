@@ -18,8 +18,13 @@ module csb
     output          padding,
     output [3:0]    stride,
     output [3:0]    kernel,
+    output [7:0]    stride1,    //kernel * para
+    output [7:0]    stride2,    //kernel * stride
+    output [7:0]    stride3,    //kernel * i_side
+    output [7:0]    stride4,    //para * i_side
     output [15:0]   i_channel,
     output [15:0]   o_channel,
+    output [7:0]    kernel_size,
     output [7:0]    i_side,
     output [7:0]    o_side,
     output [31:0]   data_start_addr,
@@ -60,8 +65,9 @@ reg [2:0]   op_type;
 reg         padding;
 reg [3:0]   stride;
 reg [7:0]   kernel;
+reg [7:0]   stride1, stride2, stride3, stride4;
 reg [15:0]  i_channel, o_channel;
-reg [7:0]   i_side, o_side;
+reg [7:0]   kernel_size, i_side, o_side;
 reg [31:0]  weight_start_addr;
 reg [31:0]  data_start_addr;
 reg [31:0]  result_start_addr;
@@ -129,8 +135,9 @@ always @ (posedge clk or posedge rst) begin
         cmd_burst_count <= 4'd0;
         //Commands
         op_type <= 3'd0; stride <= 4'h0; padding <= 1'b0; kernel <= 8'h00;
+        stride1 <= 8'h00; stride2 <= 8'h00; stride3 <= 8'h00; stride4 <= 8'h00;
         i_channel <= 16'h0000; o_channel <= 16'h0000;
-        i_side <= 8'h00; o_side <= 8'h00;
+        i_side <= 8'h00; o_side <= 8'h00; kernel_size <= 8'h00;
         data_start_addr <= 32'h0000_0000;
         weight_start_addr <= 32'h0000_0000;
         result_start_addr <= 32'h0000_0000;
@@ -153,9 +160,11 @@ always @ (posedge clk or posedge rst) begin
                     cmd_burst_count <= cmd_burst_count - 1;
                 end
                 case (cmd_burst_count) //Split cmds from fifo into separate attributes
-                    4'd6: begin op_type <= cmd[2:0]; padding <= cmd[4]; stride <= cmd[11:8]; kernel <= cmd[23:16]; end
+                    4'd8: begin op_type <= cmd[2:0]; padding <= cmd[4]; stride <= cmd[11:8]; kernel <= cmd[23:16]; end
+                    4'd7: begin stride1 <= cmd[15:0]; stride2 <= cmd[31:16]; end
+                    4'd6: begin stride3 <= cmd[15:0]; stride4 <= cmd[31:16]; end
                     4'd5: begin i_channel <= cmd[15:0]; o_channel <= cmd[31:16]; end
-                    4'd4: begin i_side <= cmd[7:0]; o_side <= cmd[15:8]; end
+                    4'd4: begin i_side <= cmd[7:0]; o_side <= cmd[15:8]; kernel_size <= cmd[23:16]; end
                     4'd3: begin weight_start_addr <= cmd; end
                     4'd2: begin data_start_addr <= cmd; end
                     4'd1: begin result_start_addr <= cmd; cmd_collect_done <= 1; dma_p1_reads_en <= 0; end
