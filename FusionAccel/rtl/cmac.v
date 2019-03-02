@@ -22,10 +22,10 @@ reg        mult_ready_buf, conv_ready;
 wire [15:0] result_mult, result_acc;
 reg  [15:0] result;
 
-multiplier mult_ (.a(a_mult), .b(b_mult), .operation_nd(data_ready), .operation_rfd(data_valid),
+multiplier mult_ (.a(a_mult), .b(b_mult), .clk(clk), .operation_nd(data_ready), .operation_rfd(data_valid),
 .result(result_mult), .rdy(mult_ready));
 
-accum acc_ (.a(a_acc), .b(b_acc), .operation_nd(operation_nd_acc), .operation_rfd(operation_rfd_acc),
+accum acc_ (.a(a_acc), .b(b_acc), .clk(clk), .operation_nd(operation_nd_acc), .operation_rfd(operation_rfd_acc),
 .result(result_acc), .rdy(acc_ready));
 
 assign b_acc = result_mult;
