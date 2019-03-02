@@ -1,3 +1,4 @@
+`include "macros.vh"
 module top 
 (
 	// Front Panel Interface
@@ -32,11 +33,6 @@ module top
 );
 
 //--------------v1, Minimum Hardware Cores for SqueezeNet------------------//
-localparam CMD_BURST_LEN = 6,
-			CONV_BURST_LEN = 16,
-			POOL_BURST_LEN = 1,
-			BLOB_BURST_LEN = 32;
-
 wire        c3_clk0;
 
 wire 		op_en;
@@ -64,10 +60,7 @@ wire		dma_p0_ib_re, dma_p1_ib_re, dma_p2_ob_we, dma_p3_ob_we, dma_p4_ob_we, dma_
 //------------------------------------------------
 // Control Signal Block for all cores
 //------------------------------------------------
-csb # (
-	.CMD_BURST_LEN(CMD_BURST_LEN)
-)
-csb_(
+csb csb_(
     .clk					(c3_clk0),
     .rst					(ep00wire[3]),
 	.op_en					(ep00wire[4]),		// A wire from ep
@@ -95,10 +88,7 @@ csb_(
 
     .irq					(irq));
 
-engine #(
-	.BURST_LEN(CONV_BURST_LEN)
-)
-engine_(
+engine engine_(
 	.clk					(c3_clk0),
 //Control signals csb->engine
 	.rst					(engine_reset),
@@ -401,11 +391,7 @@ assign pipe_in_read = dma_p0_writes_en ? 0 : p0_ib_re;
 assign p0_ib_data = dma_p0_writes_en ? dma_p0_ib_data : pipe_in_data; // TODO: Update this mux logic after updating engine-dma
 assign p0_ib_valid = dma_p0_writes_en ? dma_p0_ib_valid : pipe_in_valid;
 
-dma #(
-	.BLOB_BURST_LEN(BLOB_BURST_LEN),
-	.BLOCK_BURST_LEN(1)
-)
-dma_p0 ( // Read/Write, port0, pipeout read, pipein write, result_0 write
+dma dma_p0 ( // Read/Write, port0, pipeout read, pipein write, result_0 write
 	.clk			(c3_clk0),
 	.reset			(ep00wire[2] | c3_rst0), 
 	.reads_en		(ep00wire[0]),			//in	-- okPipeOut/cmd/data0 FIFO
@@ -439,11 +425,7 @@ dma_p0 ( // Read/Write, port0, pipeout read, pipein write, result_0 write
 	.start_addr		(p0_addr),	//in		-- from csb
 	.op_type		(op_type));				//in		-- from csb
 
-dma #(
-	.BLOB_BURST_LEN(BLOB_BURST_LEN),
-	.BLOCK_BURST_LEN(1)
-)
-dma_p1 ( // Read/Write, port1, cmd read, result1 write
+dma dma_p1 ( // Read/Write, port1, cmd read, result1 write
 	.clk			(c3_clk0),
 	.reset			(ep00wire[2] | c3_rst0), 
 	.reads_en		(dma_p1_reads_en),		//in		-- weight0
@@ -472,11 +454,7 @@ dma_p1 ( // Read/Write, port1, cmd read, result1 write
 	.start_addr		(p1_addr),	//in		-- from csb
 	.op_type		(op_type));				//in		-- from csb
 
-dma #(
-	.BLOB_BURST_LEN(BLOB_BURST_LEN),
-	.BLOCK_BURST_LEN(1)
-)
-dma_p2 ( // Read Only, port2, conv3x3 data, maxpool, avepool data
+dma dma_p2 ( // Read Only, port2, conv3x3 data, maxpool, avepool data
 	.clk			(c3_clk0),
 	.reset			(ep00wire[2] | c3_rst0), 
 	.reads_en		(dma_p2_reads_en),		//in		-- data1
@@ -505,11 +483,7 @@ dma_p2 ( // Read Only, port2, conv3x3 data, maxpool, avepool data
 	.start_addr		(p2_addr),				//in		-- from csb
 	.op_type		(op_type));				//in		-- from csb
 
-dma #(
-	.BLOB_BURST_LEN(BLOB_BURST_LEN),
-	.BLOCK_BURST_LEN(CONV_BURST_LEN)
-)
-dma_p3 ( // Read Only, port3, conv3x3 weight
+dma dma_p3 ( // Read Only, port3, conv3x3 weight
 	.clk			(c3_clk0),
 	.reset			(ep00wire[2] | c3_rst0), 
 	.reads_en		(dma_p3_reads_en),		//in		-- weight1
@@ -533,11 +507,7 @@ dma_p3 ( // Read Only, port3, conv3x3 weight
 	.start_addr		(p3_addr),				//in		-- from csb
 	.op_type		(op_type));				//in		-- from csb
 
-dma #(
-	.BLOB_BURST_LEN(BLOB_BURST_LEN),
-	.BLOCK_BURST_LEN(1)
-)
-dma_p4 ( // Read Only, port4, conv1x1 data
+dma dma_p4 ( // Read Only, port4, conv1x1 data
 	.clk			(c3_clk0),
 	.reset			(ep00wire[2] | c3_rst0), 
 	.reads_en		(dma_p4_reads_en),		//in		-- weight1
@@ -561,11 +531,7 @@ dma_p4 ( // Read Only, port4, conv1x1 data
 	.start_addr		(p4_addr),				//in		-- from csb
 	.op_type		(op_type));				//in		-- from csb
 
-dma #(
-	.BLOB_BURST_LEN(BLOB_BURST_LEN),
-	.BLOCK_BURST_LEN(CONV_BURST_LEN)
-)
-dma_p5 ( // Read Only, port5, conv1x1 weight
+dma dma_p5 ( // Read Only, port5, conv1x1 weight
 	.clk			(c3_clk0),
 	.reset			(ep00wire[2] | c3_rst0), 
 	.reads_en		(dma_p5_reads_en),		//in		-- weight1

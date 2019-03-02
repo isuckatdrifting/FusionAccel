@@ -31,10 +31,10 @@ comparator cmp_ (.a(a_cmp), .b(b_cmp), .operation(6'b100100), .operation_nd(data
 assign tmp = result_cmp? a_cmp : b_cmp;
 always @ (posedge clk or posedge rst) begin
     if (rst) begin
-        result <= 0;
+        result <= 16'h0000;
         pool_ready <= 0;
-        a_cmp <= 0;
-        b_cmp <= 0;
+        a_cmp <= 16'h0000;
+        b_cmp <= 16'h0000;
     end else begin
         if(data_ready) begin 
             a_cmp <= data; 

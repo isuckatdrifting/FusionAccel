@@ -1,6 +1,5 @@
-module csb # (
-    parameter CMD_BURST_LEN = 3'd6
-)
+`include "macros.vh"
+module csb 
 (
     input           clk,
     input           rst,
@@ -145,7 +144,7 @@ always @ (posedge clk or posedge rst) begin
     end else begin
         case (curr_state)
             idle: begin
-                cmd_burst_count <= CMD_BURST_LEN;
+                cmd_burst_count <= `CMD_BURST_LEN;
             end
             cmd_get: begin
                 engine_reset <= 1;
@@ -166,7 +165,7 @@ always @ (posedge clk or posedge rst) begin
             end
             cmd_issue: begin
                 engine_reset <= 0;
-                cmd_burst_count <= CMD_BURST_LEN;
+                cmd_burst_count <= `CMD_BURST_LEN;
                 cmd_collect_done <= 0;
                 engine_valid <= 1; cmd_issue_done <= 1; // start engine
             end

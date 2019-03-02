@@ -111,10 +111,7 @@ initial begin
 end
 `endif
 
-engine #(
-	.BURST_LEN(16)
-)
-engine_(
+engine engine_(
 	.clk					(clk),
 //Control signals csb->engine
 	.rst					(rst),

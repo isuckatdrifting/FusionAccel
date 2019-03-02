@@ -33,10 +33,10 @@ assign operation_nd_acc = mult_ready_buf;
 
 always @ (posedge clk or posedge rst) begin
     if (rst) begin
-        a_acc <= 0; 
-        a_mult <= 0; b_mult <= 0;
+        a_acc <= 16'h0000; 
+        a_mult <= 16'h0000; b_mult <= 16'h0000;
         mult_ready_buf <= 0; conv_ready <= 0;
-        result <= 0;
+        result <= 16'h0000;
     end else begin
         if(data_ready) begin a_mult <= data; b_mult <= weight; a_acc <= tmp_sum; end
         mult_ready_buf <= mult_ready; // sync, one cycle delay
