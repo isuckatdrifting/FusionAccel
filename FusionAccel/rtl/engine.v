@@ -202,7 +202,7 @@ integer a,b;
 always @ (posedge clk or posedge rst) begin
 	if(rst) begin
 		conv_valid <= 0; avepool_valid <= 0; maxpool_valid <= 0; engine_ready <= 0;
-		dma_p2_burst_cnt <= 16'h0000; dma_p3_burst_cnt <= 16'h0000; dma_p3_offset <= 0;
+		dma_p2_burst_cnt <= 16'h0000; dma_p3_burst_cnt <= 16'h0000; dma_p3_offset <= 8'h00;
 		dma_p0_writes_en <= 0; dma_p1_writes_en <= 0;
 		dma_p2_reads_en <= 0; dma_p3_reads_en <= 0; dma_p4_reads_en <= 0; dma_p5_reads_en <= 0;
 		dma_p0_ib_data <= 16'h0000; dma_p1_ib_data <= 16'h0000;
@@ -372,7 +372,7 @@ always @ (posedge clk or posedge rst) begin
 									cache_count[a] <= cache_count[a] + 1;
 								end else begin
 									cache_count[a] <= 0;
-									if(idle_count[a] == (stride - 1) * kernel) begin //FIXME: replace multiplication of reg with new input
+									if(idle_count[a] + kernel == kernel * stride) begin //FIXME: replace multiplication of reg with new input
 										idle_count[a] <= 0;
 									end else begin
 										idle_count[a] <= idle_count[a] + 1;
@@ -416,8 +416,11 @@ always @ (posedge clk or posedge rst) begin
 								cmac_sum[result_count][a] <= conv_result[a];
 							end
 						end
+						
 						// ==================== PIPELINE STEP4: full channel sum stored in -> sum, sum all channels, TODO: bias operation
-						fsum_data_ready <= fsum_enable;
+						if(fsum_data_valid) begin
+							fsum_data_ready <= fsum_enable;
+						end
 						fsum_b <= psum[fsum_count];
 						if(fsum_enable) begin
 							if(fsum_count == 0) fsum_a <= sum[sum_index]; //accumulated sum is called after the first channel group
