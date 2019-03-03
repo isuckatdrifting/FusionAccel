@@ -402,9 +402,8 @@ always @ (posedge clk or posedge rst) begin
 			end
 			//==================== Update cross-channel counters and address
 			gemm_clear: begin
-				if(i_channel_count + `BURST_LEN < i_channel) begin
-					i_channel_count <= i_channel_count + `BURST_LEN; // within channel operation the address is not updated
-				end else begin
+				i_channel_count <= i_channel_count + `BURST_LEN; // within channel operation the address is not updated
+				if(i_channel_count + `BURST_LEN >= i_channel) begin
 					i_channel_count <= 0;
 					gemm_count <= gemm_count + 1; //NOTES: a gemm is finished
 					//updating gemm addr only after finishing the whole line + channel and data addr_block
