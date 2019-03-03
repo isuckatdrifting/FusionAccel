@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <symbol version="7" name="accum">
     <symboltype>BLOCK</symboltype>
-    <timestamp>2019-3-2T15:7:52</timestamp>
+    <timestamp>2019-3-3T6:45:26</timestamp>
     <pin polarity="Input" x="0" y="80" name="a[15:0]" />
     <pin polarity="Input" x="0" y="112" name="b[15:0]" />
     <pin polarity="Input" x="0" y="208" name="operation_nd" />

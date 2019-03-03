@@ -58,7 +58,8 @@ localparam APOOL = 5;
 reg  conv_valid, maxpool_valid, avepool_valid;
 wire [`BURST_LEN-1:0] cmac_data_valid, avepool_data_valid, maxpool_data_valid, mult_ready_buf;
 reg  cmac_data_ready, cmac_enable, avepool_data_ready, maxpool_data_ready;
-wire [`BURST_LEN-1:0] cmac_ready;
+wire [`BURST_LEN-1:0] rdy_cmac;
+reg [`BURST_LEN-1:0] cmac_ready;
 wire maxpool_ready, avepool_ready;
 
 //Data BUF and Weight BUF of serializer
@@ -71,6 +72,7 @@ wire [15:0] tmp_sum [0:`BURST_LEN-1];// paralle, wired out from cmac_sum
 reg  [7:0]  dma_p2_burst_cnt, dma_p3_burst_cnt, dma_p3_offset; // de-serializer counter, burst get 16 data, then send to operation unit.
 //Result registers of cmac/sacc/scmp
 wire [15:0] conv_result [0:`BURST_LEN-1]; // parallel
+reg  [15:0] cmac_result [0:`BURST_LEN-1];
 wire [15:0] maxpool_result [0:`BURST_LEN-1]; // parallel
 wire [15:0] avepool_result [0:`BURST_LEN-1]; // parallel
 
@@ -93,13 +95,13 @@ reg  [15:0] psum [0:`BURST_LEN-1];			//NOTES: registers for 16-channel sum outpu
 //reg  [15:0] sum [0:127]; //max support 128 x 128 output side // FIXME: use bram
 reg  [15:0] fsum_a;
 reg  [15:0] fsum_b;
-wire [15:0] fsum_result;
+reg [15:0] fsum_result;
 reg  [7:0]  fsum_count;
 reg  [7:0]  fsum_index;
-wire        fsum_data_valid;
+reg        fsum_data_valid;
 reg			fsum_enable;
 reg			fsum_data_ready;
-wire		fsum_ready;
+reg		fsum_ready;
 
 //GEMM registers
 reg 		clear;
@@ -123,11 +125,20 @@ reg			dma_p0_ib_valid, dma_p1_ib_valid;
 genvar i;
 generate 
 	for (i = 0; i < `BURST_LEN; i = i + 1) begin: gencmac
-		cmac cmac_(.clk(clk), .rst(rst), .data(data[i +: 16]), .weight(weight[i]), .result(conv_result[i]), .tmp_sum(tmp_sum[i]), .mult_ready_buf(mult_ready_buf[i]), .conv_valid(conv_valid), .data_ready(cmac_data_ready), .data_valid(cmac_data_valid[i]), .conv_ready(cmac_ready[i]));
+		cmac cmac_(.clk(clk), .rst(rst), .data(data[i +: 16]), .weight(weight[i]), .result(conv_result[i]), .tmp_sum(tmp_sum[i]), .mult_ready_buf(mult_ready_buf[i]), .conv_valid(conv_valid), .data_ready(cmac_data_ready), .data_valid(cmac_data_valid[i]), .conv_ready(rdy_cmac[i]));
+		
+		always @(posedge clk) cmac_result[i] <= conv_result[i];
+		always @(posedge clk) cmac_ready[i] <= rdy_cmac[i];
 	end 
 endgenerate
 
-accum fsum_ (.a(fsum_a), .b(fsum_b), .clk(clk), .operation_nd(fsum_data_ready), .operation_rfd(fsum_data_valid), .result(fsum_result), .rdy(fsum_ready));
+wire operation_rfd_fsum, rdy_fsum;
+wire [15:0] result_fsum;
+accum fsum_ (.a(fsum_a), .b(fsum_b), .clk(clk), .operation_nd(fsum_data_ready), .operation_rfd(operation_rfd_fsum), .result(result_fsum), .rdy(rdy_fsum));
+
+always @(posedge clk) fsum_data_valid <= operation_rfd_fsum;
+always @(posedge clk) fsum_result <= result_fsum;
+always @(posedge clk) fsum_ready <= rdy_fsum;
 
 genvar k;
 generate
@@ -444,7 +455,7 @@ always @ (posedge clk or posedge rst) begin
 						end
 						if(&cmac_ready) begin
 							for(a=0;a<`BURST_LEN;a=a+1) begin
-								cmac_sum[result_count][a] <= conv_result[a];
+								cmac_sum[result_count][a] <= cmac_result[a];
 							end
 						end
 						
