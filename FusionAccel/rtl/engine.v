@@ -10,7 +10,6 @@ module engine  //Instantiate 16CMACs for conv3x3, 16CMACs for conv1x1, maxpool a
 	input [3:0]		stride,		//TODO: valid check: stride < padding
 	input [7:0]		kernel,
 	input [15:0]	stride2,	//kernel * stride
-	input [15:0]	stride3,	//kernel * i_side
 	input [7:0]		kernel_size,
 	input [15:0]    i_channel,
 	input [15:0]	o_channel,
@@ -81,7 +80,6 @@ reg  [7:0]  pipe_count;						//NOTES: counter for data reuse on one data
 reg  [7:0]  pipe2_count;
 reg  [15:0] line_count;						//NOTES: counter for one gemm line, range:(0, kernel * o_side)
 reg  [7:0]  cache_count [0:2]; 				//FIXME: use max conv side support defined in include files.
-reg  [7:0]  idle_count [0:2]; 				//NOTES: counter for stride 
 reg  [7:0]  result_count;					//NOTES: counter for results in single cmac reuse
 reg  [7:0]  sum_count [0:2];				//NOTES: counter for results in a kernel_size
 reg  [7:0]  sum_index;						//NOTES: counter for the nth kernel sum to psum
@@ -191,7 +189,7 @@ always @ (*) begin
 end
 //NOTES: MEC convolution: k * k kernel in BURST_LEN -> finish the line -> next channel group(channel += BURST_LEN) -> next_gemm
 //		 Register level:       cmac_sum -> psum -> sum
-//		 Counter level:		   atom_count -> line_count, cache_count, idle_count -> result_count, sum_count -> sum_index -> fsum_index
+//		 Counter level:		   atom_count -> line_count, cache_count -> result_count, sum_count -> sum_index -> fsum_index
 //NOTES: Sum point is ready only after the all channel 3x3 kernel mac is complete
 //TODO:  Padding Layer: dual channel write back address parsing
 //NOTES: weight and tmp_sum is directly from the corresponding registers
@@ -224,7 +222,6 @@ always @ (posedge clk or posedge rst) begin
 		//==================== Slot registers ====================
 		for(a=0;a<3;a=a+1) begin 
 			cache_count[a] <= 8'h00;
-			idle_count[a] <= 8'h00;
 			sum_count[a] <= 8'h00;
 		end
 		cache_sel <= 3'b000;
@@ -273,7 +270,6 @@ always @ (posedge clk or posedge rst) begin
 				//==================== Slot registers ====================
 				for(a=0;a<3;a=a+1) begin 
 					cache_count[a] <= 8'h00;
-					idle_count[a] <= 8'h00;
 					sum_count[a] <= 8'h00;
 				end
 				cache_sel <= 3'b000;
@@ -305,13 +301,13 @@ always @ (posedge clk or posedge rst) begin
 								if(&cmac_data_valid) begin
 									cmac_enable <= 1;	//NOTES: use this signal to latch buffer
 									//Logic for setting cache_sel according to line_count
-									if (line_count + 1 > 0 && cache_count[0] == 0 && idle_count[0] == 0 && (kernel - stride) >= 7'd0) begin
+									if (line_count + 1 > 0 && cache_count[0] == 0 && (kernel - stride) >= 7'd0) begin
 										cache_sel[0] <= 1;
 									end
-									if (line_count + 1 > stride2 && cache_count[1] == 0 && idle_count[1] == 0 && (kernel - stride) >= 7'd1) begin
+									if (line_count + 1 > stride2 && cache_count[1] == 0 && (kernel - stride) >= 7'd1) begin
 										cache_sel[1] <= 1;
 									end
-									if (line_count + 1 > stride2 + stride2 && cache_count[2] == 0 && idle_count[2] == 0 && (kernel - stride) >= 7'd2) begin
+									if (line_count + 1 > stride2 + stride2 && cache_count[2] == 0 && (kernel - stride) >= 7'd2) begin
 										cache_sel[2] <= 1;
 									end
 								end
@@ -388,45 +384,24 @@ always @ (posedge clk or posedge rst) begin
 							//==================== Logic for setting cache_count according to line_count
 							if(line_count + 1 <= 0) begin // stride2 * a
 								cache_count[0] <= 0;
-							end else if(cache_count[0] + 1 < kernel_size && idle_count[0] == 0 && (kernel - stride) >= 0) begin
+							end else if(cache_count[0] + 1 < kernel_size + stride2 - kernel && (kernel - stride) >= 0) begin
 								cache_count[0] <= cache_count[0] + 1;
 							end else begin
 								cache_count[0] <= 0;
-								if(idle_count[0] + kernel == stride2) begin // stride
-									idle_count[0] <= 0;
-								end else begin
-									idle_count[0] <= idle_count[0] + 1;
-								end
 							end
 							if(line_count + 1 <= stride2) begin
 								cache_count[1] <= 0;
-							end else if(cache_count[1] + 1 < kernel_size && idle_count[1] == 0 && (kernel - stride) >= 1) begin
+							end else if(cache_count[1] + 1 < kernel_size + stride2 - kernel && (kernel - stride) >= 1) begin
 								cache_count[1] <= cache_count[1] + 1;
 							end else begin
 								cache_count[1] <= 0;
-								if(idle_count[1] + kernel == stride2) begin
-									idle_count[1] <= 0;
-								end else begin
-									idle_count[1] <= idle_count[1] + 1;
-								end
 							end
 							if(line_count + 1 <= stride2 + stride2) begin
 								cache_count[2] <= 0;
-							end else if(cache_count[2] + 1 < kernel_size && idle_count[2] == 0 && (kernel - stride) >= 2) begin
+							end else if(cache_count[2] + 1 < kernel_size + stride2 - kernel && (kernel - stride) >= 2) begin
 								cache_count[2] <= cache_count[2] + 1;
 							end else begin
 								cache_count[2] <= 0;
-								if(idle_count[2] + kernel == stride2) begin
-									idle_count[2] <= 0;
-								end else begin
-									idle_count[2] <= idle_count[2] + 1;
-								end
-							end
-							if(line_count + 1 == stride3) begin
-								line_count <= 0;
-								cache_count[0] <= 0; //clear the counter and start a new channel group
-								cache_count[1] <= 0; //clear the counter and start a new channel group
-								cache_count[2] <= 0; //clear the counter and start a new channel group
 							end
 						end
 						if(dma_p2_burst_cnt == 0) begin

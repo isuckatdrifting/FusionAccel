@@ -41,7 +41,7 @@ wire [6:0]  cmd_size;
 wire [2:0] 	op_type;
 wire		padding;
 wire [3:0]  stride;
-wire [15:0] stride1, stride2, stride3, stride4;
+wire [15:0] stride2;
 wire [7:0]  kernel, kernel_size;
 wire [15:0] i_channel, o_channel;
 wire [7:0]  i_side, o_side;
@@ -80,7 +80,6 @@ csb csb_(
 	.stride					(stride),
 	.kernel					(kernel),
 	.stride2				(stride2),
-	.stride3				(stride3),
 	.i_channel				(i_channel),
 	.o_channel				(o_channel),
 	.i_side					(i_side),
@@ -102,7 +101,6 @@ engine engine_(
 	.padding				(padding),
 	.stride					(stride),
 	.stride2				(stride2),
-	.stride3				(stride3),
 	.kernel					(kernel),
 	.kernel_size			(kernel_size),
 	.i_channel				(i_channel),

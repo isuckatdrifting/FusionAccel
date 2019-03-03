@@ -13,7 +13,6 @@ reg [2:0] 	op_type;
 reg			padding;
 reg	[3:0]	stride;
 reg [15:0]  stride2;
-reg [15:0]  stride3;
 reg [7:0]  	kernel;
 reg [7:0]	kernel_size;
 reg [15:0]  i_channel;
@@ -122,7 +121,6 @@ engine engine_(
 	.padding				(padding),
 	.stride					(stride),
 	.stride2				(stride2),
-	.stride3				(stride3),
 	.kernel					(kernel),
 	.kernel_size			(kernel_size),
 	.i_channel				(i_channel),
@@ -174,7 +172,7 @@ initial begin
     clk = 0;
     m = 0; n = 0; offset = 0;
     engine_valid = 0;
-    op_type = 0; padding = 0; stride = 0; stride2 = 0; stride3 = 0; 
+    op_type = 0; padding = 0; stride = 0; stride2 = 0;
 	kernel = 0; kernel_size = 0; i_channel = 0; o_channel = 0; i_side = 0; o_side = 0; 
 	dma_p2_ob_data = 16'h0000;
 	dma_p3_ob_data = 16'h0000;
@@ -185,7 +183,7 @@ initial begin
 	p0_state = 0; p1_state = 0; p2_state = 0; p3_state = 0;
     #20 rst = 1;
     #10 rst = 0;
-    #100 op_type = 1; padding = 0; stride = 2; stride2 = 6; stride3 = 681;
+    #100 op_type = 1; padding = 0; stride = 2; stride2 = 6;
 		kernel = 3; kernel_size = 9; i_channel = 3; o_channel = 1; i_side = 227; o_side = 113; 
     #10 engine_valid = 1; 
 end
