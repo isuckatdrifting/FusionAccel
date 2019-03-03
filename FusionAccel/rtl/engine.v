@@ -64,32 +64,32 @@ wire maxpool_ready, avepool_ready;
 
 //Data BUF and Weight BUF of serializer
 reg  [16*`BURST_LEN-1:0] dbuf; 	// serial buffer
-reg  [15:0] wbuf [0:`BURST_LEN*9-1]; // serial buffer
+reg  [16*`BURST_LEN-1:0] wbuf [8:0]; // serial buffer
 
 reg  [16*`BURST_LEN-1:0] data; 	// parallel
-wire [15:0] weight [0:`BURST_LEN-1]; // parallel 3x3xBURST_LEN, wired out from weight_cache
-wire [15:0] tmp_sum [0:`BURST_LEN-1];// paralle, wired out from cmac_sum
+wire [16*`BURST_LEN-1:0] weight; // parallel 3x3xBURST_LEN, wired out from weight_cache
+wire [15:0] tmp_sum [`BURST_LEN-1:0];// paralle, wired out from cmac_sum
 reg  [7:0]  dma_p2_burst_cnt, dma_p3_burst_cnt, dma_p3_offset; // de-serializer counter, burst get 16 data, then send to operation unit.
 //Result registers of cmac/sacc/scmp
-wire [15:0] conv_result [0:`BURST_LEN-1]; // parallel
-reg  [15:0] cmac_result [0:`BURST_LEN-1];
-wire [15:0] maxpool_result [0:`BURST_LEN-1]; // parallel
-wire [15:0] avepool_result [0:`BURST_LEN-1]; // parallel
+wire [15:0] conv_result [`BURST_LEN-1:0]; // parallel
+reg  [15:0] cmac_result [`BURST_LEN-1:0];
+wire [15:0] maxpool_result [`BURST_LEN-1:0]; // parallel
+wire [15:0] avepool_result [`BURST_LEN-1:0]; // parallel
 
 //pipeline registers
 reg  [7:0]  atom_count;						//NOTES: atom count is used only in address parsing, it is not used in operation logic
 reg  [7:0]  pipe_count;						//NOTES: counter for data reuse on one data
 reg  [7:0]  pipe2_count;
 reg  [15:0] line_count;						//NOTES: counter for one gemm line, range:(0, kernel * o_side)
-reg  [7:0]  cache_count [0:2]; 				//FIXME: use max conv side support defined in include files.
+reg  [7:0]  cache_count [2:0]; 				//FIXME: use max conv side support defined in include files.
 reg  [7:0]  result_count;					//NOTES: counter for results in single cmac reuse
-reg  [7:0]  sum_count [0:2];				//NOTES: counter for results in a kernel_size
+reg  [7:0]  sum_count [2:0];				//NOTES: counter for results in a kernel_size
 reg  [7:0]  sum_index;						//NOTES: counter for the nth kernel sum to psum
-reg  [15:0] weight_cache [0:2][0:`BURST_LEN-1];		//NOTES: memory for storing cmac reuse input weight // FIXME: use bram
-reg  [15:0] cmac_sum [0:2][0:`BURST_LEN-1];	//NOTES: memory for storing cmac reuse output sum // FIXME: use bram
+reg  [16*`BURST_LEN-1:0] weight_cache [2:0];		//NOTES: memory for storing cmac reuse input weight // FIXME: use bram
+reg  [15:0] cmac_sum [2:0][`BURST_LEN-1:0];	//NOTES: memory for storing cmac reuse output sum // FIXME: use bram
 reg  [2:0]  cache_sel;
 
-reg  [15:0] psum [0:`BURST_LEN-1];			//NOTES: registers for 16-channel sum output, it is selected from the memory cmac_sum
+reg  [15:0] psum [`BURST_LEN-1:0];			//NOTES: registers for 16-channel sum output, it is selected from the memory cmac_sum
 
 //Full sum registers
 //reg  [15:0] sum [0:127]; //max support 128 x 128 output side // FIXME: use bram
@@ -125,7 +125,7 @@ reg			dma_p0_ib_valid, dma_p1_ib_valid;
 genvar i;
 generate 
 	for (i = 0; i < `BURST_LEN; i = i + 1) begin: gencmac
-		cmac cmac_(.clk(clk), .rst(rst), .data(data[i +: 16]), .weight(weight[i]), .result(conv_result[i]), .tmp_sum(tmp_sum[i]), .mult_ready_buf(mult_ready_buf[i]), .conv_valid(conv_valid), .data_ready(cmac_data_ready), .data_valid(cmac_data_valid[i]), .conv_ready(rdy_cmac[i]));
+		cmac cmac_(.clk(clk), .rst(rst), .data(data[i +: 16]), .weight(weight[i +: 16]), .result(conv_result[i]), .tmp_sum(tmp_sum[i]), .mult_ready_buf(mult_ready_buf[i]), .conv_valid(conv_valid), .data_ready(cmac_data_ready), .data_valid(cmac_data_valid[i]), .conv_ready(rdy_cmac[i]));
 		
 		always @(posedge clk) cmac_result[i] <= conv_result[i];
 		always @(posedge clk) cmac_ready[i] <= rdy_cmac[i];
@@ -207,10 +207,11 @@ end
 genvar m;
 generate
 	for(m=0;m<`BURST_LEN;m=m+1) begin: weight_to_cmac
-		assign weight[m] = weight_cache[pipe_count][m];
 		assign tmp_sum[m] = cmac_sum[pipe2_count][m];
 	end
 endgenerate
+
+assign weight = weight_cache[pipe_count];
 
 integer a;
 //    Output, non-blocking
@@ -227,9 +228,12 @@ always @ (posedge clk or posedge rst) begin
 		for(a=0;a<`BURST_LEN;a=a+1) begin
 			psum[a] <= 16'h0000;
 		end
-		for(a=0;a<`BURST_LEN*9;a=a+1) begin
-			wbuf[a] <= 16'h0000;
-		end
+		wbuf[0] <= 256'd0; wbuf[1] <= 256'd0; wbuf[2] <= 256'd0; 
+		wbuf[3] <= 256'd0; wbuf[4] <= 256'd0; wbuf[5] <= 256'd0; 
+		wbuf[6] <= 256'd0; wbuf[7] <= 256'd0; wbuf[8] <= 256'd0; 
+		//for(a=0;a<`BURST_LEN*9;a=a+1) begin
+		//	wbuf[a] <= 16'h0000;
+		//end
 		//==================== Slot registers ====================
 		for(a=0;a<3;a=a+1) begin 
 			cache_count[a] <= 8'h00;
@@ -237,9 +241,9 @@ always @ (posedge clk or posedge rst) begin
 		end
 		cache_sel <= 3'b000;
 		for(a=0;a<`BURST_LEN;a=a+1) begin
-			weight_cache[0][a] <= 16'h0000; weight_cache[1][a] <= 16'h0000; weight_cache[2][a] <= 16'h0000;
 			cmac_sum[0][a] <= 16'h0000; cmac_sum[1][a] <= 16'h0000; cmac_sum[2][a] <= 16'h0000;
 		end
+		weight_cache[0] <= 256'd0; weight_cache[1] <= 256'd0; weight_cache[2] <= 256'd0;
 		cmac_enable <= 0; cmac_data_ready <= 0; 
 		atom_count <= 8'h00; pipe_count <= 8'h00; pipe2_count <= 8'h00; line_count <= 16'h0000; result_count <= 8'h00;
 		sum_index <= 8'h00;
@@ -275,9 +279,9 @@ always @ (posedge clk or posedge rst) begin
 				for(a=0;a<`BURST_LEN;a=a+1) begin
 					psum[a] <= 16'h0000;
 				end
-				for(a=0;a<`BURST_LEN*9;a=a+1) begin
-					wbuf[a] <= 16'h0000;
-				end
+				wbuf[0] <= 256'd0; wbuf[1] <= 256'd0; wbuf[2] <= 256'd0; 
+				wbuf[3] <= 256'd0; wbuf[4] <= 256'd0; wbuf[5] <= 256'd0; 
+				wbuf[6] <= 256'd0; wbuf[7] <= 256'd0; wbuf[8] <= 256'd0; 
 				//==================== Slot registers ====================
 				for(a=0;a<3;a=a+1) begin 
 					cache_count[a] <= 8'h00;
@@ -285,9 +289,9 @@ always @ (posedge clk or posedge rst) begin
 				end
 				cache_sel <= 3'b000;
 				for(a=0;a<`BURST_LEN;a=a+1) begin
-					weight_cache[0][a] <= 16'h0000; weight_cache[1][a] <= 16'h0000; weight_cache[2][a] <= 16'h0000;
 					cmac_sum[0][a] <= 16'h0000; cmac_sum[1][a] <= 16'h0000; cmac_sum[2][a] <= 16'h0000;
 				end
+				weight_cache[0] <= 256'd0; weight_cache[1] <= 256'd0; weight_cache[2] <= 256'd0;
 				cmac_enable <= 0; cmac_data_ready <= 0; 
 				atom_count <= 8'h00; pipe_count <= 8'h00; pipe2_count <= 8'h00; line_count <= 16'h0000; result_count <= 8'h00;
 				sum_index <= 8'h00;
@@ -323,7 +327,7 @@ always @ (posedge clk or posedge rst) begin
 									end
 								end
 							end
-							dbuf <= {dbuf[16*(`BURST_LEN-1)-1:0],dma_p2_ob_data}; // deserialize data to dbuf
+							dbuf <= {dma_p2_ob_data, dbuf[255 : 16]}; // deserialize data to dbuf
 							data_addr_offset <= data_addr_offset + 1;
 							if(data_addr_offset + 1 == `BURST_LEN) begin
 								data_addr_offset <= 0;
@@ -338,7 +342,8 @@ always @ (posedge clk or posedge rst) begin
 								dma_p3_burst_cnt <= 0;
 								dma_p3_offset <= dma_p3_offset + 1;
 							end else dma_p3_burst_cnt <= dma_p3_burst_cnt + 1;
-							wbuf[{dma_p3_offset[3:0],4'b0000} + dma_p3_burst_cnt] <= dma_p3_ob_data; // wbuf is fixed in a channel operation of a GEMM //FIXME: replace multiplication of reg with new input
+							//wbuf[{dma_p3_offset[3:0],4'b0000} + dma_p3_burst_cnt] <= dma_p3_ob_data; // wbuf is fixed in a channel operation of a GEMM //FIXME: replace multiplication of reg with new input
+							wbuf[dma_p3_offset] <= {dma_p3_ob_data, wbuf[dma_p3_offset][255 : 16]};
 							weight_addr_offset <= weight_addr_offset + 1;
 							if(weight_addr_offset + 1 == `BURST_LEN) begin
 								weight_addr_offset <= 0;
@@ -381,11 +386,14 @@ always @ (posedge clk or posedge rst) begin
 								cache_sel[2] <= 0;
 							end
 							data <= dbuf;
-							for(a=0;a<`BURST_LEN;a=a+1) begin
-								weight_cache[0][a] <= cache_sel[0]?wbuf[a+{cache_count[0][3:0], 4'b0000}]:16'h0000; // << 4 = * 16
-								weight_cache[1][a] <= cache_sel[1]?wbuf[a+{cache_count[1][3:0], 4'b0000}]:16'h0000;
-								weight_cache[2][a] <= cache_sel[2]?wbuf[a+{cache_count[2][3:0], 4'b0000}]:16'h0000;
-							end
+							//for(a=0;a<`BURST_LEN;a=a+1) begin
+							//	weight_cache[0][a] <= cache_sel[0]?wbuf[a+{cache_count[0][3:0], 4'b0000}]:16'h0000; // << 4 = * 16
+							//	weight_cache[1][a] <= cache_sel[1]?wbuf[a+{cache_count[1][3:0], 4'b0000}]:16'h0000;
+							//	weight_cache[2][a] <= cache_sel[2]?wbuf[a+{cache_count[2][3:0], 4'b0000}]:16'h0000;
+							//end
+							weight_cache[0] <= cache_sel[0]? wbuf[cache_count[0][3:0]] : 16'h0000;
+							weight_cache[1] <= cache_sel[1]? wbuf[cache_count[1][3:0]] : 16'h0000;
+							weight_cache[2] <= cache_sel[2]? wbuf[cache_count[2][3:0]] : 16'h0000;
 							
 							atom_count <= atom_count + 1;
 							line_count <= line_count + 1;
