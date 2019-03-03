@@ -1,7 +1,7 @@
 ##############################################################
 #
 # Xilinx Core Generator version 14.7
-# Date: Sat Mar 02 15:50:50 2019
+# Date: Sun Mar 03 01:03:53 2019
 #
 ##############################################################
 #
@@ -61,7 +61,7 @@ CSET c_result_exponent_width=5
 CSET c_result_fraction_width=11
 CSET c_speed=Maximum_speed
 CSET component_name=multiplier
-CSET maximum_latency=false
+CSET maximum_latency=true
 CSET operation_type=Multiply
 CSET result_precision_type=Custom
 # END Parameters
@@ -69,4 +69,4 @@ CSET result_precision_type=Custom
 MISC pkg_timestamp=2012-07-02T11:22:24Z
 # END Extra information
 GENERATE
-# CRC: 9840c87b
+# CRC:  3c9c996

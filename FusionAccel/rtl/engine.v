@@ -9,10 +9,8 @@ module engine  //Instantiate 16CMACs for conv3x3, 16CMACs for conv1x1, maxpool a
 	input			padding,
 	input [3:0]		stride,		//TODO: valid check: stride < padding
 	input [7:0]		kernel,
-	input [15:0]	stride1,	//kernel * para
 	input [15:0]	stride2,	//kernel * stride
 	input [15:0]	stride3,	//kernel * i_side
-	input [15:0]    stride4,    //para * i_side
 	input [7:0]		kernel_size,
 	input [15:0]    i_channel,
 	input [15:0]	o_channel,
@@ -78,23 +76,23 @@ wire [15:0] maxpool_result [0:`BURST_LEN-1]; // parallel
 wire [15:0] avepool_result [0:`BURST_LEN-1]; // parallel
 
 //pipeline registers
-reg  [7:0]  atom_count;						//Notes: atom count is used only in address parsing, it is not used in operation logic
-reg  [7:0]  pipe_count;						//FIXME: change this name
+reg  [7:0]  atom_count;						//NOTES: atom count is used only in address parsing, it is not used in operation logic
+reg  [7:0]  pipe_count;						//NOTES: counter for data reuse on one data
 reg  [15:0] line_count;						//NOTES: counter for one gemm line, range:(0, kernel * o_side)
 reg  [7:0]  cache_count [0:2]; 				//FIXME: use max conv side support defined in include files.
 reg  [7:0]  idle_count [0:2]; 				//NOTES: counter for stride 
 reg  [7:0]  result_count;					//NOTES: counter for results in single cmac reuse
 reg  [7:0]  sum_count [0:2];				//NOTES: counter for results in a kernel_size
 reg  [7:0]  sum_index;						//NOTES: counter for the nth kernel sum to psum
-reg  [15:0] weight_cache [0:2][0:`BURST_LEN-1];		//NOTES: memory for storing cmac reuse input weight
-reg  [15:0] cmac_sum [0:2][0:`BURST_LEN-1];	//NOTES: memory for storing cmac reuse output sum
-reg  [15:0] cache_sum [0:2][0:`BURST_LEN-1];	//NOTES: memory for storing cmac reuse input tmp_sum
+reg  [15:0] weight_cache [0:2][0:`BURST_LEN-1];		//NOTES: memory for storing cmac reuse input weight // FIXME: use bram
+reg  [15:0] cmac_sum [0:2][0:`BURST_LEN-1];	//NOTES: memory for storing cmac reuse output sum // FIXME: use bram
+reg  [15:0] cache_sum [0:2][0:`BURST_LEN-1];	//NOTES: memory for storing cmac reuse input tmp_sum // FIXME: use bram
 reg  [2:0]  cache_sel;
 
 reg  [15:0] psum [0:`BURST_LEN-1];			//NOTES: registers for 16-channel sum output, it is selected from the memory cmac_sum
 
 //Full sum registers
-reg  [15:0] sum [0:127]; //max support 128 x 128 output side
+reg  [15:0] sum [0:127]; //max support 128 x 128 output side // FIXME: use bram
 reg  [15:0] fsum_a;
 reg  [15:0] fsum_b;
 wire [15:0] fsum_result;
@@ -121,8 +119,6 @@ reg [29:0]  gemm_addr, data_addr_block, weight_addr_block, result_addr_block, da
 reg [15:0]  dma_p0_ib_data, dma_p1_ib_data;
 reg			dma_p0_ib_valid, dma_p1_ib_valid;
 
-wire [15:0]  para;
-assign para = i_channel > 16? 16: i_channel;
 // NOTES: Generate accumulator for atom(1 * 1 * channel) and cube(k * k * channel), this data path is dedicated to convolution only.
 // NOTES: deserializer for write back is only enabled in pooling
 
@@ -193,7 +189,7 @@ always @ (*) begin
             next_state = init;
     endcase
 end
-//NOTES: MEC convolution: k * k kernel in PARA -> finish the line -> next channel group(channel += PARA) -> next_gemm
+//NOTES: MEC convolution: k * k kernel in BURST_LEN -> finish the line -> next channel group(channel += BURST_LEN) -> next_gemm
 //		 Register level:       cmac_sum -> cache_sum > psum -> sum
 //		 Counter level:		   atom_count -> line_count, cache_count, idle_count -> result_count, sum_count -> sum_index -> fsum_index
 //NOTES: Sum point is ready only after the all channel 3x3 kernel mac is complete
@@ -307,7 +303,7 @@ always @ (posedge clk or posedge rst) begin
 						//==================== PIPELINE STEP1: enable data read and weight read (this part is the slowest and defines the available timing space of the pipeline)
 						if(dma_p2_ob_we) begin
 							dma_p2_burst_cnt <= dma_p2_burst_cnt + 1;
-							if(dma_p2_burst_cnt + 1 == para) begin	//NOTES: start cmac when finishing reading the first atom (1x1xpara)
+							if(dma_p2_burst_cnt + 1 == `BURST_LEN) begin	//NOTES: start cmac when finishing reading the first atom (1x1xpara)
 								dma_p2_burst_cnt <= 0;
 								conv_valid <= 1;
 								if(&cmac_data_valid) begin
@@ -326,25 +322,25 @@ always @ (posedge clk or posedge rst) begin
 							end
 							dbuf[dma_p2_burst_cnt] <= dma_p2_ob_data; // deserialize data to dbuf
 							data_addr_offset <= data_addr_offset + 1;
-							if(data_addr_offset + 1 == para) begin
+							if(data_addr_offset + 1 == `BURST_LEN) begin
 								data_addr_offset <= 0;
-								data_addr_block <= data_addr_block + para;
+								data_addr_block <= data_addr_block + `BURST_LEN;
 								if(atom_count + 1 == kernel) begin
 									//jump to the next row
-									data_addr_block <= data_addr_block + stride4 - stride2; //(i_side - kernel) * para;
+									data_addr_block <= data_addr_block + {i_side[3:0], 4'b0000} - {kernel[3:0], 4'b0000}; //(i_side - kernel) * BURST_LEN;
 								end
 							end
 						end
 						if(dma_p3_ob_we) begin // @ this edge dma_p3_ob_data is also updated.
-							if(dma_p3_burst_cnt + 1 == para) begin
+							if(dma_p3_burst_cnt + 1 == `BURST_LEN) begin
 								dma_p3_burst_cnt <= 0;
 								dma_p3_offset <= dma_p3_offset + 1;
 							end else dma_p3_burst_cnt <= dma_p3_burst_cnt + 1;
 							wbuf[{dma_p3_offset[3:0],4'b0000} + dma_p3_burst_cnt] <= dma_p3_ob_data; // wbuf is fixed in a channel operation of a GEMM //FIXME: replace multiplication of reg with new input
 							weight_addr_offset <= weight_addr_offset + 1;
-							if(weight_addr_offset + 1 == para) begin
+							if(weight_addr_offset + 1 == `BURST_LEN) begin
 								weight_addr_offset <= 0;
-								weight_addr_block <= weight_addr_block + para;
+								weight_addr_block <= weight_addr_block + `BURST_LEN;
 							end
 						end
 						if(dma_p3_offset == kernel_size) begin
@@ -380,7 +376,7 @@ always @ (posedge clk or posedge rst) begin
 								data[a] <= dbuf[a];
 							end
 							for(a=0;a<`BURST_LEN;a=a+1) begin
-								weight_cache[0][a] <= cache_sel[0]?wbuf[a+{cache_count[0][3:0], 4'b0000}]:16'h0000; //FIXME: replace multiplication of reg with new input
+								weight_cache[0][a] <= cache_sel[0]?wbuf[a+{cache_count[0][3:0], 4'b0000}]:16'h0000; // << 4 = * 16
 								weight_cache[1][a] <= cache_sel[1]?wbuf[a+{cache_count[1][3:0], 4'b0000}]:16'h0000;
 								weight_cache[2][a] <= cache_sel[2]?wbuf[a+{cache_count[2][3:0], 4'b0000}]:16'h0000;
 							end
@@ -395,44 +391,44 @@ always @ (posedge clk or posedge rst) begin
 								atom_count <= 0;
 							end
 							//for(a=0;a<3;a=a+1) begin
-								if(line_count + 1 <= 0) begin //FIXME: replace multiplication of reg with new input
+								if(line_count + 1 <= 0) begin // stride2 * a
 									cache_count[0] <= 0;
 								end else if(cache_count[0] + 1 < kernel_size && idle_count[0] == 0 && (kernel - stride) >= 0) begin
 									cache_count[0] <= cache_count[0] + 1;
 								end else begin
 									cache_count[0] <= 0;
-									if(idle_count[0] + kernel == stride2) begin //FIXME: replace multiplication of reg with new input
+									if(idle_count[0] + kernel == stride2) begin // stride
 										idle_count[0] <= 0;
 									end else begin
 										idle_count[0] <= idle_count[0] + 1;
 									end
 								end
-								if(line_count + 1 <= stride2) begin //FIXME: replace multiplication of reg with new input
+								if(line_count + 1 <= stride2) begin
 									cache_count[1] <= 0;
 								end else if(cache_count[1] + 1 < kernel_size && idle_count[1] == 0 && (kernel - stride) >= 1) begin
 									cache_count[1] <= cache_count[1] + 1;
 								end else begin
 									cache_count[1] <= 0;
-									if(idle_count[1] + kernel == stride2) begin //FIXME: replace multiplication of reg with new input
+									if(idle_count[1] + kernel == stride2) begin
 										idle_count[1] <= 0;
 									end else begin
 										idle_count[1] <= idle_count[1] + 1;
 									end
 								end
-								if(line_count + 1 <= stride2 + stride2) begin //FIXME: replace multiplication of reg with new input
+								if(line_count + 1 <= stride2 + stride2) begin
 									cache_count[2] <= 0;
 								end else if(cache_count[2] + 1 < kernel_size && idle_count[2] == 0 && (kernel - stride) >= 2) begin
 									cache_count[2] <= cache_count[2] + 1;
 								end else begin
 									cache_count[2] <= 0;
-									if(idle_count[2] + kernel == stride2) begin //FIXME: replace multiplication of reg with new input
+									if(idle_count[2] + kernel == stride2) begin
 										idle_count[2] <= 0;
 									end else begin
 										idle_count[2] <= idle_count[2] + 1;
 									end
 								end
 							//end
-							if(line_count + 1 == stride3) begin //FIXME: replace multiplication of reg with new input
+							if(line_count + 1 == stride3) begin
 								line_count <= 0;
 								for(a=0;a<3;a=a+1) begin
 									cache_count[a] <= 0; //clear the counter and start a new channel group
@@ -443,7 +439,7 @@ always @ (posedge clk or posedge rst) begin
 							cmac_enable <= 0; // sync reset to generate a 1-cycle pulse
 						end
 
-						//==================== PIPELINE STEP3: Partial SUM of para outputs
+						//==================== PIPELINE STEP3: Partial SUM of channel outputs
 						if(result_count + 1 == kernel - stride + 1) begin
 							result_count <= 0;
 							for(a=0;a<3;a=a+1) begin
@@ -452,13 +448,11 @@ always @ (posedge clk or posedge rst) begin
 							for(a=0;a<3;a=a+1) begin
 								if(sum_count[a] + 1 == kernel_size) begin
 									sum_index <= sum_index + 1;
-									//if(sum_index + 1 == o_side) begin //NOTES: use async clear
-									//	sum_index <= 0;
-									//end
 									for(b=0;b<`BURST_LEN;b=b+1) begin
 										psum[b] <= cmac_sum[a][b];
 									end
 									fsum_enable <= 1; //Trigger for channel partial sum
+									fsum_count <= 0;
 								end
 							end
 						end else if(&cmac_ready) begin
@@ -474,21 +468,21 @@ always @ (posedge clk or posedge rst) begin
 						if(fsum_data_valid) begin
 							fsum_data_ready <= fsum_enable;
 						end
-						fsum_b <= psum[fsum_count];
 						if(fsum_enable) begin
-							if(fsum_count == 0) fsum_a <= sum[sum_index]; //accumulated sum is called after the first channel group
+							if(fsum_count == 0) fsum_a <= sum[fsum_index]; //accumulated sum is called after the first channel group
 							else fsum_a <= fsum_result;
-							fsum_count <= fsum_count + 1;
-						end
-						if(fsum_count + 1 == para) begin
-							fsum_count <= 0;
+							fsum_b <= psum[fsum_count];
+							if(fsum_count < `BURST_LEN) fsum_count <= fsum_count + 1;
 							fsum_enable <= 0;
 						end
 						if(fsum_ready) begin
-							if(fsum_count == 0) fsum_index <= sum_index; //pipeline index sampling (delay align)
-							sum[fsum_index] <= fsum_result; //it will overwrite the fsum_result in the first c-1 channel groups
-							dma_p0_ib_data <= fsum_result;
-							if(i_channel_count + para == i_channel) begin
+							if(fsum_count < `BURST_LEN) fsum_enable <= 1;
+							if(fsum_count == `BURST_LEN) begin
+								fsum_index <= sum_index; //pipeline index sampling (delay align)
+								sum[fsum_index] <= fsum_result; //it will overwrite the fsum_result in the first c-1 channel groups
+								dma_p0_ib_data <= fsum_result;
+							end
+							if(i_channel_count + `BURST_LEN >= i_channel && fsum_count == `BURST_LEN) begin
 								dma_p0_writes_en <= 1; // TODO: Update start addr @ the same edge of writes_en
 							end
 						end
@@ -497,14 +491,14 @@ always @ (posedge clk or posedge rst) begin
 			end
 			//==================== Update cross-channel counters and address
 			gemm_clear: begin
-				if(i_channel_count + para < i_channel) begin
-					i_channel_count <= i_channel_count + para; // within channel operation the address is not updated
+				if(i_channel_count + `BURST_LEN < i_channel) begin
+					i_channel_count <= i_channel_count + `BURST_LEN; // within channel operation the address is not updated
 				end else begin
 					i_channel_count <= 0;
-					gemm_count <= gemm_count + 1; //TODO: gemm addr parsing //NOTES: a gemm is finished
+					gemm_count <= gemm_count + 1; //NOTES: a gemm is finished
 					//updating gemm addr only after finishing the whole line + channel and data addr_block
-					gemm_addr <= gemm_addr + stride1; //NOTES: kernel > stride >= 1
-					data_addr_block <= gemm_addr + stride1;
+					gemm_addr <= gemm_addr + {stride[3:0], 4'b0000}; //NOTES: gemm addr parsing. kernel > stride >= 1
+					data_addr_block <= gemm_addr + {stride[3:0], 4'b0000};
 					if(gemm_count + 1 == o_side) begin
 						gemm_count <= 0;
 						o_channel_count <= o_channel_count + 1; //NOTES: start the next weight group

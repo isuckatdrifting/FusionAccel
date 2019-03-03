@@ -1332,8 +1332,8 @@
       <obj_property name="ObjectShortName">fsum_data_ready</obj_property>
    </wvobject>
    <wvobject fp_name="/engine_tb/engine_/fsum_count" type="array" db_ref_id="1">
-      <obj_property name="ElementShortName">fsum_count[15:0]</obj_property>
-      <obj_property name="ObjectShortName">fsum_count[15:0]</obj_property>
+      <obj_property name="ElementShortName">fsum_count[7:0]</obj_property>
+      <obj_property name="ObjectShortName">fsum_count[7:0]</obj_property>
       <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
    </wvobject>
    <wvobject fp_name="/engine_tb/engine_/fsum_a" type="array" db_ref_id="1">
