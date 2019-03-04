@@ -10,7 +10,7 @@
          </top_modules>
       </db_ref>
    </db_ref_list>
-   <WVObjectSize size="75" />
+   <WVObjectSize size="81" />
    <wvobject fp_name="/engine_tb/engine_/clk" type="logic" db_ref_id="1">
       <obj_property name="ElementShortName">clk</obj_property>
       <obj_property name="ObjectShortName">clk</obj_property>
@@ -130,10 +130,30 @@
       <obj_property name="ObjectShortName">dma_p2_burst_cnt[7:0]</obj_property>
       <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
    </wvobject>
+   <wvobject fp_name="/engine_tb/p2_addr" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">p2_addr[29:0]</obj_property>
+      <obj_property name="ObjectShortName">p2_addr[29:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/data_addr_block" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">data_addr_block[29:0]</obj_property>
+      <obj_property name="ObjectShortName">data_addr_block[29:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/data_addr_offset" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">data_addr_offset[29:0]</obj_property>
+      <obj_property name="ObjectShortName">data_addr_offset[29:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
    <wvobject fp_name="/engine_tb/engine_/dma_p3_offset" type="array" db_ref_id="1">
       <obj_property name="ElementShortName">dma_p3_offset[7:0]</obj_property>
       <obj_property name="ObjectShortName">dma_p3_offset[7:0]</obj_property>
       <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/p3_addr" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">p3_addr[29:0]</obj_property>
+      <obj_property name="ObjectShortName">p3_addr[29:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
    </wvobject>
    <wvobject fp_name="/engine_tb/engine_/dma_p3_burst_cnt" type="array" db_ref_id="1">
       <obj_property name="ElementShortName">dma_p3_burst_cnt[7:0]</obj_property>
@@ -342,11 +362,6 @@
          <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
       </wvobject>
    </wvobject>
-   <wvobject fp_name="/engine_tb/engine_/sum_index" type="array" db_ref_id="1">
-      <obj_property name="ElementShortName">sum_index[7:0]</obj_property>
-      <obj_property name="ObjectShortName">sum_index[7:0]</obj_property>
-      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
-   </wvobject>
    <wvobject fp_name="divider87" type="divider">
       <obj_property name="label">Counters</obj_property>
       <obj_property name="DisplayName">label</obj_property>
@@ -478,6 +493,21 @@
    <wvobject fp_name="/engine_tb/engine_/dma_p0_ib_data" type="array" db_ref_id="1">
       <obj_property name="ElementShortName">dma_p0_ib_data[15:0]</obj_property>
       <obj_property name="ObjectShortName">dma_p0_ib_data[15:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/p0_addr" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">p0_addr[29:0]</obj_property>
+      <obj_property name="ObjectShortName">p0_addr[29:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/result_addr_block" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">result_addr_block[29:0]</obj_property>
+      <obj_property name="ObjectShortName">result_addr_block[29:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/result_addr_offset" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">result_addr_offset[29:0]</obj_property>
+      <obj_property name="ObjectShortName">result_addr_offset[29:0]</obj_property>
       <obj_property name="Radix">HEXRADIX</obj_property>
    </wvobject>
 </wave_config>
