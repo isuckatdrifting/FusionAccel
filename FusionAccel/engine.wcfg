@@ -10,7 +10,7 @@
          </top_modules>
       </db_ref>
    </db_ref_list>
-   <WVObjectSize size="21" />
+   <WVObjectSize size="25" />
    <wvobject fp_name="group313" type="group">
       <obj_property name="label">convolution</obj_property>
       <obj_property name="DisplayName">label</obj_property>
@@ -567,11 +567,6 @@
       <obj_property name="ObjectShortName">data[15:0]</obj_property>
       <obj_property name="Radix">HEXRADIX</obj_property>
    </wvobject>
-   <wvobject fp_name="/engine_tb/engine_/\gensacc[1].sacc_ /data" type="array" db_ref_id="1">
-      <obj_property name="ElementShortName">data[15:0]</obj_property>
-      <obj_property name="ObjectShortName">data[15:0]</obj_property>
-      <obj_property name="Radix">HEXRADIX</obj_property>
-   </wvobject>
    <wvobject fp_name="/engine_tb/engine_/\gensacc[0].sacc_ /pool_valid" type="logic" db_ref_id="1">
       <obj_property name="ElementShortName">pool_valid</obj_property>
       <obj_property name="ObjectShortName">pool_valid</obj_property>
@@ -593,6 +588,25 @@
       <obj_property name="ElementShortName">acc_ready</obj_property>
       <obj_property name="ObjectShortName">acc_ready</obj_property>
    </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/\gensacc[0].sacc_ /operation_nd_div" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">operation_nd_div</obj_property>
+      <obj_property name="ObjectShortName">operation_nd_div</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/\gensacc[0].sacc_ /a_div" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">a_div[15:0]</obj_property>
+      <obj_property name="ObjectShortName">a_div[15:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/\gensacc[0].sacc_ /b_div" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">b_div[15:0]</obj_property>
+      <obj_property name="ObjectShortName">b_div[15:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/\gensacc[0].sacc_ /result_div" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">result_div[15:0]</obj_property>
+      <obj_property name="ObjectShortName">result_div[15:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
    <wvobject fp_name="/engine_tb/engine_/\gensacc[0].sacc_ /result" type="array" db_ref_id="1">
       <obj_property name="ElementShortName">result[15:0]</obj_property>
       <obj_property name="ObjectShortName">result[15:0]</obj_property>
@@ -610,5 +624,10 @@
    <wvobject fp_name="/engine_tb/engine_/sacc_ready" type="array" db_ref_id="1">
       <obj_property name="ElementShortName">sacc_ready[7:0]</obj_property>
       <obj_property name="ObjectShortName">sacc_ready[7:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/fsum_index" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">fsum_index[7:0]</obj_property>
+      <obj_property name="ObjectShortName">fsum_index[7:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
    </wvobject>
 </wave_config>

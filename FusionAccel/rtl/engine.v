@@ -78,7 +78,7 @@ wire [16*`BURST_LEN-1:0] avepool_result; // parallel
 reg  [16*`BURST_LEN-1:0] sacc_result;
 reg  [16*`BURST_LEN-1:0] scmp_result;
 
-reg div_en;
+reg div_en, div_finish;
 //pipeline registers
 reg  [7:0]  atom_count;						//NOTES: atom count is used only in address parsing, it is not used in operation logic
 reg  [7:0]  pipe_count;						//NOTES: counter for data reuse on one data
@@ -160,13 +160,11 @@ always @(posedge clk) scmp_ready <= rdy_scmp;
 
 //State Machine
 localparam init 		= 4'b0000;
-localparam gemm_idle 	= 4'b0001;
+localparam idle 		= 4'b0001;
 localparam gemm_busy 	= 4'b0010;
 localparam gemm_clear 	= 4'b0011;
-localparam sacc_idle 	= 4'b0100;
 localparam sacc_busy 	= 4'b0101;
 localparam sacc_clear 	= 4'b0110;
-localparam scmp_idle 	= 4'b0111;
 localparam scmp_busy 	= 4'b1000;
 localparam scmp_clear 	= 4'b1001;
 localparam finish 		= 4'b1010;
@@ -188,43 +186,38 @@ always @ (*) begin
     case (curr_state)
 		init: begin
 			if(engine_valid) begin
-				case(op_type)
-					1: next_state = gemm_idle;
-					4: next_state = scmp_idle;
-					5: next_state = sacc_idle;
-				endcase
+				next_state <= idle;
 			end
 			else next_state = init;
 		end
-        gemm_idle: begin
-            next_state = gemm_busy;
+        idle: begin
+			case(op_type)
+				1: next_state = gemm_busy;
+				4: next_state = scmp_busy;
+				5: next_state = sacc_busy;
+			endcase
         end
 		gemm_busy: begin
 			if(fsum_index == o_side) next_state = gemm_clear;
 			else next_state = gemm_busy;
 		end
 		gemm_clear: begin
-			next_state = gemm_idle;
+			next_state = idle;
 		end
 		
-		scmp_idle: begin
-			next_state = scmp_busy;
-		end
 		scmp_busy: begin
 			next_state = scmp_busy;
 		end
 		scmp_clear: begin
-			next_state = scmp_clear;
+			next_state = idle;
 		end
 
-		sacc_idle: begin
-			next_state = sacc_busy;
-		end
 		sacc_busy: begin
-			next_state = sacc_busy;
+			if(div_finish) next_state = sacc_clear;
+			else next_state = sacc_busy;
 		end
 		sacc_clear: begin
-			next_state = sacc_idle;
+			next_state = idle;
 		end
 
 		finish: begin
@@ -269,7 +262,7 @@ always @ (posedge clk or posedge rst) begin
 		sum_count[0] <= 8'h00; sum_count[1] <= 8'h00; sum_count[2] <= 8'h00;
 		cmac_sum[0] <= 'd0; cmac_sum[1] <= 'd0; cmac_sum[2] <= 'd0;
 		weight_cache[0] <= 'd0; weight_cache[1] <= 'd0; weight_cache[2] <= 'd0;
-		cmac_enable <= 0; cmac_data_ready <= 0; avepool_enable <= 0; avepool_data_ready <= 0; maxpool_enable <= 0; maxpool_data_ready <= 0; div_en <= 0; //FIXME: unite names
+		cmac_enable <= 0; cmac_data_ready <= 0; avepool_enable <= 0; avepool_data_ready <= 0; maxpool_enable <= 0; maxpool_data_ready <= 0; div_en <= 0; div_finish <= 0; //FIXME: unite names
 		atom_count <= 8'h00; pipe_count <= 8'h00; pipe2_count <= 8'h00; line_count <= 16'h0000; result_count <= 8'h00;
 		fsum_enable <= 0; fsum_data_ready <= 0;
 		fsum_a <= 16'h0000; fsum_b <= 16'h0000; fsum_count <= 8'h00; fsum_index <= 8'h00;
@@ -289,7 +282,7 @@ always @ (posedge clk or posedge rst) begin
 				gemm_addr <= data_start_addr;
 			end
 			//==================== Clear all registers except cross-channel registers ====================
-			gemm_idle: begin 
+			idle: begin 
 				conv_valid <= 0; avepool_valid <= 0; maxpool_valid <= 0; engine_ready <= 0;
 				dma_p2_burst_cnt <= 16'h0000; dma_p3_burst_cnt <= 16'h0000; dma_p3_offset <= 8'h00;
 				dma_p0_writes_en <= 0; dma_p1_writes_en <= 0;
@@ -307,7 +300,7 @@ always @ (posedge clk or posedge rst) begin
 				//cache_sel <= 3'b000;
 				cmac_sum[0] <= 'd0; cmac_sum[1] <= 'd0; cmac_sum[2] <= 'd0;
 				weight_cache[0] <= 'd0; weight_cache[1] <= 'd0; weight_cache[2] <= 'd0;
-				cmac_enable <= 0; cmac_data_ready <= 0; avepool_enable <= 0; avepool_data_ready <= 0; maxpool_enable <= 0; maxpool_data_ready <= 0; div_en <= 0; //FIXME: unite names
+				cmac_enable <= 0; cmac_data_ready <= 0; avepool_enable <= 0; avepool_data_ready <= 0; maxpool_enable <= 0; maxpool_data_ready <= 0; div_en <= 0; div_finish <= 0; //FIXME: unite names
 				atom_count <= 8'h00; pipe_count <= 8'h00; pipe2_count <= 8'h00; line_count <= 16'h0000; result_count <= 8'h00;
 				fsum_enable <= 0; fsum_data_ready <= 0;
 				fsum_a <= 16'h0000; fsum_b <= 16'h0000; fsum_count <= 8'h00; fsum_index <= 8'h00;
@@ -423,8 +416,6 @@ always @ (posedge clk or posedge rst) begin
 				end
 			end
 
-			scmp_idle: begin
-			end
 			//==================== MAXPOOLING: Process a line ====================
 			scmp_busy: begin
 				p2_addr <= data_addr_block + data_addr_offset; //NOTES: Update start addr @ the same edge of reads_en
@@ -453,8 +444,6 @@ always @ (posedge clk or posedge rst) begin
 			scmp_clear: begin
 			end
 
-			sacc_idle: begin
-			end
 			//==================== AVEPOOLING: Process a line * surface ====================
 			sacc_busy: begin
 				p2_addr <= data_addr_block + data_addr_offset; //NOTES: Update start addr @ the same edge of reads_en
@@ -494,7 +483,14 @@ always @ (posedge clk or posedge rst) begin
 					tmp_sum_sacc <= sacc_result;
 					fsum_index <= fsum_index + 1;
 				end
-				//TODO: divide trigger
+				if(fsum_index == kernel_size) begin
+					div_en <= 1; //NOTES: divide trigger
+				end
+				if(div_en && sacc_ready) begin
+					div_en <= 0;
+					div_finish <= 1;
+					dma_p0_writes_en <= 1; //Writeback all channels
+				end
 			end
 			sacc_clear: begin
 			end
