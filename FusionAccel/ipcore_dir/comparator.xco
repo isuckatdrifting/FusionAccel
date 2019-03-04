@@ -1,7 +1,7 @@
 ##############################################################
 #
 # Xilinx Core Generator version 14.7
-# Date: Fri Feb 22 09:51:55 2019
+# Date: Mon Mar 04 11:17:29 2019
 #
 ##############################################################
 #
@@ -53,7 +53,7 @@ CSET c_has_overflow=false
 CSET c_has_rdy=true
 CSET c_has_sclr=false
 CSET c_has_underflow=false
-CSET c_latency=0
+CSET c_latency=2
 CSET c_mult_usage=No_Usage
 CSET c_optimization=Speed_Optimized
 CSET c_rate=1
@@ -61,7 +61,7 @@ CSET c_result_exponent_width=1
 CSET c_result_fraction_width=0
 CSET c_speed=Maximum_speed
 CSET component_name=comparator
-CSET maximum_latency=false
+CSET maximum_latency=true
 CSET operation_type=Compare
 CSET result_precision_type=Custom
 # END Parameters
@@ -69,4 +69,4 @@ CSET result_precision_type=Custom
 MISC pkg_timestamp=2012-07-02T11:22:24Z
 # END Extra information
 GENERATE
-# CRC: 47a84e86
+# CRC:  575f9e8

@@ -57,7 +57,7 @@ localparam APOOL = 5;
 
 reg  conv_valid, maxpool_valid, avepool_valid;
 wire [`BURST_LEN-1:0] cmac_data_valid, avepool_data_valid, maxpool_data_valid, mult_ready_buf;
-reg  cmac_data_ready, cmac_enable, avepool_data_ready, maxpool_data_ready;
+reg  cmac_data_ready, cmac_enable, avepool_data_ready, avepool_enable, maxpool_data_ready, maxpool_enable;
 wire [`BURST_LEN-1:0] rdy_cmac;
 reg  [`BURST_LEN-1:0] cmac_ready;
 wire maxpool_ready, avepool_ready;
@@ -140,23 +140,29 @@ always @(posedge clk) fsum_ready <= rdy_fsum;
 genvar k;
 generate
 	for (k = 0; k < `BURST_LEN; k = k + 1) begin: gensacc
-		sacc sacc_(.clk(clk), .rst(rst), .data(data[k +: 16]), .result(avepool_result[k]), .pool_valid(avepool_valid),  .data_ready(avepool_data_ready), .data_valid(avepool_data_valid[k]), .pool_ready(avepool_ready));
+		sacc sacc_(.clk(clk), .rst(rst), .data(data[k +: 16]), .result(avepool_result[k]), .tmp_sum(tmp_sum[k*16 +: 16]), .pool_valid(avepool_valid), .data_ready(avepool_data_ready), .data_valid(avepool_data_valid[k]), .sum_ready(), .div_en(), .pool_ready(avepool_ready));
 	end
 endgenerate
 
 genvar l;
 generate
-	for (l = 0; l < `BURST_LEN; l = l + 1) begin: gensacmp
+	for (l = 0; l < `BURST_LEN; l = l + 1) begin: genscmp
 		scmp scmp_(.clk(clk), .rst(rst), .data(data[l +: 16]), .result(maxpool_result[l]), .pool_valid(maxpool_valid), .data_ready(maxpool_data_ready), .data_valid(maxpool_data_valid[l]), .pool_ready(maxpool_ready));
 	end
 endgenerate
 
 //State Machine
-localparam init = 4'b0000;
-localparam idle = 4'b0001;
-localparam gemm_busy = 4'b0010;
-localparam gemm_clear = 4'b0011;
-localparam finish = 4'b0100;
+localparam init 		= 4'b0000;
+localparam gemm_idle 	= 4'b0001;
+localparam gemm_busy 	= 4'b0010;
+localparam gemm_clear 	= 4'b0011;
+localparam sacc_idle 	= 4'b0100;
+localparam sacc_busy 	= 4'b0101;
+localparam sacc_clear 	= 4'b0110;
+localparam scmp_idle 	= 4'b0111;
+localparam scmp_busy 	= 4'b1000;
+localparam scmp_clear 	= 4'b1001;
+localparam finish 		= 4'b1010;
 
 reg [3:0] curr_state;
 reg [3:0] next_state;
@@ -174,10 +180,16 @@ always @ (*) begin
     next_state = init;    //    Initialize
     case (curr_state)
 		init: begin
-			if(engine_valid) next_state = idle;
+			if(engine_valid) begin
+				case(op_type)
+					1: next_state = gemm_idle;
+					4: next_state = scmp_idle;
+					5: next_state = sacc_idle;
+				endcase
+			end
 			else next_state = init;
 		end
-        idle: begin
+        gemm_idle: begin
             next_state = gemm_busy;
         end
 		gemm_busy: begin
@@ -185,8 +197,29 @@ always @ (*) begin
 			else next_state = gemm_busy;
 		end
 		gemm_clear: begin
-			next_state = idle;
+			next_state = gemm_idle;
 		end
+		
+		scmp_idle: begin
+			next_state = scmp_busy;
+		end
+		scmp_busy: begin
+			next_state = scmp_busy;
+		end
+		scmp_clear: begin
+			next_state = scmp_clear;
+		end
+
+		sacc_idle: begin
+			next_state = sacc_busy;
+		end
+		sacc_busy: begin
+			next_state = sacc_busy;
+		end
+		sacc_clear: begin
+			next_state = sacc_idle;
+		end
+
 		finish: begin
 		end
         default:
@@ -229,7 +262,7 @@ always @ (posedge clk or posedge rst) begin
 		sum_count[0] <= 8'h00; sum_count[1] <= 8'h00; sum_count[2] <= 8'h00;
 		cmac_sum[0] <= 'd0; cmac_sum[1] <= 'd0; cmac_sum[2] <= 'd0;
 		weight_cache[0] <= 'd0; weight_cache[1] <= 'd0; weight_cache[2] <= 'd0;
-		cmac_enable <= 0; cmac_data_ready <= 0; 
+		cmac_enable <= 0; cmac_data_ready <= 0; avepool_enable <= 0; maxpool_enable <= 0;
 		atom_count <= 8'h00; pipe_count <= 8'h00; pipe2_count <= 8'h00; line_count <= 16'h0000; result_count <= 8'h00;
 		fsum_enable <= 0; fsum_data_ready <= 0;
 		fsum_a <= 16'h0000; fsum_b <= 16'h0000; fsum_count <= 8'h00; fsum_index <= 8'h00;
@@ -249,7 +282,7 @@ always @ (posedge clk or posedge rst) begin
 				gemm_addr <= data_start_addr;
 			end
 			//==================== Clear all registers except cross-channel registers ====================
-			idle: begin 
+			gemm_idle: begin 
 				conv_valid <= 0; avepool_valid <= 0; maxpool_valid <= 0; engine_ready <= 0;
 				dma_p2_burst_cnt <= 16'h0000; dma_p3_burst_cnt <= 16'h0000; dma_p3_offset <= 8'h00;
 				dma_p0_writes_en <= 0; dma_p1_writes_en <= 0;
@@ -267,7 +300,7 @@ always @ (posedge clk or posedge rst) begin
 				//cache_sel <= 3'b000;
 				cmac_sum[0] <= 'd0; cmac_sum[1] <= 'd0; cmac_sum[2] <= 'd0;
 				weight_cache[0] <= 'd0; weight_cache[1] <= 'd0; weight_cache[2] <= 'd0;
-				cmac_enable <= 0; cmac_data_ready <= 0; 
+				cmac_enable <= 0; cmac_data_ready <= 0; avepool_enable <= 0; maxpool_enable <= 0;
 				atom_count <= 8'h00; pipe_count <= 8'h00; pipe2_count <= 8'h00; line_count <= 16'h0000; result_count <= 8'h00;
 				fsum_enable <= 0; fsum_data_ready <= 0;
 				fsum_a <= 16'h0000; fsum_b <= 16'h0000; fsum_count <= 8'h00; fsum_index <= 8'h00;
@@ -275,100 +308,96 @@ always @ (posedge clk or posedge rst) begin
 			end
 			//==================== Process a line ====================
 			gemm_busy: begin
-				case (op_type) 
-					CONV: begin
-						p2_addr <= data_addr_block + data_addr_offset; p3_addr <= weight_addr_block + weight_addr_offset;//NOTES: Update start addr @ the same edge of reads_en
-						p0_addr <= result_addr_block + result_addr_offset;
-						dma_p2_reads_en <= 1; dma_p3_reads_en <= 1;
+				p2_addr <= data_addr_block + data_addr_offset; p3_addr <= weight_addr_block + weight_addr_offset;//NOTES: Update start addr @ the same edge of reads_en
+				p0_addr <= result_addr_block + result_addr_offset;
+				dma_p2_reads_en <= 1; dma_p3_reads_en <= 1;
 
-						//==================== PIPELINE STEP1: enable data read and weight read (this part is the slowest and defines the available timing space of the pipeline)
-						if(dma_p2_ob_we) begin
-							dma_p2_burst_cnt <= dma_p2_burst_cnt + 1;
-							if(dma_p2_burst_cnt + 1 == `BURST_LEN) begin	//NOTES: start cmac when finishing reading the first atom (1x1xpara)
-								dma_p2_burst_cnt <= 0;
-								conv_valid <= 1;
-								cmac_enable <= 1;	//NOTES: use this signal to latch buffer
-							end
-							dbuf <= {dma_p2_ob_data, dbuf[16*`BURST_LEN-1 : 16]}; // deserialize data to dbuf
-							data_addr_offset <= data_addr_offset + 1;
-							if(data_addr_offset + 1 == `BURST_LEN) begin
-								data_addr_offset <= 0;
-								data_addr_block <= data_addr_block + `BURST_LEN;
-								if(atom_count + 1 == kernel) begin //jump to the next row
-									data_addr_block <= data_addr_block + {(i_side - kernel), 4'b0000}; //(i_side - kernel) * BURST_LEN;
-								end
-							end
-						end
-						if(dma_p3_ob_we) begin // @ this edge dma_p3_ob_data is also updated.
-							if(dma_p3_burst_cnt + 1 == `BURST_LEN) begin
-								dma_p3_burst_cnt <= 0;
-								dma_p3_offset <= dma_p3_offset + 1;
-							end else dma_p3_burst_cnt <= dma_p3_burst_cnt + 1;
-							wbuf[dma_p3_offset] <= {dma_p3_ob_data, wbuf[dma_p3_offset][16*`BURST_LEN-1 : 16]};
-							weight_addr_offset <= weight_addr_offset + 1;
-							if(weight_addr_offset + 1 == `BURST_LEN) begin //do not need to jump, weights are continuous
-								weight_addr_offset <= 0;
-								weight_addr_block <= weight_addr_block + `BURST_LEN;
-							end
-						end
-						if(dma_p3_offset == kernel_size) begin
-							dma_p3_reads_en <= 0; // force sync reset to generate a 1-cycle pulse
-						end
-
-						//==================== PIPELINE STEP1.5: Generate data ready signal for cmac
-						if(cmac_enable) begin
-							cmac_data_ready <= 1;
-						end
-						if(cmac_data_ready) begin
-							pipe_count <= pipe_count + 1;
-						end
-						if(pipe_count == kernel - stride) begin //cmac_data_ready width is max of pipe_count
-							pipe_count <= 0;
-							cmac_data_ready <= 0;
-						end
-
-						if(mult_ready_buf == {`BURST_LEN{1'b1}}) begin
-							pipe2_count <= pipe2_count + 1;
-						end
-						if(pipe2_count == kernel - stride) begin
-							pipe2_count <= 0;
-						end
-						
-						//==================== PIPELINE STEP2: start passing deserialized data and weight to cmac/sacc/scmp (including weight reuse)
-						if(cmac_enable) begin
-							cmac_enable <= 0;
-							data <= dbuf;
-							
-							atom_count <= atom_count + 1;
-							line_count <= line_count + 1;
-							if(atom_count + 1 == kernel) begin
-								atom_count <= 0;
-							end
-							//==================== Logic for setting cache_count according to line_count
-							if(line_count >= 0 && (kernel - stride) >= 7'd0) begin // stride2 * a
-								cache_count[0] <= cache_count[0] + 1;
-								if(cache_count[0] < kernel_size) weight_cache[0] <= wbuf[cache_count[0]];
-							end 
-							if(cache_count[0] + 1 == kernel_size + stride2 - kernel) begin
-								cache_count[0] <= 0;
-							end
-							if(line_count >= stride2 && (kernel - stride) >= 7'd1) begin
-								cache_count[1] <= cache_count[1] + 1;
-								if(cache_count[1] < kernel_size) weight_cache[1] <= wbuf[cache_count[1]];
-							end 
-							if(cache_count[1] + 1 == kernel_size + stride2 - kernel) begin
-								cache_count[1] <= 0;
-							end
-							if(line_count >= stride2 + stride2 && (kernel - stride) >= 7'd2) begin
-								cache_count[2] <= cache_count[2] + 1;
-								if(cache_count[2] < kernel_size) weight_cache[2] <= wbuf[cache_count[2]];
-							end
-							if(cache_count[2] + 1 == kernel_size + stride2 - kernel) begin
-								cache_count[2] <= 0;
-							end
+				//==================== PIPELINE STEP1: enable data read and weight read (this part is the slowest and defines the available timing space of the pipeline)
+				if(dma_p2_ob_we) begin
+					dma_p2_burst_cnt <= dma_p2_burst_cnt + 1;
+					if(dma_p2_burst_cnt + 1 == `BURST_LEN) begin	//NOTES: start cmac when finishing reading the first atom (1x1xpara)
+						dma_p2_burst_cnt <= 0;
+						conv_valid <= 1;
+						cmac_enable <= 1;	//NOTES: use this signal to latch buffer
+					end
+					dbuf <= {dma_p2_ob_data, dbuf[16*`BURST_LEN-1 : 16]}; // deserialize data to dbuf
+					data_addr_offset <= data_addr_offset + 1;
+					if(data_addr_offset + 1 == `BURST_LEN) begin
+						data_addr_offset <= 0;
+						data_addr_block <= data_addr_block + `BURST_LEN;
+						if(atom_count + 1 == kernel) begin //jump to the next row
+							data_addr_block <= data_addr_block + {(i_side - kernel), 4'b0000}; //(i_side - kernel) * BURST_LEN;
 						end
 					end
-				endcase
+				end
+				if(dma_p3_ob_we) begin // @ this edge dma_p3_ob_data is also updated.
+					if(dma_p3_burst_cnt + 1 == `BURST_LEN) begin
+						dma_p3_burst_cnt <= 0;
+						dma_p3_offset <= dma_p3_offset + 1;
+					end else dma_p3_burst_cnt <= dma_p3_burst_cnt + 1;
+					wbuf[dma_p3_offset] <= {dma_p3_ob_data, wbuf[dma_p3_offset][16*`BURST_LEN-1 : 16]};
+					weight_addr_offset <= weight_addr_offset + 1;
+					if(weight_addr_offset + 1 == `BURST_LEN) begin //do not need to jump, weights are continuous
+						weight_addr_offset <= 0;
+						weight_addr_block <= weight_addr_block + `BURST_LEN;
+					end
+				end
+				if(dma_p3_offset == kernel_size) begin
+					dma_p3_reads_en <= 0; // force sync reset to generate a 1-cycle pulse
+				end
+
+				//==================== PIPELINE STEP1.5: Generate data ready signal for cmac
+				if(cmac_enable) begin
+					cmac_data_ready <= 1;
+				end
+				if(cmac_data_ready) begin
+					pipe_count <= pipe_count + 1;
+				end
+				if(pipe_count == kernel - stride) begin //cmac_data_ready width is max of pipe_count
+					pipe_count <= 0;
+					cmac_data_ready <= 0;
+				end
+
+				if(mult_ready_buf == {`BURST_LEN{1'b1}}) begin
+					pipe2_count <= pipe2_count + 1;
+				end
+				if(pipe2_count == kernel - stride) begin
+					pipe2_count <= 0;
+				end
+				
+				//==================== PIPELINE STEP2: start passing deserialized data and weight to cmac/sacc/scmp (including weight reuse)
+				if(cmac_enable) begin
+					cmac_enable <= 0;
+					data <= dbuf;
+					
+					atom_count <= atom_count + 1;
+					line_count <= line_count + 1;
+					if(atom_count + 1 == kernel) begin
+						atom_count <= 0;
+					end
+					//==================== Logic for setting cache_count according to line_count
+					if(line_count >= 0 && (kernel - stride) >= 7'd0) begin // stride2 * a
+						cache_count[0] <= cache_count[0] + 1;
+						if(cache_count[0] < kernel_size) weight_cache[0] <= wbuf[cache_count[0]];
+					end 
+					if(cache_count[0] + 1 == kernel_size + stride2 - kernel) begin
+						cache_count[0] <= 0;
+					end
+					if(line_count >= stride2 && (kernel - stride) >= 7'd1) begin
+						cache_count[1] <= cache_count[1] + 1;
+						if(cache_count[1] < kernel_size) weight_cache[1] <= wbuf[cache_count[1]];
+					end 
+					if(cache_count[1] + 1 == kernel_size + stride2 - kernel) begin
+						cache_count[1] <= 0;
+					end
+					if(line_count >= stride2 + stride2 && (kernel - stride) >= 7'd2) begin
+						cache_count[2] <= cache_count[2] + 1;
+						if(cache_count[2] < kernel_size) weight_cache[2] <= wbuf[cache_count[2]];
+					end
+					if(cache_count[2] + 1 == kernel_size + stride2 - kernel) begin
+						cache_count[2] <= 0;
+					end
+				end
 			end
 			//==================== Update cross-channel counters and address
 			gemm_clear: begin
@@ -388,6 +417,70 @@ always @ (posedge clk or posedge rst) begin
 					end
 				end
 			end
+
+			scmp_idle: begin
+			end
+			scmp_busy: begin
+				p2_addr <= data_addr_block + data_addr_offset; //NOTES: Update start addr @ the same edge of reads_en
+				p0_addr <= result_addr_block + result_addr_offset;
+				dma_p2_reads_en <= 1;
+
+				//==================== PIPELINE STEP1: enable data read (this part is the slowest and defines the available timing space of the pipeline)
+				if(dma_p2_ob_we) begin
+					dma_p2_burst_cnt <= dma_p2_burst_cnt + 1;
+					if(dma_p2_burst_cnt + 1 == `BURST_LEN) begin	//NOTES: start cmac when finishing reading the first atom (1x1xpara)
+						dma_p2_burst_cnt <= 0;
+						maxpool_valid <= 1;
+					end
+					dbuf <= {dma_p2_ob_data, dbuf[16*`BURST_LEN-1 : 16]}; // deserialize data to dbuf
+					data_addr_offset <= data_addr_offset + 1;
+					if(data_addr_offset + 1 == `BURST_LEN) begin
+						data_addr_offset <= 0;
+						data_addr_block <= data_addr_block + `BURST_LEN;
+						if(atom_count + 1 == kernel) begin //jump to the next row
+							data_addr_block <= data_addr_block + {(i_side - kernel), 4'b0000}; //(i_side - kernel) * BURST_LEN;
+						end
+					end
+				end
+
+			end
+			scmp_clear: begin
+			end
+
+			sacc_idle: begin
+			end
+			sacc_busy: begin
+				p2_addr <= data_addr_block + data_addr_offset; //NOTES: Update start addr @ the same edge of reads_en
+				p0_addr <= result_addr_block + result_addr_offset;
+				dma_p2_reads_en <= 1;
+
+				//==================== PIPELINE STEP1: enable data read (this part is the slowest and defines the available timing space of the pipeline)
+				if(dma_p2_ob_we) begin
+					dma_p2_burst_cnt <= dma_p2_burst_cnt + 1;
+					if(dma_p2_burst_cnt + 1 == `BURST_LEN) begin	//NOTES: start cmac when finishing reading the first atom (1x1xpara)
+						dma_p2_burst_cnt <= 0;
+						avepool_valid <= 1;
+						avepool_enable <= 1;
+					end
+					dbuf <= {dma_p2_ob_data, dbuf[16*`BURST_LEN-1 : 16]}; // deserialize data to dbuf
+					data_addr_offset <= data_addr_offset + 1;
+					if(data_addr_offset + 1 == `BURST_LEN) begin
+						data_addr_offset <= 0;
+						data_addr_block <= data_addr_block + `BURST_LEN;
+						if(atom_count + 1 == kernel) begin //jump to the next row
+							data_addr_block <= data_addr_block + {(i_side - kernel), 4'b0000}; //(i_side - kernel) * BURST_LEN;
+						end
+					end
+				end
+
+				if(avepool_enable) begin
+					avepool_enable <= 0;
+					data <= dbuf;
+				end
+			end
+			sacc_clear: begin
+			end
+
 			finish: begin
 				layer_finish <= 0;
 				engine_ready <= 1;

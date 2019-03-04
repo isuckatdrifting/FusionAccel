@@ -6,10 +6,9 @@ reg rst;
 reg [15:0] data;
 wire [15:0] result;
 reg pool_valid;
-wire cmp_ready;
 wire pool_ready;
-wire data_ready;
-reg data_valid;
+wire data_valid;
+reg data_ready;
 
 reg [15:0] data_fifo [0:8];
 
@@ -31,7 +30,6 @@ scmp scmp_( //max pooling
     .data (data),
     .result (result),
     .pool_valid (pool_valid),
-    .cmp_ready (cmp_ready),
     .pool_ready (pool_ready),
     .data_ready (data_ready),
     .data_valid (data_valid)
@@ -45,7 +43,7 @@ initial begin
     i = 0;
     pool_valid = 0;
     data = 16'h0000;
-    data_valid = 0;
+    data_ready = 0;
     #20 rst = 1;
     #10 rst = 0;
     #100 pool_valid = 1;
@@ -54,11 +52,11 @@ end
 always @(posedge pool_ready) pool_valid <= 0;
 
 always @(posedge clk) begin
-    if(data_ready && pool_valid) begin
-        data_valid <= 1;
+    if(data_valid && pool_valid) begin
+        data_ready <= 1;
         data <= data_fifo[i];
         if(i < 9) i <= i + 1;
-        else data_valid <= 0;
+        else data_ready <= 0;
     end
 end
 

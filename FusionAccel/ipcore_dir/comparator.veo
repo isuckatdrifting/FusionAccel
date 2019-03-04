@@ -76,6 +76,7 @@ comparator your_instance_name (
   .operation(operation), // input [5 : 0] operation
   .operation_nd(operation_nd), // input operation_nd
   .operation_rfd(operation_rfd), // output operation_rfd
+  .clk(clk), // input clk
   .result(result), // output [0 : 0] result
   .rdy(rdy) // output rdy
 );

@@ -8,8 +8,8 @@ wire [15:0] result;
 reg pool_valid;
 wire acc_ready;
 wire pool_ready;
-wire data_ready;
-reg data_valid;
+reg data_ready;
+wire data_valid;
 
 reg [169*16-1:0] data_fifo;
 
@@ -49,7 +49,7 @@ initial begin
     i = 0;
     pool_valid = 0;
     data = 16'h0000;
-    data_valid = 0;
+    data_ready = 0;
     #20 rst = 1;
     #10 rst = 0;
     #100 pool_valid = 1;
@@ -58,12 +58,12 @@ end
 always @(posedge pool_ready) pool_valid <= 0;
 
 always @(posedge clk) begin
-    if(data_ready && pool_valid) begin
-        data_valid <= 1;
+    if(data_valid && pool_valid) begin
+        data_ready <= 1;
         data <= data_fifo[15:0];
         data_fifo <= data_fifo >> 16;
         if(i < 170) i <= i + 1;
-        else data_valid <= 0;
+        else data_ready <= 0;
     end
 end
 
