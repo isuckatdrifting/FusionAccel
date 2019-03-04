@@ -68,6 +68,7 @@ reg  [16*`BURST_LEN-1:0] wbuf [8:0]; // serial buffer
 reg  [16*`BURST_LEN-1:0] data; 	// parallel
 wire [16*`BURST_LEN-1:0] weight; // parallel 3x3xBURST_LEN, wired out from weight_cache
 wire [16*`BURST_LEN-1:0] tmp_sum;// paralle, wired out from cmac_sum
+reg [16*`BURST_LEN-1:0] tmp_sum_sacc;
 reg  [7:0]  dma_p2_burst_cnt, dma_p3_burst_cnt, dma_p3_offset; // de-serializer counter, burst get 16 data, then send to operation unit.
 //Result registers of cmac/sacc/scmp
 wire [16*`BURST_LEN-1:0] conv_result; // parallel
@@ -142,7 +143,7 @@ always @(posedge clk) fsum_ready <= rdy_fsum;
 genvar k;
 generate
 	for (k = 0; k < `BURST_LEN; k = k + 1) begin: gensacc
-		sacc sacc_(.clk(clk), .rst(rst), .data(data[k*16 +: 16]), .result(avepool_result[k*16 +: 16]), .tmp_sum(tmp_sum[k*16 +: 16]), .pool_valid(avepool_valid), .data_ready(avepool_data_ready), .data_valid(avepool_data_valid[k]), .div_en(div_en), .pool_ready(rdy_sacc[k]));
+		sacc sacc_(.clk(clk), .rst(rst), .data(data[k*16 +: 16]), .result(avepool_result[k*16 +: 16]), .tmp_sum(tmp_sum_sacc[k*16 +: 16]), .pool_valid(avepool_valid), .data_ready(avepool_data_ready), .data_valid(avepool_data_valid[k]), .div_en(div_en), .pool_ready(rdy_sacc[k]));
 	end
 endgenerate
 always @(posedge clk) sacc_result <= avepool_result;
@@ -259,7 +260,7 @@ always @ (posedge clk or posedge rst) begin
 		dma_p0_ib_data <= 16'h0000; dma_p1_ib_data <= 16'h0000;
 		dma_p0_ib_valid <= 0; dma_p1_ib_valid <= 0;
 		//==================== Channel operation registers ====================
-		dbuf <= 'd0; data <= 'd0; psum <= 'd0;
+		dbuf <= 'd0; data <= 'd0; psum <= 'd0; tmp_sum_sacc <= 'd0;
 		wbuf[0] <= 'd0; wbuf[1] <= 'd0; wbuf[2] <= 'd0; 
 		wbuf[3] <= 'd0; wbuf[4] <= 'd0; wbuf[5] <= 'd0; 
 		wbuf[6] <= 'd0; wbuf[7] <= 'd0; wbuf[8] <= 'd0; 
@@ -489,7 +490,11 @@ always @ (posedge clk or posedge rst) begin
 				if(avepool_data_ready) begin
 					avepool_data_ready <= 0;
 				end
-
+				if(sacc_ready) begin
+					tmp_sum_sacc <= sacc_result;
+					fsum_index <= fsum_index + 1;
+				end
+				//TODO: divide trigger
 			end
 			sacc_clear: begin
 			end
