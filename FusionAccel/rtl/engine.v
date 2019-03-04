@@ -90,7 +90,7 @@ reg  [16*`BURST_LEN-1:0] cmac_sum [2:0];	//NOTES: memory for storing cmac reuse 
 reg  [16*`BURST_LEN-1:0] psum;			//NOTES: registers for 16-channel sum output, it is selected from the memory cmac_sum
 
 //Full sum registers
-//reg  [15:0] sum [127:0]; //max support 128 x 128 output side // FIXME: use bram
+reg  [15:0] sum [127:0]; //max support 128 x 128 output side // FIXME: use bram
 reg  [15:0] fsum_a;
 reg  [15:0] fsum_b;
 reg  [15:0] fsum_result;
@@ -179,8 +179,6 @@ always @ (*) begin
 		end
         idle: begin
             next_state = gemm_busy;
-			//if(engine_valid) next_state = gemm_busy;
-            //else next_state = idle;
         end
 		gemm_busy: begin
 			if(fsum_index == o_side) next_state = gemm_clear;
@@ -204,6 +202,13 @@ end
 
 assign weight = weight_cache[pipe_count];
 assign tmp_sum = cmac_sum[pipe2_count];
+
+integer a;
+initial begin
+	for (a=0; a<128; a=a+1) begin //FIXME: hardcode
+		sum[a] <= 16'h0000;
+	end
+end
 
 //    Output, non-blocking
 always @ (posedge clk or posedge rst) begin
@@ -235,9 +240,7 @@ always @ (posedge clk or posedge rst) begin
 		gemm_addr <= 30'h0000_0000;
 		data_addr_block <= 30'h0000_0000; weight_addr_block <= 30'h0000_0000; result_addr_block <= 30'h0000_0000;
 		data_addr_offset <= 30'h0000_0000; weight_addr_offset <= 30'h0000_0000; result_addr_offset <= 30'h0000_0000;
-		//for (a=0; a<128; a=a+1) begin //FIXME: hardcode
-		//	sum[a] <= 16'h0000;
-		//end
+		
 		i_channel_count <= 16'h0000; gemm_count <= 8'h00; o_channel_count <= 16'h0000; layer_finish <= 0;
 	end else begin
 		case (curr_state)
@@ -424,7 +427,7 @@ always @ (posedge clk or posedge rst) begin
 		end
 		if(fsum_enable) begin
 			fsum_enable <= 0;
-			if(fsum_count == 0) fsum_a <= 16'h0000;//sum[fsum_index]; FIXME: //accumulated sum is called after the first channel group
+			if(fsum_count == 0) fsum_a <= sum[fsum_index]; //FIXME: //accumulated sum is called after the first channel group
 			else fsum_a <= fsum_result;
 			fsum_b <= psum[15:0];
 			psum <= {16'h0000, psum[16*`BURST_LEN-1:16]};
@@ -434,7 +437,7 @@ always @ (posedge clk or posedge rst) begin
 			if(fsum_count < `BURST_LEN) fsum_enable <= 1;
 			if(fsum_count == `BURST_LEN) begin
 				fsum_index <= fsum_index + 1; //pipeline index sampling (delay align)
-				//sum[fsum_index] <= fsum_result; //FIXME: it will overwrite the fsum_result in the first c-1 channel groups
+				sum[fsum_index] <= fsum_result; //FIXME: it will overwrite the fsum_result in the first c-1 channel groups
 				dma_p0_ib_data <= fsum_result;
 			end
 			if(i_channel_count + `BURST_LEN >= i_channel && fsum_count == `BURST_LEN) begin
