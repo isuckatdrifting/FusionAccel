@@ -183,15 +183,17 @@ initial begin
     #10 rst = 0;
 `ifdef CMAC
     #100 op_type = 1; 
+		padding = 0; stride = 2; stride2 = 6;
+		kernel = 3; kernel_size = 9; i_channel = 3; o_channel = 1; i_side = 227; o_side = 113; 
 `endif
 `ifdef SCMP
 	#100 op_type = 4;
 `endif
 `ifdef SACC
 	#100 op_type = 5;
+		padding = 0; stride = 1; kernel = 13; kernel_size = 169; i_channel = 3; o_channel = 1; i_side = 13; o_side = 1;
 `endif
-		padding = 0; stride = 2; stride2 = 6;
-		kernel = 3; kernel_size = 9; i_channel = 3; o_channel = 1; i_side = 227; o_side = 113; 
+		
 		data_start_addr <= 30'h0001_0000; weight_start_addr <= 30'h0000_1000; result_start_addr <= 30'h0003_0000;
     #10 engine_valid = 1; 
 end
