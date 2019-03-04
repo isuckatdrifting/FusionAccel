@@ -75,6 +75,7 @@ divider your_instance_name (
   .b(b), // input [15 : 0] b
   .operation_nd(operation_nd), // input operation_nd
   .operation_rfd(operation_rfd), // output operation_rfd
+  .clk(clk), // input clk
   .result(result), // output [15 : 0] result
   .rdy(rdy) // output rdy
 );
