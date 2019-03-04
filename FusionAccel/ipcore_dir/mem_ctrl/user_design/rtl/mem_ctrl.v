@@ -250,7 +250,7 @@ module mem_ctrl #
    localparam C3_CLKOUT1_DIVIDE       = 1;       
    localparam C3_CLKOUT2_DIVIDE       = 4;       
    localparam C3_CLKOUT3_DIVIDE       = 8;       
-   localparam C3_CLKFBOUT_MULT        = 25;       
+   localparam C3_CLKFBOUT_MULT        = 16;       
    localparam C3_DIVCLK_DIVIDE        = 4;       
    localparam C3_ARB_ALGORITHM        = 0;       
    localparam C3_ARB_NUM_TIME_SLOTS   = 12;       
