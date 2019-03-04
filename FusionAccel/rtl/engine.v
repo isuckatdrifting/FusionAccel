@@ -84,10 +84,8 @@ reg  [15:0] line_count;						//NOTES: counter for one gemm line, range:(0, kerne
 reg  [7:0]  cache_count [2:0]; 				//FIXME: use max conv side support defined in include files.
 reg  [7:0]  result_count;					//NOTES: counter for results in single cmac reuse
 reg  [7:0]  sum_count [2:0];				//NOTES: counter for results in a kernel_size
-reg  [7:0]  sum_index;						//NOTES: counter for the nth kernel sum to psum
 reg  [16*`BURST_LEN-1:0] weight_cache [2:0];		//NOTES: memory for storing cmac reuse input weight // FIXME: use bram
 reg  [16*`BURST_LEN-1:0] cmac_sum [2:0];	//NOTES: memory for storing cmac reuse output sum // FIXME: use bram
-reg  [2:0]  cache_sel;
 
 reg  [16*`BURST_LEN-1:0] psum;			//NOTES: registers for 16-channel sum output, it is selected from the memory cmac_sum
 
@@ -199,7 +197,7 @@ always @ (*) begin
 end
 //NOTES: MEC convolution: k * k kernel in BURST_LEN -> finish the line -> next channel group(channel += BURST_LEN) -> next_gemm
 //		 Register level:       cmac_sum -> psum -> sum
-//		 Counter level:		   atom_count -> line_count, cache_count -> result_count, sum_count -> sum_index -> fsum_index
+//		 Counter level:		   atom_count -> line_count, cache_count -> result_count, sum_count -> fsum_index
 //NOTES: Sum point is ready only after the all channel 3x3 kernel mac is complete
 //TODO:  Padding Layer: dual channel write back address parsing
 //NOTES: weight and tmp_sum is directly from the corresponding registers
@@ -224,12 +222,10 @@ always @ (posedge clk or posedge rst) begin
 		//==================== Slot registers ====================
 		cache_count[0] <= 8'h00; cache_count[1] <= 8'h00; cache_count[2] <= 8'h00;
 		sum_count[0] <= 8'h00; sum_count[1] <= 8'h00; sum_count[2] <= 8'h00;
-		cache_sel <= 3'b000;
 		cmac_sum[0] <= 'd0; cmac_sum[1] <= 'd0; cmac_sum[2] <= 'd0;
 		weight_cache[0] <= 'd0; weight_cache[1] <= 'd0; weight_cache[2] <= 'd0;
 		cmac_enable <= 0; cmac_data_ready <= 0; 
 		atom_count <= 8'h00; pipe_count <= 8'h00; pipe2_count <= 8'h00; line_count <= 16'h0000; result_count <= 8'h00;
-		sum_index <= 8'h00;
 		fsum_enable <= 0; fsum_data_ready <= 0;
 		fsum_a <= 16'h0000; fsum_b <= 16'h0000; fsum_count <= 8'h00; fsum_index <= 8'h00;
 		clear <= 0; 
@@ -265,12 +261,11 @@ always @ (posedge clk or posedge rst) begin
 				//==================== Slot registers ====================
 				cache_count[0] <= 8'h00; cache_count[1] <= 8'h00; cache_count[2] <= 8'h00;
 				sum_count[0] <= 8'h00; sum_count[1] <= 8'h00; sum_count[2] <= 8'h00;
-				cache_sel <= 3'b000;
+				//cache_sel <= 3'b000;
 				cmac_sum[0] <= 'd0; cmac_sum[1] <= 'd0; cmac_sum[2] <= 'd0;
 				weight_cache[0] <= 'd0; weight_cache[1] <= 'd0; weight_cache[2] <= 'd0;
 				cmac_enable <= 0; cmac_data_ready <= 0; 
 				atom_count <= 8'h00; pipe_count <= 8'h00; pipe2_count <= 8'h00; line_count <= 16'h0000; result_count <= 8'h00;
-				sum_index <= 8'h00;
 				fsum_enable <= 0; fsum_data_ready <= 0;
 				fsum_a <= 16'h0000; fsum_b <= 16'h0000; fsum_count <= 8'h00; fsum_index <= 8'h00;
 				clear <= 0; 
@@ -288,19 +283,7 @@ always @ (posedge clk or posedge rst) begin
 							if(dma_p2_burst_cnt + 1 == `BURST_LEN) begin	//NOTES: start cmac when finishing reading the first atom (1x1xpara)
 								dma_p2_burst_cnt <= 0;
 								conv_valid <= 1;
-								//if(&cmac_data_valid) begin
-									cmac_enable <= 1;	//NOTES: use this signal to latch buffer
-									//Logic for setting cache_sel according to line_count
-									if (line_count + 1 > 0 && cache_count[0] == 0 && (kernel - stride) >= 7'd0) begin
-										cache_sel[0] <= 1;
-									end
-									if (line_count + 1 > stride2 && cache_count[1] == 0 && (kernel - stride) >= 7'd1) begin
-										cache_sel[1] <= 1;
-									end
-									if (line_count + 1 > stride2 + stride2 && cache_count[2] == 0 && (kernel - stride) >= 7'd2) begin
-										cache_sel[2] <= 1;
-									end
-								//end
+								cmac_enable <= 1;	//NOTES: use this signal to latch buffer
 							end
 							dbuf <= {dma_p2_ob_data, dbuf[16*`BURST_LEN-1 : 16]}; // deserialize data to dbuf
 							data_addr_offset <= data_addr_offset + 1;
@@ -350,20 +333,7 @@ always @ (posedge clk or posedge rst) begin
 						//==================== PIPELINE STEP2: start passing deserialized data and weight to cmac/sacc/scmp (including weight reuse)
 						if(cmac_enable) begin
 							cmac_enable <= 0;
-							//Reset cache_cel
-							if(cache_count[0] + 1 == kernel_size) begin
-								cache_sel[0] <= 0;
-							end
-							if(cache_count[1] + 1 == kernel_size) begin
-								cache_sel[1] <= 0;
-							end
-							if(cache_count[2] + 1 == kernel_size) begin
-								cache_sel[2] <= 0;
-							end
 							data <= dbuf;
-							weight_cache[0] <= cache_sel[0]? wbuf[cache_count[0]] : 'd0;
-							weight_cache[1] <= cache_sel[1]? wbuf[cache_count[1]] : 'd0;
-							weight_cache[2] <= cache_sel[2]? wbuf[cache_count[2]] : 'd0;
 							
 							atom_count <= atom_count + 1;
 							line_count <= line_count + 1;
@@ -371,20 +341,23 @@ always @ (posedge clk or posedge rst) begin
 								atom_count <= 0;
 							end
 							//==================== Logic for setting cache_count according to line_count
-							if(line_count >= 0) begin // stride2 * a
+							if(line_count >= 0 && (kernel - stride) >= 7'd0) begin // stride2 * a
 								cache_count[0] <= cache_count[0] + 1;
+								if(cache_count[0] < kernel_size) weight_cache[0] <= wbuf[cache_count[0]];
 							end 
 							if(cache_count[0] + 1 == kernel_size + stride2 - kernel) begin
 								cache_count[0] <= 0;
 							end
-							if(line_count >= stride2) begin
+							if(line_count >= stride2 && (kernel - stride) >= 7'd1) begin
 								cache_count[1] <= cache_count[1] + 1;
+								if(cache_count[1] < kernel_size) weight_cache[1] <= wbuf[cache_count[1]];
 							end 
 							if(cache_count[1] + 1 == kernel_size + stride2 - kernel) begin
 								cache_count[1] <= 0;
 							end
-							if(line_count >= stride2 + stride2) begin
+							if(line_count >= stride2 + stride2 && (kernel - stride) >= 7'd2) begin
 								cache_count[2] <= cache_count[2] + 1;
+								if(cache_count[2] < kernel_size) weight_cache[2] <= wbuf[cache_count[2]];
 							end
 							if(cache_count[2] + 1 == kernel_size + stride2 - kernel) begin
 								cache_count[2] <= 0;
@@ -430,19 +403,16 @@ always @ (posedge clk or posedge rst) begin
 			sum_count[2] <= cache_count[2];
 			//Logic for setting sum_count according to cache_count
 			if(sum_count[0] + 1 == kernel_size) begin
-				sum_index <= sum_index + 1;
 				psum <= cmac_sum[0];
 				fsum_enable <= 1; //Trigger for channel partial sum
 				fsum_count <= 0;
 			end
 			if(sum_count[1] + 1 == kernel_size) begin
-				sum_index <= sum_index + 1;
 				psum <= cmac_sum[1];
 				fsum_enable <= 1; //Trigger for channel partial sum
 				fsum_count <= 0;
 			end
 			if(sum_count[2] + 1 == kernel_size) begin
-				sum_index <= sum_index + 1;
 				psum <= cmac_sum[2];
 				fsum_enable <= 1; //Trigger for channel partial sum
 				fsum_count <= 0;
@@ -463,7 +433,7 @@ always @ (posedge clk or posedge rst) begin
 		if(fsum_ready) begin
 			if(fsum_count < `BURST_LEN) fsum_enable <= 1;
 			if(fsum_count == `BURST_LEN) begin
-				fsum_index <= sum_index; //pipeline index sampling (delay align)
+				fsum_index <= fsum_index + 1; //pipeline index sampling (delay align)
 				//sum[fsum_index] <= fsum_result; //FIXME: it will overwrite the fsum_result in the first c-1 channel groups
 				dma_p0_ib_data <= fsum_result;
 			end
