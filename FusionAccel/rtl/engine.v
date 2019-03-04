@@ -245,7 +245,7 @@ always @ (posedge clk or posedge rst) begin
 	end else begin
 		case (curr_state)
 			init: begin
-				data_addr_block <= data_start_addr; weight_addr_block <= weight_start_addr; result_addr_block <= result_addr_offset;
+				data_addr_block <= data_start_addr; weight_addr_block <= weight_start_addr; result_addr_block <= result_start_addr;
 				gemm_addr <= data_start_addr;
 			end
 			//==================== Clear all registers except cross-channel registers ====================
@@ -277,7 +277,8 @@ always @ (posedge clk or posedge rst) begin
 			gemm_busy: begin
 				case (op_type) 
 					CONV: begin
-						p2_addr <= data_addr_block + data_addr_offset; p3_addr <= weight_addr_block + weight_addr_offset;//TODO: Update start addr @ the same edge of reads_en
+						p2_addr <= data_addr_block + data_addr_offset; p3_addr <= weight_addr_block + weight_addr_offset;//NOTES: Update start addr @ the same edge of reads_en
+						p0_addr <= result_addr_block + result_addr_offset;
 						dma_p2_reads_en <= 1; dma_p3_reads_en <= 1;
 
 						//==================== PIPELINE STEP1: enable data read and weight read (this part is the slowest and defines the available timing space of the pipeline)
@@ -294,7 +295,7 @@ always @ (posedge clk or posedge rst) begin
 								data_addr_offset <= 0;
 								data_addr_block <= data_addr_block + `BURST_LEN;
 								if(atom_count + 1 == kernel) begin //jump to the next row
-									data_addr_block <= data_addr_block + {i_side[3:0], 4'b0000} - {kernel[3:0], 4'b0000}; //(i_side - kernel) * BURST_LEN;
+									data_addr_block <= data_addr_block + {(i_side - kernel), 4'b0000}; //(i_side - kernel) * BURST_LEN;
 								end
 							end
 						end
@@ -305,7 +306,7 @@ always @ (posedge clk or posedge rst) begin
 							end else dma_p3_burst_cnt <= dma_p3_burst_cnt + 1;
 							wbuf[dma_p3_offset] <= {dma_p3_ob_data, wbuf[dma_p3_offset][16*`BURST_LEN-1 : 16]};
 							weight_addr_offset <= weight_addr_offset + 1;
-							if(weight_addr_offset + 1 == `BURST_LEN) begin
+							if(weight_addr_offset + 1 == `BURST_LEN) begin //do not need to jump, weights are continuous
 								weight_addr_offset <= 0;
 								weight_addr_block <= weight_addr_block + `BURST_LEN;
 							end
@@ -427,7 +428,7 @@ always @ (posedge clk or posedge rst) begin
 		end
 		if(fsum_enable) begin
 			fsum_enable <= 0;
-			if(fsum_count == 0) fsum_a <= sum[fsum_index]; //FIXME: //accumulated sum is called after the first channel group
+			if(fsum_count == 0) fsum_a <= sum[fsum_index]; //NOTES: initially 0, accumulated sum is called after the first channel group
 			else fsum_a <= fsum_result;
 			fsum_b <= psum[15:0];
 			psum <= {16'h0000, psum[16*`BURST_LEN-1:16]};
@@ -437,11 +438,11 @@ always @ (posedge clk or posedge rst) begin
 			if(fsum_count < `BURST_LEN) fsum_enable <= 1;
 			if(fsum_count == `BURST_LEN) begin
 				fsum_index <= fsum_index + 1; //pipeline index sampling (delay align)
-				sum[fsum_index] <= fsum_result; //FIXME: it will overwrite the fsum_result in the first c-1 channel groups
+				sum[fsum_index] <= fsum_result; //NOTES: it will overwrite the fsum_result in the first c-1 channel groups
 				dma_p0_ib_data <= fsum_result;
 			end
 			if(i_channel_count + `BURST_LEN >= i_channel && fsum_count == `BURST_LEN) begin
-				dma_p0_writes_en <= 1; // TODO: Update start addr @ the same edge of writes_en
+				dma_p0_writes_en <= 1;
 			end
 		end
 
@@ -454,6 +455,13 @@ always @ (posedge clk or posedge rst) begin
 			dma_p0_ib_valid <= 1;
 		end else begin
 			dma_p0_ib_valid <= 0;
+		end
+		if(dma_p0_ib_valid) begin //Update start addr @ after updating data
+			result_addr_offset <= result_addr_offset + {o_side, 3'b000}; //p0_addr will be updated after one cycle //FIXME: add result_addr_surface
+			if(fsum_index == 0) begin // start a new gemm
+				result_addr_block <= result_addr_block + `BURST_LEN;
+				result_addr_offset <= 0;
+			end
 		end
 
 	end

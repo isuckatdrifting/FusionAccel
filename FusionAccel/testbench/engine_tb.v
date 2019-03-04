@@ -180,11 +180,13 @@ initial begin
 	dma_p3_ob_we = 0;
 	dma_p0_ib_re = 0;
 	dma_p1_ib_re = 0;
+	data_start_addr <= 30'h0000_0000; weight_start_addr <= 30'h0000_0000; result_start_addr <= 30'h0000_0000;
 	p0_state = 0; p1_state = 0; p2_state = 0; p3_state = 0;
     #20 rst = 1;
     #10 rst = 0;
     #100 op_type = 1; padding = 0; stride = 2; stride2 = 6;
 		kernel = 3; kernel_size = 9; i_channel = 3; o_channel = 1; i_side = 227; o_side = 113; 
+		data_start_addr <= 30'h0001_0000; weight_start_addr <= 30'h0000_1000; result_start_addr <= 30'h0003_0000;
     #10 engine_valid = 1; 
 end
 
