@@ -58,9 +58,8 @@ localparam APOOL = 5;
 reg  conv_valid, maxpool_valid, avepool_valid;
 wire [`BURST_LEN-1:0] cmac_data_valid, avepool_data_valid, maxpool_data_valid, mult_ready_buf;
 reg  cmac_data_ready, cmac_enable, avepool_data_ready, avepool_enable, maxpool_data_ready, maxpool_enable;
-wire [`BURST_LEN-1:0] rdy_cmac;
-reg  [`BURST_LEN-1:0] cmac_ready;
-wire maxpool_ready, avepool_ready;
+wire [`BURST_LEN-1:0] rdy_cmac, rdy_sacc, rdy_scmp;
+reg  [`BURST_LEN-1:0] cmac_ready, sacc_ready, scmp_ready;
 
 //Data BUF and Weight BUF of serializer
 reg  [16*`BURST_LEN-1:0] dbuf; 	// serial buffer
@@ -73,9 +72,12 @@ reg  [7:0]  dma_p2_burst_cnt, dma_p3_burst_cnt, dma_p3_offset; // de-serializer 
 //Result registers of cmac/sacc/scmp
 wire [16*`BURST_LEN-1:0] conv_result; // parallel
 reg  [16*`BURST_LEN-1:0] cmac_result;
-wire [15:0] maxpool_result [`BURST_LEN-1:0]; // parallel
-wire [15:0] avepool_result [`BURST_LEN-1:0]; // parallel
+wire [16*`BURST_LEN-1:0] maxpool_result; // parallel
+wire [16*`BURST_LEN-1:0] avepool_result; // parallel
+reg  [16*`BURST_LEN-1:0] sacc_result;
+reg  [16*`BURST_LEN-1:0] scmp_result;
 
+reg div_en;
 //pipeline registers
 reg  [7:0]  atom_count;						//NOTES: atom count is used only in address parsing, it is not used in operation logic
 reg  [7:0]  pipe_count;						//NOTES: counter for data reuse on one data
@@ -140,16 +142,20 @@ always @(posedge clk) fsum_ready <= rdy_fsum;
 genvar k;
 generate
 	for (k = 0; k < `BURST_LEN; k = k + 1) begin: gensacc
-		sacc sacc_(.clk(clk), .rst(rst), .data(data[k +: 16]), .result(avepool_result[k]), .tmp_sum(tmp_sum[k*16 +: 16]), .pool_valid(avepool_valid), .data_ready(avepool_data_ready), .data_valid(avepool_data_valid[k]), .sum_ready(), .div_en(), .pool_ready(avepool_ready));
+		sacc sacc_(.clk(clk), .rst(rst), .data(data[k*16 +: 16]), .result(avepool_result[k*16 +: 16]), .tmp_sum(tmp_sum[k*16 +: 16]), .pool_valid(avepool_valid), .data_ready(avepool_data_ready), .data_valid(avepool_data_valid[k]), .div_en(div_en), .pool_ready(rdy_sacc[k]));
 	end
 endgenerate
+always @(posedge clk) sacc_result <= avepool_result;
+always @(posedge clk) sacc_ready <= rdy_sacc;
 
 genvar l;
 generate
 	for (l = 0; l < `BURST_LEN; l = l + 1) begin: genscmp
-		scmp scmp_(.clk(clk), .rst(rst), .data(data[l +: 16]), .result(maxpool_result[l]), .pool_valid(maxpool_valid), .data_ready(maxpool_data_ready), .data_valid(maxpool_data_valid[l]), .pool_ready(maxpool_ready));
+		scmp scmp_(.clk(clk), .rst(rst), .data(data[l*16 +: 16]), .result(maxpool_result[l*16 +: 16]), .pool_valid(maxpool_valid), .data_ready(maxpool_data_ready), .data_valid(maxpool_data_valid[l]), .pool_ready(rdy_scmp[l]));
 	end
 endgenerate
+always @(posedge clk) scmp_result <= maxpool_result;
+always @(posedge clk) scmp_ready <= rdy_scmp;
 
 //State Machine
 localparam init 		= 4'b0000;
@@ -262,7 +268,7 @@ always @ (posedge clk or posedge rst) begin
 		sum_count[0] <= 8'h00; sum_count[1] <= 8'h00; sum_count[2] <= 8'h00;
 		cmac_sum[0] <= 'd0; cmac_sum[1] <= 'd0; cmac_sum[2] <= 'd0;
 		weight_cache[0] <= 'd0; weight_cache[1] <= 'd0; weight_cache[2] <= 'd0;
-		cmac_enable <= 0; cmac_data_ready <= 0; avepool_enable <= 0; maxpool_enable <= 0;
+		cmac_enable <= 0; cmac_data_ready <= 0; avepool_enable <= 0; avepool_data_ready <= 0; maxpool_enable <= 0; maxpool_data_ready <= 0; div_en <= 0; //FIXME: unite names
 		atom_count <= 8'h00; pipe_count <= 8'h00; pipe2_count <= 8'h00; line_count <= 16'h0000; result_count <= 8'h00;
 		fsum_enable <= 0; fsum_data_ready <= 0;
 		fsum_a <= 16'h0000; fsum_b <= 16'h0000; fsum_count <= 8'h00; fsum_index <= 8'h00;
@@ -300,13 +306,13 @@ always @ (posedge clk or posedge rst) begin
 				//cache_sel <= 3'b000;
 				cmac_sum[0] <= 'd0; cmac_sum[1] <= 'd0; cmac_sum[2] <= 'd0;
 				weight_cache[0] <= 'd0; weight_cache[1] <= 'd0; weight_cache[2] <= 'd0;
-				cmac_enable <= 0; cmac_data_ready <= 0; avepool_enable <= 0; maxpool_enable <= 0;
+				cmac_enable <= 0; cmac_data_ready <= 0; avepool_enable <= 0; avepool_data_ready <= 0; maxpool_enable <= 0; maxpool_data_ready <= 0; div_en <= 0; //FIXME: unite names
 				atom_count <= 8'h00; pipe_count <= 8'h00; pipe2_count <= 8'h00; line_count <= 16'h0000; result_count <= 8'h00;
 				fsum_enable <= 0; fsum_data_ready <= 0;
 				fsum_a <= 16'h0000; fsum_b <= 16'h0000; fsum_count <= 8'h00; fsum_index <= 8'h00;
 				clear <= 0; 
 			end
-			//==================== Process a line ====================
+			//==================== CONVOLUTION: Process a line ====================
 			gemm_busy: begin
 				p2_addr <= data_addr_block + data_addr_offset; p3_addr <= weight_addr_block + weight_addr_offset;//NOTES: Update start addr @ the same edge of reads_en
 				p0_addr <= result_addr_block + result_addr_offset;
@@ -347,9 +353,6 @@ always @ (posedge clk or posedge rst) begin
 				end
 
 				//==================== PIPELINE STEP1.5: Generate data ready signal for cmac
-				if(cmac_enable) begin
-					cmac_data_ready <= 1;
-				end
 				if(cmac_data_ready) begin
 					pipe_count <= pipe_count + 1;
 				end
@@ -367,6 +370,7 @@ always @ (posedge clk or posedge rst) begin
 				
 				//==================== PIPELINE STEP2: start passing deserialized data and weight to cmac/sacc/scmp (including weight reuse)
 				if(cmac_enable) begin
+					cmac_data_ready <= 1;
 					cmac_enable <= 0;
 					data <= dbuf;
 					
@@ -420,6 +424,7 @@ always @ (posedge clk or posedge rst) begin
 
 			scmp_idle: begin
 			end
+			//==================== MAXPOOLING: Process a line ====================
 			scmp_busy: begin
 				p2_addr <= data_addr_block + data_addr_offset; //NOTES: Update start addr @ the same edge of reads_en
 				p0_addr <= result_addr_block + result_addr_offset;
@@ -449,6 +454,7 @@ always @ (posedge clk or posedge rst) begin
 
 			sacc_idle: begin
 			end
+			//==================== AVEPOOLING: Process a line * surface ====================
 			sacc_busy: begin
 				p2_addr <= data_addr_block + data_addr_offset; //NOTES: Update start addr @ the same edge of reads_en
 				p0_addr <= result_addr_block + result_addr_offset;
@@ -475,8 +481,15 @@ always @ (posedge clk or posedge rst) begin
 
 				if(avepool_enable) begin
 					avepool_enable <= 0;
+					avepool_data_ready <= 1;
 					data <= dbuf;
+					atom_count <= atom_count + 1;
+					line_count <= line_count + 1;
 				end
+				if(avepool_data_ready) begin
+					avepool_data_ready <= 0;
+				end
+
 			end
 			sacc_clear: begin
 			end
