@@ -92,7 +92,7 @@ reg  [2:0]  cache_sel;
 reg  [16*`BURST_LEN-1:0] psum;			//NOTES: registers for 16-channel sum output, it is selected from the memory cmac_sum
 
 //Full sum registers
-//reg  [15:0] sum [0:127]; //max support 128 x 128 output side // FIXME: use bram
+//reg  [15:0] sum [127:0]; //max support 128 x 128 output side // FIXME: use bram
 reg  [15:0] fsum_a;
 reg  [15:0] fsum_b;
 reg  [15:0] fsum_result;
@@ -207,7 +207,6 @@ end
 assign weight = weight_cache[pipe_count];
 assign tmp_sum = cmac_sum[pipe2_count];
 
-integer a;
 //    Output, non-blocking
 always @ (posedge clk or posedge rst) begin
 	if(rst) begin
@@ -281,8 +280,7 @@ always @ (posedge clk or posedge rst) begin
 				case (op_type) 
 					CONV: begin
 						p2_addr <= data_addr_block + data_addr_offset; p3_addr <= weight_addr_block + weight_addr_offset;//TODO: Update start addr @ the same edge of reads_en
-						if(dma_p2_burst_cnt == 0) dma_p2_reads_en <= 1;
-						if(dma_p3_burst_cnt == 0) dma_p3_reads_en <= 1;
+						dma_p2_reads_en <= 1; dma_p3_reads_en <= 1;
 
 						//==================== PIPELINE STEP1: enable data read and weight read (this part is the slowest and defines the available timing space of the pipeline)
 						if(dma_p2_ob_we) begin
@@ -342,7 +340,7 @@ always @ (posedge clk or posedge rst) begin
 							cmac_data_ready <= 0;
 						end
 
-						if(&mult_ready_buf) begin
+						if(mult_ready_buf == {`BURST_LEN{1'b1}}) begin
 							pipe2_count <= pipe2_count + 1;
 						end
 						if(pipe2_count == kernel - stride) begin
@@ -351,6 +349,7 @@ always @ (posedge clk or posedge rst) begin
 						
 						//==================== PIPELINE STEP2: start passing deserialized data and weight to cmac/sacc/scmp (including weight reuse)
 						if(cmac_enable) begin
+							cmac_enable <= 0;
 							//Reset cache_cel
 							if(cache_count[0] + 1 == kernel_size) begin
 								cache_sel[0] <= 0;
@@ -372,30 +371,24 @@ always @ (posedge clk or posedge rst) begin
 								atom_count <= 0;
 							end
 							//==================== Logic for setting cache_count according to line_count
-							if(line_count < 0) begin // stride2 * a
-								cache_count[0] <= 0;
-							end else if(cache_count[0] + 1 < kernel_size + stride2 - kernel && (kernel - stride) >= 0) begin
+							if(line_count >= 0) begin // stride2 * a
 								cache_count[0] <= cache_count[0] + 1;
-							end else begin
+							end 
+							if(cache_count[0] + 1 == kernel_size + stride2 - kernel) begin
 								cache_count[0] <= 0;
 							end
-							if(line_count < stride2) begin
-								cache_count[1] <= 0;
-							end else if(cache_count[1] + 1 < kernel_size + stride2 - kernel && (kernel - stride) >= 1) begin
+							if(line_count >= stride2) begin
 								cache_count[1] <= cache_count[1] + 1;
-							end else begin
+							end 
+							if(cache_count[1] + 1 == kernel_size + stride2 - kernel) begin
 								cache_count[1] <= 0;
 							end
-							if(line_count < stride2 + stride2) begin
-								cache_count[2] <= 0;
-							end else if(cache_count[2] + 1 < kernel_size + stride2 - kernel && (kernel - stride) >= 2) begin
+							if(line_count >= stride2 + stride2) begin
 								cache_count[2] <= cache_count[2] + 1;
-							end else begin
+							end
+							if(cache_count[2] + 1 == kernel_size + stride2 - kernel) begin
 								cache_count[2] <= 0;
 							end
-						end
-						if(dma_p2_burst_cnt == 0) begin
-							cmac_enable <= 0; // sync reset to generate a 1-cycle pulse
 						end
 					end
 				endcase
@@ -426,7 +419,7 @@ always @ (posedge clk or posedge rst) begin
 		endcase
 
 		//==================== PIPELINE STEP3: Partial SUM of channel outputs, independent of the pipeline
-		if(&cmac_ready) begin
+		if(cmac_ready == {`BURST_LEN{1'b1}}) begin
 			result_count <= result_count + 1;
 			cmac_sum[result_count] <= cmac_result;
 		end
@@ -460,12 +453,12 @@ always @ (posedge clk or posedge rst) begin
 			fsum_data_ready <= fsum_enable;
 		end
 		if(fsum_enable) begin
+			fsum_enable <= 0;
 			if(fsum_count == 0) fsum_a <= 16'h0000;//sum[fsum_index]; FIXME: //accumulated sum is called after the first channel group
 			else fsum_a <= fsum_result;
 			fsum_b <= psum[15:0];
 			psum <= {16'h0000, psum[16*`BURST_LEN-1:16]};
 			if(fsum_count < `BURST_LEN) fsum_count <= fsum_count + 1;
-			fsum_enable <= 0;
 		end
 		if(fsum_ready) begin
 			if(fsum_count < `BURST_LEN) fsum_enable <= 1;
