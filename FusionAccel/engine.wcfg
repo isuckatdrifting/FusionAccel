@@ -188,11 +188,6 @@
          <obj_property name="ElementShortName">data_valid</obj_property>
          <obj_property name="ObjectShortName">data_valid</obj_property>
       </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/tmp_sum" type="array" db_ref_id="1">
-         <obj_property name="ElementShortName">tmp_sum[127:0]</obj_property>
-         <obj_property name="ObjectShortName">tmp_sum[127:0]</obj_property>
-         <obj_property name="Radix">HEXRADIX</obj_property>
-      </wvobject>
       <wvobject fp_name="/engine_tb/engine_/data" type="array" db_ref_id="1">
          <obj_property name="ElementShortName">data[127:0]</obj_property>
          <obj_property name="ObjectShortName">data[127:0]</obj_property>
@@ -222,45 +217,19 @@
          <obj_property name="ElementShortName">data_ready</obj_property>
          <obj_property name="ObjectShortName">data_ready</obj_property>
       </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/mult_pipe_count" type="array" db_ref_id="1">
-         <obj_property name="ElementShortName">mult_pipe_count[7:0]</obj_property>
-         <obj_property name="ObjectShortName">mult_pipe_count[7:0]</obj_property>
-         <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+      <wvobject fp_name="/engine_tb/engine_/cmac_input_pipe_count" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">cmac_input_pipe_count[7:0]</obj_property>
+         <obj_property name="ObjectShortName">cmac_input_pipe_count[7:0]</obj_property>
       </wvobject>
       <wvobject fp_name="/engine_tb/engine_/\gencmac[0].cmac_ /tmp_sum" type="array" db_ref_id="1">
          <obj_property name="ElementShortName">tmp_sum[15:0]</obj_property>
          <obj_property name="ObjectShortName">tmp_sum[15:0]</obj_property>
          <obj_property name="Radix">HEXRADIX</obj_property>
       </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/accu_pipe_count" type="array" db_ref_id="1">
-         <obj_property name="ElementShortName">accu_pipe_count[7:0]</obj_property>
-         <obj_property name="ObjectShortName">accu_pipe_count[7:0]</obj_property>
-         <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
-      </wvobject>
       <wvobject fp_name="/engine_tb/engine_/\gencmac[0].cmac_ /data" type="array" db_ref_id="1">
          <obj_property name="ElementShortName">data[15:0]</obj_property>
          <obj_property name="ObjectShortName">data[15:0]</obj_property>
          <obj_property name="Radix">HEXRADIX</obj_property>
-      </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/weight_cache" type="array" db_ref_id="1">
-         <obj_property name="ElementShortName">weight_cache[2:0,127:0]</obj_property>
-         <obj_property name="ObjectShortName">weight_cache[2:0,127:0]</obj_property>
-         <obj_property name="Radix">HEXRADIX</obj_property>
-         <wvobject fp_name="/engine_tb/engine_/weight_cache[0]" type="array" db_ref_id="1">
-            <obj_property name="ElementShortName">[0,127:0]</obj_property>
-            <obj_property name="ObjectShortName">weight_cache[0,127:0]</obj_property>
-            <obj_property name="Radix">HEXRADIX</obj_property>
-         </wvobject>
-         <wvobject fp_name="/engine_tb/engine_/weight_cache[1]" type="array" db_ref_id="1">
-            <obj_property name="ElementShortName">[1,127:0]</obj_property>
-            <obj_property name="ObjectShortName">weight_cache[1,127:0]</obj_property>
-            <obj_property name="Radix">HEXRADIX</obj_property>
-         </wvobject>
-         <wvobject fp_name="/engine_tb/engine_/weight_cache[2]" type="array" db_ref_id="1">
-            <obj_property name="ElementShortName">[2,127:0]</obj_property>
-            <obj_property name="ObjectShortName">weight_cache[2,127:0]</obj_property>
-            <obj_property name="Radix">HEXRADIX</obj_property>
-         </wvobject>
       </wvobject>
       <wvobject fp_name="/engine_tb/engine_/\gencmac[0].cmac_ /weight" type="array" db_ref_id="1">
          <obj_property name="ElementShortName">weight[15:0]</obj_property>
@@ -289,6 +258,10 @@
       <wvobject fp_name="/engine_tb/engine_/\gencmac[0].cmac_ /mult_ready_buf" type="logic" db_ref_id="1">
          <obj_property name="ElementShortName">mult_ready_buf</obj_property>
          <obj_property name="ObjectShortName">mult_ready_buf</obj_property>
+      </wvobject>
+      <wvobject fp_name="/engine_tb/engine_/cmac_middle_pipe_count" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">cmac_middle_pipe_count[7:0]</obj_property>
+         <obj_property name="ObjectShortName">cmac_middle_pipe_count[7:0]</obj_property>
       </wvobject>
       <wvobject fp_name="/engine_tb/engine_/\gencmac[0].cmac_ /operation_nd_acc" type="logic" db_ref_id="1">
          <obj_property name="ElementShortName">operation_nd_acc</obj_property>
@@ -335,6 +308,10 @@
             <obj_property name="CustomSignalColor">#ffff00</obj_property>
          </wvobject>
       </wvobject>
+      <wvobject fp_name="/engine_tb/engine_/cmac_output_pipe_count" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">cmac_output_pipe_count[7:0]</obj_property>
+         <obj_property name="ObjectShortName">cmac_output_pipe_count[7:0]</obj_property>
+      </wvobject>
       <wvobject fp_name="/engine_tb/engine_/rdy_cmac" type="array" db_ref_id="1">
          <obj_property name="ElementShortName">rdy_cmac[7:0]</obj_property>
          <obj_property name="ObjectShortName">rdy_cmac[7:0]</obj_property>
@@ -344,31 +321,6 @@
          <obj_property name="ElementShortName">cmac_ready[7:0]</obj_property>
          <obj_property name="ObjectShortName">cmac_ready[7:0]</obj_property>
          <obj_property name="Radix">HEXRADIX</obj_property>
-      </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/result_count" type="array" db_ref_id="1">
-         <obj_property name="ElementShortName">result_count[7:0]</obj_property>
-         <obj_property name="ObjectShortName">result_count[7:0]</obj_property>
-         <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
-      </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/sum_count" type="array" db_ref_id="1">
-         <obj_property name="ElementShortName">sum_count[2:0,7:0]</obj_property>
-         <obj_property name="ObjectShortName">sum_count[2:0,7:0]</obj_property>
-         <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
-         <wvobject fp_name="/engine_tb/engine_/sum_count[2]" type="array" db_ref_id="1">
-            <obj_property name="ElementShortName">[2,7:0]</obj_property>
-            <obj_property name="ObjectShortName">sum_count[2,7:0]</obj_property>
-            <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
-         </wvobject>
-         <wvobject fp_name="/engine_tb/engine_/sum_count[1]" type="array" db_ref_id="1">
-            <obj_property name="ElementShortName">[1,7:0]</obj_property>
-            <obj_property name="ObjectShortName">sum_count[1,7:0]</obj_property>
-            <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
-         </wvobject>
-         <wvobject fp_name="/engine_tb/engine_/sum_count[0]" type="array" db_ref_id="1">
-            <obj_property name="ElementShortName">[0,7:0]</obj_property>
-            <obj_property name="ObjectShortName">sum_count[0,7:0]</obj_property>
-            <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
-         </wvobject>
       </wvobject>
       <wvobject fp_name="divider87" type="divider">
          <obj_property name="label">Counters</obj_property>
@@ -686,25 +638,45 @@
          <obj_property name="ElementShortName">maxpool_enable</obj_property>
          <obj_property name="ObjectShortName">maxpool_enable</obj_property>
       </wvobject>
+      <wvobject fp_name="/engine_tb/engine_/scmp_data_cache" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">scmp_data_cache[2:0,127:0]</obj_property>
+         <obj_property name="ObjectShortName">scmp_data_cache[2:0,127:0]</obj_property>
+         <obj_property name="Radix">HEXRADIX</obj_property>
+         <wvobject fp_name="/engine_tb/engine_/scmp_data_cache[2]" type="array" db_ref_id="1">
+            <obj_property name="ElementShortName">[2,127:0]</obj_property>
+            <obj_property name="ObjectShortName">scmp_data_cache[2,127:0]</obj_property>
+            <obj_property name="Radix">HEXRADIX</obj_property>
+            <obj_property name="UseCustomSignalColor">true</obj_property>
+            <obj_property name="CustomSignalColor">#ffff00</obj_property>
+         </wvobject>
+         <wvobject fp_name="/engine_tb/engine_/scmp_data_cache[1]" type="array" db_ref_id="1">
+            <obj_property name="ElementShortName">[1,127:0]</obj_property>
+            <obj_property name="ObjectShortName">scmp_data_cache[1,127:0]</obj_property>
+            <obj_property name="Radix">HEXRADIX</obj_property>
+            <obj_property name="UseCustomSignalColor">true</obj_property>
+            <obj_property name="CustomSignalColor">#ffff00</obj_property>
+         </wvobject>
+         <wvobject fp_name="/engine_tb/engine_/scmp_data_cache[0]" type="array" db_ref_id="1">
+            <obj_property name="ElementShortName">[0,127:0]</obj_property>
+            <obj_property name="ObjectShortName">scmp_data_cache[0,127:0]</obj_property>
+            <obj_property name="Radix">HEXRADIX</obj_property>
+            <obj_property name="UseCustomSignalColor">true</obj_property>
+            <obj_property name="CustomSignalColor">#ffff00</obj_property>
+         </wvobject>
+      </wvobject>
       <wvobject fp_name="/engine_tb/engine_/scmp_data" type="array" db_ref_id="1">
          <obj_property name="ElementShortName">scmp_data[127:0]</obj_property>
          <obj_property name="ObjectShortName">scmp_data[127:0]</obj_property>
          <obj_property name="Radix">HEXRADIX</obj_property>
       </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/tmp_cmp" type="array" db_ref_id="1">
-         <obj_property name="ElementShortName">tmp_cmp[127:0]</obj_property>
-         <obj_property name="ObjectShortName">tmp_cmp[127:0]</obj_property>
-      </wvobject>
       <wvobject fp_name="/engine_tb/engine_/maxpool_data_ready" type="logic" db_ref_id="1">
          <obj_property name="ElementShortName">maxpool_data_ready</obj_property>
          <obj_property name="ObjectShortName">maxpool_data_ready</obj_property>
       </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/mult_pipe_count" type="array" db_ref_id="1">
-         <obj_property name="ElementShortName">mult_pipe_count[7:0]</obj_property>
-         <obj_property name="ObjectShortName">mult_pipe_count[7:0]</obj_property>
+      <wvobject fp_name="/engine_tb/engine_/scmp_input_pipe_count" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">scmp_input_pipe_count[7:0]</obj_property>
+         <obj_property name="ObjectShortName">scmp_input_pipe_count[7:0]</obj_property>
          <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
-         <obj_property name="UseCustomSignalColor">true</obj_property>
-         <obj_property name="CustomSignalColor">#ffff00</obj_property>
       </wvobject>
       <wvobject fp_name="/engine_tb/engine_/\genscmp[0].scmp_ /new_data" type="array" db_ref_id="1">
          <obj_property name="ElementShortName">new_data[15:0]</obj_property>
@@ -749,11 +721,6 @@
          <obj_property name="ObjectShortName">scmp_ready[7:0]</obj_property>
          <obj_property name="Radix">HEXRADIX</obj_property>
       </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/result_count" type="array" db_ref_id="1">
-         <obj_property name="ElementShortName">result_count[7:0]</obj_property>
-         <obj_property name="ObjectShortName">result_count[7:0]</obj_property>
-         <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
-      </wvobject>
       <wvobject fp_name="/engine_tb/engine_/scmp_cmp" type="array" db_ref_id="1">
          <obj_property name="ElementShortName">scmp_cmp[2:0,127:0]</obj_property>
          <obj_property name="ObjectShortName">scmp_cmp[2:0,127:0]</obj_property>
@@ -773,6 +740,23 @@
             <obj_property name="ObjectShortName">scmp_cmp[0,127:0]</obj_property>
             <obj_property name="Radix">HEXRADIX</obj_property>
          </wvobject>
+      </wvobject>
+      <wvobject fp_name="/engine_tb/engine_/scmp_count" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">scmp_count[2:0,7:0]</obj_property>
+         <obj_property name="ObjectShortName">scmp_count[2:0,7:0]</obj_property>
+         <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+      </wvobject>
+      <wvobject fp_name="/engine_tb/engine_/cmp" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">cmp[127:0]</obj_property>
+         <obj_property name="ObjectShortName">cmp[127:0]</obj_property>
+         <obj_property name="Radix">HEXRADIX</obj_property>
+         <obj_property name="UseCustomSignalColor">true</obj_property>
+         <obj_property name="CustomSignalColor">#ffff00</obj_property>
+      </wvobject>
+      <wvobject fp_name="/engine_tb/engine_/scmp_output_pipe_count" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">scmp_output_pipe_count[7:0]</obj_property>
+         <obj_property name="ObjectShortName">scmp_output_pipe_count[7:0]</obj_property>
+         <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
       </wvobject>
       <wvobject fp_name="/engine_tb/engine_/atom_count" type="array" db_ref_id="1">
          <obj_property name="ElementShortName">atom_count[7:0]</obj_property>
@@ -805,44 +789,6 @@
          <wvobject fp_name="/engine_tb/engine_/cache_count[0]" type="array" db_ref_id="1">
             <obj_property name="ElementShortName">[0,7:0]</obj_property>
             <obj_property name="ObjectShortName">cache_count[0,7:0]</obj_property>
-            <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
-            <obj_property name="UseCustomSignalColor">true</obj_property>
-            <obj_property name="CustomSignalColor">#ffa500</obj_property>
-         </wvobject>
-      </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/accu_pipe_count" type="array" db_ref_id="1">
-         <obj_property name="ElementShortName">accu_pipe_count[7:0]</obj_property>
-         <obj_property name="ObjectShortName">accu_pipe_count[7:0]</obj_property>
-         <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
-         <obj_property name="UseCustomSignalColor">true</obj_property>
-         <obj_property name="CustomSignalColor">#ffff00</obj_property>
-      </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/data_cache" type="array" db_ref_id="1">
-         <obj_property name="ElementShortName">data_cache[2:0,127:0]</obj_property>
-         <obj_property name="ObjectShortName">data_cache[2:0,127:0]</obj_property>
-         <obj_property name="Radix">HEXRADIX</obj_property>
-      </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/sum_count" type="array" db_ref_id="1">
-         <obj_property name="ElementShortName">sum_count[2:0,7:0]</obj_property>
-         <obj_property name="ObjectShortName">sum_count[2:0,7:0]</obj_property>
-         <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
-         <wvobject fp_name="/engine_tb/engine_/sum_count[2]" type="array" db_ref_id="1">
-            <obj_property name="ElementShortName">[2,7:0]</obj_property>
-            <obj_property name="ObjectShortName">sum_count[2,7:0]</obj_property>
-            <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
-            <obj_property name="UseCustomSignalColor">true</obj_property>
-            <obj_property name="CustomSignalColor">#ffa500</obj_property>
-         </wvobject>
-         <wvobject fp_name="/engine_tb/engine_/sum_count[1]" type="array" db_ref_id="1">
-            <obj_property name="ElementShortName">[1,7:0]</obj_property>
-            <obj_property name="ObjectShortName">sum_count[1,7:0]</obj_property>
-            <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
-            <obj_property name="UseCustomSignalColor">true</obj_property>
-            <obj_property name="CustomSignalColor">#ffa500</obj_property>
-         </wvobject>
-         <wvobject fp_name="/engine_tb/engine_/sum_count[0]" type="array" db_ref_id="1">
-            <obj_property name="ElementShortName">[0,7:0]</obj_property>
-            <obj_property name="ObjectShortName">sum_count[0,7:0]</obj_property>
             <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
             <obj_property name="UseCustomSignalColor">true</obj_property>
             <obj_property name="CustomSignalColor">#ffa500</obj_property>
