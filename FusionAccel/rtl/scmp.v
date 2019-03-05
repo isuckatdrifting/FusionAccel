@@ -1,7 +1,8 @@
 module scmp( //max pooling
     input  wire         clk,
     input  wire         rst,
-    input  wire [15:0]  data,
+    input  wire [15:0]  new_data,
+    input  wire [15:0]  ori_data,
     output reg  [15:0]  result,
     input  wire         pool_valid,
     input  wire         data_ready,
@@ -11,6 +12,7 @@ module scmp( //max pooling
 
 reg [15:0]  a_cmp, b_cmp;
 
+reg         operation_nd_cmp;
 wire        operation_rfd_cmp;
 wire        rdy;
 wire        result_cmp;
@@ -23,21 +25,19 @@ wire        result_cmp;
 //Not Equal             101100
 //Greater Than or Equal 110100
 
-comparator cmp_ (.a(a_cmp), .b(b_cmp), .clk(clk), .operation(6'b100100), .operation_nd(data_ready), .operation_rfd(operation_rfd_cmp), .result(result_cmp), .rdy(rdy));
+comparator cmp_ (.a(a_cmp), .b(b_cmp), .clk(clk), .operation(6'b100100), .operation_nd(operation_nd_cmp), .operation_rfd(operation_rfd_cmp), .result(result_cmp), .rdy(rdy));
 
 always @ (posedge clk or posedge rst) begin
     if (rst) begin
+        operation_nd_cmp <= 0;
         result <= 16'h0000;
         pool_ready <= 0;
-        a_cmp <= 16'h0000;
-        b_cmp <= 16'h0000;
+        a_cmp <= 16'h0000; b_cmp <= 16'h0000;
         data_valid <= 0;
     end else begin
         data_valid <= operation_rfd_cmp;
-        if(data_ready) begin 
-            a_cmp <= data; 
-            b_cmp <= result; 
-        end
+        operation_nd_cmp <= data_ready;
+        if(data_ready) begin a_cmp <= new_data; b_cmp <= ori_data; end
         pool_ready <= rdy;
         result <= result_cmp? a_cmp : b_cmp;
     end
