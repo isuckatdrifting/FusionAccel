@@ -1,7 +1,8 @@
 module scmp( //max pooling
     input  wire         clk,
     input  wire         rst,
-    input  wire [15:0]  data,
+    input  wire [15:0]  new_data,
+    input  wire [15:0]  ori_data,
     output reg  [15:0]  result,
     input  wire         pool_valid,
     input  wire         data_ready,
@@ -36,7 +37,7 @@ always @ (posedge clk or posedge rst) begin
     end else begin
         data_valid <= operation_rfd_cmp;
         operation_nd_cmp <= data_ready;
-        if(data_ready) begin a_cmp <= data; b_cmp <= result; end
+        if(data_ready) begin a_cmp <= new_data; b_cmp <= ori_data; end
         pool_ready <= rdy;
         result <= result_cmp? a_cmp : b_cmp;
     end
