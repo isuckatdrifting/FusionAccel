@@ -54,77 +54,41 @@ module engine  //Instantiate 16CMACs for conv3x3, 16CMACs for conv1x1, maxpool a
 localparam CONV = 1;
 localparam MPOOL = 4; //FIXME: change command number
 localparam APOOL = 5;
-
-reg  conv_valid, maxpool_valid, avepool_valid;
-wire [`BURST_LEN-1:0] cmac_data_valid, avepool_data_valid, maxpool_data_valid, mult_ready_buf;
-reg  cmac_data_ready, cmac_enable, avepool_data_ready, avepool_enable, maxpool_data_ready, maxpool_enable;
-wire [`BURST_LEN-1:0] rdy_cmac, rdy_sacc, rdy_scmp;
-reg  [`BURST_LEN-1:0] cmac_ready, sacc_ready, scmp_ready;
+//==================== CMAC Wires and Registers ====================//
+reg  conv_valid, cmac_data_ready, cmac_enable;
+wire [`BURST_LEN-1:0] cmac_data_valid, mult_ready_buf;
+wire [`BURST_LEN-1:0] rdy_cmac;
+reg  [`BURST_LEN-1:0] cmac_ready;
 
 //Data BUF and Weight BUF of serializer
 reg  [16*`BURST_LEN-1:0] dbuf; 	// serial buffer
 reg  [16*`BURST_LEN-1:0] wbuf [8:0]; // serial buffer
 
 reg  [16*`BURST_LEN-1:0] data; 	// parallel
-wire [16*`BURST_LEN-1:0] scmp_data; 	// parallel	//FIXME: rename
 wire [16*`BURST_LEN-1:0] weight; // parallel 3x3xBURST_LEN, wired out from weight_cache
 wire [16*`BURST_LEN-1:0] tmp_sum;// parallel, wired out from cmac_sum
-wire [16*`BURST_LEN-1:0] tmp_cmp;// parallel, wired out from cmac_sum
-reg [16*`BURST_LEN-1:0] tmp_sum_sacc;
-reg  [7:0]  dma_p2_burst_cnt, dma_p3_burst_cnt, dma_p3_offset; // de-serializer counter, burst get 16 data, then send to operation unit.
-//Result registers of cmac/sacc/scmp
 wire [16*`BURST_LEN-1:0] conv_result; // parallel
 reg  [16*`BURST_LEN-1:0] cmac_result;
-wire [16*`BURST_LEN-1:0] maxpool_result; // parallel
-wire [16*`BURST_LEN-1:0] avepool_result; // parallel
-reg  [16*`BURST_LEN-1:0] sacc_result;
-reg  [16*`BURST_LEN-1:0] scmp_result;
 
-reg div_en;
 //pipeline registers
-reg  [7:0]  atom_count;						//NOTES: atom count is used only in address parsing, it is not used in operation logic
 reg  [7:0]  mult_pipe_count;				//NOTES: counter for data reuse on one data in cmac
 reg  [7:0]  accu_pipe_count;				//NOTES: counter for tmp_sum in cmac
-reg  [15:0] line_count;						//NOTES: counter for one gemm line, range:(0, kernel * o_side)
 reg  [7:0]  cache_count [2:0]; 				//FIXME: use max conv side support defined in include files.
 reg  [7:0]  result_count;					//NOTES: counter for results in single cmac reuse
 reg  [7:0]  sum_count [2:0];				//NOTES: counter for results in a kernel_size
-reg  [16*`BURST_LEN-1:0] data_cache [2:0];//NOTES: memory for storing scmp reuse input data // FIXME: use bram
-reg  [16*`BURST_LEN-1:0] scmp_cmp [2:0];	//NOTES: memory for storing scmp reuse output cmp // FIXME: use bram
 reg  [16*`BURST_LEN-1:0] weight_cache [2:0];//NOTES: memory for storing cmac reuse input weight // FIXME: use bram
 reg  [16*`BURST_LEN-1:0] cmac_sum [2:0];	//NOTES: memory for storing cmac reuse output sum // FIXME: use bram
 reg  [16*`BURST_LEN-1:0] psum;				//NOTES: registers for 16-channel sum output, it is selected from the memory cmac_sum
 
 //Full sum registers
 reg  [15:0] sum [127:0]; //max support 128 x 128 output side // FIXME: use bram
-reg  [15:0] fsum_a;
-reg  [15:0] fsum_b;
-reg  [15:0] fsum_result;
+reg  [15:0] fsum_a, fsum_b, fsum_result;
 reg  [7:0]  fsum_count;
 reg  [7:0]  fsum_index;
 reg         fsum_data_valid;
 reg			fsum_enable;
 reg			fsum_data_ready;
 reg		    fsum_ready;
-
-//GEMM registers
-reg 		to_clear;
-reg  [15:0] i_channel_count;
-reg  [7:0]  gemm_count;
-reg  [15:0] o_channel_count;
-reg			layer_finish;
-
-reg 		engine_ready;
-
-//DMA enable signal
-reg			dma_p0_writes_en, dma_p1_writes_en, dma_p2_reads_en, dma_p3_reads_en, dma_p4_reads_en, dma_p5_reads_en;
-reg [29:0]  p0_addr, p1_addr, p2_addr, p3_addr, p4_addr, p5_addr;              //Output to DMA, burst start address. 
-reg [29:0]  gemm_addr, data_addr_block, weight_addr_block, result_addr_block, data_addr_offset, weight_addr_offset, result_addr_offset;
-reg [15:0]  dma_p0_ib_data, dma_p1_ib_data;
-reg			dma_p0_ib_valid, dma_p1_ib_valid;
-
-// NOTES: Generate accumulator for atom(1 * 1 * channel) and cube(k * k * channel), this data path is dedicated to convolution only.
-// NOTES: deserializer for write back is only enabled in pooling
 
 genvar i;
 generate 
@@ -134,6 +98,8 @@ generate
 endgenerate
 always @(posedge clk) cmac_result <= conv_result;
 always @(posedge clk) cmac_ready <= rdy_cmac;
+assign weight = weight_cache[mult_pipe_count];
+assign tmp_sum = cmac_sum[accu_pipe_count];
 
 wire operation_rfd_fsum, rdy_fsum;
 wire [15:0] result_fsum;
@@ -142,6 +108,42 @@ accum fsum_ (.a(fsum_a), .b(fsum_b), .clk(clk), .operation_nd(fsum_data_ready), 
 always @(posedge clk) fsum_data_valid <= operation_rfd_fsum;
 always @(posedge clk) fsum_result <= result_fsum;
 always @(posedge clk) fsum_ready <= rdy_fsum;
+
+//==================== SCMP Wires and Registers ====================//
+reg maxpool_valid, maxpool_data_ready, maxpool_enable;
+wire [`BURST_LEN-1:0] maxpool_data_valid;
+wire [`BURST_LEN-1:0] rdy_scmp;
+reg  [`BURST_LEN-1:0] scmp_ready;
+wire [16*`BURST_LEN-1:0] scmp_data; 	// parallel	//FIXME: rename
+
+wire [16*`BURST_LEN-1:0] tmp_cmp;// parallel, wired out from cmac_sum
+wire [16*`BURST_LEN-1:0] maxpool_result; // parallel
+reg  [16*`BURST_LEN-1:0] scmp_result;
+reg  [16*`BURST_LEN-1:0] data_cache [2:0];//NOTES: memory for storing scmp reuse input data // FIXME: use bram
+reg  [16*`BURST_LEN-1:0] scmp_cmp [2:0];	//NOTES: memory for storing scmp reuse output cmp // FIXME: use bram
+
+genvar l;
+generate
+	for (l = 0; l < `BURST_LEN; l = l + 1) begin: genscmp
+		scmp scmp_(.clk(clk), .rst(rst), .new_data(scmp_data[l*16 +: 16]), .ori_data(tmp_cmp[l*16 +: 16]), .result(maxpool_result[l*16 +: 16]), .pool_valid(maxpool_valid), .data_ready(maxpool_data_ready), .data_valid(maxpool_data_valid[l]), .pool_ready(rdy_scmp[l]));
+	end
+endgenerate
+always @(posedge clk) scmp_result <= maxpool_result;
+always @(posedge clk) scmp_ready <= rdy_scmp;
+assign scmp_data = data_cache[mult_pipe_count];
+assign tmp_cmp = scmp_cmp[accu_pipe_count];
+
+//==================== SACC Wires and Registers ====================//
+reg avepool_valid, avepool_data_ready, avepool_enable;
+wire [`BURST_LEN-1:0] avepool_data_valid;
+wire [`BURST_LEN-1:0] rdy_sacc;
+reg  [`BURST_LEN-1:0] sacc_ready;
+
+reg  [16*`BURST_LEN-1:0] tmp_sum_sacc;
+wire [16*`BURST_LEN-1:0] avepool_result; // parallel
+reg  [16*`BURST_LEN-1:0] sacc_result;
+
+reg div_en;
 
 genvar k;
 generate
@@ -152,15 +154,26 @@ endgenerate
 always @(posedge clk) sacc_result <= avepool_result;
 always @(posedge clk) sacc_ready <= rdy_sacc;
 
-genvar l;
-generate
-	for (l = 0; l < `BURST_LEN; l = l + 1) begin: genscmp
-		scmp scmp_(.clk(clk), .rst(rst), .new_data(scmp_data[l*16 +: 16]), .ori_data(tmp_cmp[l*16 +: 16]), .result(maxpool_result[l*16 +: 16]), .pool_valid(maxpool_valid), .data_ready(maxpool_data_ready), .data_valid(maxpool_data_valid[l]), .pool_ready(rdy_scmp[l]));
-	end
-endgenerate
-always @(posedge clk) scmp_result <= maxpool_result;
-always @(posedge clk) scmp_ready <= rdy_scmp;
+//==================== Address registers ===========================//
+reg  [15:0] i_channel_count;
+reg  [7:0]  gemm_count;
+reg  [15:0] o_channel_count;
+reg			layer_finish;
+reg 		to_clear;
+reg 		engine_ready;
 
+//==================== DMA related registers========================//
+reg  [7:0]  atom_count;						//NOTES: atom count is used only in address parsing, it is not used in operation logic
+reg  [15:0] line_count;						//NOTES: counter for one gemm line, range:(0, kernel * o_side)
+reg  [7:0]  dma_p2_burst_cnt, dma_p3_burst_cnt, dma_p3_offset; // de-serializer counter, burst get 16 data, then send to operation unit.
+reg			dma_p0_writes_en, dma_p1_writes_en, dma_p2_reads_en, dma_p3_reads_en, dma_p4_reads_en, dma_p5_reads_en;
+reg [29:0]  p0_addr, p1_addr, p2_addr, p3_addr, p4_addr, p5_addr;              //Output to DMA, burst start address. 
+reg [29:0]  gemm_addr, data_addr_block, weight_addr_block, result_addr_block, data_addr_offset, weight_addr_offset, result_addr_offset;
+reg [15:0]  dma_p0_ib_data, dma_p1_ib_data;
+reg			dma_p0_ib_valid, dma_p1_ib_valid;
+
+// NOTES: Generate accumulator for atom(1 * 1 * channel) and cube(k * k * channel), this data path is dedicated to convolution only.
+// NOTES: deserializer for write back is only enabled in pooling
 //State Machine
 localparam init 		= 4'b0000;
 localparam idle 		= 4'b0001;
@@ -225,11 +238,6 @@ end
 //NOTES: Sum point is ready only after the all channel 3x3 kernel mac is complete
 //TODO:  Padding Layer: dual channel write back address parsing
 //NOTES: weight and tmp_sum is directly from the corresponding registers
-
-assign weight = weight_cache[mult_pipe_count];
-assign tmp_sum = cmac_sum[accu_pipe_count];
-assign scmp_data = data_cache[mult_pipe_count];
-assign tmp_cmp = scmp_cmp[accu_pipe_count];
 
 integer a; // initialize buffer for cmac
 initial begin
@@ -598,7 +606,7 @@ always @ (posedge clk or posedge rst) begin
 				if(div_en && sacc_ready) begin
 					div_en <= 0;
 					to_clear <= 1;
-					dma_p0_writes_en <= 1; //Writeback all channels
+					dma_p0_writes_en <= 1; //FIXME:Writeback all channels
 				end
 			end
 
