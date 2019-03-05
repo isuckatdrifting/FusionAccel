@@ -372,6 +372,11 @@
          <obj_property name="UseCustomSignalColor">true</obj_property>
          <obj_property name="CustomSignalColor">#ffff00</obj_property>
       </wvobject>
+      <wvobject fp_name="/engine_tb/engine_/fsum" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">fsum[127:0,15:0]</obj_property>
+         <obj_property name="ObjectShortName">fsum[127:0,15:0]</obj_property>
+         <obj_property name="Radix">HEXRADIX</obj_property>
+      </wvobject>
       <wvobject fp_name="/engine_tb/engine_/fsum_enable" type="logic" db_ref_id="1">
          <obj_property name="ElementShortName">fsum_enable</obj_property>
          <obj_property name="ObjectShortName">fsum_enable</obj_property>
@@ -793,6 +798,51 @@
             <obj_property name="UseCustomSignalColor">true</obj_property>
             <obj_property name="CustomSignalColor">#ffa500</obj_property>
          </wvobject>
+      </wvobject>
+      <wvobject fp_name="/engine_tb/engine_/writeback_en" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">writeback_en</obj_property>
+         <obj_property name="ObjectShortName">writeback_en</obj_property>
+      </wvobject>
+      <wvobject fp_name="/engine_tb/engine_/writeback_count" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">writeback_count[7:0]</obj_property>
+         <obj_property name="ObjectShortName">writeback_count[7:0]</obj_property>
+         <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+      </wvobject>
+      <wvobject fp_name="/engine_tb/engine_/dma_p0_writes_en" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">dma_p0_writes_en</obj_property>
+         <obj_property name="ObjectShortName">dma_p0_writes_en</obj_property>
+      </wvobject>
+      <wvobject fp_name="/engine_tb/dma_p0_ib_re" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">dma_p0_ib_re</obj_property>
+         <obj_property name="ObjectShortName">dma_p0_ib_re</obj_property>
+      </wvobject>
+      <wvobject fp_name="/engine_tb/engine_/dma_p0_ib_valid" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">dma_p0_ib_valid</obj_property>
+         <obj_property name="ObjectShortName">dma_p0_ib_valid</obj_property>
+      </wvobject>
+      <wvobject fp_name="/engine_tb/engine_/dma_p0_ib_data" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">dma_p0_ib_data[15:0]</obj_property>
+         <obj_property name="ObjectShortName">dma_p0_ib_data[15:0]</obj_property>
+         <obj_property name="Radix">HEXRADIX</obj_property>
+      </wvobject>
+      <wvobject fp_name="/engine_tb/p0_addr" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">p0_addr[29:0]</obj_property>
+         <obj_property name="ObjectShortName">p0_addr[29:0]</obj_property>
+         <obj_property name="Radix">HEXRADIX</obj_property>
+      </wvobject>
+      <wvobject fp_name="/engine_tb/engine_/result_addr_block" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">result_addr_block[29:0]</obj_property>
+         <obj_property name="ObjectShortName">result_addr_block[29:0]</obj_property>
+         <obj_property name="Radix">HEXRADIX</obj_property>
+      </wvobject>
+      <wvobject fp_name="/engine_tb/engine_/result_addr_offset" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">result_addr_offset[29:0]</obj_property>
+         <obj_property name="ObjectShortName">result_addr_offset[29:0]</obj_property>
+         <obj_property name="Radix">HEXRADIX</obj_property>
+      </wvobject>
+      <wvobject fp_name="/engine_tb/engine_/to_clear" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">to_clear</obj_property>
+         <obj_property name="ObjectShortName">to_clear</obj_property>
       </wvobject>
    </wvobject>
 </wave_config>

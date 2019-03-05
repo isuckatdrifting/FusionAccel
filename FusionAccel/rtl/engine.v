@@ -59,26 +59,26 @@ wire [`BURST_LEN-1:0] 	 rdy_cmac;
 reg  [`BURST_LEN-1:0] 	 cmac_ready;
 
 //Data BUF and Weight BUF of serializer
-reg  [16*`BURST_LEN-1:0] dbuf; 	// serial buffer
-reg  [16*`BURST_LEN-1:0] wbuf [8:0]; // serial buffer
+reg  [16*`BURST_LEN-1:0] dbuf; 						// serial buffer
+reg  [16*`BURST_LEN-1:0] wbuf [8:0]; 				// serial buffer
 
-reg  [16*`BURST_LEN-1:0] data; 	// parallel
-wire [16*`BURST_LEN-1:0] weight; // parallel 3x3xBURST_LEN, wired out from cmac_weight_cache
-wire [16*`BURST_LEN-1:0] cmac_tmp_sum;// parallel, wired out from cmac_sum
-wire [16*`BURST_LEN-1:0] conv_result; // parallel
+reg  [16*`BURST_LEN-1:0] data; 						// parallel
+wire [16*`BURST_LEN-1:0] weight; 					// parallel 3x3xBURST_LEN, wired out from cmac_weight_cache
+wire [16*`BURST_LEN-1:0] cmac_tmp_sum;				// parallel, wired out from cmac_sum
+wire [16*`BURST_LEN-1:0] conv_result; 				// parallel
 reg  [16*`BURST_LEN-1:0] cmac_result;
 
 //pipeline registers
-reg  [7:0]  			 cmac_input_pipe_count;				//NOTES: counter for data reuse on one data in cmac
-reg  [7:0]  			 cmac_middle_pipe_count;				//NOTES: counter for cmac_tmp_sum in cmac
-reg  [7:0]  			 cmac_output_pipe_count;					//NOTES: counter for results in single cmac reuse
-reg  [16*`BURST_LEN-1:0] cmac_weight_cache [2:0];//NOTES: memory for storing cmac reuse input weight // FIXME: use bram
-reg  [16*`BURST_LEN-1:0] cmac_sum [2:0];	//NOTES: memory for storing cmac reuse output sum // FIXME: use bram
-reg  [7:0]  			 psum_count [2:0];				//NOTES: counter for results in a kernel_size
-reg  [16*`BURST_LEN-1:0] psum;				//NOTES: registers for 16-channel sum output, it is selected from the memory cmac_sum
+reg  [7:0]  			 cmac_input_pipe_count;		//NOTES: counter for data reuse on one data in cmac
+reg  [7:0]  			 cmac_middle_pipe_count;	//NOTES: counter for cmac_tmp_sum in cmac
+reg  [7:0]  			 cmac_output_pipe_count;	//NOTES: counter for results in single cmac reuse
+reg  [16*`BURST_LEN-1:0] cmac_weight_cache [2:0];	//NOTES: memory for storing cmac reuse input weight
+reg  [16*`BURST_LEN-1:0] cmac_sum [2:0];			//NOTES: memory for storing cmac reuse output sum
+reg  [7:0]  			 psum_count [2:0];			//NOTES: counter for results in a kernel_size
+reg  [16*`BURST_LEN-1:0] psum;						//NOTES: registers for 16-channel sum output, it is selected from the memory cmac_sum
 
 //Full sum registers
-reg  [15:0] 			 fsum [127:0]; //max support 128 x 128 output side // FIXME: use bram
+reg  [15:0] 			 fsum [127:0]; //max support 128 x 128 output side
 reg  [15:0] 			 fsum_a, fsum_b, fsum_result;
 reg  [7:0]  			 fsum_count;
 reg  [7:0]  			 fsum_index;
@@ -111,17 +111,17 @@ reg 					 maxpool_valid, maxpool_data_ready, maxpool_enable;
 wire [`BURST_LEN-1:0] 	 maxpool_data_valid;
 wire [`BURST_LEN-1:0] 	 rdy_scmp;
 reg  [`BURST_LEN-1:0] 	 scmp_ready;
-wire [16*`BURST_LEN-1:0] scmp_data; 			// parallel
+wire [16*`BURST_LEN-1:0] scmp_data; 				// parallel
 
-wire [16*`BURST_LEN-1:0] scmp_tmp_cmp;			// parallel, wired out from scmp_cmp 
-wire [16*`BURST_LEN-1:0] maxpool_result; 		// parallel
+wire [16*`BURST_LEN-1:0] scmp_tmp_cmp;				// parallel, wired out from scmp_cmp 
+wire [16*`BURST_LEN-1:0] maxpool_result; 			// parallel
 reg  [16*`BURST_LEN-1:0] scmp_result;
-reg  [7:0] 				 scmp_input_pipe_count;	//NOTES: counter for data reuse on one data in cmac
-reg  [7:0] 				 scmp_output_pipe_count;//NOTES: counter for data reuse on one data in cmac
-reg  [16*`BURST_LEN-1:0] scmp_data_cache [2:0];	//NOTES: memory for storing scmp reuse input data // FIXME: use bram
-reg  [16*`BURST_LEN-1:0] scmp_cmp [2:0];		//NOTES: memory for storing scmp reuse output cmp // FIXME: use bram
-reg  [7:0]  			 scmp_count [2:0];		//NOTES: counter for results in a kernel_size
-reg  [16*`BURST_LEN-1:0] cmp;					//NOTES: registers for 16-channel cmp output, it is selected from the memory scmp_cmp
+reg  [7:0] 				 scmp_input_pipe_count;		//NOTES: counter for data reuse in scmp
+reg  [7:0] 				 scmp_output_pipe_count;	//NOTES: counter for data reuse in scmp
+reg  [16*`BURST_LEN-1:0] scmp_data_cache [2:0];		//NOTES: memory for storing scmp reuse input data
+reg  [16*`BURST_LEN-1:0] scmp_cmp [2:0];			//NOTES: memory for storing scmp reuse output cmp
+reg  [7:0]  			 scmp_count [2:0];			//NOTES: counter for results in a kernel_size
+reg  [16*`BURST_LEN-1:0] cmp;						//NOTES: registers for 16-channel cmp output, it is selected from the memory scmp_cmp
 
 genvar l;
 generate
@@ -140,7 +140,7 @@ wire [`BURST_LEN-1:0] avepool_data_valid;
 wire [`BURST_LEN-1:0] rdy_sacc;
 reg  [`BURST_LEN-1:0] sacc_ready;
 
-reg  [16*`BURST_LEN-1:0] tmp_sum_sacc;
+reg  [16*`BURST_LEN-1:0] sacc_tmp_sum;
 wire [16*`BURST_LEN-1:0] avepool_result; // parallel
 reg  [16*`BURST_LEN-1:0] sacc_result;
 
@@ -149,7 +149,7 @@ reg div_en;
 genvar k;
 generate
 	for (k = 0; k < `BURST_LEN; k = k + 1) begin: gensacc
-		sacc sacc_(.clk(clk), .rst(rst), .data(data[k*16 +: 16]), .result(avepool_result[k*16 +: 16]), .tmp_sum(tmp_sum_sacc[k*16 +: 16]), .pool_valid(avepool_valid), .data_ready(avepool_data_ready), .data_valid(avepool_data_valid[k]), .div_en(div_en), .pool_ready(rdy_sacc[k]));
+		sacc sacc_(.clk(clk), .rst(rst), .data(data[k*16 +: 16]), .result(avepool_result[k*16 +: 16]), .tmp_sum(sacc_tmp_sum[k*16 +: 16]), .pool_valid(avepool_valid), .data_ready(avepool_data_ready), .data_valid(avepool_data_valid[k]), .div_en(div_en), .pool_ready(rdy_sacc[k]));
 	end
 endgenerate
 always @(posedge clk) sacc_result <= avepool_result;
@@ -169,10 +169,13 @@ reg  [15:0] line_count;						//NOTES: counter for one gemm line, range:(0, kerne
 reg  [7:0]  cache_count [2:0]; 				//FIXME: use max conv side support defined in include files.
 reg  [7:0]  dma_p2_burst_cnt, dma_p3_burst_cnt, dma_p3_offset; // de-serializer counter, burst get 16 data, then send to operation unit.
 reg			dma_p0_writes_en, dma_p1_writes_en, dma_p2_reads_en, dma_p3_reads_en, dma_p4_reads_en, dma_p5_reads_en;
-reg [29:0]  p0_addr, p1_addr, p2_addr, p3_addr, p4_addr, p5_addr;              //Output to DMA, burst start address. 
-reg [29:0]  gemm_addr, data_addr_block, weight_addr_block, result_addr_block, data_addr_offset, weight_addr_offset, result_addr_offset;
-reg [15:0]  dma_p0_ib_data, dma_p1_ib_data;
+reg  [29:0] p0_addr, p1_addr, p2_addr, p3_addr, p4_addr, p5_addr;              //Output to DMA, burst start address. 
+reg  [29:0] gemm_addr, data_addr_block, weight_addr_block, result_addr_block, data_addr_offset, weight_addr_offset, result_addr_offset;
+reg  [15:0] dma_p0_ib_data, dma_p1_ib_data;
 reg			dma_p0_ib_valid, dma_p1_ib_valid;
+reg			writeback_en;
+reg	 [7:0]	writeback_count;
+reg	 [7:0]	writeback_num;
 
 // NOTES: Generate accumulator for atom(1 * 1 * channel) and cube(k * k * channel), this data path is dedicated to convolution only.
 // NOTES: deserializer for write back is only enabled in pooling
@@ -258,7 +261,7 @@ always @ (posedge clk or posedge rst) begin
 		dma_p0_ib_data <= 16'h0000; dma_p1_ib_data <= 16'h0000;
 		dma_p0_ib_valid <= 0; dma_p1_ib_valid <= 0;
 		//==================== Channel operation registers ====================
-		dbuf <= 'd0; data <= 'd0; psum <= 'd0; cmp <= 'd0; tmp_sum_sacc <= 'd0;
+		dbuf <= 'd0; data <= 'd0; psum <= 'd0; cmp <= 'd0; sacc_tmp_sum <= 'd0;
 		wbuf[0] <= 'd0; wbuf[1] <= 'd0; wbuf[2] <= 'd0; 
 		wbuf[3] <= 'd0; wbuf[4] <= 'd0; wbuf[5] <= 'd0; 
 		wbuf[6] <= 'd0; wbuf[7] <= 'd0; wbuf[8] <= 'd0; 
@@ -270,7 +273,7 @@ always @ (posedge clk or posedge rst) begin
 		scmp_cmp[0] <= 'd0; scmp_cmp[1] <= 'd0; scmp_cmp[2] <= 'd0;
 		scmp_data_cache[0] <= 'd0; scmp_data_cache[1] <= 'd0; scmp_data_cache[2] <= 'd0;
 		cmac_weight_cache[0] <= 'd0; cmac_weight_cache[1] <= 'd0; cmac_weight_cache[2] <= 'd0;
-		cmac_enable <= 0; cmac_data_ready <= 0; avepool_enable <= 0; avepool_data_ready <= 0; maxpool_enable <= 0; maxpool_data_ready <= 0; div_en <= 0; //FIXME: unite names
+		cmac_enable <= 0; cmac_data_ready <= 0; avepool_enable <= 0; avepool_data_ready <= 0; maxpool_enable <= 0; maxpool_data_ready <= 0; div_en <= 0;
 		atom_count <= 8'h00; line_count <= 16'h0000; cmac_output_pipe_count <= 8'h00;
 		cmac_input_pipe_count <= 8'h00; cmac_middle_pipe_count <= 8'h00; scmp_input_pipe_count <= 8'h00; scmp_output_pipe_count <= 8'h00; 
 		fsum_enable <= 0; fsum_data_ready <= 0;
@@ -283,6 +286,7 @@ always @ (posedge clk or posedge rst) begin
 		data_addr_block <= 30'h0000_0000; weight_addr_block <= 30'h0000_0000; result_addr_block <= 30'h0000_0000;
 		data_addr_offset <= 30'h0000_0000; weight_addr_offset <= 30'h0000_0000; result_addr_offset <= 30'h0000_0000;
 		i_channel_count <= 16'h0000; gemm_count <= 8'h00; o_channel_count <= 16'h0000; layer_finish <= 0;
+		writeback_en <= 0; writeback_count <= 8'h00; writeback_num <= 8'h00;
 	end else begin
 		case (curr_state)
 			init: begin
@@ -298,22 +302,24 @@ always @ (posedge clk or posedge rst) begin
 				dma_p0_ib_data <= 16'h0000; dma_p1_ib_data <= 16'h0000;
 				dma_p0_ib_valid <= 0; dma_p1_ib_valid <= 0;
 				//==================== Channel operation registers ====================
-				dbuf <= 'd0; data <= 'd0; psum <= 'd0;
+				dbuf <= 'd0; data <= 'd0; psum <= 'd0; cmp <= 'd0; sacc_tmp_sum <= 'd0;
 				wbuf[0] <= 'd0; wbuf[1] <= 'd0; wbuf[2] <= 'd0; 
 				wbuf[3] <= 'd0; wbuf[4] <= 'd0; wbuf[5] <= 'd0; 
 				wbuf[6] <= 'd0; wbuf[7] <= 'd0; wbuf[8] <= 'd0; 
 				//==================== Slot registers ====================
 				cache_count[0] <= 8'h00; cache_count[1] <= 8'h00; cache_count[2] <= 8'h00;
 				psum_count[0] <= 8'h00; psum_count[1] <= 8'h00; psum_count[2] <= 8'h00;
+				scmp_count[0] <= 8'h00; scmp_count[1] <= 8'h00; scmp_count[2] <= 8'h00;
 				cmac_sum[0] <= 'd0; cmac_sum[1] <= 'd0; cmac_sum[2] <= 'd0;
 				scmp_cmp[0] <= 'd0; scmp_cmp[1] <= 'd0; scmp_cmp[2] <= 'd0;
 				scmp_data_cache[0] <= 'd0; scmp_data_cache[1] <= 'd0; scmp_data_cache[2] <= 'd0;
 				cmac_weight_cache[0] <= 'd0; cmac_weight_cache[1] <= 'd0; cmac_weight_cache[2] <= 'd0;
-				cmac_enable <= 0; cmac_data_ready <= 0; avepool_enable <= 0; avepool_data_ready <= 0; maxpool_enable <= 0; maxpool_data_ready <= 0; div_en <= 0; //FIXME: unite names
-				atom_count <= 8'h00; cmac_input_pipe_count <= 8'h00; cmac_middle_pipe_count <= 8'h00; line_count <= 16'h0000; cmac_output_pipe_count <= 8'h00;
+				cmac_enable <= 0; cmac_data_ready <= 0; avepool_enable <= 0; avepool_data_ready <= 0; maxpool_enable <= 0; maxpool_data_ready <= 0; div_en <= 0;
+				atom_count <= 8'h00; line_count <= 16'h0000; cmac_output_pipe_count <= 8'h00;
+				cmac_input_pipe_count <= 8'h00; cmac_middle_pipe_count <= 8'h00; scmp_input_pipe_count <= 8'h00; scmp_output_pipe_count <= 8'h00; 
 				fsum_enable <= 0; fsum_data_ready <= 0;
 				fsum_a <= 16'h0000; fsum_b <= 16'h0000; fsum_count <= 8'h00; fsum_index <= 8'h00;
-				to_clear <= 0; 
+				to_clear <= 0;  
 			end
 // CMD = 1 ==================== CONVOLUTION: Process a line ====================//
 			gemm_busy: begin
@@ -451,10 +457,10 @@ always @ (posedge clk or posedge rst) begin
 					if(fsum_count == `BURST_LEN) begin
 						fsum_index <= fsum_index + 1; //pipeline index sampling (delay align)
 						fsum[fsum_index] <= fsum_result; //NOTES: it will overwrite the fsum_result in the first c-1 channel groups
-						dma_p0_ib_data <= fsum_result;
 					end
 					if(i_channel_count + `BURST_LEN >= i_channel && fsum_count == `BURST_LEN) begin
-						dma_p0_writes_en <= 1;
+						writeback_en <= 1;
+						writeback_num <= 1;
 					end
 				end
 				if(fsum_index + 1 == o_side && fsum_ready && fsum_count == 0) begin
@@ -541,18 +547,18 @@ always @ (posedge clk or posedge rst) begin
 					//Logic for setting psum_count according to cache_count
 					if(scmp_count[0] + 1 == kernel_size) begin
 						cmp <= scmp_cmp[0];
-						//fsum_enable <= 1; //Trigger for channel memory writeback
-						//fsum_count <= 0;
+						writeback_en <= 1; //Trigger for channel memory writeback
+						writeback_num <= `BURST_LEN;
 					end
 					if(scmp_count[1] + 1 == kernel_size) begin
 						cmp <= scmp_cmp[1];
-						//fsum_enable <= 1; //Trigger for channel memory writeback
-						//fsum_count <= 0;
+						writeback_en <= 1; //Trigger for channel memory writeback
+						writeback_num <= `BURST_LEN;
 					end
 					if(scmp_count[2] + 1 == kernel_size) begin
 						cmp <= scmp_cmp[2];
-						//fsum_enable <= 1; //Trigger for channel memory writeback
-						//fsum_count <= 0;
+						writeback_en <= 1; //Trigger for channel memory writeback
+						writeback_num <= `BURST_LEN;
 					end
 				end
 			end
@@ -596,13 +602,14 @@ always @ (posedge clk or posedge rst) begin
 					avepool_data_ready <= 0;
 				end
 				if(sacc_ready) begin
-					tmp_sum_sacc <= sacc_result;
+					sacc_tmp_sum <= sacc_result;
 					fsum_index <= fsum_index + 1;
 				end
 				if(div_en && sacc_ready) begin
 					div_en <= 0;
 					to_clear <= 1;
-					dma_p0_writes_en <= 1; //FIXME:Writeback all channels
+					writeback_en <= 1; //NOTES: Writeback all channels
+					writeback_num <= `BURST_LEN;
 				end
 			end
 
@@ -637,9 +644,21 @@ always @ (posedge clk or posedge rst) begin
 		endcase
 
 		// ==================== Write back Logic ====================
+		if(writeback_en) begin
+			if(writeback_count < writeback_num) dma_p0_writes_en <= 1;
+			else begin
+				writeback_en <= 0;
+				writeback_count <= 0;
+			end
+		end
 		if(dma_p0_ib_re) begin
 			dma_p0_writes_en <= 0;
+			case(op_type)
+				CONV: dma_p0_ib_data <= fsum_result;
+				MPOOL, APOOL: ; //TODO: data for pooling
+			endcase
 			dma_p0_ib_valid <= 1;
+			writeback_count <= writeback_count + 1;
 		end else begin
 			dma_p0_ib_valid <= 0;
 		end
