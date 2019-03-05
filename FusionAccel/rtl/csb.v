@@ -16,7 +16,7 @@ module csb
 
     output [2:0]    op_type,
     output          padding,
-    output [3:0]    stride,
+    output [3:0]    stride,     //TODO: valid check: stride < padding < kernel
     output [3:0]    kernel,
     output [7:0]    stride2,    //kernel * stride
     output [15:0]   i_channel,
