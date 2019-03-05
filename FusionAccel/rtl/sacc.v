@@ -34,8 +34,7 @@ always @ (posedge clk or posedge rst) begin
         data_valid <= operation_rfd_acc;
         operation_nd_acc <= data_ready;
         if(data_ready) begin a_acc <= tmp_sum; b_acc <= data; end
-        operation_nd_div <= div_en; // sync, one cycle delay
-        if(div_en) begin a_div <= tmp_sum; b_div <= 16'h5948; end //196:5a20, 169:5948
+        if(div_en) begin a_div <= tmp_sum; b_div <= 16'h5948; operation_nd_div <= data_ready; end //196:5a20, 169:5948
         pool_ready <= div_en? div_ready: acc_ready;
         result <= div_en? result_div: result_acc;
     end
