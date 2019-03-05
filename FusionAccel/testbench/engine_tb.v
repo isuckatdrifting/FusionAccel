@@ -1,7 +1,7 @@
 `timescale 1ns/1ps
 //`define CMAC
-`define SACC
-//`define SCMP
+//`define SACC
+`define SCMP
 
 module engine_tb;
 
@@ -104,8 +104,8 @@ reg [2:0] p0_state, p1_state, p2_state, p3_state;
 	end
 `endif
 `ifdef SCMP
+	reg [9*16-1:0] maxpooldata;
 	initial begin
-		reg [9*16-1:0] maxpooldata;
 		maxpooldata = {16'h4880, 16'h4400, 16'h4600, 16'h4880, 16'h4200, 16'h4700, 16'h3c00, 16'h4000, 16'h4500}; //9,4,6,8,3,7,1,2,5
 	end
 `endif
@@ -188,6 +188,8 @@ initial begin
 `endif
 `ifdef SCMP
 	#100 op_type = 4;
+		padding = 0; stride = 2; stride2 = 6;
+		kernel = 3; kernel_size = 9; i_channel = 8; o_channel = 1; i_side = 3; o_side = 1;
 `endif
 `ifdef SACC
 	#100 op_type = 5;

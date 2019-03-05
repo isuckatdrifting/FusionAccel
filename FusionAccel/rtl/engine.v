@@ -66,6 +66,7 @@ reg  [16*`BURST_LEN-1:0] dbuf; 	// serial buffer
 reg  [16*`BURST_LEN-1:0] wbuf [8:0]; // serial buffer
 
 reg  [16*`BURST_LEN-1:0] data; 	// parallel
+wire [16*`BURST_LEN-1:0] scmp_data; 	// parallel	//FIXME: rename
 wire [16*`BURST_LEN-1:0] weight; // parallel 3x3xBURST_LEN, wired out from weight_cache
 wire [16*`BURST_LEN-1:0] tmp_sum;// paralle, wired out from cmac_sum
 reg [16*`BURST_LEN-1:0] tmp_sum_sacc;
@@ -87,6 +88,7 @@ reg  [15:0] line_count;						//NOTES: counter for one gemm line, range:(0, kerne
 reg  [7:0]  cache_count [2:0]; 				//FIXME: use max conv side support defined in include files.
 reg  [7:0]  result_count;					//NOTES: counter for results in single cmac reuse
 reg  [7:0]  sum_count [2:0];				//NOTES: counter for results in a kernel_size
+reg  [16*`BURST_LEN-1:0] data_cache [2:0];//NOTES: memory for storing cmac reuse input weight // FIXME: use bram
 reg  [16*`BURST_LEN-1:0] weight_cache [2:0];//NOTES: memory for storing cmac reuse input weight // FIXME: use bram
 reg  [16*`BURST_LEN-1:0] cmac_sum [2:0];	//NOTES: memory for storing cmac reuse output sum // FIXME: use bram
 reg  [16*`BURST_LEN-1:0] psum;				//NOTES: registers for 16-channel sum output, it is selected from the memory cmac_sum
@@ -151,7 +153,7 @@ always @(posedge clk) sacc_ready <= rdy_sacc;
 genvar l;
 generate
 	for (l = 0; l < `BURST_LEN; l = l + 1) begin: genscmp
-		scmp scmp_(.clk(clk), .rst(rst), .data(data[l*16 +: 16]), .result(maxpool_result[l*16 +: 16]), .pool_valid(maxpool_valid), .data_ready(maxpool_data_ready), .data_valid(maxpool_data_valid[l]), .pool_ready(rdy_scmp[l]));
+		scmp scmp_(.clk(clk), .rst(rst), .data(scmp_data[l*16 +: 16]), .result(maxpool_result[l*16 +: 16]), .pool_valid(maxpool_valid), .data_ready(maxpool_data_ready), .data_valid(maxpool_data_valid[l]), .pool_ready(rdy_scmp[l]));
 	end
 endgenerate
 always @(posedge clk) scmp_result <= maxpool_result;
@@ -224,6 +226,7 @@ end
 
 assign weight = weight_cache[mult_pipe_count];
 assign tmp_sum = cmac_sum[accu_pipe_count];
+assign scmp_data = data_cache[mult_pipe_count];
 
 integer a; // initialize buffer for cmac
 initial begin
@@ -250,6 +253,7 @@ always @ (posedge clk or posedge rst) begin
 		cache_count[0] <= 8'h00; cache_count[1] <= 8'h00; cache_count[2] <= 8'h00;
 		sum_count[0] <= 8'h00; sum_count[1] <= 8'h00; sum_count[2] <= 8'h00;
 		cmac_sum[0] <= 'd0; cmac_sum[1] <= 'd0; cmac_sum[2] <= 'd0;
+		data_cache[0] <= 'd0; data_cache[1] <= 'd0; data_cache[2] <= 'd0;
 		weight_cache[0] <= 'd0; weight_cache[1] <= 'd0; weight_cache[2] <= 'd0;
 		cmac_enable <= 0; cmac_data_ready <= 0; avepool_enable <= 0; avepool_data_ready <= 0; maxpool_enable <= 0; maxpool_data_ready <= 0; div_en <= 0; //FIXME: unite names
 		atom_count <= 8'h00; mult_pipe_count <= 8'h00; accu_pipe_count <= 8'h00; line_count <= 16'h0000; result_count <= 8'h00;
@@ -286,6 +290,7 @@ always @ (posedge clk or posedge rst) begin
 				cache_count[0] <= 8'h00; cache_count[1] <= 8'h00; cache_count[2] <= 8'h00;
 				sum_count[0] <= 8'h00; sum_count[1] <= 8'h00; sum_count[2] <= 8'h00;
 				cmac_sum[0] <= 'd0; cmac_sum[1] <= 'd0; cmac_sum[2] <= 'd0;
+				data_cache[0] <= 'd0; data_cache[1] <= 'd0; data_cache[2] <= 'd0;
 				weight_cache[0] <= 'd0; weight_cache[1] <= 'd0; weight_cache[2] <= 'd0;
 				cmac_enable <= 0; cmac_data_ready <= 0; avepool_enable <= 0; avepool_data_ready <= 0; maxpool_enable <= 0; maxpool_data_ready <= 0; div_en <= 0; //FIXME: unite names
 				atom_count <= 8'h00; mult_pipe_count <= 8'h00; accu_pipe_count <= 8'h00; line_count <= 16'h0000; result_count <= 8'h00;
@@ -452,6 +457,7 @@ always @ (posedge clk or posedge rst) begin
 					if(dma_p2_burst_cnt + 1 == `BURST_LEN) begin	//NOTES: start cmac when finishing reading the first atom (1x1xpara)
 						dma_p2_burst_cnt <= 0;
 						maxpool_valid <= 1;
+						maxpool_enable <= 1;
 					end
 					dbuf <= {dma_p2_ob_data, dbuf[16*`BURST_LEN-1 : 16]}; // deserialize data to dbuf
 					data_addr_offset <= data_addr_offset + 1;
@@ -463,7 +469,74 @@ always @ (posedge clk or posedge rst) begin
 						end
 					end
 				end
+				if(maxpool_data_ready) begin
+					mult_pipe_count <= mult_pipe_count + 1;
+				end
+				if(mult_pipe_count == kernel - stride) begin //maxpool_data_ready width is max of mult_pipe_count
+					mult_pipe_count <= 0;
+					maxpool_data_ready <= 0;
+				end
 
+				if(maxpool_enable) begin
+					maxpool_data_ready <= 1;
+					maxpool_enable <= 0;
+					
+					atom_count <= atom_count + 1;
+					line_count <= line_count + 1;
+					if(atom_count + 1 == kernel) begin
+						atom_count <= 0;
+					end
+					// Logic for setting cache_count according to line_count
+					if(line_count >= 0 && (kernel - stride) >= 7'd0) begin // stride2 * a
+						cache_count[0] <= cache_count[0] + 1;
+						if(cache_count[0] < kernel_size) data_cache[0] <= dbuf;
+					end 
+					if(cache_count[0] + 1 == kernel_size + stride2 - kernel) begin
+						cache_count[0] <= 0;
+					end
+					if(line_count >= stride2 && (kernel - stride) >= 7'd1) begin
+						cache_count[1] <= cache_count[1] + 1;
+						if(cache_count[1] < kernel_size) data_cache[1] <= dbuf;
+					end 
+					if(cache_count[1] + 1 == kernel_size + stride2 - kernel) begin
+						cache_count[1] <= 0;
+					end
+					if(line_count >= stride2 + stride2 && (kernel - stride) >= 7'd2) begin
+						cache_count[2] <= cache_count[2] + 1;
+						if(cache_count[2] < kernel_size) data_cache[2] <= dbuf;
+					end
+					if(cache_count[2] + 1 == kernel_size + stride2 - kernel) begin
+						cache_count[2] <= 0;
+					end
+				end
+
+				//========== PIPELINE STEP3: Partial SUM of channel outputs, independent of the pipeline
+				if(scmp_ready == {`BURST_LEN{1'b1}}) begin
+					result_count <= result_count + 1;
+					cmac_sum[result_count] <= scmp_result;
+				end
+				if(result_count == kernel - stride) begin
+					result_count <= 0;
+					sum_count[0] <= cache_count[0];
+					sum_count[1] <= cache_count[1];
+					sum_count[2] <= cache_count[2];
+					//Logic for setting sum_count according to cache_count
+					if(sum_count[0] + 1 == kernel_size) begin
+						psum <= cmac_sum[0];
+						fsum_enable <= 1; //Trigger for channel partial sum
+						fsum_count <= 0;
+					end
+					if(sum_count[1] + 1 == kernel_size) begin
+						psum <= cmac_sum[1];
+						fsum_enable <= 1; //Trigger for channel partial sum
+						fsum_count <= 0;
+					end
+					if(sum_count[2] + 1 == kernel_size) begin
+						psum <= cmac_sum[2];
+						fsum_enable <= 1; //Trigger for channel partial sum
+						fsum_count <= 0;
+					end
+				end
 			end
 
 			//==================== AVEPOOLING: Process a line * surface ====================
