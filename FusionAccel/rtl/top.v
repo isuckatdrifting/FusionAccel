@@ -391,22 +391,17 @@ memc3_inst (
 	.c3_p5_rd_overflow      (c3_p5_rd_overflow),
 	.c3_p5_rd_error         (c3_p5_rd_error));
 
-assign dma_p0_ib_re = dma_p0_writes_en ? p0_ib_re : 1'b0;
-assign pipe_in_read = dma_p0_writes_en ? 1'b0 : p0_ib_re;
-assign p0_ib_data = dma_p0_writes_en ? dma_p0_ib_data : pipe_in_data; // TODO: Update this mux logic after updating engine-dma
-assign p0_ib_valid = dma_p0_writes_en ? dma_p0_ib_valid : pipe_in_valid;
-
 dma dma_p0 ( // Read/Write, port0, pipeout read, pipein write, result_0 write
 	.clk			(c3_clk0),
 	.reset			(ep00wire[2] | c3_rst0), 
 	.reads_en		(ep00wire[0]),			//in	-- okPipeOut/cmd/data0 FIFO
-	.writes_en		(ep00wire[1] | dma_p0_writes_en),			//in		-- okPipeIn
+	.writes_en		(ep00wire[1]),			//in		-- okPipeIn
 	.calib_done		(c3_calib_done), 
 
-	.ib_re			(p0_ib_re),				//out		-- to okPipeIn
-	.ib_data		(p0_ib_data),			//in		-- from okPipeIn
+	.ib_re			(pipe_in_read),			//out		-- to okPipeIn
+	.ib_data		(pipe_in_data),			//in		-- from okPipeIn
 	.ib_count		(pipe_in_rd_count),		//in		-- from okPipeIn
-	.ib_valid		(p0_ib_valid),			//in		-- from okPipeIn
+	.ib_valid		(pipe_in_valid),			//in		-- from okPipeIn
 
 	.ob_we			(pipe_out_write),		//out		-- to okPipeOut/cmd/data0 FIFO
 	.ob_data		(pipe_out_data),		//out		-- to okPipeOut/cmd/data0 FIFO
