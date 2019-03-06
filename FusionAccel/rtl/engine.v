@@ -643,25 +643,25 @@ always @ (posedge clk or posedge rst) begin
 
 		// ==================== Write back Logic ====================
 		if(writeback_en) begin
-			if(writeback_count < writeback_num) dma_p1_writes_en <= 1;
+			if(writeback_count < writeback_num) dma_p0_writes_en <= 1;
 			else begin
 				writeback_en <= 0;
 				writeback_count <= 0;
 			end
 		end
-		if(dma_p1_ib_re) begin
-			dma_p1_writes_en <= 0;
+		if(dma_p0_ib_re) begin
+			dma_p0_writes_en <= 0;
 			case(op_type)
-				CONV: dma_p1_ib_data <= fsum_result;
-				MPOOL: dma_p1_ib_data <= cmp[writeback_count * 16 +: 16];
-				APOOL: dma_p1_ib_data <= sacc_tmp_sum[writeback_count * 16 +: 16];
+				CONV: dma_p0_ib_data <= fsum_result;
+				MPOOL: dma_p0_ib_data <= cmp[writeback_count * 16 +: 16];
+				APOOL: dma_p0_ib_data <= sacc_tmp_sum[writeback_count * 16 +: 16]; //TODO: data for pooling
 			endcase
-			dma_p1_ib_valid <= 1;
+			dma_p0_ib_valid <= 1;
 			writeback_count <= writeback_count + 1;
 		end else begin
-			dma_p1_ib_valid <= 0;
+			dma_p0_ib_valid <= 0;
 		end
-		if(dma_p1_ib_valid) begin //Update start addr @ after updating data
+		if(dma_p0_ib_valid) begin //Update start addr @ after updating data
 			result_addr_offset <= result_addr_offset + {o_side, 3'b000}; //p0_addr will be updated after one cycle //FIXME: add result_addr_surface for convolution
 			if(fsum_index == 0) begin // start a new gemm
 				result_addr_block <= result_addr_block + `BURST_LEN;

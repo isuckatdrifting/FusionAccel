@@ -825,23 +825,6 @@
          <obj_property name="ObjectShortName">dma_p0_ib_data[15:0]</obj_property>
          <obj_property name="Radix">HEXRADIX</obj_property>
       </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/dma_p1_writes_en" type="logic" db_ref_id="1">
-         <obj_property name="ElementShortName">dma_p1_writes_en</obj_property>
-         <obj_property name="ObjectShortName">dma_p1_writes_en</obj_property>
-      </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/dma_p1_ib_re" type="logic" db_ref_id="1">
-         <obj_property name="ElementShortName">dma_p1_ib_re</obj_property>
-         <obj_property name="ObjectShortName">dma_p1_ib_re</obj_property>
-      </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/dma_p1_ib_valid" type="logic" db_ref_id="1">
-         <obj_property name="ElementShortName">dma_p1_ib_valid</obj_property>
-         <obj_property name="ObjectShortName">dma_p1_ib_valid</obj_property>
-      </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/dma_p1_ib_data" type="array" db_ref_id="1">
-         <obj_property name="ElementShortName">dma_p1_ib_data[15:0]</obj_property>
-         <obj_property name="ObjectShortName">dma_p1_ib_data[15:0]</obj_property>
-         <obj_property name="Radix">HEXRADIX</obj_property>
-      </wvobject>
       <wvobject fp_name="/engine_tb/p0_addr" type="array" db_ref_id="1">
          <obj_property name="ElementShortName">p0_addr[29:0]</obj_property>
          <obj_property name="ObjectShortName">p0_addr[29:0]</obj_property>
