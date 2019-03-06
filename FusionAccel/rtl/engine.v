@@ -7,7 +7,7 @@ module engine  //Instantiate 16CMACs for conv3x3, 16CMACs for conv1x1, maxpool a
 	input 			engine_valid,
 	input [2:0] 	op_type,
 	input			padding,
-	input [3:0]		stride,		//TODO: valid check: stride < padding
+	input [3:0]		stride,		
 	input [7:0]		kernel,
 	input [15:0]	stride2,	//kernel * stride
 	input [7:0]		kernel_size,
@@ -327,7 +327,7 @@ always @ (posedge clk or posedge rst) begin
 				p0_addr <= result_addr_block + result_addr_offset;
 				dma_p2_reads_en <= 1; dma_p3_reads_en <= 1;
 
-				//========== PIPELINE STEP1: enable data read and weight read (this part is the slowest and defines the available timing space of the pipeline)
+				//========== CONVOLUTION PIPELINE STEP1: enable data read and weight read (this part is the slowest and defines the available timing space of the pipeline)
 				if(dma_p2_ob_we) begin
 					dma_p2_burst_cnt <= dma_p2_burst_cnt + 1;
 					if(dma_p2_burst_cnt + 1 == `BURST_LEN) begin	//NOTES: start cmac when finishing reading the first atom (1x1xpara)
@@ -361,7 +361,7 @@ always @ (posedge clk or posedge rst) begin
 					dma_p3_reads_en <= 0; // force sync reset to generate a 1-cycle pulse
 				end
 
-				//========== PIPELINE STEP1.5: Generate data ready signal for cmac
+				//========== CONVOLUTION PIPELINE STEP2: start passing deserialized data and weight to cmac/sacc/scmp (including weight reuse)
 				if(cmac_data_ready) begin
 					cmac_input_pipe_count <= cmac_input_pipe_count + 1;
 				end
@@ -369,20 +369,17 @@ always @ (posedge clk or posedge rst) begin
 					cmac_input_pipe_count <= 0;
 					cmac_data_ready <= 0;
 				end
-
 				if(mult_ready_buf == {`BURST_LEN{1'b1}}) begin
 					cmac_middle_pipe_count <= cmac_middle_pipe_count + 1;
 				end
 				if(cmac_middle_pipe_count == kernel - stride) begin
 					cmac_middle_pipe_count <= 0;
 				end
-				
-				//========== PIPELINE STEP2: start passing deserialized data and weight to cmac/sacc/scmp (including weight reuse)
 				if(cmac_enable) begin
 					cmac_data_ready <= 1;
 					cmac_enable <= 0;
 					data <= dbuf;
-					
+
 					atom_count <= atom_count + 1;
 					line_count <= line_count + 1;
 					if(atom_count + 1 == kernel) begin
@@ -412,7 +409,7 @@ always @ (posedge clk or posedge rst) begin
 					end
 				end
 
-				//========== PIPELINE STEP3: Partial SUM of channel outputs, independent of the pipeline
+				//========== CONVOLUTION PIPELINE STEP3: Partial SUM of channel outputs, independent of the pipeline
 				if(cmac_ready == {`BURST_LEN{1'b1}}) begin
 					cmac_output_pipe_count <= cmac_output_pipe_count + 1;
 					cmac_sum[cmac_output_pipe_count] <= cmac_result;
@@ -440,7 +437,7 @@ always @ (posedge clk or posedge rst) begin
 					end
 				end 
 				
-				// ========== PIPELINE STEP4: full channel sum stored in -> sum, sum all channels, TODO: bias operation, independent of the pipeline
+				// ========== CONVOLUTION PIPELINE STEP4: full channel sum stored in -> sum, sum all channels, TODO: bias operation, independent of the pipeline
 				if(fsum_data_valid) begin
 					fsum_data_ready <= fsum_enable;
 				end
@@ -474,7 +471,7 @@ always @ (posedge clk or posedge rst) begin
 				p0_addr <= result_addr_block + result_addr_offset;
 				dma_p2_reads_en <= 1;
 
-				//========== PIPELINE STEP1: enable data read (this part is the slowest and defines the available timing space of the pipeline)
+				//========== MAXPOOLING PIPELINE STEP1: enable data read (this part is the slowest and defines the available timing space of the pipeline)
 				if(dma_p2_ob_we) begin
 					dma_p2_burst_cnt <= dma_p2_burst_cnt + 1;
 					if(dma_p2_burst_cnt + 1 == `BURST_LEN) begin	//NOTES: start cmac when finishing reading the first atom (1x1xpara)
@@ -492,11 +489,12 @@ always @ (posedge clk or posedge rst) begin
 						end
 					end
 				end
+
+				//========== MAXPOOLING PIPELINE STEP2: start passing deserialized data cmac/sacc/scmp (including weight reuse)
 				if(maxpool_data_ready) begin
 					maxpool_data_ready <= 0;
 					scmp_input_pipe_count <= scmp_input_pipe_count + 1;
 				end
-				
 				if(maxpool_enable) begin
 					maxpool_data_ready <= 1;
 					maxpool_enable <= 0;
@@ -531,7 +529,7 @@ always @ (posedge clk or posedge rst) begin
 					end
 				end
 
-				//========== PIPELINE STEP3: Partial SUM of channel outputs, independent of the pipeline
+				//========== MAXPOOLING PIPELINE STEP3: Results of channel outputs, independent of the pipeline
 				if(scmp_ready == {`BURST_LEN{1'b1}}) begin
 					if(scmp_input_pipe_count <= kernel - stride) maxpool_data_ready <= 1;
 					scmp_output_pipe_count <= scmp_output_pipe_count + 1;
@@ -569,7 +567,7 @@ always @ (posedge clk or posedge rst) begin
 				p0_addr <= result_addr_block + result_addr_offset;
 				dma_p2_reads_en <= 1;
 
-				//========== PIPELINE STEP1: enable data read (this part is the slowest and defines the available timing space of the pipeline)
+				//========== AVEPOOLING PIPELINE STEP1: enable data read (this part is the slowest and defines the available timing space of the pipeline)
 				if(dma_p2_ob_we) begin
 					dma_p2_burst_cnt <= dma_p2_burst_cnt + 1;
 					if(dma_p2_burst_cnt + 1 == `BURST_LEN) begin	//NOTES: start cmac when finishing reading the first atom (1x1xpara)
@@ -587,7 +585,7 @@ always @ (posedge clk or posedge rst) begin
 						end
 					end
 				end
-				//========== PIPELINE STEP2: accumulate and divide
+				//========== AVEPOOLING PIPELINE STEP2: accumulate and divide
 				if(avepool_enable) begin
 					avepool_enable <= 0;
 					avepool_data_ready <= 1;
@@ -655,7 +653,8 @@ always @ (posedge clk or posedge rst) begin
 			dma_p0_writes_en <= 0;
 			case(op_type)
 				CONV: dma_p0_ib_data <= fsum_result;
-				MPOOL, APOOL: ; //TODO: data for pooling
+				MPOOL: dma_p0_ib_data <= cmp[writeback_count * 16 +: 16];
+				APOOL: dma_p0_ib_data <= sacc_tmp_sum[writeback_count * 16 +: 16]; //TODO: data for pooling
 			endcase
 			dma_p0_ib_valid <= 1;
 			writeback_count <= writeback_count + 1;
