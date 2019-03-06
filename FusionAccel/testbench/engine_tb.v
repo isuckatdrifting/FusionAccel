@@ -21,7 +21,9 @@ reg [7:0]	i_side;
 reg [7:0]   o_side;
 reg [31:0]	data_start_addr;
 reg [31:0]	weight_start_addr;
-reg [31:0]  result_start_addr;
+reg [31:0]  p0_result_start_addr;
+reg [31:0]  p1_result_start_addr;
+reg [1:0]   result_en;
 //Response signals engine->csb
 wire 		engine_ready;
 //Command path engine->dma
@@ -127,7 +129,9 @@ engine engine_(
 	.o_side					(o_side),
 	.data_start_addr		(data_start_addr),
 	.weight_start_addr		(weight_start_addr),
-	.result_start_addr		(result_start_addr),
+	.p0_result_start_addr	(p0_result_start_addr),
+	.p1_result_start_addr	(p1_result_start_addr),
+	.result_en				(result_en),
 //Response signals engine->csb
 	.engine_ready			(engine_ready),
 //Command path engine->dma
@@ -177,26 +181,27 @@ initial begin
 	dma_p3_ob_we = 0;
 	dma_p0_ib_re = 0;
 	dma_p1_ib_re = 0;
-	data_start_addr <= 30'h0000_0000; weight_start_addr <= 30'h0000_0000; result_start_addr <= 30'h0000_0000;
+	data_start_addr <= 30'h0000_0000; weight_start_addr <= 30'h0000_0000; p0_result_start_addr <= 30'h0000_0000; p1_result_start_addr <= 30'h0000_0000;
+	result_en <= 2'b00;
 	p0_state = 0; p1_state = 0; p2_state = 0; p3_state = 0;
     #20 rst = 1;
     #10 rst = 0;
 `ifdef CMAC
     #100 op_type = 1; 
 		padding = 0; stride = 2; stride2 = 6;
-		kernel = 3; kernel_size = 9; i_channel = 3; o_channel = 1; i_side = 227; o_side = 113; 
+		kernel = 3; kernel_size = 9; i_channel = 3; o_channel = 1; i_side = 227; o_side = 113; result_en <= 2'b01;
 `endif
 `ifdef SCMP
 	#100 op_type = 4;
 		padding = 0; stride = 2; stride2 = 6;
-		kernel = 3; kernel_size = 9; i_channel = 8; o_channel = 1; i_side = 3; o_side = 1;
+		kernel = 3; kernel_size = 9; i_channel = 8; o_channel = 1; i_side = 3; o_side = 1; result_en <= 2'b01;
 `endif
 `ifdef SACC
 	#100 op_type = 5;
-		padding = 0; stride = 1; kernel = 13; kernel_size = 169; i_channel = 3; o_channel = 1; i_side = 13; o_side = 1;
+		padding = 0; stride = 1; kernel = 13; kernel_size = 169; i_channel = 3; o_channel = 1; i_side = 13; o_side = 1; result_en <= 2'b01;
 `endif
 		
-		data_start_addr <= 30'h0001_0000; weight_start_addr <= 30'h0000_1000; result_start_addr <= 30'h0003_0000;
+		data_start_addr <= 30'h0001_0000; weight_start_addr <= 30'h0000_1000; p0_result_start_addr <= 30'h0003_0000; p0_result_start_addr <= 30'h0004_0000;
     #10 engine_valid = 1; 
 end
 

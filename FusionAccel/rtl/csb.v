@@ -26,7 +26,9 @@ module csb
     output [7:0]    o_side,
     output [31:0]   data_start_addr,
     output [31:0]   weight_start_addr,
-    output [31:0]   result_start_addr,
+    output [31:0]   p0_result_start_addr,
+    output [31:0]   p1_result_start_addr,
+    output [1:0]    result_en,
     output          engine_reset,
 
     output          irq
@@ -66,7 +68,8 @@ reg [15:0]  i_channel, o_channel;
 reg [7:0]   stride2, kernel_size, i_side, o_side;
 reg [31:0]  weight_start_addr;
 reg [31:0]  data_start_addr;
-reg [31:0]  result_start_addr;
+reg [31:0]  p0_result_start_addr, p1_result_start_addr;
+reg [1:0]   result_en;
 
 reg [6:0]   done_cmd_count;
 reg         engine_reset;
@@ -135,7 +138,9 @@ always @ (posedge clk or posedge rst) begin
         i_side <= 8'h00; o_side <= 8'h00; kernel_size <= 8'h00; stride2 <= 8'h00;
         data_start_addr <= 32'h0000_0000;
         weight_start_addr <= 32'h0000_0000;
-        result_start_addr <= 32'h0000_0000;
+        p0_result_start_addr <= 32'h0000_0000;
+        p1_result_start_addr <= 32'h0000_0000; 
+        result_en <= 2'b00;
         dma_p1_reads_en <= 0;
 
         done_cmd_count <= 8'd0; engine_valid <= 0;
@@ -155,6 +160,7 @@ always @ (posedge clk or posedge rst) begin
                     cmd_burst_count <= cmd_burst_count - 1;
                 end
                 case (cmd_burst_count) //Split cmds from fifo into separate attributes
+                    //TODO: extend commands
                     4'd6: begin op_type <= cmd[2:0]; padding <= cmd[4]; stride <= cmd[11:8]; kernel <= cmd[23:16]; end
                     4'd5: begin i_channel <= cmd[15:0]; o_channel <= cmd[31:16]; end
                     4'd4: begin i_side <= cmd[7:0]; o_side <= cmd[15:8]; kernel_size <= cmd[23:16]; stride2 <= cmd[31:24]; end

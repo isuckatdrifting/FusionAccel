@@ -45,7 +45,7 @@ wire [15:0] stride2;
 wire [7:0]  kernel, kernel_size;
 wire [15:0] i_channel, o_channel;
 wire [7:0]  i_side, o_side;
-wire [31:0] data_start_addr, weight_start_addr, result_start_addr;
+wire [31:0] data_start_addr, weight_start_addr, p0_result_start_addr, p1_result_start_addr;
 
 wire		engine_reset;
 wire [31:0] cmd_fifo_dout;
@@ -87,7 +87,8 @@ csb csb_(
 	.kernel_size			(kernel_size),
 	.data_start_addr		(data_start_addr),
 	.weight_start_addr		(weight_start_addr),
-    .result_start_addr		(result_start_addr),
+    .p0_result_start_addr	(p0_result_start_addr),
+    .p1_result_start_addr	(p1_result_start_addr),
 	.engine_reset			(engine_reset),
 
     .irq					(irq));
@@ -109,7 +110,8 @@ engine engine_(
 	.o_side					(o_side),
 	.data_start_addr		(data_start_addr),
 	.weight_start_addr		(weight_start_addr),
-	.result_start_addr		(result_start_addr),
+	.p0_result_start_addr	(p0_result_start_addr),
+	.p1_result_start_addr	(p1_result_start_addr),
 //Response signals engine->csb
 	.engine_ready			(engine_ready),
 //Command path engine->dma
