@@ -39,13 +39,13 @@ wire 		op_en;
 wire [6:0]  cmd_size;
 // Command wires
 wire [2:0] 	op_type;
-wire		padding;
 wire [3:0]  stride;
 wire [15:0] stride2;
 wire [7:0]  kernel, kernel_size;
 wire [15:0] i_channel, o_channel;
 wire [7:0]  i_side, o_side;
 wire [31:0] data_start_addr, weight_start_addr, p0_result_start_addr, p1_result_start_addr;
+wire [7:0]  p0_padding_head, p0_padding_body, p1_padding_head, p1_padding_body;
 
 wire		engine_reset;
 wire [31:0] cmd_fifo_dout;
@@ -76,19 +76,22 @@ csb csb_(
 	.dma_p1_reads_en		(dma_p1_reads_en),
 
 	.op_type				(op_type),
-	.padding				(padding),
 	.stride					(stride),
 	.kernel					(kernel),
-	.stride2				(stride2),
-	.i_channel				(i_channel),
-	.o_channel				(o_channel),
 	.i_side					(i_side),
 	.o_side					(o_side),
+	.i_channel				(i_channel),
+	.o_channel				(o_channel),
 	.kernel_size			(kernel_size),
+	.stride2				(stride2),
 	.data_start_addr		(data_start_addr),
 	.weight_start_addr		(weight_start_addr),
     .p0_result_start_addr	(p0_result_start_addr),
     .p1_result_start_addr	(p1_result_start_addr),
+	.p0_padding_head		(p0_padding_head),
+	.p0_padding_body		(p0_padding_body),
+	.p1_padding_head		(p1_padding_head),
+	.p1_padding_body		(p1_padding_body),
 	.engine_reset			(engine_reset),
 
     .irq					(irq));
@@ -99,19 +102,22 @@ engine engine_(
 	.rst					(engine_reset),
 	.engine_valid			(engine_valid),
 	.op_type				(op_type),
-	.padding				(padding),
 	.stride					(stride),
-	.stride2				(stride2),
 	.kernel					(kernel),
-	.kernel_size			(kernel_size),
-	.i_channel				(i_channel),
-	.o_channel				(o_channel),
 	.i_side					(i_side),
 	.o_side					(o_side),
+	.i_channel				(i_channel),
+	.o_channel				(o_channel),
+	.kernel_size			(kernel_size),
+	.stride2				(stride2),
 	.data_start_addr		(data_start_addr),
 	.weight_start_addr		(weight_start_addr),
 	.p0_result_start_addr	(p0_result_start_addr),
 	.p1_result_start_addr	(p1_result_start_addr),
+	.p0_padding_head		(p0_padding_head),
+	.p0_padding_body		(p0_padding_body),
+	.p1_padding_head		(p1_padding_head),
+	.p1_padding_body		(p1_padding_body),
 //Response signals engine->csb
 	.engine_ready			(engine_ready),
 //Command path engine->dma

@@ -10,7 +10,10 @@ reg 		clk;
 reg 		rst;
 reg 		engine_valid;
 reg [2:0] 	op_type;
-reg			padding;
+reg	[7:0]	p0_padding_head;
+reg	[7:0]	p0_padding_body;
+reg	[7:0]	p1_padding_head;
+reg	[7:0]	p1_padding_body;
 reg	[3:0]	stride;
 reg [15:0]  stride2;
 reg [7:0]  	kernel;
@@ -118,7 +121,10 @@ engine engine_(
 	.rst					(rst),
 	.engine_valid			(engine_valid),
 	.op_type				(op_type),
-	.padding				(padding),
+	.p0_padding_head		(p0_padding_head),
+	.p0_padding_body		(p0_padding_body),
+	.p1_padding_head		(p1_padding_head),
+	.p1_padding_body		(p1_padding_body),
 	.stride					(stride),
 	.stride2				(stride2),
 	.kernel					(kernel),
@@ -173,7 +179,7 @@ initial begin
     clk = 0;
     m = 0; n = 0; offset = 0;
     engine_valid = 0;
-    op_type = 0; padding = 0; stride = 0; stride2 = 0;
+    op_type = 0; p0_padding_head = 0; p0_padding_body = 0; p1_padding_head = 0; p1_padding_body = 0; stride = 0; stride2 = 0;
 	kernel = 0; kernel_size = 0; i_channel = 0; o_channel = 0; i_side = 0; o_side = 0; 
 	dma_p2_ob_data = 16'h0000;
 	dma_p3_ob_data = 16'h0000;
@@ -187,21 +193,21 @@ initial begin
     #20 rst = 1;
     #10 rst = 0;
 `ifdef CMAC
-    #100 op_type = 1; 
-		padding = 0; stride = 2; stride2 = 6;
+    #100 op_type = 1; stride = 2; stride2 = 6;
+		p0_padding_head = 0; p0_padding_body = 0; p1_padding_head = 0; p1_padding_body = 0;
 		kernel = 3; kernel_size = 9; i_channel = 3; o_channel = 1; i_side = 227; o_side = 113; result_en <= 2'b01;
 `endif
 `ifdef SCMP
-	#100 op_type = 4;
-		padding = 0; stride = 2; stride2 = 6;
-		kernel = 3; kernel_size = 9; i_channel = 8; o_channel = 1; i_side = 3; o_side = 1; result_en <= 2'b01;
+	#100 op_type = 2; stride = 2; stride2 = 6;
+		p0_padding_head = 0; p0_padding_body = 0; p1_padding_head = 4; p1_padding_body = 2;
+		kernel = 3; kernel_size = 9; i_channel = 8; o_channel = 1; i_side = 3; o_side = 1; result_en <= 2'b11;
 `endif
 `ifdef SACC
-	#100 op_type = 5;
-		padding = 0; stride = 1; kernel = 13; kernel_size = 169; i_channel = 3; o_channel = 1; i_side = 13; o_side = 1; result_en <= 2'b01;
+	#100 op_type = 3; stride = 1; 
+		p0_padding_head = 0; p0_padding_body = 0; p1_padding_head = 0; p1_padding_body = 0;
+		kernel = 13; kernel_size = 169; i_channel = 3; o_channel = 1; i_side = 13; o_side = 1; result_en <= 2'b01;
 `endif
-		
-		data_start_addr <= 30'h0001_0000; weight_start_addr <= 30'h0000_1000; p0_result_start_addr <= 30'h0003_0000; p0_result_start_addr <= 30'h0004_0000;
+		data_start_addr <= 30'h0001_0000; weight_start_addr <= 30'h0000_1000; p0_result_start_addr <= 30'h0003_0000; p1_result_start_addr <= 30'h0004_0000;
     #10 engine_valid = 1; 
 end
 
