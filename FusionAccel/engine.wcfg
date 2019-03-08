@@ -34,6 +34,10 @@
          <obj_property name="ElementShortName">dma_p2_ob_we</obj_property>
          <obj_property name="ObjectShortName">dma_p2_ob_we</obj_property>
       </wvobject>
+      <wvobject fp_name="/engine_tb/p2_state" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">p2_state[2:0]</obj_property>
+         <obj_property name="ObjectShortName">p2_state[2:0]</obj_property>
+      </wvobject>
       <wvobject fp_name="/engine_tb/engine_/dma_p2_ob_data" type="array" db_ref_id="1">
          <obj_property name="ElementShortName">dma_p2_ob_data[15:0]</obj_property>
          <obj_property name="ObjectShortName">dma_p2_ob_data[15:0]</obj_property>
@@ -52,6 +56,20 @@
       <wvobject fp_name="/engine_tb/dma_p3_ob_we" type="logic" db_ref_id="1">
          <obj_property name="ElementShortName">dma_p3_ob_we</obj_property>
          <obj_property name="ObjectShortName">dma_p3_ob_we</obj_property>
+      </wvobject>
+      <wvobject fp_name="/engine_tb/p3_state" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">p3_state[2:0]</obj_property>
+         <obj_property name="ObjectShortName">p3_state[2:0]</obj_property>
+      </wvobject>
+      <wvobject fp_name="/engine_tb/engine_/dma_p3_ob_data" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">dma_p3_ob_data[15:0]</obj_property>
+         <obj_property name="ObjectShortName">dma_p3_ob_data[15:0]</obj_property>
+         <obj_property name="Radix">HEXRADIX</obj_property>
+      </wvobject>
+      <wvobject fp_name="/engine_tb/engine_/bias" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">bias[15:0]</obj_property>
+         <obj_property name="ObjectShortName">bias[15:0]</obj_property>
+         <obj_property name="Radix">HEXRADIX</obj_property>
       </wvobject>
       <wvobject fp_name="/engine_tb/engine_/wbuf" type="array" db_ref_id="1">
          <obj_property name="ElementShortName">wbuf[8:0,127:0]</obj_property>

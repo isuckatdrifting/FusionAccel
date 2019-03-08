@@ -31,7 +31,7 @@ module csb
     output [7:0]    p0_padding_body,
     output [7:0]    p1_padding_head,
     output [7:0]    p1_padding_body,
-    output [1:0]    result_en,
+    output [1:0]    result_mask,
     output          engine_reset,
 
     output          irq
@@ -48,8 +48,9 @@ module csb
 //|     input side size:  8Bit |        |   |  Outbuf | 0x00C_0000 - 0x7ff_ffff | 125M-128 |    3071416     |
 //|    output side size:  8Bit |        |32 |---------|-------------------------|----------|----------------|
 //|  input channel size: 16Bit |        |   
-//| output channel size: 16Bit |        |64            
-//|         kernel size:  8Bit |  8Bit  |   |---------------------type------------------------|----op_type----|
+//| output channel size: 16Bit |        |64   
+//|         result mask:  2Bit |  6Bit  |     
+//|         kernel size:  8Bit |        |   |---------------------type------------------------|----op_type----|
 //|             stride2: 16Bit |        |96 |IDLE                                             |      000      |
 //|   weight_start_addr: 32Bit |        |128|Convolution + ReLU Activation                    |      001      |
 //|     data_start_addr: 32Bit |        |160|Max Pooling                                      |      100      |
@@ -79,7 +80,7 @@ reg [31:0]  weight_start_addr;
 reg [31:0]  data_start_addr;
 reg [31:0]  p0_result_start_addr, p1_result_start_addr;
 reg [7:0]   p0_padding_head, p0_padding_body, p1_padding_head, p1_padding_body;
-reg [1:0]   result_en;
+reg [1:0]   result_mask;
 
 reg [6:0]   done_cmd_count;
 reg         engine_reset;
@@ -151,7 +152,7 @@ always @ (posedge clk or posedge rst) begin
         p0_result_start_addr <= 32'h0000_0000;
         p1_result_start_addr <= 32'h0000_0000; 
         p0_padding_head <= 8'h00; p0_padding_body <= 8'h00; p1_padding_head <= 8'h00; p1_padding_body <= 8'h00;
-        result_en <= 2'b00;
+        result_mask <= 2'b00;
         dma_p1_reads_en <= 0;
 
         done_cmd_count <= 8'd0; engine_valid <= 0;
@@ -174,7 +175,7 @@ always @ (posedge clk or posedge rst) begin
                     //TODO: extend commands
                     4'd8: begin op_type <= cmd[2:0]; stride <= cmd[7:4]; kernel <= cmd[15:8]; i_side <= cmd[23:16]; o_side <= cmd[31:24]; end
                     4'd7: begin i_channel <= cmd[15:0]; o_channel <= cmd[31:16]; end
-                    4'd6: begin kernel_size <= cmd[7:0]; stride2 <= cmd[31:16]; end
+                    4'd6: begin result_mask <= cmd[1:0]; kernel_size <= cmd[15:8]; stride2 <= cmd[31:16]; end
                     4'd5: begin weight_start_addr <= cmd; end
                     4'd4: begin data_start_addr <= cmd; end
                     4'd3: begin p0_result_start_addr <= cmd; end
