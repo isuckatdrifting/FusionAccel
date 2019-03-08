@@ -56,7 +56,7 @@ module engine  //Instantiate 16CMACs for conv3x3, 16CMACs for conv1x1, maxpool a
 	output			dma_p1_ib_valid
 );
 
-localparam CONV = 1, MPOOL = 2, APOOL = 3; //FIXME: change command number
+localparam CONV = 1, MPOOL = 2, APOOL = 3;
 //==================== CMAC Wires and Registers ====================//
 reg  					 conv_valid, cmac_data_ready, cmac_enable;
 wire [`BURST_LEN-1:0] 	 cmac_data_valid, mult_ready_buf;
@@ -161,6 +161,7 @@ always @(posedge clk) sacc_result <= avepool_result;
 always @(posedge clk) sacc_ready <= rdy_sacc;
 
 //==================== Address registers ===========================//
+reg  [15:0]	bias;
 reg  [15:0] i_channel_count;
 reg  [7:0]  gemm_count;
 reg  [15:0] o_channel_count;
@@ -188,10 +189,11 @@ reg	 [7:0]	writeback_num;
 //State Machine
 localparam init 		= 4'b0000;
 localparam idle 		= 4'b0001;
-localparam gemm_busy 	= 4'b0010;
-localparam clear 		= 4'b0011;
-localparam sacc_busy 	= 4'b0101;
-localparam scmp_busy 	= 4'b0110;
+localparam load_bias	= 4'b0010;
+localparam gemm_busy 	= 4'b0011;
+localparam sacc_busy 	= 4'b0100;
+localparam scmp_busy 	= 4'b0101;
+localparam clear 		= 4'b0110;
 localparam finish 		= 4'b0111;
 
 reg [3:0] curr_state;
@@ -211,9 +213,14 @@ always @ (*) begin
     case (curr_state)
 		init: begin
 			if(engine_valid) begin
-				next_state = idle;
+				if(op_type == CONV) next_state = load_bias;
+				else next_state = idle;
 			end
 			else next_state = init;
+		end
+		load_bias: begin
+			if(dma_p3_ob_we) next_state = idle;
+			else next_state = load_bias;
 		end
         idle: begin
 			case(op_type)
@@ -247,8 +254,7 @@ end
 //		 Register level:       cmac_sum -> psum -> sum
 //		 Counter level:		   atom_count -> line_count, cache_count -> cmac_output_pipe_count, psum_count -> fsum_index
 //NOTES: Sum point is ready only after the all channel 3x3 kernel mac is complete
-//TODO:  Padding Layer: dual channel write back address parsing
-//NOTES: weight and tmp_sum is directly from the corresponding registers
+//NOTES: weight and tmp_sum is directly wired out from the corresponding registers
 
 integer a; // initialize buffer for cmac
 initial begin
@@ -288,7 +294,7 @@ always @ (posedge clk or posedge rst) begin
 		//==================== Cross-channel registers ====================
 		p0_addr <= 30'h0000_0000; p1_addr <= 30'h0000_0000; p2_addr <= 30'h0000_0000; 
 		p3_addr <= 30'h0000_0000; p4_addr <= 30'h0000_0000; p5_addr <= 30'h0000_0000;
-		gemm_addr <= 30'h0000_0000;
+		gemm_addr <= 30'h0000_0000; bias <= 'd0; 
 		data_addr_block <= 30'h0000_0000; weight_addr_block <= 30'h0000_0000; 
 		data_addr_offset <= 30'h0000_0000; weight_addr_offset <= 30'h0000_0000;
 		p0_result_addr_surface <= 30'h0000_0000; p0_result_addr_block <= 30'h0000_0000; p0_result_addr_offset <= 30'h0000_0000;
@@ -303,6 +309,13 @@ always @ (posedge clk or posedge rst) begin
 				p0_result_addr_surface <= p0_result_start_addr + p0_padding_head; p1_result_addr_surface <= p1_result_start_addr + p1_padding_head;
 				p0_result_addr_block <= p0_result_addr_surface; p1_result_addr_block <= p1_result_addr_surface;
 				p0_result_addr_offset <= 0; p1_result_addr_offset <= 0;
+			end
+			load_bias: begin
+				dma_p3_reads_en <= 1;
+				if(dma_p3_ob_we) begin
+					bias <= dma_p3_ob_data; // Store bias value into cache 'bias'
+					dma_p3_reads_en <= 0;
+				end
 			end
 			//==================== Clear all registers except cross-channel registers ====================
 			idle: begin 
@@ -352,7 +365,7 @@ always @ (posedge clk or posedge rst) begin
 						data_addr_offset <= 0;
 						data_addr_block <= data_addr_block + `BURST_LEN;
 						if(atom_count + 1 == kernel) begin //jump to the next row
-							data_addr_block <= data_addr_block + {(i_side - kernel), 4'b0000}; //(i_side - kernel) * BURST_LEN;
+							data_addr_block <= data_addr_block + {(i_side - kernel), 3'b000}; //(i_side - kernel) * BURST_LEN;
 						end
 					end
 				end
@@ -435,20 +448,23 @@ always @ (posedge clk or posedge rst) begin
 						psum <= cmac_sum[0];
 						fsum_enable <= 1; //Trigger for channel partial sum
 						fsum_count <= 0;
+						if(i_channel_count == 0) fsum[fsum_index] <= bias; // Load bias
 					end
 					if(psum_count[1] + 1 == kernel_size) begin
 						psum <= cmac_sum[1];
 						fsum_enable <= 1; //Trigger for channel partial sum
 						fsum_count <= 0;
+						if(i_channel_count == 0) fsum[fsum_index] <= bias;
 					end
 					if(psum_count[2] + 1 == kernel_size) begin
 						psum <= cmac_sum[2];
 						fsum_enable <= 1; //Trigger for channel partial sum
 						fsum_count <= 0;
+						if(i_channel_count == 0) fsum[fsum_index] <= bias;
 					end
 				end 
 				
-				// ========== CONVOLUTION PIPELINE STEP4: full channel sum stored in -> sum, sum all channels, TODO: bias operation, independent of the pipeline
+				// ========== CONVOLUTION PIPELINE STEP4: full channel sum stored in -> sum, sum all channels
 				if(fsum_data_valid) begin
 					fsum_data_ready <= fsum_enable;
 				end
@@ -472,7 +488,7 @@ always @ (posedge clk or posedge rst) begin
 						writeback_num <= 1;
 					end
 				end
-				if(fsum_index + 1 == o_side && fsum_ready && fsum_count == 0) begin
+				if(fsum_index + 1 == o_side && fsum_ready && fsum_count == `BURST_LEN) begin
 					to_clear <= 1;
 				end
 			end
@@ -497,7 +513,7 @@ always @ (posedge clk or posedge rst) begin
 						data_addr_offset <= 0;
 						data_addr_block <= data_addr_block + `BURST_LEN;
 						if(atom_count + 1 == kernel) begin //jump to the next row
-							data_addr_block <= data_addr_block + {(i_side - kernel), 4'b0000}; //(i_side - kernel) * BURST_LEN;
+							data_addr_block <= data_addr_block + {(i_side - kernel), 3'b000}; //(i_side - kernel) * BURST_LEN;
 						end
 					end
 				end
@@ -596,7 +612,7 @@ always @ (posedge clk or posedge rst) begin
 						data_addr_offset <= 0;
 						data_addr_block <= data_addr_block + `BURST_LEN;
 						if(atom_count + 1 == kernel) begin //jump to the next row
-							data_addr_block <= data_addr_block + {(i_side - kernel), 4'b0000}; //(i_side - kernel) * BURST_LEN;
+							data_addr_block <= data_addr_block + {(i_side - kernel), 3'b000}; //(i_side - kernel) * BURST_LEN;
 						end
 					end
 				end
@@ -634,12 +650,12 @@ always @ (posedge clk or posedge rst) begin
 					i_channel_count <= 0;
 					gemm_count <= gemm_count + 1; //NOTES: a gemm is finished
 					//updating gemm addr only after finishing the whole line + channel and data addr_block
-					gemm_addr <= gemm_addr + {stride[3:0], 4'b0000}; //NOTES: gemm addr parsing. kernel > stride >= 1
-					data_addr_block <= gemm_addr + {stride[3:0], 4'b0000};
+					gemm_addr <= gemm_addr + {stride[3:0], 3'b000}; //NOTES: gemm addr parsing. kernel > stride >= 1
+					data_addr_block <= gemm_addr + {stride[3:0], 3'b000};
 					if(gemm_count + 1 == o_side) begin
 						gemm_count <= 0;
 						case(op_type)
-							CONV: o_channel_count <= o_channel_count + 1; //NOTES: start the next weight group
+							CONV: o_channel_count <= o_channel_count + 1; //NOTES: start the next weight group //FIXME: o_channel should jump to load_bias
 							MPOOL, APOOL: o_channel_count <= o_channel_count + `BURST_LEN;
 							default:;
 						endcase
@@ -680,7 +696,7 @@ always @ (posedge clk or posedge rst) begin
 		if(dma_p0_ib_valid) begin //Update start addr @ after updating data
 			case(op_type)
 				CONV: begin
-					p0_result_addr_offset <= p0_result_addr_offset + {o_side + p0_padding_body, 3'b000}; //p0_addr will be updated after one cycle //FIXME: add result_addr_surface for convolution
+					p0_result_addr_offset <= p0_result_addr_offset + {o_side + p0_padding_body, 3'b000}; //p0_addr will be updated after one cycle
 					if(fsum_index == 0) begin // start a new gemm
 						p0_result_addr_block <= p0_result_addr_block + `BURST_LEN;
 						p0_result_addr_offset <= 0;
@@ -713,7 +729,7 @@ always @ (posedge clk or posedge rst) begin
 		if(dma_p1_ib_re) begin
 			dma_p1_writes_en <= 0;
 			case(op_type)
-				CONV: dma_p1_ib_data <= fsum_result;
+				CONV: dma_p1_ib_data <= fsum_result[15]? 16'h0000: fsum_result; //Notes: ReLu Activation
 				MPOOL: dma_p1_ib_data <= cmp[p1_writeback_count * 16 +: 16];
 				APOOL: dma_p1_ib_data <= sacc_tmp_sum[p1_writeback_count * 16 +: 16];
 			endcase
@@ -725,7 +741,7 @@ always @ (posedge clk or posedge rst) begin
 		if(dma_p1_ib_valid) begin //Update start addr @ after updating data
 			case(op_type)
 				CONV: begin
-					p1_result_addr_offset <= p1_result_addr_offset + {o_side + p1_padding_body, 3'b000}; //p1_addr will be updated after one cycle //FIXME: add result_addr_surface for convolution
+					p1_result_addr_offset <= p1_result_addr_offset + {o_side + p1_padding_body, 3'b000}; //p1_addr will be updated after one cycle
 					if(fsum_index == 0) begin // start a new gemm
 						p1_result_addr_block <= p1_result_addr_block + `BURST_LEN;
 						p1_result_addr_offset <= 0;
