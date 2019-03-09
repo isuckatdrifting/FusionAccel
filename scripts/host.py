@@ -152,8 +152,17 @@ class host:
 		print("Resetting CSB...")
 		self.xem.SetWireInValue(0x00, 0x0008) #ep00wire[3], reset CSB
 		self.xem.UpdateWireIns()
+		self.xem.SetWireInValue(0x01, 0x0001) #cmd_size
+		self.xem.UpdateWireIns()
 		self.xem.SetWireInValue(0x00, 0x0010) #ep00wire[4], op_en
 		self.xem.UpdateWireIns()
+
+	def waitIrq(self):
+		while True:
+			self.xem.UpdateWireOuts()
+			if self.xem.GetWireOutValue(0x27) != 0x0000:
+				break
+		return
 	
 	def readOutput(self):
 		self.reset_fifo()
@@ -189,7 +198,8 @@ def main():
 #----------------------------------------Run----------------------------------------#
 		if test_mode == RUN:
 			dev.loadData()
-			#dev.startOp()
+			dev.startOp()
+			dev.waitIrq()
 			dev.readOutput()
 
 		if test_mode == SANITY:
