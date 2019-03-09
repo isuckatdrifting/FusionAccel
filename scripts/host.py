@@ -13,8 +13,10 @@ import struct
 bit_directory = 'C:/Users/shish/source/repos/FusionAccel/scripts/top.bit'
 weight_directory = 'C:/Users/shish/source/repos/FusionAccel/scripts/tmp/weight.txt'
 image_directory = ''
-# 0: run, 1: test, 2: sanity
-test_enable = 1
+RUN = 0
+MEM_TEST = 1
+SANITY = 2
+test_mode = MEM_TEST
 
 class host:
 	def __init__(self):
@@ -76,14 +78,14 @@ class host:
 		return(True)
 	
 	def reset_fifo(self):
-		self.xem.SetWireInValue(0x00, 0x0004)
+		self.xem.SetWireInValue(0x00, 0x0004) #ep00wire[2], reset fifo
 		self.xem.UpdateWireIns()
 		self.xem.SetWireInValue(0x00, 0x0000)
 		self.xem.UpdateWireIns()
 	
 	def writeSDRAM(self, mem):
 		self.reset_fifo()
-		self.xem.SetWireInValue(0x00, 0x0002)
+		self.xem.SetWireInValue(0x00, 0x0002) #ep00wire[1], write memblock
 		self.xem.UpdateWireIns()
 		print("Writing to memory(%d)..." % mem)
 		for i in range(0, int(self.memsize/self.writesize)):
@@ -92,7 +94,7 @@ class host:
 
 	def readSDRAM(self, mem):
 		self.reset_fifo()
-		self.xem.SetWireInValue(0x00, 0x0001)
+		self.xem.SetWireInValue(0x00, 0x0001) #ep00wire[0], read memblock
 		self.xem.UpdateWireIns()
 		print("Reading from memory(%d)..." % mem)
 		passed = True
@@ -116,7 +118,7 @@ class host:
 
 	def loadData(self):
 		self.reset_fifo()
-		self.xem.SetWireInValue(0x00, 0x0002)
+		self.xem.SetWireInValue(0x00, 0x0002) #ep00wire[1], write memblock
 		self.xem.UpdateWireIns()
 
 		print("Reading Weights from file")
@@ -148,15 +150,14 @@ class host:
 		self.xem.UpdateWireOuts()
 
 		print("Resetting CSB...")
-		#self.xem.SetWireInValue(0x00, 0x0008)
-		#self.xem.UpdateWireIns()
-		#self.xem.SetWireInValue(0x00, 0x0010)
-		#self.xem.UpdateWireIns()
-		pass
+		self.xem.SetWireInValue(0x00, 0x0008) #ep00wire[3], reset CSB
+		self.xem.UpdateWireIns()
+		self.xem.SetWireInValue(0x00, 0x0010) #ep00wire[4], op_en
+		self.xem.UpdateWireIns()
 	
 	def readOutput(self):
 		self.reset_fifo()
-		self.xem.SetWireInValue(0x00, 0x0001)
+		self.xem.SetWireInValue(0x00, 0x0001) #ep00wire[0], read memblock
 		self.xem.UpdateWireIns()
 		print("Reading Output...")
 		for i in range(0, self.outputsize, self.blocksize):
@@ -173,7 +174,7 @@ def main():
 		exit
 	else:
 #----------------------------------------Test---------------------------------------#
-		if(test_enable):
+		if test_mode == MEM_TEST:
 			pass_num = 0
 			fail_num = 0
 			for i in range(0, dev.numtests):
@@ -186,10 +187,13 @@ def main():
 						fail_num += 1
 					print("Passed: %d  Failed: %d\n" % (pass_num, fail_num))
 #----------------------------------------Run----------------------------------------#
-		else:
+		if test_mode == RUN:
 			dev.loadData()
 			#dev.startOp()
 			dev.readOutput()
+
+		if test_mode == SANITY:
+			pass
 
 if __name__ == '__main__':
     main()

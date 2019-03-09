@@ -22,7 +22,7 @@ module engine  //Instantiate 16CMACs for conv3x3, 16CMACs for conv1x1, maxpool a
 	input [7:0]		p0_padding_body,
 	input [7:0]		p1_padding_head,
 	input [7:0]		p1_padding_body,
-	input [1:0]		result_en,
+	input [1:0]		result_mask,
 //Response signals engine->csb
 	output 			engine_ready,
 //Command path engine->dma
@@ -65,7 +65,7 @@ reg  [`BURST_LEN-1:0] 	 cmac_ready;
 
 //Data BUF and Weight BUF of serializer
 reg  [16*`BURST_LEN-1:0] dbuf; 						// serial buffer
-reg  [16*`BURST_LEN-1:0] wbuf [8:0]; 				// serial buffer
+reg  [16*`BURST_LEN-1:0] wbuf [`MAX_KERNEL_SIZE-1:0]; 				// serial buffer
 
 reg  [16*`BURST_LEN-1:0] data; 						// parallel
 wire [16*`BURST_LEN-1:0] weight; 					// parallel 3x3xBURST_LEN, wired out from cmac_weight_cache
@@ -77,9 +77,9 @@ reg  [16*`BURST_LEN-1:0] cmac_result;
 reg  [7:0]  			 cmac_input_pipe_count;		//NOTES: counter for data reuse on one data in cmac
 reg  [7:0]  			 cmac_middle_pipe_count;	//NOTES: counter for cmac_tmp_sum in cmac
 reg  [7:0]  			 cmac_output_pipe_count;	//NOTES: counter for results in single cmac reuse
-reg  [16*`BURST_LEN-1:0] cmac_weight_cache [2:0];	//NOTES: memory for storing cmac reuse input weight
-reg  [16*`BURST_LEN-1:0] cmac_sum [2:0];			//NOTES: memory for storing cmac reuse output sum
-reg  [7:0]  			 psum_count [2:0];			//NOTES: counter for results in a kernel_size
+reg  [16*`BURST_LEN-1:0] cmac_weight_cache [`MAX_KERNEL-1:0];	//NOTES: memory for storing cmac reuse input weight
+reg  [16*`BURST_LEN-1:0] cmac_sum [`MAX_KERNEL-1:0];			//NOTES: memory for storing cmac reuse output sum
+reg  [7:0]  			 psum_count [`MAX_KERNEL-1:0];			//NOTES: counter for results in a kernel_size
 reg  [16*`BURST_LEN-1:0] psum;						//NOTES: registers for 16-channel sum output, it is selected from the memory cmac_sum
 
 //Full sum registers
@@ -123,9 +123,9 @@ wire [16*`BURST_LEN-1:0] maxpool_result; 			// parallel
 reg  [16*`BURST_LEN-1:0] scmp_result;
 reg  [7:0] 				 scmp_input_pipe_count;		//NOTES: counter for data reuse in scmp
 reg  [7:0] 				 scmp_output_pipe_count;	//NOTES: counter for data reuse in scmp
-reg  [16*`BURST_LEN-1:0] scmp_data_cache [2:0];		//NOTES: memory for storing scmp reuse input data
-reg  [16*`BURST_LEN-1:0] scmp_cmp [2:0];			//NOTES: memory for storing scmp reuse output cmp
-reg  [7:0]  			 scmp_count [2:0];			//NOTES: counter for results in a kernel_size
+reg  [16*`BURST_LEN-1:0] scmp_data_cache [`MAX_KERNEL-1:0];		//NOTES: memory for storing scmp reuse input data
+reg  [16*`BURST_LEN-1:0] scmp_cmp [`MAX_KERNEL-1:0];			//NOTES: memory for storing scmp reuse output cmp
+reg  [7:0]  			 scmp_count [`MAX_KERNEL-1:0];			//NOTES: counter for results in a kernel_size
 reg  [16*`BURST_LEN-1:0] cmp;						//NOTES: registers for 16-channel cmp output, it is selected from the memory scmp_cmp
 
 genvar l;
@@ -266,6 +266,7 @@ initial begin
 end
 
 //    Output, non-blocking
+integer b;
 always @ (posedge clk or posedge rst) begin
 	if(rst) begin
 		conv_valid <= 0; avepool_valid <= 0; maxpool_valid <= 0; engine_ready <= 0;
@@ -276,17 +277,27 @@ always @ (posedge clk or posedge rst) begin
 		dma_p0_ib_valid <= 0; dma_p1_ib_valid <= 0;
 		//==================== Channel operation registers ====================
 		dbuf <= 'd0; data <= 'd0; psum <= 'd0; cmp <= 'd0; sacc_tmp_sum <= 'd0;
-		wbuf[0] <= 'd0; wbuf[1] <= 'd0; wbuf[2] <= 'd0; 
-		wbuf[3] <= 'd0; wbuf[4] <= 'd0; wbuf[5] <= 'd0; 
-		wbuf[6] <= 'd0; wbuf[7] <= 'd0; wbuf[8] <= 'd0; 
+		for(b=0;b<`MAX_KERNEL_SIZE;b=b+1) wbuf[b] <= 'd0;
+		//wbuf[0] <= 'd0; wbuf[1] <= 'd0; wbuf[2] <= 'd0; 
+		//wbuf[3] <= 'd0; wbuf[4] <= 'd0; wbuf[5] <= 'd0; 
+		//wbuf[6] <= 'd0; wbuf[7] <= 'd0; wbuf[8] <= 'd0; 
 		//==================== Slot registers ====================
-		cache_count[0] <= 8'h00; cache_count[1] <= 8'h00; cache_count[2] <= 8'h00;
-		psum_count[0] <= 8'h00; psum_count[1] <= 8'h00; psum_count[2] <= 8'h00;
-		scmp_count[0] <= 8'h00; scmp_count[1] <= 8'h00; scmp_count[2] <= 8'h00;
-		cmac_sum[0] <= 'd0; cmac_sum[1] <= 'd0; cmac_sum[2] <= 'd0;
-		scmp_cmp[0] <= 'd0; scmp_cmp[1] <= 'd0; scmp_cmp[2] <= 'd0;
-		scmp_data_cache[0] <= 'd0; scmp_data_cache[1] <= 'd0; scmp_data_cache[2] <= 'd0;
-		cmac_weight_cache[0] <= 'd0; cmac_weight_cache[1] <= 'd0; cmac_weight_cache[2] <= 'd0;
+		for(b=0;b<`MAX_KERNEL;b=b+1) begin
+			cache_count[b] <= 8'h00;
+			psum_count[b] <= 8'h00;
+			scmp_count[b] <= 8'h00;
+			cmac_sum[b] <= 'd0;
+			scmp_cmp[b] <= 'd0;
+			scmp_data_cache[b] <= 'd0;
+			cmac_weight_cache[b] <= 'd0;
+		end
+		//cache_count[0] <= 8'h00; cache_count[1] <= 8'h00; cache_count[2] <= 8'h00;
+		//psum_count[0] <= 8'h00; psum_count[1] <= 8'h00; psum_count[2] <= 8'h00;
+		//scmp_count[0] <= 8'h00; scmp_count[1] <= 8'h00; scmp_count[2] <= 8'h00;
+		//cmac_sum[0] <= 'd0; cmac_sum[1] <= 'd0; cmac_sum[2] <= 'd0;
+		//scmp_cmp[0] <= 'd0; scmp_cmp[1] <= 'd0; scmp_cmp[2] <= 'd0;
+		//scmp_data_cache[0] <= 'd0; scmp_data_cache[1] <= 'd0; scmp_data_cache[2] <= 'd0;
+		//cmac_weight_cache[0] <= 'd0; cmac_weight_cache[1] <= 'd0; cmac_weight_cache[2] <= 'd0;
 		cmac_enable <= 0; cmac_data_ready <= 0; avepool_enable <= 0; avepool_data_ready <= 0; maxpool_enable <= 0; maxpool_data_ready <= 0; div_en <= 0;
 		atom_count <= 8'h00; line_count <= 16'h0000; cmac_output_pipe_count <= 8'h00;
 		cmac_input_pipe_count <= 8'h00; cmac_middle_pipe_count <= 8'h00; scmp_input_pipe_count <= 8'h00; scmp_output_pipe_count <= 8'h00; 
@@ -330,17 +341,27 @@ always @ (posedge clk or posedge rst) begin
 				dma_p0_ib_valid <= 0; dma_p1_ib_valid <= 0;
 				//==================== Channel operation registers ====================
 				dbuf <= 'd0; data <= 'd0; psum <= 'd0; cmp <= 'd0; sacc_tmp_sum <= 'd0;
-				wbuf[0] <= 'd0; wbuf[1] <= 'd0; wbuf[2] <= 'd0; 
-				wbuf[3] <= 'd0; wbuf[4] <= 'd0; wbuf[5] <= 'd0; 
-				wbuf[6] <= 'd0; wbuf[7] <= 'd0; wbuf[8] <= 'd0; 
+				for(b=0;b<`MAX_KERNEL_SIZE;b=b+1) wbuf[b] <= 'd0;
+				//wbuf[0] <= 'd0; wbuf[1] <= 'd0; wbuf[2] <= 'd0; 
+				//wbuf[3] <= 'd0; wbuf[4] <= 'd0; wbuf[5] <= 'd0; 
+				//wbuf[6] <= 'd0; wbuf[7] <= 'd0; wbuf[8] <= 'd0; 
 				//==================== Slot registers ====================
-				cache_count[0] <= 8'h00; cache_count[1] <= 8'h00; cache_count[2] <= 8'h00;
-				psum_count[0] <= 8'h00; psum_count[1] <= 8'h00; psum_count[2] <= 8'h00;
-				scmp_count[0] <= 8'h00; scmp_count[1] <= 8'h00; scmp_count[2] <= 8'h00;
-				cmac_sum[0] <= 'd0; cmac_sum[1] <= 'd0; cmac_sum[2] <= 'd0;
-				scmp_cmp[0] <= 'd0; scmp_cmp[1] <= 'd0; scmp_cmp[2] <= 'd0;
-				scmp_data_cache[0] <= 'd0; scmp_data_cache[1] <= 'd0; scmp_data_cache[2] <= 'd0;
-				cmac_weight_cache[0] <= 'd0; cmac_weight_cache[1] <= 'd0; cmac_weight_cache[2] <= 'd0;
+				for(b=0;b<`MAX_KERNEL;b=b+1) begin
+					cache_count[b] <= 8'h00;
+					psum_count[b] <= 8'h00;
+					scmp_count[b] <= 8'h00;
+					cmac_sum[b] <= 'd0;
+					scmp_cmp[b] <= 'd0;
+					scmp_data_cache[b] <= 'd0;
+					cmac_weight_cache[b] <= 'd0;
+				end
+				//cache_count[0] <= 8'h00; cache_count[1] <= 8'h00; cache_count[2] <= 8'h00;
+				//psum_count[0] <= 8'h00; psum_count[1] <= 8'h00; psum_count[2] <= 8'h00;
+				//scmp_count[0] <= 8'h00; scmp_count[1] <= 8'h00; scmp_count[2] <= 8'h00;
+				//cmac_sum[0] <= 'd0; cmac_sum[1] <= 'd0; cmac_sum[2] <= 'd0;
+				//scmp_cmp[0] <= 'd0; scmp_cmp[1] <= 'd0; scmp_cmp[2] <= 'd0;
+				//scmp_data_cache[0] <= 'd0; scmp_data_cache[1] <= 'd0; scmp_data_cache[2] <= 'd0;
+				//cmac_weight_cache[0] <= 'd0; cmac_weight_cache[1] <= 'd0; cmac_weight_cache[2] <= 'd0;
 				cmac_enable <= 0; cmac_data_ready <= 0; avepool_enable <= 0; avepool_data_ready <= 0; maxpool_enable <= 0; maxpool_data_ready <= 0; div_en <= 0;
 				atom_count <= 8'h00; line_count <= 16'h0000; cmac_output_pipe_count <= 8'h00;
 				cmac_input_pipe_count <= 8'h00; cmac_middle_pipe_count <= 8'h00; scmp_input_pipe_count <= 8'h00; scmp_output_pipe_count <= 8'h00; 
@@ -486,8 +507,8 @@ always @ (posedge clk or posedge rst) begin
 						fsum[fsum_index] <= fsum_result; //NOTES: it will overwrite the fsum_result in the first c-1 channel groups
 					end
 					if(i_channel_count + `BURST_LEN >= i_channel && fsum_count == `BURST_LEN) begin
-						if(result_en[0]) p0_writeback_en <= 1;
-						if(result_en[1]) p1_writeback_en <= 1;
+						if(result_mask[0]) p0_writeback_en <= 1;
+						if(result_mask[1]) p1_writeback_en <= 1;
 						writeback_num <= 1;
 					end
 				end
@@ -576,20 +597,20 @@ always @ (posedge clk or posedge rst) begin
 					//Logic for setting psum_count according to cache_count
 					if(scmp_count[0] + 1 == kernel_size) begin
 						cmp <= scmp_cmp[0];
-						if(result_en[0]) p0_writeback_en <= 1; //Trigger for channel memory writeback
-						if(result_en[1]) p1_writeback_en <= 1; //Trigger for channel memory writeback
+						if(result_mask[0]) p0_writeback_en <= 1; //Trigger for channel memory writeback
+						if(result_mask[1]) p1_writeback_en <= 1; //Trigger for channel memory writeback
 						writeback_num <= `BURST_LEN;
 					end
 					if(scmp_count[1] + 1 == kernel_size) begin
 						cmp <= scmp_cmp[1];
-						if(result_en[0]) p0_writeback_en <= 1; //Trigger for channel memory writeback
-						if(result_en[1]) p1_writeback_en <= 1; //Trigger for channel memory writeback
+						if(result_mask[0]) p0_writeback_en <= 1; //Trigger for channel memory writeback
+						if(result_mask[1]) p1_writeback_en <= 1; //Trigger for channel memory writeback
 						writeback_num <= `BURST_LEN;
 					end
 					if(scmp_count[2] + 1 == kernel_size) begin
 						cmp <= scmp_cmp[2];
-						if(result_en[0]) p0_writeback_en <= 1; //Trigger for channel memory writeback
-						if(result_en[1]) p1_writeback_en <= 1; //Trigger for channel memory writeback
+						if(result_mask[0]) p0_writeback_en <= 1; //Trigger for channel memory writeback
+						if(result_mask[1]) p1_writeback_en <= 1; //Trigger for channel memory writeback
 						writeback_num <= `BURST_LEN;
 					end
 				end
@@ -640,8 +661,8 @@ always @ (posedge clk or posedge rst) begin
 				if(div_en && sacc_ready) begin
 					div_en <= 0;
 					to_clear <= 1;
-					if(result_en[0]) p0_writeback_en <= 1; //NOTES: Writeback all channels
-					if(result_en[1]) p1_writeback_en <= 1; //NOTES: Writeback all channels
+					if(result_mask[0]) p0_writeback_en <= 1; //NOTES: Writeback all channels
+					if(result_mask[1]) p1_writeback_en <= 1; //NOTES: Writeback all channels
 					writeback_num <= `BURST_LEN;
 				end
 			end

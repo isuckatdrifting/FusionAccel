@@ -6,4 +6,6 @@
 `define BLOCK_BURST_LEN 1 
 `define CMD_BURST_LEN 6
 `define MAX_O_SIDE 128
+`define MAX_KERNEL 3
+`define MAX_KERNEL_SIZE 9
 `endif
