@@ -451,6 +451,10 @@
          <obj_property name="ElementShortName">layer_finish</obj_property>
          <obj_property name="ObjectShortName">layer_finish</obj_property>
       </wvobject>
+      <wvobject fp_name="/engine_tb/engine_/engine_ready" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">engine_ready</obj_property>
+         <obj_property name="ObjectShortName">engine_ready</obj_property>
+      </wvobject>
       <wvobject fp_name="divider329" type="divider">
          <obj_property name="label">Writeback</obj_property>
          <obj_property name="DisplayName">label</obj_property>
@@ -814,8 +818,8 @@
          <obj_property name="TextColor">230 230 230</obj_property>
       </wvobject>
       <wvobject fp_name="/engine_tb/p0_result_start_addr" type="array" db_ref_id="1">
-         <obj_property name="ElementShortName">p0_result_start_addr[31:0]</obj_property>
-         <obj_property name="ObjectShortName">p0_result_start_addr[31:0]</obj_property>
+         <obj_property name="ElementShortName">p0_result_start_addr[29:0]</obj_property>
+         <obj_property name="ObjectShortName">p0_result_start_addr[29:0]</obj_property>
          <obj_property name="Radix">HEXRADIX</obj_property>
       </wvobject>
       <wvobject fp_name="/engine_tb/p0_padding_head" type="array" db_ref_id="1">
@@ -872,8 +876,8 @@
          <obj_property name="TextColor">230 230 230</obj_property>
       </wvobject>
       <wvobject fp_name="/engine_tb/p1_result_start_addr" type="array" db_ref_id="1">
-         <obj_property name="ElementShortName">p1_result_start_addr[31:0]</obj_property>
-         <obj_property name="ObjectShortName">p1_result_start_addr[31:0]</obj_property>
+         <obj_property name="ElementShortName">p1_result_start_addr[29:0]</obj_property>
+         <obj_property name="ObjectShortName">p1_result_start_addr[29:0]</obj_property>
          <obj_property name="Radix">HEXRADIX</obj_property>
       </wvobject>
       <wvobject fp_name="/engine_tb/p1_padding_head" type="array" db_ref_id="1">

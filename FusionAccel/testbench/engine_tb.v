@@ -22,10 +22,10 @@ reg [15:0]  i_channel;
 reg [15:0]  o_channel;
 reg [7:0]	i_side;
 reg [7:0]   o_side;
-reg [31:0]	data_start_addr;
-reg [31:0]	weight_start_addr;
-reg [31:0]  p0_result_start_addr;
-reg [31:0]  p1_result_start_addr;
+reg [29:0]	data_start_addr;
+reg [29:0]	weight_start_addr;
+reg [29:0]  p0_result_start_addr;
+reg [29:0]  p1_result_start_addr;
 reg [1:0]   result_mask;
 //Response signals engine->csb
 wire 		engine_ready;
@@ -171,7 +171,7 @@ engine engine_(
 );
 
 always #5 clk = ~clk;
-always @(posedge engine_ready) engine_valid <= 0; // pull down engine_valid after the whole op is done
+always @(posedge clk) if(engine_ready) engine_valid <= 0; // pull down engine_valid after the whole op is done
 
 integer m,n,offset;
 initial begin
@@ -195,7 +195,8 @@ initial begin
 `ifdef CMAC
     #100 op_type = 1; stride = 2; stride2 = 6;
 		p0_padding_head = 0; p0_padding_body = 0; p1_padding_head = 0; p1_padding_body = 0;
-		kernel = 3; kernel_size = 9; i_channel = 3; o_channel = 1; i_side = 227; o_side = 113; result_mask <= 2'b01;
+		//kernel = 3; kernel_size = 9; i_channel = 3; o_channel = 1; i_side = 227; o_side = 113; result_mask <= 2'b01;
+		kernel = 3; kernel_size = 9; i_channel = 3; o_channel = 1; i_side = 5; o_side = 3; result_mask <= 2'b01;
 `endif
 `ifdef SCMP
 	#100 op_type = 2; stride = 2; stride2 = 6;

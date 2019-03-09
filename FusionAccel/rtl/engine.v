@@ -14,10 +14,10 @@ module engine  //Instantiate 16CMACs for conv3x3, 16CMACs for conv1x1, maxpool a
 	input [15:0]	o_channel,
 	input [7:0]		kernel_size,
 	input [15:0]	stride2,	//kernel * stride
-	input [31:0]	data_start_addr,
-	input [31:0]	weight_start_addr,
-	input [31:0]    p0_result_start_addr,
-	input [31:0]    p1_result_start_addr,
+	input [29:0]	data_start_addr,
+	input [29:0]	weight_start_addr,
+	input [29:0]    p0_result_start_addr,
+	input [29:0]    p1_result_start_addr,
 	input [7:0]		p0_padding_head,
 	input [7:0]		p0_padding_body,
 	input [7:0]		p1_padding_head,
@@ -53,7 +53,8 @@ module engine  //Instantiate 16CMACs for conv3x3, 16CMACs for conv1x1, maxpool a
 	output [15:0]	dma_p0_ib_data,
 	output [15:0]	dma_p1_ib_data,
 	output			dma_p0_ib_valid,
-	output			dma_p1_ib_valid
+	output			dma_p1_ib_valid,
+	output [3:0]	curr_state
 );
 
 localparam CONV = 1, MPOOL = 2, APOOL = 3;
@@ -214,7 +215,7 @@ always @ (*) begin
     case (curr_state)
 		init: begin
 			if(engine_valid) begin
-				if(op_type == CONV) next_state = load_bias;
+				if(op_type == 3'b001) next_state = load_bias;
 				else next_state = idle;
 			end
 			else next_state = init;
@@ -225,9 +226,9 @@ always @ (*) begin
 		end
         idle: begin
 			case(op_type)
-				CONV: next_state = gemm_busy;
-				MPOOL: next_state = scmp_busy;
-				APOOL: next_state = sacc_busy;
+				3'b001: next_state = gemm_busy;
+				3'b010: next_state = scmp_busy;
+				3'b011: next_state = sacc_busy;
 			endcase
         end
 		gemm_busy: begin
@@ -243,10 +244,17 @@ always @ (*) begin
 			else next_state = sacc_busy;
 		end
 		clear: begin
-			if(op_type == CONV && gemm_count + 1 == o_side) next_state = load_bias;
-			else next_state = idle;
+			if(gemm_count + 1 == o_side) begin
+				if(o_channel_count + 1 == o_channel) begin
+					next_state = finish;
+				end else begin
+					if(op_type == CONV) next_state = load_bias;
+					else next_state = idle;
+				end
+			end else next_state = idle;
 		end
 		finish: begin
+			next_state = finish;
 		end
         default:
             next_state = init;
@@ -317,6 +325,7 @@ always @ (posedge clk or posedge rst) begin
 	end else begin
 		case (curr_state)
 			init: begin
+				engine_ready <= 0;
 				data_addr_block <= data_start_addr; weight_addr_block <= weight_start_addr; 
 				gemm_addr <= data_start_addr;
 				p0_result_addr_surface <= p0_result_start_addr + p0_padding_head; p1_result_addr_surface <= p1_result_start_addr + p1_padding_head;
@@ -669,6 +678,7 @@ always @ (posedge clk or posedge rst) begin
 
 			//==================== Update cross-channel counters and read address ====================
 			clear: begin
+				dma_p2_reads_en <= 0; dma_p3_reads_en <= 0;
 				i_channel_count <= i_channel_count + `BURST_LEN; // within channel operation the address is not updated
 				if(i_channel_count + `BURST_LEN >= i_channel) begin
 					i_channel_count <= 0;

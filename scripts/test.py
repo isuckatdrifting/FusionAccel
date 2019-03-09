@@ -35,7 +35,6 @@ print(num3)
 
 num2 = np.dsplit(num, num.shape[2]/8)
 print(num2)
-'''
 num = np.arange(4).reshape(2,2).reshape(-1).astype(dtype=np.float16)
 for j in num:
     print(str(hex(struct.unpack('<H', j)[0]))[2:].zfill(8), end = ' ')
@@ -50,3 +49,8 @@ endian = bytearray.fromhex('0000 3c00 4000 4200')
 print(endian)
 print(endian.hex())
 print(sys.byteorder.capitalize())
+'''
+
+data = b'\xAD\xDE\xDE\xC0\xAD\xDE\xDE\xC0'
+swap_data = bytearray(data).reverse()
+print(swap_data)
