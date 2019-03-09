@@ -4,9 +4,6 @@ import caffe
 import struct
 import time
 
-#######################Inference###########################
-start_0 = time.clock()
-caffe.set_mode_cpu()
 model_def = '/mnt/c/Users/shish/source/repos/SqueezeNet/SqueezeNet_v1.1/deploy.prototxt'
 model_weights = '/mnt/c/Users/shish/source/repos/SqueezeNet/SqueezeNet_v1.1/squeezenet_v1.1.caffemodel'
 

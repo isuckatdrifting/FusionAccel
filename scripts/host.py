@@ -139,14 +139,12 @@ class host:
 					self.image + bytearray(self.memsize-2048*1024*4-len(self.image))
 		print(len(self.buf))
 
-	def loadData(self):
+	def loadBlob(self):
 		self.reset_fifo()
 		self.xem.SetWireInValue(0x00, 0x0002) #ep00wire[1], write memblock
 		self.xem.UpdateWireIns()
-
-		# Notes: Write cube must be times of blocksize ------------------↓
 		for i in range(0, int(self.memsize/self.writesize)):
-			self.xem.WriteToBlockPipeIn(0x80, self.blocksize, self.buf[i*self.writesize:(i+1)*self.writesize])
+			self.xem.WriteToBlockPipeIn(0x80, self.blocksize, self.buf[i*self.writesize:(i+1)*self.writesize]) # Notes: Write buf must be times of blocksize
 		self.xem.UpdateWireOuts()
 		
 	def startOp(self):
@@ -203,7 +201,7 @@ def main():
 #----------------------------------------Run----------------------------------------#
 		if test_mode == RUN:
 			dev.readBlob()
-			dev.loadData()
+			dev.loadBlob()
 			dev.startOp()
 			dev.waitIrq()
 			dev.readOutput()
