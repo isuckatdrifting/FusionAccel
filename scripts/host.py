@@ -17,7 +17,7 @@ image_directory = 'C:/Users/shish/source/repos/FusionAccel/scripts/tmp/data.npy'
 RUN = 0
 MEM_TEST = 1
 SANITY = 2
-test_mode = MEM_TEST
+test_mode = SANITY
 
 class host:
 	def __init__(self):
@@ -31,9 +31,6 @@ class host:
 		self.buf = bytearray(self.memsize)
 		self.rbuf = bytearray(self.readsize)
 		# Run Parameters
-		self.commandsize = 30 * 256
-		self.weightsize = 2470992
-		self.imagesize = 309 * 512
 		self.outputsize = 4096
 		self.weight = bytearray() #dynamic array allocation
 		self.image = bytearray()
@@ -98,14 +95,6 @@ class host:
 			self.xem.ReadFromBlockPipeOut(0xa0 + mem, self.blocksize, self.rbuf)
 			for j in range(0, self.blocksize):
 				if self.buf[i+j] != self.rbuf[j]:
-					'''
-					for k in range(0, 8):
-						print("[0x%X = 0x%02X / 0x%02X // 0x%02X\n" %(
-					       i+j+k,
-						   self.buf[i+j+k],
-						   self.rbuf[j+k],
-						   self.buf[i+j+k] ^ self.rbuf[j+k]))
-					'''
 					passed = False
 			print(sum(self.buf[i:i+self.readsize]), ", ", sum(self.rbuf)) # Checksum
 			if i == 0:
@@ -166,29 +155,30 @@ class host:
 		return
 	
 	def readOutput(self):
+		addr = 5831912
+		start_pivot = int(addr*4/4096)
 		self.reset_fifo()
 		self.xem.SetWireInValue(0x00, 0x0001) #ep00wire[0], read memblock
 		self.xem.UpdateWireIns()
 		print("Reading Output...")
-		for i in range(0, self.outputsize, self.blocksize):
+		for i in range(0, self.memsize, self.outputsize):
 			self.xem.ReadFromBlockPipeOut(0xa0, self.blocksize, self.output)
-			for j in range(0, self.blocksize):
-				if j % 2 == 0:
-					print("%02x" % self.output[i+j], end="")
-				else:
-					print("%02x" % self.output[i+j], end=" ")
+			if start_pivot <= i <= start_pivot + 1:
+				for j in range(0, self.outputsize):
+					if j % 2 == 0:
+						print("%02x" % self.output[j], end="")
+					else:
+						print("%02x" % self.output[j], end=" ")
 
 def main():   
 	dev = host()
-	dev.readBlob()
-	'''
-	if (False == dev.InitializeDevice()):
-		exit
-	else:
 #----------------------------------------Test---------------------------------------#
-		if test_mode == MEM_TEST:
-			pass_num = 0
-			fail_num = 0
+	if test_mode == MEM_TEST:
+		pass_num = 0
+		fail_num = 0
+		if (False == dev.InitializeDevice()):
+			exit
+		else:
 			for i in range(0, dev.numtests):
 				for j in range(0, dev.num_of_rams):
 					dev.buf = bytearray(os.urandom(dev.memsize))
@@ -199,16 +189,18 @@ def main():
 						fail_num += 1
 					print("Passed: %d  Failed: %d\n" % (pass_num, fail_num))
 #----------------------------------------Run----------------------------------------#
-		if test_mode == RUN:
-			dev.readBlob()
+	if test_mode == RUN:
+		dev.readBlob()
+		if (False == dev.InitializeDevice()):
+			exit
+		else:
 			dev.loadBlob()
 			dev.startOp()
 			dev.waitIrq()
 			dev.readOutput()
-
-		if test_mode == SANITY:
-			pass
-	'''
+#------------------------------Sanity without Hardware------------------------------#
+	if test_mode == SANITY:
+		dev.readBlob()
 
 if __name__ == '__main__':
     main()
