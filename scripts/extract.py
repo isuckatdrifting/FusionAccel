@@ -2,7 +2,7 @@ import caffe
 import numpy as np
 import struct
 import os
-np.set_printoptions(threshold=np.nan) 
+np.set_printoptions(threshold=np.nan) # print the whole ndarray without abbrev
 def extract_caffe_model(model, weights, output_path):
   """extract caffe model's parameters to numpy array, and write them to files
   Args:
@@ -22,7 +22,6 @@ def extract_caffe_model(model, weights, output_path):
     name, layer = item
     print('convert layer: ' + name)
 
-    num = 0
     #=============================Print reshaped and split weights============================#
     pad = 0
     if net.params[name][0].data.shape[1] <= 8:
@@ -45,10 +44,11 @@ def extract_caffe_model(model, weights, output_path):
         # print(str(hex(struct.unpack('<H', j)[0])).replace('0x','').zfill(4), end = ' ')
       f.write("\n")
       # print('')
+
     #=============================Print Original weights=======================================#
     '''
+    num = 0
     for p in net.params[name]: #NCHW
-      # TODO: Padding 0
       print(p.data.shape)
       dat = p.data.astype(dtype=np.float16).reshape(-1)
       for j in dat:

@@ -36,9 +36,10 @@ transformed_image = transformer.preprocess('data', image)
 
 # copy the image data into the memory allocated for the net
 net.blobs['data'].data[...] = transformed_image
-np.save("./tmp/data.npy",transformed_image)
+np.save("./tmp/data.npy", transformed_image.astype(dtype=np.float16))
 print(transformed_image)
 print(transformed_image.shape)
+print(transformed_image.astype(dtype=np.float16).byteswap().tobytes().hex())
 print('=================================')
 print(net.blobs['data'].data)
 print(net.blobs['data'].data.shape)

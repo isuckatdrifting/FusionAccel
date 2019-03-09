@@ -11,8 +11,9 @@ import ok
 import struct
 
 bit_directory = 'C:/Users/shish/source/repos/FusionAccel/scripts/top.bit'
+command_directory = 'C:/Users/shish/source/repos/FusionAccel/scripts/tmp/command.txt'
 weight_directory = 'C:/Users/shish/source/repos/FusionAccel/scripts/tmp/weight.txt'
-image_directory = ''
+image_directory = 'C:/Users/shish/source/repos/FusionAccel/scripts/tmp/data.npy'
 RUN = 0
 MEM_TEST = 1
 SANITY = 2
@@ -35,7 +36,7 @@ class host:
 		self.imagesize = 309 * 512 # TODO: 227*227*3/512 = 154587/512 = 309...475 --> padding 37 0s at the end
 		self.outputsize = 4096
 		self.weight = bytearray() #dynamic array allocation
-		self.image = bytearray(self.imagesize)
+		self.image = bytearray()
 		self.output = bytearray(self.outputsize)
 		self.command = bytearray()
 		# Sanity test parameters
@@ -116,48 +117,49 @@ class host:
 				print(self.buf[0], ", ", self.rbuf[0])
 		return passed
 
+	def readBlob(self):
+		print("Loading commands")
+		commandfile = open(command_directory, "r")
+		for line in commandfile.readlines():
+			tmp = bytearray.fromhex(line.replace('\t',' ').strip('\n'))
+			self.command = self.command + tmp
+		print(len(self.command)) # Actually 30 Commands x 32 Bytes
+
+		print("Loading Weights")
+		weightfile = open(weight_directory, "r")
+		for line in weightfile.readlines():
+			tmp = bytearray.fromhex(line.strip('\n'))
+			self.weight = self.weight + tmp
+		print(len(self.weight))
+
+		print("Loading Image")
+		data = np.load(image_directory)
+		self.image = data.astype(dtype=np.float16).byteswap().tobytes()
+		print(len(self.image))
+
+		print("Merging Blobs")
+		self.buf = 	self.command + bytearray(4096*2-len(self.command)) + \
+				   	self.weight + bytearray(2048*1024*2-4096*2-len(self.weight)) + \
+					self.image + bytearray(self.memsize-2048*1024*2-len(self.image))
+		print(len(self.buf))
+
 	def loadData(self):
 		self.reset_fifo()
 		self.xem.SetWireInValue(0x00, 0x0002) #ep00wire[1], write memblock
 		self.xem.UpdateWireIns()
 
-		print("Loading commands")
-		commandfile = open(command_directory, "r")
-		for line in commandfile.readlines():
-			tmp = bytearray.fromhex(line.strip('\n'))
-			self.buf = self.buf + tmp
-		#self.xem.WriteToBlockPipeIn(0x80, self.blocksize, self.command[0:1024]) # Actually 30 Commands x 32 Bytes
-		#self.xem.UpdateWireOuts()
-		print(self.buf)
-
-		print("Reading Weights from file")
-		weightfile = open(weight_directory, "r")
-		for line in weightfile.readlines():
-			tmp = bytearray.fromhex(line.strip('\n'))
-			self.weight = self.weight + tmp
-			#print(len(tmp))
-		print(len(self.weight))
-
-		print("Loading Weights")
-		self.buf = bytearray(os.urandom(self.memsize))
 		# Notes: Write cube must be times of blocksize ------------------↓
-		self.xem.WriteToBlockPipeIn(0x80, self.blocksize, self.weight[0:2470912])
+		for i in range(0, int(self.memsize/self.writesize)):
+			self.xem.WriteToBlockPipeIn(0x80, self.blocksize, self.buf[i*self.writesize:(i+1)*self.writesize])
 		self.xem.UpdateWireOuts()
 		
-		print("Loading Image")
-		'''
-		for i in range(0, int(self.weightsize/self.writesize)):
-			self.xem.WriteToBlockPipeIn(0x80, self.blocksize, self.image[i*self.writesize:(i+1)*self.writesize])
-		self.xem.UpdateWireOuts()
-		'''
-
 	def startOp(self):
 		print("Resetting CSB...")
 		self.xem.SetWireInValue(0x00, 0x0008) #ep00wire[3], reset CSB
 		self.xem.UpdateWireIns()
 		self.xem.SetWireInValue(0x01, 0x0001) #cmd_size
 		self.xem.UpdateWireIns()
-		print("Start Operation...")
+		print("Starting Operation...")
 		self.xem.SetWireInValue(0x00, 0x0010) #ep00wire[4], op_en
 		self.xem.UpdateWireIns()
 
@@ -165,7 +167,7 @@ class host:
 		while True:
 			self.xem.UpdateWireOuts()
 			if self.xem.GetWireOutValue(0x27) != 0x0000:
-				print("Get Interrupt...")
+				print("Got Interrupt...")
 				break
 		return
 	
@@ -184,6 +186,8 @@ class host:
 
 def main():   
 	dev = host()
+	dev.readBlob()
+	'''
 	if (False == dev.InitializeDevice()):
 		exit
 	else:
@@ -202,6 +206,7 @@ def main():
 					print("Passed: %d  Failed: %d\n" % (pass_num, fail_num))
 #----------------------------------------Run----------------------------------------#
 		if test_mode == RUN:
+			dev.readBlob()
 			dev.loadData()
 			dev.startOp()
 			dev.waitIrq()
@@ -209,6 +214,7 @@ def main():
 
 		if test_mode == SANITY:
 			pass
+	'''
 
 if __name__ == '__main__':
     main()
