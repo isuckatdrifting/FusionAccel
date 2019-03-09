@@ -121,6 +121,15 @@ class host:
 		self.xem.SetWireInValue(0x00, 0x0002) #ep00wire[1], write memblock
 		self.xem.UpdateWireIns()
 
+		print("Loading commands")
+		commandfile = open(command_directory, "r")
+		for line in commandfile.readlines():
+			tmp = bytearray.fromhex(line.strip('\n'))
+			self.buf = self.buf + tmp
+		#self.xem.WriteToBlockPipeIn(0x80, self.blocksize, self.command[0:1024]) # Actually 30 Commands x 32 Bytes
+		#self.xem.UpdateWireOuts()
+		print(self.buf)
+
 		print("Reading Weights from file")
 		weightfile = open(weight_directory, "r")
 		for line in weightfile.readlines():
@@ -134,26 +143,21 @@ class host:
 		# Notes: Write cube must be times of blocksize ------------------↓
 		self.xem.WriteToBlockPipeIn(0x80, self.blocksize, self.weight[0:2470912])
 		self.xem.UpdateWireOuts()
-		'''
+		
 		print("Loading Image")
+		'''
 		for i in range(0, int(self.weightsize/self.writesize)):
 			self.xem.WriteToBlockPipeIn(0x80, self.blocksize, self.image[i*self.writesize:(i+1)*self.writesize])
 		self.xem.UpdateWireOuts()
 		'''
-	def startOp(self):
-		print("Loading commands")
-		commandfile = open(command_directory, "r")
-		for line in commandfile.readlines():
-			tmp = bytearray.fromhex(line.strip('\n'))
-			self.command = self.command + tmp
-		self.xem.WriteToBlockPipeIn(0x80, self.blocksize, self.command[0:1024]) # Actually 30 Commands x 32 Bytes
-		self.xem.UpdateWireOuts()
 
+	def startOp(self):
 		print("Resetting CSB...")
 		self.xem.SetWireInValue(0x00, 0x0008) #ep00wire[3], reset CSB
 		self.xem.UpdateWireIns()
 		self.xem.SetWireInValue(0x01, 0x0001) #cmd_size
 		self.xem.UpdateWireIns()
+		print("Start Operation...")
 		self.xem.SetWireInValue(0x00, 0x0010) #ep00wire[4], op_en
 		self.xem.UpdateWireIns()
 
@@ -161,6 +165,7 @@ class host:
 		while True:
 			self.xem.UpdateWireOuts()
 			if self.xem.GetWireOutValue(0x27) != 0x0000:
+				print("Get Interrupt...")
 				break
 		return
 	

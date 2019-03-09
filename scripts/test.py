@@ -12,7 +12,7 @@ num = np.array(1e-5).astype(dtype = np.float16)
 print(num)
 num_s = str(hex(struct.unpack('H', num)[0])).replace('0x','').zfill(4)
 print(num_s)
-'''
+
 weightpiece = open("C:/Users/shish/source/repos/FusionAccel/scripts/tmp/weight.txt","r")
 weight = bytearray()
 for line in weightpiece.readlines():
@@ -22,3 +22,15 @@ for line in weightpiece.readlines():
     print(len(tmp), end = ", ")
     print(sum(tmp))
 print(len(weight))
+'''
+num = np.arange(144).reshape((16,3,3))
+print(num)
+print(num.shape)
+num2 = np.transpose(num, (1,2,0))
+print(num2)
+num3 = np.dsplit(num2, num2.shape[2]/8)
+print(num3)
+'''
+num2 = np.dsplit(num, num.shape[2]/8)
+print(num2)
+'''
