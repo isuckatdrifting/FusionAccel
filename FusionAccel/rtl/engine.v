@@ -83,7 +83,7 @@ reg  [7:0]  			 psum_count [2:0];			//NOTES: counter for results in a kernel_siz
 reg  [16*`BURST_LEN-1:0] psum;						//NOTES: registers for 16-channel sum output, it is selected from the memory cmac_sum
 
 //Full sum registers
-reg  [15:0] 			 fsum [127:0]; //max support 128 x 128 output side
+reg  [15:0] 			 fsum [`MAX_O_SIDE-1:0]; //max support 128 x 128 output side
 reg  [15:0] 			 fsum_a, fsum_b, fsum_result;
 reg  [7:0]  			 fsum_count;
 reg  [7:0]  			 fsum_index;
@@ -162,6 +162,7 @@ always @(posedge clk) sacc_ready <= rdy_sacc;
 
 //==================== Address registers ===========================//
 reg  [15:0]	bias;
+reg			to_load_bias;
 reg  [15:0] i_channel_count;
 reg  [7:0]  gemm_count;
 reg  [15:0] o_channel_count;
@@ -242,7 +243,8 @@ always @ (*) begin
 			else next_state = sacc_busy;
 		end
 		clear: begin
-			next_state = idle;
+			if(op_type == CONV && gemm_count + 1 == o_side) next_state = load_bias;
+			else next_state = idle;
 		end
 		finish: begin
 		end
@@ -258,7 +260,7 @@ end
 
 integer a; // initialize buffer for cmac
 initial begin
-	for (a=0; a<128; a=a+1) begin //FIXME: hardcode
+	for (a=0; a<`MAX_O_SIDE; a=a+1) begin //FIXME: hardcode
 		fsum[a] <= 16'h0000;
 	end
 end
@@ -294,7 +296,7 @@ always @ (posedge clk or posedge rst) begin
 		//==================== Cross-channel registers ====================
 		p0_addr <= 30'h0000_0000; p1_addr <= 30'h0000_0000; p2_addr <= 30'h0000_0000; 
 		p3_addr <= 30'h0000_0000; p4_addr <= 30'h0000_0000; p5_addr <= 30'h0000_0000;
-		gemm_addr <= 30'h0000_0000; bias <= 'd0; 
+		gemm_addr <= 30'h0000_0000; bias <= 'd0; to_load_bias <= 0;
 		data_addr_block <= 30'h0000_0000; weight_addr_block <= 30'h0000_0000; 
 		data_addr_offset <= 30'h0000_0000; weight_addr_offset <= 30'h0000_0000;
 		p0_result_addr_surface <= 30'h0000_0000; p0_result_addr_block <= 30'h0000_0000; p0_result_addr_offset <= 30'h0000_0000;
@@ -311,6 +313,7 @@ always @ (posedge clk or posedge rst) begin
 				p0_result_addr_offset <= 0; p1_result_addr_offset <= 0;
 			end
 			load_bias: begin
+				to_load_bias <= 0;
 				dma_p3_reads_en <= 1;
 				if(dma_p3_ob_we) begin
 					bias <= dma_p3_ob_data; // Store bias value into cache 'bias'
@@ -347,7 +350,7 @@ always @ (posedge clk or posedge rst) begin
 			end
 // CMD = 1 ==================== CONVOLUTION: Process a line ====================//
 			gemm_busy: begin
-				p2_addr <= data_addr_block + data_addr_offset; p3_addr <= weight_addr_block + weight_addr_offset;//NOTES: Update start addr @ the same edge of reads_en
+				p2_addr <= data_addr_block + data_addr_offset; p3_addr <= weight_addr_block + weight_addr_offset;//NOTES: Update addr @ the same edge of reads_en
 				p0_addr <= p0_result_addr_block + p0_result_addr_offset; p1_addr <= p1_result_addr_block + p1_result_addr_offset;
 				dma_p2_reads_en <= 1; dma_p3_reads_en <= 1;
 
@@ -382,10 +385,10 @@ always @ (posedge clk or posedge rst) begin
 					end
 				end
 				if(dma_p3_offset == kernel_size) begin
-					dma_p3_reads_en <= 0; // force sync reset to generate a 1-cycle pulse
+					dma_p3_reads_en <= 0; // pull down weight read
 				end
 
-				//========== CONVOLUTION PIPELINE STEP2: start passing deserialized data and weight to cmac/sacc/scmp (including weight reuse)
+				//========== CONVOLUTION PIPELINE STEP2: start passing deserialized data and weight to cmac (including weight reuse)
 				if(cmac_data_ready) begin
 					cmac_input_pipe_count <= cmac_input_pipe_count + 1;
 				end
@@ -495,14 +498,14 @@ always @ (posedge clk or posedge rst) begin
 
 // CMD = 4 ==================== MAXPOOLING: Process a line ====================//
 			scmp_busy: begin
-				p2_addr <= data_addr_block + data_addr_offset; //NOTES: Update start addr @ the same edge of reads_en
+				p2_addr <= data_addr_block + data_addr_offset; //NOTES: Update addr @ the same edge of reads_en
 				p0_addr <= p0_result_addr_block + p0_result_addr_offset; p1_addr <= p1_result_addr_block + p1_result_addr_offset;
 				dma_p2_reads_en <= 1;
 
 				//========== MAXPOOLING PIPELINE STEP1: enable data read (this part is the slowest and defines the available timing space of the pipeline)
 				if(dma_p2_ob_we) begin
 					dma_p2_burst_cnt <= dma_p2_burst_cnt + 1;
-					if(dma_p2_burst_cnt + 1 == `BURST_LEN) begin	//NOTES: start cmac when finishing reading the first atom (1x1xpara)
+					if(dma_p2_burst_cnt + 1 == `BURST_LEN) begin	//NOTES: start scmp when finishing reading the first atom (1x1xpara)
 						dma_p2_burst_cnt <= 0;
 						maxpool_valid <= 1;
 						maxpool_enable <= 1;
@@ -518,7 +521,7 @@ always @ (posedge clk or posedge rst) begin
 					end
 				end
 
-				//========== MAXPOOLING PIPELINE STEP2: start passing deserialized data cmac/sacc/scmp (including weight reuse)
+				//========== MAXPOOLING PIPELINE STEP2: start passing deserialized data scmp (including data reuse)
 				if(maxpool_data_ready) begin
 					maxpool_data_ready <= 0;
 					scmp_input_pipe_count <= scmp_input_pipe_count + 1;
@@ -594,7 +597,7 @@ always @ (posedge clk or posedge rst) begin
 
 // CMD = 5 ==================== AVEPOOLING: Process a line * surface ====================//
 			sacc_busy: begin
-				p2_addr <= data_addr_block + data_addr_offset; //NOTES: Update start addr @ the same edge of reads_en
+				p2_addr <= data_addr_block + data_addr_offset; //NOTES: Update addr @ the same edge of reads_en
 				p0_addr <= p0_result_addr_block + p0_result_addr_offset; p1_addr <= p1_result_addr_block + p1_result_addr_offset;
 				dma_p2_reads_en <= 1;
 
@@ -649,13 +652,13 @@ always @ (posedge clk or posedge rst) begin
 				if(i_channel_count + `BURST_LEN >= i_channel) begin
 					i_channel_count <= 0;
 					gemm_count <= gemm_count + 1; //NOTES: a gemm is finished
-					//updating gemm addr only after finishing the whole line + channel and data addr_block
+					//updating gemm addr only after finishing the whole line + channel
 					gemm_addr <= gemm_addr + {stride[3:0], 3'b000}; //NOTES: gemm addr parsing. kernel > stride >= 1
 					data_addr_block <= gemm_addr + {stride[3:0], 3'b000};
 					if(gemm_count + 1 == o_side) begin
 						gemm_count <= 0;
 						case(op_type)
-							CONV: o_channel_count <= o_channel_count + 1; //NOTES: start the next weight group //FIXME: o_channel should jump to load_bias
+							CONV: begin o_channel_count <= o_channel_count + 1; to_load_bias <= 1; end//NOTES: start the next weight group, o_channel should jump to load_bias
 							MPOOL, APOOL: o_channel_count <= o_channel_count + `BURST_LEN;
 							default:;
 						endcase
@@ -684,7 +687,7 @@ always @ (posedge clk or posedge rst) begin
 		if(dma_p0_ib_re) begin
 			dma_p0_writes_en <= 0;
 			case(op_type)
-				CONV: dma_p0_ib_data <= fsum_result[15]?16'h0000:fsum_result; //Notes: ReLu Activation
+				CONV: dma_p0_ib_data <= fsum_result[15]? 16'h0000: fsum_result; //Notes: ReLu Activation
 				MPOOL: dma_p0_ib_data <= cmp[p0_writeback_count * 16 +: 16];
 				APOOL: dma_p0_ib_data <= sacc_tmp_sum[p0_writeback_count * 16 +: 16];
 			endcase
@@ -693,7 +696,7 @@ always @ (posedge clk or posedge rst) begin
 		end else begin
 			dma_p0_ib_valid <= 0;
 		end
-		if(dma_p0_ib_valid) begin //Update start addr @ after updating data
+		if(dma_p0_ib_valid) begin //Update addr @ after updating data
 			case(op_type)
 				CONV: begin
 					p0_result_addr_offset <= p0_result_addr_offset + {o_side + p0_padding_body, 3'b000}; //p0_addr will be updated after one cycle
@@ -738,7 +741,7 @@ always @ (posedge clk or posedge rst) begin
 		end else begin
 			dma_p1_ib_valid <= 0;
 		end
-		if(dma_p1_ib_valid) begin //Update start addr @ after updating data
+		if(dma_p1_ib_valid) begin //Update addr @ after updating data
 			case(op_type)
 				CONV: begin
 					p1_result_addr_offset <= p1_result_addr_offset + {o_side + p1_padding_body, 3'b000}; //p1_addr will be updated after one cycle

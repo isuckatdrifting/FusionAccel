@@ -18,7 +18,7 @@ test_enable = 1
 
 class host:
 	def __init__(self):
-		# RamTest Parameters
+		# RamTest Parameters, all memory size should be multiple of 512
 		self.memsize = 128 * 1024 * 1024
 		self.blocksize = 512
 		self.writesize = 8 * 1024 * 1024
@@ -144,7 +144,7 @@ class host:
 		for line in commandfile.readlines():
 			tmp = bytearray.fromhex(line.strip('\n'))
 			self.command = self.command + tmp
-		self.xem.WriteToBlockPipeIn(0x80, self.blocksize, self.command[0:1024]) # Actually 30 Commands x 24 Bytes
+		self.xem.WriteToBlockPipeIn(0x80, self.blocksize, self.command[0:1024]) # Actually 30 Commands x 32 Bytes
 		self.xem.UpdateWireOuts()
 
 		print("Resetting CSB...")
