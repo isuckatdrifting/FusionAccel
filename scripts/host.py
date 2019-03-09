@@ -12,7 +12,7 @@ import struct
 
 bit_directory = 'C:/Users/shish/source/repos/FusionAccel/scripts/top.bit'
 command_directory = 'C:/Users/shish/source/repos/FusionAccel/scripts/tmp/command.txt'
-weight_directory = 'C:/Users/shish/source/repos/FusionAccel/scripts/tmp/weight.txt'
+weight_directory = 'C:/Users/shish/source/repos/FusionAccel/scripts/tmp/weight.npy'
 image_directory = 'C:/Users/shish/source/repos/FusionAccel/scripts/tmp/data.npy'
 RUN = 0
 MEM_TEST = 1
@@ -31,19 +31,14 @@ class host:
 		self.buf = bytearray(self.memsize)
 		self.rbuf = bytearray(self.readsize)
 		# Run Parameters
-		self.commandsize = 65 * 256 # TODO: memory align and padding
-		self.weightsize = 2470992 # TODO: memory align and padding
-		self.imagesize = 309 * 512 # TODO: 227*227*3/512 = 154587/512 = 309...475 --> padding 37 0s at the end
+		self.commandsize = 30 * 256
+		self.weightsize = 2470992
+		self.imagesize = 309 * 512
 		self.outputsize = 4096
 		self.weight = bytearray() #dynamic array allocation
 		self.image = bytearray()
 		self.output = bytearray(self.outputsize)
 		self.command = bytearray()
-		# Sanity test parameters
-		self.sanity_image = bytearray()
-		self.sanity_command = bytearray()
-		self.sanity_weight = bytearray()
-		self.sanity_output = bytearray()
 		return
 
 	def InitializeDevice(self):
@@ -126,21 +121,22 @@ class host:
 		print(len(self.command)) # Actually 30 Commands x 32 Bytes
 
 		print("Loading Weights")
-		weightfile = open(weight_directory, "r")
-		for line in weightfile.readlines():
-			tmp = bytearray.fromhex(line.strip('\n'))
-			self.weight = self.weight + tmp
+		weight = np.load(weight_directory)
+		print(weight.shape)
+		self.weight = self.weight.join(bytearray.fromhex(str(hex(struct.unpack('<H', j)[0]))[2:].zfill(8)) for j in weight.reshape(-1))
 		print(len(self.weight))
+		#print(self.weight.hex())
 
 		print("Loading Image")
 		data = np.load(image_directory)
-		self.image = data.astype(dtype=np.float16).byteswap().tobytes()
+		print(data.shape)
+		self.image = self.image.join(bytearray.fromhex(str(hex(struct.unpack('<H', j)[0]))[2:].zfill(8)) for j in data.reshape(-1))
 		print(len(self.image))
 
 		print("Merging Blobs")
-		self.buf = 	self.command + bytearray(4096*2-len(self.command)) + \
-				   	self.weight + bytearray(2048*1024*2-4096*2-len(self.weight)) + \
-					self.image + bytearray(self.memsize-2048*1024*2-len(self.image))
+		self.buf = 	self.command + bytearray(4096*4-len(self.command)) + \
+				   	self.weight + bytearray(2048*1024*4-4096*4-len(self.weight)) + \
+					self.image + bytearray(self.memsize-2048*1024*4-len(self.image))
 		print(len(self.buf))
 
 	def loadData(self):

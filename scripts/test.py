@@ -36,12 +36,11 @@ print(num3)
 num2 = np.dsplit(num, num.shape[2]/8)
 print(num2)
 '''
-num = np.arange(4).astype(dtype=np.float16)
+num = np.arange(4).reshape(2,2).reshape(-1).astype(dtype=np.float16)
 for j in num:
-    print(str(hex(struct.unpack('<H', j)[0])).replace('0x','').zfill(4), end = ' ')
+    print(str(hex(struct.unpack('<H', j)[0]))[2:].zfill(8), end = ' ')
 print('')
-print(num.tobytes())
-
+print(num.byteswap().tobytes())
 mem = b'\x00\x00\x00<\x00@\x00B'
 x = np.fromstring(mem, dtype=np.uint8)
 print(np.unpackbits(x).reshape(-1,8))
