@@ -74,7 +74,7 @@ for layer_name, blob in net.blobs.items():
     print(filters.size, dat)
     f.write(str(layer_name) + '\t')
     for i in dat:
-        f.write(str(hex(struct.unpack('<H', i)[0])).replace('0x','').zfill(4)+' ') #Little-endian
+        f.write(str(hex(struct.unpack('<H', i)[0]))[2:].zfill(4)+' ') #Little-endian
     f.write("\n")
 f.close()
 
