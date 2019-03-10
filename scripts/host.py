@@ -154,6 +154,16 @@ class host:
 				i = 0
 				print("Querying")
 			self.xem.UpdateWireOuts()
+			print("============================")
+			print(hex(self.xem.GetWireOutValue(0x28)))
+			print(hex(self.xem.GetWireOutValue(0x29)))
+			print(hex(self.xem.GetWireOutValue(0x30)))
+			print(hex(self.xem.GetWireOutValue(0x31)))
+			print(hex(self.xem.GetWireOutValue(0x32)))
+			print(hex(self.xem.GetWireOutValue(0x33)))
+			print(hex(self.xem.GetWireOutValue(0x34)))
+			print(hex(self.xem.GetWireOutValue(0x35)))
+			print("============================")
 			if self.xem.GetWireOutValue(0x27) != 0x0000:
 				print("Got Interrupt...")
 				break

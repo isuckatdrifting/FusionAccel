@@ -53,7 +53,8 @@ module engine  //Instantiate 16CMACs for conv3x3, 16CMACs for conv1x1, maxpool a
 	output [15:0]	dma_p0_ib_data,
 	output [15:0]	dma_p1_ib_data,
 	output			dma_p0_ib_valid,
-	output			dma_p1_ib_valid
+	output			dma_p1_ib_valid,
+	output [3:0]	curr_state
 );
 
 localparam CONV = 1, MPOOL = 2, APOOL = 3;
@@ -214,7 +215,7 @@ always @ (*) begin
     case (curr_state)
 		init: begin
 			if(engine_valid) begin
-				if(op_type == CONV) next_state = load_bias;
+				if(op_type == 3'b001) next_state = load_bias;
 				else next_state = idle;
 			end
 			else next_state = init;
@@ -225,9 +226,9 @@ always @ (*) begin
 		end
         idle: begin
 			case(op_type)
-				CONV: next_state = gemm_busy;
-				MPOOL: next_state = scmp_busy;
-				APOOL: next_state = sacc_busy;
+				3'b001: next_state = gemm_busy;
+				3'b010: next_state = scmp_busy;
+				3'b011: next_state = sacc_busy;
 			endcase
         end
 		gemm_busy: begin

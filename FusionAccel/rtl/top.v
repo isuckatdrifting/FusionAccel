@@ -50,6 +50,7 @@ wire [1:0]	result_mask;
 
 wire		engine_reset;
 wire [2:0]  csb_state;
+wire [3:0]	engine_state;
 
 //output MUX
 wire [31:0] dma_p0_ib_data, dma_p1_ib_data, dma_p1_ob_data, dma_p2_ob_data, dma_p3_ob_data, dma_p4_ob_data, dma_p5_ob_data;
@@ -149,7 +150,8 @@ engine engine_(
 	.dma_p0_ib_data			(dma_p0_ib_data[15:0]),
 	.dma_p1_ib_data			(dma_p1_ib_data[15:0]),
 	.dma_p0_ib_valid		(dma_p0_ib_valid),
-	.dma_p1_ib_valid		(dma_p1_ib_valid)
+	.dma_p1_ib_valid		(dma_p1_ib_valid),
+	.curr_state				(engine_state)
 );
 
 localparam BLOCK_SIZE      = 128;   // 512 bytes / 4 byte per word;
@@ -218,7 +220,7 @@ wire [31:0] pi0_ep_dataout, po0_ep_datain;
 
 //-------------------------LED Stage Monitor-------------------------------//
 //assign led = ~{pipe_in_full, pipe_in_empty, pipe_out_full, pipe_out_empty, c3_p0_wr_full,ep00wire[1],c3_calib_done,irq};
-assign led = ~{pipe_in_full, csb_state[0], csb_state[1], csb_state[2], engine_valid, op_type[0], op_type[1], irq};
+assign led = ~{csb_state[0], csb_state[1], csb_state[2], engine_valid, engine_state[0], engine_state[1], engine_ready, irq};
 
 assign c3_sys_clk = 1'b0;
 assign ddr2_cs_n = 1'b0;
@@ -406,7 +408,7 @@ assign dma_p0_ib_re = dma_p0_writes_en ? p0_ib_re : 1'b0;
 assign pipe_in_read = dma_p0_writes_en ? 1'b0 : p0_ib_re;
 assign p0_ib_data = dma_p0_writes_en ? dma_p0_ib_data : pipe_in_data; // TODO: Update this mux logic after updating engine-dma
 assign p0_ib_valid = dma_p0_writes_en ? dma_p0_ib_valid : pipe_in_valid;
-assign p1_addr_muxout = engine_valid ? p1_addr: p1_addr_csb;
+assign p1_addr_muxout = dma_p1_reads_en ? p1_addr: p1_addr_csb;
 
 dma dma_p0 ( // Read/Write port0: pipeout read, pipein write, p0 write
 	.clk			(c3_clk0),
@@ -595,7 +597,7 @@ end
 // PC Communication using Front Panel(TM)
 // Instantiate the okHost and connect endpoints.
 //ep00wire: 0: pipe read, 1: pipe write, 2: reset pipefifos and dma, 3: reset csb and command fifos, 4: op_en
-wire [65*3-1:0]  okEHx;
+wire [65*11-1:0]  okEHx;
 
 okHost okHI(
 	.okUH(okUH),
@@ -607,12 +609,20 @@ okHost okHI(
 	.okEH(okEH)
 );
 
-okWireOR # (.N(3)) wireOR (okEH, okEHx);
+okWireOR # (.N(11)) wireOR (okEH, okEHx);
 okWireIn       wi00 (.okHE(okHE),                             .ep_addr(8'h00), .ep_dataout(ep00wire));
 okWireIn	  cmd00 (.okHE(okHE),							  .ep_addr(8'h01), .ep_dataout(cmd_size));
 okWireOut	  irq0	(.okHE(okHE), .okEH(okEHx[ 0*65 +: 65 ]), .ep_addr(8'h27), .ep_datain({31'h0000_0000, irq}));
-okBTPipeIn     pi0  (.okHE(okHE), .okEH(okEHx[ 1*65 +: 65 ]), .ep_addr(8'h80), .ep_write(pi0_ep_write), .ep_blockstrobe(), .ep_dataout(pi0_ep_dataout), .ep_ready(pipe_in_ready));
-okBTPipeOut    po0  (.okHE(okHE), .okEH(okEHx[ 2*65 +: 65 ]), .ep_addr(8'ha0), .ep_read(po0_ep_read),   .ep_blockstrobe(), .ep_datain(po0_ep_datain),   .ep_ready(pipe_out_ready));
+okWireOut	  cmd0 	(.okHE(okHE), .okEH(okEHx[ 1*65 +: 65 ]), .ep_addr(8'h28), .ep_datain({o_side, i_side, kernel, stride, 1'b0, op_type}));
+okWireOut	  cmd1 	(.okHE(okHE), .okEH(okEHx[ 2*65 +: 65 ]), .ep_addr(8'h29), .ep_datain({o_channel, i_channel}));
+okWireOut	  cmd2 	(.okHE(okHE), .okEH(okEHx[ 3*65 +: 65 ]), .ep_addr(8'h30), .ep_datain({stride2, kernel_size, 6'b000000, result_mask}));
+okWireOut	  cmd3 	(.okHE(okHE), .okEH(okEHx[ 4*65 +: 65 ]), .ep_addr(8'h31), .ep_datain({2'b00, weight_start_addr}));
+okWireOut	  cmd4 	(.okHE(okHE), .okEH(okEHx[ 5*65 +: 65 ]), .ep_addr(8'h32), .ep_datain({2'b00, data_start_addr}));
+okWireOut	  cmd5 	(.okHE(okHE), .okEH(okEHx[ 6*65 +: 65 ]), .ep_addr(8'h33), .ep_datain({2'b00, p0_result_start_addr}));
+okWireOut	  cmd6 	(.okHE(okHE), .okEH(okEHx[ 7*65 +: 65 ]), .ep_addr(8'h34), .ep_datain({2'b00, p1_result_start_addr}));
+okWireOut	  cmd7 	(.okHE(okHE), .okEH(okEHx[ 8*65 +: 65 ]), .ep_addr(8'h35), .ep_datain({p1_padding_body, p1_padding_head, p0_padding_body, p0_padding_head}));
+okBTPipeIn     pi0  (.okHE(okHE), .okEH(okEHx[ 9*65 +: 65 ]), .ep_addr(8'h80), .ep_write(pi0_ep_write), .ep_blockstrobe(), .ep_dataout(pi0_ep_dataout), .ep_ready(pipe_in_ready));
+okBTPipeOut    po0  (.okHE(okHE), .okEH(okEHx[ 10*65 +: 65 ]), .ep_addr(8'ha0), .ep_read(po0_ep_read),   .ep_blockstrobe(), .ep_datain(po0_ep_datain),   .ep_ready(pipe_out_ready));
 
 fifo_w32_1024_r32_1024 p0_okPipeIn_fifo (
 	.rst			(ep00wire[2]),			// input

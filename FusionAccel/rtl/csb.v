@@ -22,7 +22,7 @@ module csb
     output [15:0]   i_channel,
     output [15:0]   o_channel,
     output [7:0]    kernel_size,
-    output [7:0]    stride2,    //kernel * stride
+    output [15:0]   stride2,    //kernel * stride
     output [29:0]   data_start_addr,
     output [29:0]   weight_start_addr,
     output [29:0]   p0_result_start_addr,
@@ -76,8 +76,8 @@ reg [2:0]   op_type;
 reg         padding;
 reg [3:0]   stride;
 reg [7:0]   kernel;
-reg [15:0]  i_channel, o_channel;
-reg [7:0]   stride2, kernel_size, i_side, o_side;
+reg [15:0]  i_channel, o_channel, stride2;
+reg [7:0]   kernel_size, i_side, o_side;
 reg [29:0]  weight_start_addr;
 reg [29:0]  data_start_addr;
 reg [29:0]  p0_result_start_addr, p1_result_start_addr;
@@ -149,7 +149,7 @@ always @ (posedge clk or posedge rst) begin
         //Commands
         op_type <= 3'd0; stride <= 4'h0; kernel <= 8'h00;
         i_channel <= 16'h0000; o_channel <= 16'h0000;
-        i_side <= 8'h00; o_side <= 8'h00; kernel_size <= 8'h00; stride2 <= 8'h00;
+        i_side <= 8'h00; o_side <= 8'h00; kernel_size <= 8'h00; stride2 <= 16'h0000;
         data_start_addr <= 29'h0000_0000;
         weight_start_addr <= 29'h0000_0000;
         p0_result_start_addr <= 29'h0000_0000;
@@ -175,16 +175,16 @@ always @ (posedge clk or posedge rst) begin
                 dma_p1_reads_en <= 1;
                 if(dma_p1_ob_we) begin
                     cmd_burst_count <= cmd_burst_count - 1;
-                    p1_addr_csb <= p1_addr_csb + 1;
+                    p1_addr_csb <= p1_addr_csb + 4;
                 end
                 case (cmd_burst_count) //Split cmds from fifo into separate attributes
                     4'd8: begin op_type <= cmd[2:0]; stride <= cmd[7:4]; kernel <= cmd[15:8]; i_side <= cmd[23:16]; o_side <= cmd[31:24]; end
                     4'd7: begin i_channel <= cmd[15:0]; o_channel <= cmd[31:16]; end
                     4'd6: begin result_mask <= cmd[1:0]; kernel_size <= cmd[15:8]; stride2 <= cmd[31:16]; end
-                    4'd5: begin weight_start_addr <= cmd; end
-                    4'd4: begin data_start_addr <= cmd; end
-                    4'd3: begin p0_result_start_addr <= cmd; end
-                    4'd2: begin p1_result_start_addr <= cmd; end
+                    4'd5: begin weight_start_addr <= cmd[29:0]; end
+                    4'd4: begin data_start_addr <= cmd[29:0]; end
+                    4'd3: begin p0_result_start_addr <= cmd[29:0]; end
+                    4'd2: begin p1_result_start_addr <= cmd[29:0]; end
                     4'd1: begin p0_padding_head <= cmd[7:0]; p0_padding_body <= cmd[15:8]; p1_padding_head <= cmd[23:16]; p1_padding_body <= cmd[31:24]; cmd_collect_done <= 1; dma_p1_reads_en <= 0; end
                     default: ;
                 endcase
