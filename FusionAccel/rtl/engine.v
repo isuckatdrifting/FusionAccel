@@ -220,11 +220,8 @@ always @ (*) begin
 			else next_state = init;
 		end
 		load_bias: begin
-			if(layer_finish) next_state = finish;
-			else begin
-				if(dma_p3_ob_we) next_state = idle;
-				else next_state = load_bias;
-			end
+			if(dma_p3_ob_we) next_state = idle;
+			else next_state = load_bias;
 		end
         idle: begin
 			case(op_type)
@@ -246,10 +243,17 @@ always @ (*) begin
 			else next_state = sacc_busy;
 		end
 		clear: begin
-			if(op_type == CONV && gemm_count + 1 == o_side) next_state = load_bias;
-			else next_state = idle;
+			if(gemm_count + 1 == o_side) begin
+				if(o_channel_count + 1 == o_channel) begin
+					next_state = finish;
+				end else begin
+					if(op_type == CONV) next_state = load_bias;
+					else next_state = idle;
+				end
+			end else next_state = idle;
 		end
 		finish: begin
+			next_state = finish;
 		end
         default:
             next_state = init;
@@ -673,6 +677,7 @@ always @ (posedge clk or posedge rst) begin
 
 			//==================== Update cross-channel counters and read address ====================
 			clear: begin
+				dma_p2_reads_en <= 0; dma_p3_reads_en <= 0;
 				i_channel_count <= i_channel_count + `BURST_LEN; // within channel operation the address is not updated
 				if(i_channel_count + `BURST_LEN >= i_channel) begin
 					i_channel_count <= 0;
