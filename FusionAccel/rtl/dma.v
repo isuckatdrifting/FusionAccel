@@ -42,7 +42,6 @@ localparam 	FIFO_SIZE = 1024;
 
 reg  [29:0] cmd_byte_addr_wr, cmd_byte_addr_rd;
 reg  [5:0]  blob_burst_cnt, block_burst_cnt;
-reg  [15:0] op_count;
 
 reg         write_mode;
 reg         read_mode;
@@ -140,7 +139,6 @@ always @(posedge clk or posedge reset_d) begin
 	if (reset_d) begin
 		blob_burst_cnt <= 0;
 		block_burst_cnt <= 0;
-		op_count <= 16'h0000;
 		cmd_byte_addr_wr <= 0;
 		cmd_byte_addr_rd <= 0;
 		cmd_instr <= 3'b000;

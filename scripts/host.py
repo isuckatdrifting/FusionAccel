@@ -138,9 +138,9 @@ class host:
 		
 	def startOp(self):
 		print("Resetting CSB...")
-		self.xem.SetWireInValue(0x00, 0x0008) #ep00wire[3], reset CSB
-		self.xem.UpdateWireIns()
 		self.xem.SetWireInValue(0x01, 0x0001) #cmd_size
+		self.xem.UpdateWireIns()
+		self.xem.SetWireInValue(0x00, 0x0008) #ep00wire[3], reset CSB
 		self.xem.UpdateWireIns()
 		print("Starting Operation...")
 		self.xem.SetWireInValue(0x00, 0x0010) #ep00wire[4], op_en
@@ -155,16 +155,17 @@ class host:
 				print("Querying")
 			self.xem.UpdateWireOuts()
 			print("============================")
+			print(hex(self.xem.GetWireOutValue(0x21)))
+			print(hex(self.xem.GetWireOutValue(0x22)))
+			print(hex(self.xem.GetWireOutValue(0x23)))
+			print(hex(self.xem.GetWireOutValue(0x24)))
+			print(hex(self.xem.GetWireOutValue(0x25)))
+			print(hex(self.xem.GetWireOutValue(0x26)))
+			print(hex(self.xem.GetWireOutValue(0x27)))
 			print(hex(self.xem.GetWireOutValue(0x28)))
 			print(hex(self.xem.GetWireOutValue(0x29)))
-			print(hex(self.xem.GetWireOutValue(0x30)))
-			print(hex(self.xem.GetWireOutValue(0x31)))
-			print(hex(self.xem.GetWireOutValue(0x32)))
-			print(hex(self.xem.GetWireOutValue(0x33)))
-			print(hex(self.xem.GetWireOutValue(0x34)))
-			print(hex(self.xem.GetWireOutValue(0x35)))
 			print("============================")
-			if self.xem.GetWireOutValue(0x27) != 0x0000:
+			if self.xem.GetWireOutValue(0x20) != 0x0000:
 				print("Got Interrupt...")
 				break
 		return
