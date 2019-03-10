@@ -14,10 +14,10 @@ module engine  //Instantiate 16CMACs for conv3x3, 16CMACs for conv1x1, maxpool a
 	input [15:0]	o_channel,
 	input [7:0]		kernel_size,
 	input [15:0]	stride2,	//kernel * stride
-	input [31:0]	data_start_addr,
-	input [31:0]	weight_start_addr,
-	input [31:0]    p0_result_start_addr,
-	input [31:0]    p1_result_start_addr,
+	input [29:0]	data_start_addr,
+	input [29:0]	weight_start_addr,
+	input [29:0]    p0_result_start_addr,
+	input [29:0]    p1_result_start_addr,
 	input [7:0]		p0_padding_head,
 	input [7:0]		p0_padding_body,
 	input [7:0]		p1_padding_head,
@@ -220,8 +220,11 @@ always @ (*) begin
 			else next_state = init;
 		end
 		load_bias: begin
-			if(dma_p3_ob_we) next_state = idle;
-			else next_state = load_bias;
+			if(layer_finish) next_state = finish;
+			else begin
+				if(dma_p3_ob_we) next_state = idle;
+				else next_state = load_bias;
+			end
 		end
         idle: begin
 			case(op_type)
@@ -317,6 +320,7 @@ always @ (posedge clk or posedge rst) begin
 	end else begin
 		case (curr_state)
 			init: begin
+				engine_ready <= 0;
 				data_addr_block <= data_start_addr; weight_addr_block <= weight_start_addr; 
 				gemm_addr <= data_start_addr;
 				p0_result_addr_surface <= p0_result_start_addr + p0_padding_head; p1_result_addr_surface <= p1_result_start_addr + p1_padding_head;

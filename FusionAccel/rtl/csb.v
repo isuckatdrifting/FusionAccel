@@ -23,16 +23,18 @@ module csb
     output [15:0]   o_channel,
     output [7:0]    kernel_size,
     output [7:0]    stride2,    //kernel * stride
-    output [31:0]   data_start_addr,
-    output [31:0]   weight_start_addr,
-    output [31:0]   p0_result_start_addr,
-    output [31:0]   p1_result_start_addr,
+    output [29:0]   data_start_addr,
+    output [29:0]   weight_start_addr,
+    output [29:0]   p0_result_start_addr,
+    output [29:0]   p1_result_start_addr,
     output [7:0]    p0_padding_head,
     output [7:0]    p0_padding_body,
     output [7:0]    p1_padding_head,
     output [7:0]    p1_padding_body,
     output [1:0]    result_mask,
     output          engine_reset,
+    output [2:0]    curr_state,
+    output [29:0]   p1_addr_csb,
 
     output          irq
 );
@@ -76,11 +78,12 @@ reg [3:0]   stride;
 reg [7:0]   kernel;
 reg [15:0]  i_channel, o_channel;
 reg [7:0]   stride2, kernel_size, i_side, o_side;
-reg [31:0]  weight_start_addr;
-reg [31:0]  data_start_addr;
-reg [31:0]  p0_result_start_addr, p1_result_start_addr;
+reg [29:0]  weight_start_addr;
+reg [29:0]  data_start_addr;
+reg [29:0]  p0_result_start_addr, p1_result_start_addr;
 reg [7:0]   p0_padding_head, p0_padding_body, p1_padding_head, p1_padding_body;
 reg [1:0]   result_mask;
+reg [29:0]  p1_addr_csb;
 
 reg [6:0]   done_cmd_count;
 reg         engine_reset;
@@ -147,13 +150,14 @@ always @ (posedge clk or posedge rst) begin
         op_type <= 3'd0; stride <= 4'h0; kernel <= 8'h00;
         i_channel <= 16'h0000; o_channel <= 16'h0000;
         i_side <= 8'h00; o_side <= 8'h00; kernel_size <= 8'h00; stride2 <= 8'h00;
-        data_start_addr <= 32'h0000_0000;
-        weight_start_addr <= 32'h0000_0000;
-        p0_result_start_addr <= 32'h0000_0000;
-        p1_result_start_addr <= 32'h0000_0000; 
+        data_start_addr <= 29'h0000_0000;
+        weight_start_addr <= 29'h0000_0000;
+        p0_result_start_addr <= 29'h0000_0000;
+        p1_result_start_addr <= 29'h0000_0000; 
         p0_padding_head <= 8'h00; p0_padding_body <= 8'h00; p1_padding_head <= 8'h00; p1_padding_body <= 8'h00;
         result_mask <= 2'b00;
         dma_p1_reads_en <= 0;
+        p1_addr_csb <= 29'h0000_0000;
 
         done_cmd_count <= 8'd0; engine_valid <= 0;
         cmd_collect_done <= 0; cmd_issue_done <= 0; op_done <= 0;
@@ -167,12 +171,13 @@ always @ (posedge clk or posedge rst) begin
             end
             cmd_get: begin
                 engine_reset <= 1;
+                op_done <= 0;
                 dma_p1_reads_en <= 1;
                 if(dma_p1_ob_we) begin
                     cmd_burst_count <= cmd_burst_count - 1;
+                    p1_addr_csb <= p1_addr_csb + 1;
                 end
                 case (cmd_burst_count) //Split cmds from fifo into separate attributes
-                    //TODO: extend commands
                     4'd8: begin op_type <= cmd[2:0]; stride <= cmd[7:4]; kernel <= cmd[15:8]; i_side <= cmd[23:16]; o_side <= cmd[31:24]; end
                     4'd7: begin i_channel <= cmd[15:0]; o_channel <= cmd[31:16]; end
                     4'd6: begin result_mask <= cmd[1:0]; kernel_size <= cmd[15:8]; stride2 <= cmd[31:16]; end
@@ -183,7 +188,6 @@ always @ (posedge clk or posedge rst) begin
                     4'd1: begin p0_padding_head <= cmd[7:0]; p0_padding_body <= cmd[15:8]; p1_padding_head <= cmd[23:16]; p1_padding_body <= cmd[31:24]; cmd_collect_done <= 1; dma_p1_reads_en <= 0; end
                     default: ;
                 endcase
-                op_done <= 0;
             end
             cmd_issue: begin
                 engine_reset <= 0;
@@ -196,6 +200,7 @@ always @ (posedge clk or posedge rst) begin
                 if(engine_ready) begin
                     engine_valid <= 0;
                     done_cmd_count <= done_cmd_count + 1;
+                    op_done <= 1;
                 end
             end
             finish: begin

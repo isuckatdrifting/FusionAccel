@@ -17,7 +17,7 @@ image_directory = 'C:/Users/shish/source/repos/FusionAccel/scripts/tmp/data.npy'
 RUN = 0
 MEM_TEST = 1
 SANITY = 2
-test_mode = SANITY
+test_mode = RUN
 
 class host:
 	def __init__(self):
@@ -147,7 +147,12 @@ class host:
 		self.xem.UpdateWireIns()
 
 	def waitIrq(self):
+		i = 0
 		while True:
+			i = i + 1
+			if i == 10000: 
+				i = 0
+				print("Querying")
 			self.xem.UpdateWireOuts()
 			if self.xem.GetWireOutValue(0x27) != 0x0000:
 				print("Got Interrupt...")

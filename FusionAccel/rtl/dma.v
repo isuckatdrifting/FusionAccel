@@ -128,7 +128,7 @@ always @ (*) begin
 		read_block4:	if (block_burst_cnt == 0) begin
 							next_state = idle;
 						end else begin
-							next_state = read_blob2;
+							next_state = read_block2;
 						end
 
 		default:		next_state = idle;
