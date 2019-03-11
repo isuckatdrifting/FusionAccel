@@ -14,6 +14,7 @@ module engine  //Instantiate 16CMACs for conv3x3, 16CMACs for conv1x1, maxpool a
 	input [15:0]	o_channel,
 	input [7:0]		kernel_size,
 	input [15:0]	stride2,	//kernel * stride
+	input [15:0]	bias,
 //Response signals engine->csb
 	output 			engine_ready,
 //Command path engine->dma
@@ -135,8 +136,6 @@ always @(posedge clk) sacc_result <= avepool_result;
 always @(posedge clk) sacc_ready <= rdy_sacc;
 
 //==================== Address registers ===========================//
-reg  [15:0]	bias;
-reg			to_load_bias;
 reg  [15:0] i_channel_count;
 reg  [7:0]  gemm_count;
 reg  [15:0] o_channel_count;
@@ -147,7 +146,7 @@ reg 		engine_ready;
 //==================== DMA related registers========================//
 reg  [7:0]  atom_count;						//NOTES: atom count is used only in address parsing, it is not used in operation logic
 reg  [15:0] line_count;						//NOTES: counter for one gemm line, range:(0, kernel * o_side)
-reg  [7:0]  cache_count [2:0]; 				//FIXME: use max conv side support defined in include files.
+reg  [7:0]  cache_count [`MAX_KERNEL-1:0]; 	//NOTES: use max conv side support defined in include files.
 reg  [7:0]  dma_p2_burst_cnt, dma_p3_burst_cnt, dma_p3_offset; // de-serializer counter, burst get 16 data, then send to operation unit.
 reg			dma_p0_writes_en, dma_p2_reads_en, dma_p3_reads_en;
 reg  [15:0] dma_p0_ib_data;
@@ -160,12 +159,11 @@ reg	 [7:0]	writeback_num;
 //State Machine
 localparam init 		= 0;
 localparam idle 		= 1;
-localparam load_bias	= 2;
-localparam gemm_busy 	= 3;
-localparam sacc_busy 	= 4;
-localparam scmp_busy 	= 5;
-localparam clear 		= 6;
-localparam finish 		= 7;
+localparam gemm_busy 	= 2;
+localparam sacc_busy 	= 3;
+localparam scmp_busy 	= 4;
+localparam clear 		= 5;
+localparam finish 		= 6;
 
 reg [3:0] curr_state;
 reg [3:0] next_state;
@@ -183,15 +181,8 @@ always @ (*) begin
     next_state = init;    //    Initialize
     case (curr_state)
 		init: begin
-			if(engine_valid) begin
-				if(op_type == 3'b001) next_state = load_bias;
-				else next_state = idle;
-			end
+			if(engine_valid) next_state = idle;
 			else next_state = init;
-		end
-		load_bias: begin
-			if(dma_p3_ob_we) next_state = idle;
-			else next_state = load_bias;
 		end
         idle: begin
 			case(op_type)
@@ -217,8 +208,7 @@ always @ (*) begin
 				if(o_channel_count + 1 == o_channel) begin
 					next_state = finish;
 				end else begin
-					if(op_type == CONV) next_state = load_bias;
-					else next_state = idle;
+					next_state = idle;
 				end
 			end else next_state = idle;
 		end
@@ -237,7 +227,7 @@ end
 
 integer a; // initialize buffer for cmac
 initial begin
-	for (a=0; a<`MAX_O_SIDE; a=a+1) begin //FIXME: hardcode
+	for (a=0; a<`MAX_O_SIDE; a=a+1) begin
 		fsum[a] <= 16'h0000;
 	end
 end
@@ -269,21 +259,12 @@ always @ (posedge clk or posedge rst) begin
 		fsum_enable <= 0; fsum_data_ready <= 0; fsum_a <= 16'h0000; fsum_b <= 16'h0000; fsum_count <= 8'h00; fsum_index <= 8'h00;
 		to_clear <= 0; 
 		//==================== Cross-channel registers ====================
-		bias <= 'd0; to_load_bias <= 0;
 		i_channel_count <= 16'h0000; gemm_count <= 8'h00; o_channel_count <= 16'h0000; layer_finish <= 0;
 		p0_writeback_en <= 0; p0_writeback_count <= 8'h00; writeback_num <= 8'h00;
 	end else begin
 		case (curr_state)
 			init: begin
 				engine_ready <= 0;
-			end
-			load_bias: begin
-				to_load_bias <= 0;
-				dma_p3_reads_en <= 1;
-				if(dma_p3_ob_we) begin
-					bias <= dma_p3_ob_data; // Store bias value into cache 'bias'
-					dma_p3_reads_en <= 0;
-				end
 			end
 			//==================== Clear all registers except cross-channel registers ====================
 			idle: begin 
@@ -320,7 +301,7 @@ always @ (posedge clk or posedge rst) begin
 				//========== CONVOLUTION PIPELINE STEP1: enable data read and weight read (this part is the slowest and defines the available timing space of the pipeline)
 				if(dma_p2_ob_we) begin
 					dma_p2_burst_cnt <= dma_p2_burst_cnt + 1;
-					if(dma_p2_burst_cnt + 1 == `BURST_LEN) begin	//NOTES: start cmac when finishing reading the first atom (1x1xpara)
+					if(dma_p2_burst_cnt == `BURST_LEN-1) begin	//NOTES: start cmac when finishing reading the first atom (1x1xpara)
 						dma_p2_reads_en <= 0; 
 						dma_p2_burst_cnt <= 0;
 						conv_valid <= 1;
@@ -329,7 +310,7 @@ always @ (posedge clk or posedge rst) begin
 					dbuf <= {dma_p2_ob_data, dbuf[16*`BURST_LEN-1 : 16]}; // deserialize data to dbuf
 				end
 				if(dma_p3_ob_we) begin // @ this edge dma_p3_ob_data is also updated.
-					if(dma_p3_burst_cnt + 1 == `BURST_LEN) begin
+					if(dma_p3_burst_cnt == `BURST_LEN-1) begin
 						dma_p3_reads_en <= 0; 
 						dma_p3_burst_cnt <= 0;
 						dma_p3_offset <= dma_p3_offset + 1;
@@ -425,7 +406,7 @@ always @ (posedge clk or posedge rst) begin
 				end
 				if(fsum_enable) begin
 					fsum_enable <= 0;
-					if(fsum_count == 0) fsum_a <= fsum[fsum_index]; //NOTES: initially 0, accumulated sum is called after the first channel group
+					if(fsum_count == 0) fsum_a <= fsum[fsum_index]; //NOTES: initially bias value, accumulated sum is called after the first channel group
 					else fsum_a <= fsum_result;
 					fsum_b <= psum[15:0];
 					psum <= {16'h0000, psum[16*`BURST_LEN-1:16]};
@@ -454,7 +435,7 @@ always @ (posedge clk or posedge rst) begin
 				//========== MAXPOOLING PIPELINE STEP1: enable data read (this part is the slowest and defines the available timing space of the pipeline)
 				if(dma_p2_ob_we) begin
 					dma_p2_burst_cnt <= dma_p2_burst_cnt + 1;
-					if(dma_p2_burst_cnt + 1 == `BURST_LEN) begin	//NOTES: start scmp when finishing reading the first atom (1x1xpara)
+					if(dma_p2_burst_cnt == `BURST_LEN-1) begin	//NOTES: start scmp when finishing reading the first atom (1x1xpara)
 						dma_p2_burst_cnt <= 0;
 						maxpool_valid <= 1;
 						maxpool_enable <= 1;
@@ -540,7 +521,7 @@ always @ (posedge clk or posedge rst) begin
 				//========== AVEPOOLING PIPELINE STEP1: enable data read (this part is the slowest and defines the available timing space of the pipeline)
 				if(dma_p2_ob_we) begin
 					dma_p2_burst_cnt <= dma_p2_burst_cnt + 1;
-					if(dma_p2_burst_cnt + 1 == `BURST_LEN) begin	//NOTES: start cmac when finishing reading the first atom (1x1xpara)
+					if(dma_p2_burst_cnt == `BURST_LEN-1) begin	//NOTES: start cmac when finishing reading the first atom (1x1xpara)
 						dma_p2_burst_cnt <= 0;
 						avepool_valid <= 1;
 						avepool_enable <= 1;
@@ -583,7 +564,7 @@ always @ (posedge clk or posedge rst) begin
 					if(gemm_count + 1 == o_side) begin
 						gemm_count <= 0;
 						case(op_type)
-							CONV: begin o_channel_count <= o_channel_count + 1; to_load_bias <= 1; end//NOTES: start the next weight group, o_channel should jump to load_bias
+							CONV: begin o_channel_count <= o_channel_count + 1; end//NOTES: start the next weight group, o_channel should jump to load_bias
 							MPOOL, APOOL: o_channel_count <= o_channel_count + `BURST_LEN;
 							default:;
 						endcase

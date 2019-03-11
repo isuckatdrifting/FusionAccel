@@ -18,6 +18,7 @@ reg [15:0]  i_channel;
 reg [15:0]  o_channel;
 reg [7:0]	i_side;
 reg [7:0]   o_side;
+reg	[15:0]  bias;
 //Response signals engine->csb
 wire 		engine_ready;
 //Command path engine->dma
@@ -100,6 +101,7 @@ engine engine_(
 	.o_channel				(o_channel),
 	.i_side					(i_side),
 	.o_side					(o_side),
+	.bias					(bias),
 //Response signals engine->csb
 	.engine_ready			(engine_ready),
 //Command path engine->dma
@@ -129,20 +131,21 @@ initial begin
 	dma_p3_ob_data = 16'h0000;
 	dma_p2_ob_we = 0;
 	dma_p3_ob_we = 0;
+	bias = 16'h0000;
     #20 rst = 1;
     #10 rst = 0;
 `ifdef CMAC
     #100 op_type = 1; stride = 2; stride2 = 6;
 		//kernel = 3; kernel_size = 9; i_channel = 3; o_channel = 1; i_side = 227; o_side = 113;
-		kernel = 3; kernel_size = 9; i_channel = 3; o_channel = 1; i_side = 5; o_side = 3;
+		kernel = 3; kernel_size = 9; i_channel = 3; o_channel = 1; i_side = 5; o_side = 3; bias = 16'hdead;
 `endif
 `ifdef SCMP
 	#100 op_type = 2; stride = 2; stride2 = 6;
-		kernel = 3; kernel_size = 9; i_channel = 8; o_channel = 1; i_side = 3; o_side = 1;
+		kernel = 3; kernel_size = 9; i_channel = 8; o_channel = 1; i_side = 3; o_side = 1; bias = 16'h0000;
 `endif
 `ifdef SACC
 	#100 op_type = 3; stride = 1; 
-		kernel = 13; kernel_size = 169; i_channel = 3; o_channel = 1; i_side = 13; o_side = 1;
+		kernel = 13; kernel_size = 169; i_channel = 3; o_channel = 1; i_side = 13; o_side = 1; bias = 16'h0000;
 `endif
     #10 engine_valid = 1; 
 end

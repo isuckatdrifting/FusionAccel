@@ -12,6 +12,7 @@ module top
 );
 
 wire [6:0]  cmd_size;
+wire [31:0] bias;
 // Command wires
 wire [2:0] 	op_type;
 wire [3:0]  stride;
@@ -103,6 +104,7 @@ engine engine_(
 	.o_channel				(o_channel),
 	.kernel_size			(kernel_size),
 	.stride2				(stride2),
+	.bias					(bias[15:0]),
 //Response signals engine->csb
 	.engine_ready			(engine_ready),
 //Command path engine->dma
@@ -169,6 +171,7 @@ okHost okHI(
 okWireOR # (.N(8)) wireOR (okEH, okEHx);
 okWireIn      wi00  (.okHE(okHE),                             .ep_addr(8'h00), .ep_dataout(ep00wire));
 okWireIn	  cmdi  (.okHE(okHE),							  .ep_addr(8'h01), .ep_dataout(cmd_size));
+okWireIn	  bias	(.okHE(okHE),							  .ep_addr(8'h02), .ep_dataout(bias));
 okWireOut	  irq0	(.okHE(okHE), .okEH(okEHx[ 0*65 +: 65 ]), .ep_addr(8'h20), .ep_datain({31'h0000_0000, irq}));
 okWireOut	  cmd0 	(.okHE(okHE), .okEH(okEHx[ 1*65 +: 65 ]), .ep_addr(8'h21), .ep_datain({o_side, i_side, kernel, stride, 1'b0, op_type}));
 okWireOut	  cmd1 	(.okHE(okHE), .okEH(okEHx[ 2*65 +: 65 ]), .ep_addr(8'h22), .ep_datain({o_channel, i_channel}));

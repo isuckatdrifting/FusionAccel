@@ -10,9 +10,11 @@ import os
 import ok
 import struct
 
+# np.set_printoptions(precision=4)
+
 bit_directory = 'C:/Users/shish/source/repos/FusionAccel/scripts/top.bit'
 command_directory = 'C:/Users/shish/source/repos/FusionAccel/scripts/tmp/command.txt'
-weight_directory = 'C:/Users/shish/source/repos/FusionAccel/scripts/tmp/weight.npy'
+weight_directory = 'C:/Users/shish/source/repos/FusionAccel/scripts/tmp/weight.npz'
 image_directory = 'C:/Users/shish/source/repos/FusionAccel/scripts/tmp/data.npy'
 RUN = 0
 SANITY = 1
@@ -25,9 +27,11 @@ class host:
 		self.readsize = 1024
 		self.rbuf = bytearray(self.readsize)
 		# Run Parameters
-		self.weight = bytearray() #dynamic array allocation
 		self.image = bytearray()
 		self.command = bytearray()
+		self.layer_weight = bytearray()
+		self.bias = [] # list of numpy ndarrays
+		self.weight = [] # list of ?
 		return
 
 	def InitializeDevice(self):
@@ -68,6 +72,10 @@ class host:
 		self.xem.SetWireInValue(0x00, 0x0000)
 		self.xem.UpdateWireIns()
 	
+	def gemm_magic(self, weight, pivot, kernel):
+		
+		pass
+
 	def readBlob(self):
 		print("Loading commands")
 		commandfile = open(command_directory, "r")
@@ -75,21 +83,48 @@ class host:
 			tmp = bytearray.fromhex(line.replace('\t',' ').strip('\n'))
 			self.command = self.command + tmp
 		print(len(self.command)) # Actually 30 Commands x 32 Bytes
-		print(self.command)
+		# print(self.command)
 		self.command = self.command + bytearray(1024-len(self.command))
-
-		print("Loading Weights")
-		weight = np.load(weight_directory)
-		print(weight.shape)
-		self.weight = self.weight.join(bytearray.fromhex(str(hex(struct.unpack('<H', j)[0]))[2:].zfill(8)) for j in weight.reshape(-1))
-		print(len(self.weight))
-		#print(self.weight.hex())
 
 		print("Loading Image")
 		data = np.load(image_directory)
 		print(data.shape)
-		self.image = self.image.join(bytearray.fromhex(str(hex(struct.unpack('<H', j)[0]))[2:].zfill(8)) for j in data.reshape(-1))
+		self.image = np.dstack((np.zeros_like(data.reshape(-1)), data.reshape(-1))).reshape(-1).tobytes() # padding zero
 		print(len(self.image))
+
+		print("Loading Weights")
+		weight = np.load(weight_directory)
+		i = 0
+		for i in range(0,len(weight)):
+			name = 'arr_' + str(i)
+			self.layer_weight = bytearray()
+			# Weight layer
+			if i % 2 == 0:
+				print('========= arr_%d ========'%i)
+				shape = weight[name].shape # get shape of weight layer
+				print("original shape:\t" + str(shape))
+				pad = 0
+				if shape[1] <= 8:
+					pad = 8 - shape[1] # channel dimension
+				if pad > 0:
+					padded_dat = np.pad(weight[name], ((0,0),(0,pad),(0,0),(0,0)), 'constant') # pad at channel axis
+				else:
+					padded_dat = weight[name]
+				print("padded shape:\t" + str(padded_dat.shape))
+				tmp = padded_dat.transpose((0,2,3,1)) # move channel axis to the inner most
+				print("trans shape:\t" + str(tmp.shape))
+				sliced_dat = np.stack(np.split(tmp, tmp.shape[3]/8, axis = 3), axis = 1) # create a new axis after splitting
+				print("sliced shape:\t" + str(sliced_dat.shape))
+				# print(sliced_dat[0][0][0][0])
+				self.layer_weight = np.dstack((np.zeros_like(sliced_dat.reshape(-1)), sliced_dat.reshape(-1))).reshape(-1).astype(dtype=np.float16) # pad 16 zeros for fp16
+				self.weight.append(self.layer_weight) # byteappend all weights
+			# Bias layer
+			if i % 2 == 1:
+				self.bias.append(weight[name]) #append bias of all layers together
+				# print(weight[name])
+		print("layers of weight = %d" % len(self.weight))
+		print("layers of bias = %d" % len(self.bias))
+
 
 	def loadBlob(self):
 		self.reset_fifo()
@@ -121,18 +156,11 @@ class host:
 				print("Querying")
 			self.xem.UpdateWireOuts()
 			
-			print("============================")
+			print("=========COMMANDS===========")
 			print(hex(self.xem.GetWireOutValue(0x20)))
 			print(hex(self.xem.GetWireOutValue(0x21)))
 			print(hex(self.xem.GetWireOutValue(0x22)))
 			print(hex(self.xem.GetWireOutValue(0x23)))
-			print(hex(self.xem.GetWireOutValue(0x24)))
-			print(hex(self.xem.GetWireOutValue(0x25)))
-			print(hex(self.xem.GetWireOutValue(0x26)))
-			print(hex(self.xem.GetWireOutValue(0x27)))
-			print(hex(self.xem.GetWireOutValue(0x28)))
-			print(hex(self.xem.GetWireOutValue(0x29)))
-			print("============================")
 			
 			if self.xem.GetWireOutValue(0x20) != 0x0000:
 				print("Got Interrupt...")
