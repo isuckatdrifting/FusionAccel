@@ -11,8 +11,6 @@ module top
 	output      [7:0]   led
 );
 
-//--------------v1, Minimum Hardware Cores for SqueezeNet------------------//
-wire 		op_en;
 wire [6:0]  cmd_size;
 // Command wires
 wire [2:0] 	op_type;
@@ -21,14 +19,11 @@ wire [15:0] stride2;
 wire [7:0]  kernel, kernel_size;
 wire [15:0] i_channel, o_channel;
 wire [7:0]  i_side, o_side;
-
 wire		engine_reset;
 wire [2:0]  csb_state;
 wire [3:0]	engine_state;
-
 wire [31:0] ep00wire;
-
-wire sysclk;
+wire 		sys_clk;
 
 IBUFGDS osc_clk(.O(sys_clk), .I(sys_clkp), .IB(sys_clkn));
 //------------------------------------------------
@@ -38,7 +33,7 @@ IBUFGDS osc_clk(.O(sys_clk), .I(sys_clkp), .IB(sys_clkn));
 localparam BLOCK_SIZE      = 128;   // 512 bytes / 4 byte per word;
 localparam FIFO_SIZE       = 1023;  // note that Xilinx does not allow use of the full 1024 words
 localparam GEMM_FIFO_SIZE  = 8191;
-localparam BUFFER_HEADROOM = 20; // headroom for the FIFO count to account for latency
+localparam BUFFER_HEADROOM = 20; 	// headroom for the FIFO count to account for latency
 
 // Front Panel Target interface bus:
 wire         okClk;
@@ -75,15 +70,12 @@ csb csb_(
     .clk					(sys_clk),
     .rst					(ep00wire[3]),
 	.op_en					(ep00wire[4]),		// A wire from ep
-
     .engine_valid			(engine_valid),
 	.engine_ready			(engine_ready),
-
 	.rd_en					(pipe_in_read),
 	.valid					(pipe_in_valid),
 	.cmd					(pipe_in_data),
 	.cmd_size				(cmd_size),
-
 	.op_type				(op_type),
 	.stride					(stride),
 	.kernel					(kernel),
@@ -95,7 +87,6 @@ csb csb_(
 	.stride2				(stride2),
 	.engine_reset			(engine_reset),
 	.curr_state				(csb_state),
-
     .irq					(irq));
 
 engine engine_(
@@ -163,7 +154,7 @@ end
 
 // PC Communication using Front Panel(TM)
 // Instantiate the okHost and connect endpoints.
-wire [65*9-1:0]  okEHx;
+wire [65*8-1:0]  okEHx;
 
 okHost okHI(
 	.okUH(okUH),
@@ -175,18 +166,17 @@ okHost okHI(
 	.okEH(okEH)
 );
 
-okWireOR # (.N(9)) wireOR (okEH, okEHx);
-okWireIn       wi00 (.okHE(okHE),                             .ep_addr(8'h00), .ep_dataout(ep00wire));
-okWireIn	  cmd00 (.okHE(okHE),							  .ep_addr(8'h01), .ep_dataout(cmd_size));
+okWireOR # (.N(8)) wireOR (okEH, okEHx);
+okWireIn      wi00  (.okHE(okHE),                             .ep_addr(8'h00), .ep_dataout(ep00wire));
+okWireIn	  cmdi  (.okHE(okHE),							  .ep_addr(8'h01), .ep_dataout(cmd_size));
 okWireOut	  irq0	(.okHE(okHE), .okEH(okEHx[ 0*65 +: 65 ]), .ep_addr(8'h20), .ep_datain({31'h0000_0000, irq}));
 okWireOut	  cmd0 	(.okHE(okHE), .okEH(okEHx[ 1*65 +: 65 ]), .ep_addr(8'h21), .ep_datain({o_side, i_side, kernel, stride, 1'b0, op_type}));
 okWireOut	  cmd1 	(.okHE(okHE), .okEH(okEHx[ 2*65 +: 65 ]), .ep_addr(8'h22), .ep_datain({o_channel, i_channel}));
-okWireOut	  cmd2 	(.okHE(okHE), .okEH(okEHx[ 3*65 +: 65 ]), .ep_addr(8'h23), .ep_datain({stride2, kernel_size, 6'b000000, result_mask}));
-okWireOut	  cmd8 	(.okHE(okHE), .okEH(okEHx[ 4*65 +: 65 ]), .ep_addr(8'h29), .ep_datain(p1_addr_csb));
-okBTPipeIn     pi0  (.okHE(okHE), .okEH(okEHx[ 5*65 +: 65 ]), .ep_addr(8'h80), .ep_write(pi0_ep_write), .ep_blockstrobe(), .ep_dataout(pi0_ep_dataout), .ep_ready(pipe_in_ready));
-okBTPipeIn     pi1  (.okHE(okHE), .okEH(okEHx[ 6*65 +: 65 ]), .ep_addr(8'h81), .ep_write(pi1_ep_write), .ep_blockstrobe(), .ep_dataout(pi1_ep_dataout), .ep_ready(data_in_ready));
-okBTPipeIn     pi2  (.okHE(okHE), .okEH(okEHx[ 7*65 +: 65 ]), .ep_addr(8'h82), .ep_write(pi2_ep_write), .ep_blockstrobe(), .ep_dataout(pi2_ep_dataout), .ep_ready(weig_in_ready));
-okBTPipeOut    po0  (.okHE(okHE), .okEH(okEHx[ 8*65 +: 65 ]), .ep_addr(8'ha0), .ep_read(po0_ep_read),   .ep_blockstrobe(), .ep_datain(po0_ep_datain),   .ep_ready(pipe_out_ready));
+okWireOut	  cmd2 	(.okHE(okHE), .okEH(okEHx[ 3*65 +: 65 ]), .ep_addr(8'h23), .ep_datain({stride2, kernel_size, 8'h00}));
+okBTPipeIn     pi0  (.okHE(okHE), .okEH(okEHx[ 4*65 +: 65 ]), .ep_addr(8'h80), .ep_write(pi0_ep_write), .ep_blockstrobe(), .ep_dataout(pi0_ep_dataout), .ep_ready(pipe_in_ready));
+okBTPipeIn     pi1  (.okHE(okHE), .okEH(okEHx[ 5*65 +: 65 ]), .ep_addr(8'h81), .ep_write(pi1_ep_write), .ep_blockstrobe(), .ep_dataout(pi1_ep_dataout), .ep_ready(data_in_ready));
+okBTPipeIn     pi2  (.okHE(okHE), .okEH(okEHx[ 6*65 +: 65 ]), .ep_addr(8'h82), .ep_write(pi2_ep_write), .ep_blockstrobe(), .ep_dataout(pi2_ep_dataout), .ep_ready(weig_in_ready));
+okBTPipeOut    po0  (.okHE(okHE), .okEH(okEHx[ 7*65 +: 65 ]), .ep_addr(8'ha0), .ep_read(po0_ep_read),   .ep_blockstrobe(), .ep_datain(po0_ep_datain),   .ep_ready(pipe_out_ready));
 
 fifo_w32_1024_r32_1024 cmd_fifo (
 	.rst			(ep00wire[2]),			// input
@@ -229,8 +219,6 @@ fifo_gemm weig_fifo (
 	.valid			(weig_in_valid),		// output
 	.rd_data_count	(weig_in_rd_count), 	// output, Bus [12 : 0] 
 	.wr_data_count	(weig_in_wr_count));	// output, Bus [12 : 0] 
-
-
 
 fifo_w32_1024_r32_1024 result_fifo (
 	.rst			(ep00wire[2]),			// input

@@ -14,15 +14,6 @@ module engine  //Instantiate 16CMACs for conv3x3, 16CMACs for conv1x1, maxpool a
 	input [15:0]	o_channel,
 	input [7:0]		kernel_size,
 	input [15:0]	stride2,	//kernel * stride
-	input [29:0]	data_start_addr,
-	input [29:0]	weight_start_addr,
-	input [29:0]    p0_result_start_addr,
-	input [29:0]    p1_result_start_addr,
-	input [7:0]		p0_padding_head,
-	input [7:0]		p0_padding_body,
-	input [7:0]		p1_padding_head,
-	input [7:0]		p1_padding_body,
-	input [1:0]		result_mask,
 //Response signals engine->csb
 	output 			engine_ready,
 //Command path engine->dma
@@ -257,8 +248,7 @@ always @ (posedge clk or posedge rst) begin
 	if(rst) begin
 		conv_valid <= 0; avepool_valid <= 0; maxpool_valid <= 0; engine_ready <= 0;
 		dma_p2_burst_cnt <= 16'h0000; dma_p3_burst_cnt <= 16'h0000; dma_p3_offset <= 8'h00;
-		dma_p0_writes_en <= 0;
-		dma_p2_reads_en <= 0; dma_p3_reads_en <= 0;
+		dma_p0_writes_en <= 0; dma_p2_reads_en <= 0; dma_p3_reads_en <= 0;
 		dma_p0_ib_data <= 16'h0000;
 		//==================== Channel operation registers ====================
 		dbuf <= 'd0; data <= 'd0; psum <= 'd0; cmp <= 'd0; sacc_tmp_sum <= 'd0;
@@ -276,8 +266,7 @@ always @ (posedge clk or posedge rst) begin
 		cmac_enable <= 0; cmac_data_ready <= 0; avepool_enable <= 0; avepool_data_ready <= 0; maxpool_enable <= 0; maxpool_data_ready <= 0; div_en <= 0;
 		atom_count <= 8'h00; line_count <= 16'h0000; cmac_output_pipe_count <= 8'h00;
 		cmac_input_pipe_count <= 8'h00; cmac_middle_pipe_count <= 8'h00; scmp_input_pipe_count <= 8'h00; scmp_output_pipe_count <= 8'h00; 
-		fsum_enable <= 0; fsum_data_ready <= 0;
-		fsum_a <= 16'h0000; fsum_b <= 16'h0000; fsum_count <= 8'h00; fsum_index <= 8'h00;
+		fsum_enable <= 0; fsum_data_ready <= 0; fsum_a <= 16'h0000; fsum_b <= 16'h0000; fsum_count <= 8'h00; fsum_index <= 8'h00;
 		to_clear <= 0; 
 		//==================== Cross-channel registers ====================
 		bias <= 'd0; to_load_bias <= 0;
@@ -300,8 +289,7 @@ always @ (posedge clk or posedge rst) begin
 			idle: begin 
 				conv_valid <= 0; avepool_valid <= 0; maxpool_valid <= 0; engine_ready <= 0;
 				dma_p2_burst_cnt <= 16'h0000; dma_p3_burst_cnt <= 16'h0000; dma_p3_offset <= 8'h00;
-				dma_p0_writes_en <= 0;
-				dma_p2_reads_en <= 0; dma_p3_reads_en <= 0;
+				dma_p0_writes_en <= 0; dma_p2_reads_en <= 0; dma_p3_reads_en <= 0;
 				dma_p0_ib_data <= 16'h0000;
 				//==================== Channel operation registers ====================
 				dbuf <= 'd0; data <= 'd0; psum <= 'd0; cmp <= 'd0; sacc_tmp_sum <= 'd0;
@@ -319,8 +307,7 @@ always @ (posedge clk or posedge rst) begin
 				cmac_enable <= 0; cmac_data_ready <= 0; avepool_enable <= 0; avepool_data_ready <= 0; maxpool_enable <= 0; maxpool_data_ready <= 0; div_en <= 0;
 				atom_count <= 8'h00; line_count <= 16'h0000; cmac_output_pipe_count <= 8'h00;
 				cmac_input_pipe_count <= 8'h00; cmac_middle_pipe_count <= 8'h00; scmp_input_pipe_count <= 8'h00; scmp_output_pipe_count <= 8'h00; 
-				fsum_enable <= 0; fsum_data_ready <= 0;
-				fsum_a <= 16'h0000; fsum_b <= 16'h0000; fsum_count <= 8'h00; fsum_index <= 8'h00;
+				fsum_enable <= 0; fsum_data_ready <= 0; fsum_a <= 16'h0000; fsum_b <= 16'h0000; fsum_count <= 8'h00; fsum_index <= 8'h00;
 				to_clear <= 0;  
 			end
 // CMD = 1 ==================== CONVOLUTION: Process a line ====================//
