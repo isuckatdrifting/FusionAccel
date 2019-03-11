@@ -23,22 +23,12 @@ module csb
     output [15:0]   o_channel,
     output [7:0]    kernel_size,
     output [15:0]   stride2,    //kernel * stride
-    output [29:0]   data_start_addr,
-    output [29:0]   weight_start_addr,
-    output [29:0]   p0_result_start_addr,
-    output [29:0]   p1_result_start_addr,
-    output [7:0]    p0_padding_head,
-    output [7:0]    p0_padding_body,
-    output [7:0]    p1_padding_head,
-    output [7:0]    p1_padding_body,
-    output [1:0]    result_mask,
     output          engine_reset,
     output [2:0]    curr_state,
 
     output          irq
 );
-//Notes: CMDs are loaded initially to SDRAM to be called multiple times.
-//Notes: CMD Fifo: WR clock domain: c3clk0, RD clock domain: clk.
+//Notes: CMD Fifo: WR clock domain: okclk, RD clock domain: sys_clk.
 //Notes: Use Img2col(MEC) Convolution
 
 //Compressed Commands from SDRAM            |MEM-Block|---------Address---------|---Space--|---Used-Space---|
@@ -48,20 +38,11 @@ module csb
 //|              kernel:  8Bit |        |   |  Image  | 0x00A_0000 - 0x00B_1F1B | 147k / 2 |                |
 //|     input side size:  8Bit |        |   |  Outbuf | 0x00C_0000 - 0x7ff_ffff | 125M-128 |    3071416     |
 //|    output side size:  8Bit |        |32 |---------|-------------------------|----------|----------------|
-//|  input channel size: 16Bit |        |   
-//| output channel size: 16Bit |        |64   
-//|         result mask:  2Bit |  6Bit  |     
-//|         kernel size:  8Bit |        |   |---------------------type------------------------|----op_type----|
-//|             stride2: 16Bit |        |96 |IDLE                                             |      000      |
-//|   weight_start_addr: 32Bit |        |128|Convolution + ReLU Activation                    |      001      |
-//|     data_start_addr: 32Bit |        |160|Max Pooling                                      |      100      |
-//|p0_result_start_addr: 32Bit |        |192|Average Pooling                                  |      101      |
-//|p1_result_start_addr: 32Bit |        |224|-------------------------------------------------|---------------| 
-//|     p0_padding_head:  8Bit |        |
-//|     p0_padding_body:  8Bit |        |
-//|     p1_padding_head:  8Bit |        |
-//|     p1_padding_body:  8Bit |        |256
-//|-------Totally 256Bit-------|--------|      
+//|  input channel size: 16Bit |        |   |--------type-------|----op_type----|
+//| output channel size: 16Bit |        |64 |IDLE               |      000      |
+//|         kernel size:  8Bit |  8Bit  |   |Convolution + ReLU |      001      |
+//|             stride2: 16Bit |        |96 |Max Pooling        |      100      |
+//|-------Totally 256Bit-------|--------|   |Average Pooling    |      101      |
 
 //Handshake signals to submodules
 reg         engine_valid;
@@ -76,11 +57,6 @@ reg [3:0]   stride;
 reg [7:0]   kernel;
 reg [15:0]  i_channel, o_channel, stride2;
 reg [7:0]   kernel_size, i_side, o_side;
-reg [29:0]  weight_start_addr;
-reg [29:0]  data_start_addr;
-reg [29:0]  p0_result_start_addr, p1_result_start_addr;
-reg [7:0]   p0_padding_head, p0_padding_body, p1_padding_head, p1_padding_body;
-reg [1:0]   result_mask;
 
 reg [6:0]   done_cmd_count;
 reg         engine_reset;
@@ -89,9 +65,9 @@ reg         irq;                        //Output, interrupt signal
 
 //State Machine
 localparam  idle = 3'b000;
-localparam  cmd_get = 3'b001; //Get command from SDRAM
-localparam  cmd_issue = 3'b010; //Generate DMA access commands
-localparam  op_run = 3'b011; //Get done signals from submodule macs
+localparam  cmd_get = 3'b001;           //Get commands from USB
+localparam  cmd_issue = 3'b010;         //Generate engine commands
+localparam  op_run = 3'b011;            //Get done signals from engine
 localparam  finish = 3'b100;
 // State jump triggers
 reg         cmd_collect_done;
@@ -147,12 +123,6 @@ always @ (posedge clk or posedge rst) begin
         op_type <= 3'd0; stride <= 4'h0; kernel <= 8'h00;
         i_channel <= 16'h0000; o_channel <= 16'h0000;
         i_side <= 8'h00; o_side <= 8'h00; kernel_size <= 8'h00; stride2 <= 16'h0000;
-        data_start_addr <= 29'h0000_0000;
-        weight_start_addr <= 29'h0000_0000;
-        p0_result_start_addr <= 29'h0000_0000;
-        p1_result_start_addr <= 29'h0000_0000; 
-        p0_padding_head <= 8'h00; p0_padding_body <= 8'h00; p1_padding_head <= 8'h00; p1_padding_body <= 8'h00;
-        result_mask <= 2'b00;
 
         done_cmd_count <= 8'd0; engine_valid <= 0;
         cmd_collect_done <= 0; cmd_issue_done <= 0; op_done <= 0;
@@ -171,14 +141,9 @@ always @ (posedge clk or posedge rst) begin
                 if(valid) begin
                     cmd_burst_count <= cmd_burst_count - 1;
                     case (cmd_burst_count) //Split cmds from fifo into separate attributes
-                        4'd8: begin op_type <= cmd[2:0]; stride <= cmd[7:4]; kernel <= cmd[15:8]; i_side <= cmd[23:16]; o_side <= cmd[31:24]; end
-                        4'd7: begin i_channel <= cmd[15:0]; o_channel <= cmd[31:16]; end
-                        4'd6: begin result_mask <= cmd[1:0]; kernel_size <= cmd[15:8]; stride2 <= cmd[31:16]; end
-                        4'd5: begin weight_start_addr <= cmd[29:0]; end
-                        4'd4: begin data_start_addr <= cmd[29:0]; end
-                        4'd3: begin p0_result_start_addr <= cmd[29:0]; end
-                        4'd2: begin p1_result_start_addr <= cmd[29:0]; end
-                        4'd1: begin p0_padding_head <= cmd[7:0]; p0_padding_body <= cmd[15:8]; p1_padding_head <= cmd[23:16]; p1_padding_body <= cmd[31:24]; cmd_collect_done <= 1; rd_en <= 0; end
+                        4'd3: begin op_type <= cmd[2:0]; stride <= cmd[7:4]; kernel <= cmd[15:8]; i_side <= cmd[23:16]; o_side <= cmd[31:24]; end
+                        4'd2: begin i_channel <= cmd[15:0]; o_channel <= cmd[31:16]; end
+                        4'd1: begin kernel_size <= cmd[15:8]; stride2 <= cmd[31:16]; cmd_collect_done <= 1; rd_en <= 0; end
                         default: ;
                     endcase
                 end

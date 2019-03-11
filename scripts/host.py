@@ -16,7 +16,7 @@ weight_directory = 'C:/Users/shish/source/repos/FusionAccel/scripts/tmp/weight.n
 image_directory = 'C:/Users/shish/source/repos/FusionAccel/scripts/tmp/data.npy'
 RUN = 0
 SANITY = 1
-test_mode = 0
+test_mode = 1
 
 class host:
 	def __init__(self):
@@ -91,14 +91,15 @@ class host:
 		self.image = self.image.join(bytearray.fromhex(str(hex(struct.unpack('<H', j)[0]))[2:].zfill(8)) for j in data.reshape(-1))
 		print(len(self.image))
 
-		print("Merging Blobs")
-		print(len(self.buf))
-
 	def loadBlob(self):
 		self.reset_fifo()
 		self.xem.SetWireInValue(0x00, 0x0002) #ep00wire[1], write memblock
 		self.xem.UpdateWireIns()
 		self.xem.WriteToBlockPipeIn(0x80, self.blocksize, self.command) # Notes: Write buf must be times of blocksize
+		self.xem.UpdateWireOuts()
+		self.xem.WriteToBlockPipeIn(0x81, self.blocksize, self.image) # Notes: Write buf must be times of blocksize
+		self.xem.UpdateWireOuts()
+		self.xem.WriteToBlockPipeIn(0x82, self.blocksize, self.weight) # Notes: Write buf must be times of blocksize
 		self.xem.UpdateWireOuts()
 		
 	def startOp(self):

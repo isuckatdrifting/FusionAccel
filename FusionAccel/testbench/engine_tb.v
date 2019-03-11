@@ -10,10 +10,6 @@ reg 		clk;
 reg 		rst;
 reg 		engine_valid;
 reg [2:0] 	op_type;
-reg	[7:0]	p0_padding_head;
-reg	[7:0]	p0_padding_body;
-reg	[7:0]	p1_padding_head;
-reg	[7:0]	p1_padding_body;
 reg	[3:0]	stride;
 reg [15:0]  stride2;
 reg [7:0]  	kernel;
@@ -22,30 +18,19 @@ reg [15:0]  i_channel;
 reg [15:0]  o_channel;
 reg [7:0]	i_side;
 reg [7:0]   o_side;
-reg [29:0]	data_start_addr;
-reg [29:0]	weight_start_addr;
-reg [29:0]  p0_result_start_addr;
-reg [29:0]  p1_result_start_addr;
-reg [1:0]   result_mask;
 //Response signals engine->csb
 wire 		engine_ready;
 //Command path engine->dma
 wire        dma_p0_writes_en;
-wire        dma_p1_writes_en;
 wire        dma_p2_reads_en;
 wire        dma_p3_reads_en;
 //Data path dma->engine
 reg [15:0] 	dma_p2_ob_data;
 reg [15:0] 	dma_p3_ob_data;
-reg			dma_p0_ib_re;
-reg			dma_p1_ib_re;
 reg 		dma_p2_ob_we;
 reg 		dma_p3_ob_we;
 //Data path engine->dma
 wire [15:0]	dma_p0_ib_data;
-wire [15:0]	dma_p1_ib_data;
-wire		dma_p0_ib_valid;
-wire		dma_p1_ib_valid;
 
 `ifdef CMAC
 	reg [15:0] data [0:74];
@@ -107,10 +92,6 @@ engine engine_(
 	.rst					(rst),
 	.engine_valid			(engine_valid),
 	.op_type				(op_type),
-	.p0_padding_head		(p0_padding_head),
-	.p0_padding_body		(p0_padding_body),
-	.p1_padding_head		(p1_padding_head),
-	.p1_padding_body		(p1_padding_body),
 	.stride					(stride),
 	.stride2				(stride2),
 	.kernel					(kernel),
@@ -119,11 +100,6 @@ engine engine_(
 	.o_channel				(o_channel),
 	.i_side					(i_side),
 	.o_side					(o_side),
-	.data_start_addr		(data_start_addr),
-	.weight_start_addr		(weight_start_addr),
-	.p0_result_start_addr	(p0_result_start_addr),
-	.p1_result_start_addr	(p1_result_start_addr),
-	.result_mask			(result_mask),
 //Response signals engine->csb
 	.engine_ready			(engine_ready),
 //Command path engine->dma
@@ -147,35 +123,27 @@ initial begin
     clk = 0;
     m = 0; n = 0; offset = 0;
     engine_valid = 0;
-    op_type = 0; p0_padding_head = 0; p0_padding_body = 0; p1_padding_head = 0; p1_padding_body = 0; stride = 0; stride2 = 0;
+    op_type = 0; stride = 0; stride2 = 0;
 	kernel = 0; kernel_size = 0; i_channel = 0; o_channel = 0; i_side = 0; o_side = 0; 
 	dma_p2_ob_data = 16'h0000;
 	dma_p3_ob_data = 16'h0000;
 	dma_p2_ob_we = 0;
 	dma_p3_ob_we = 0;
-	dma_p0_ib_re = 0;
-	dma_p1_ib_re = 0;
-	data_start_addr <= 30'h0000_0000; weight_start_addr <= 30'h0000_0000; p0_result_start_addr <= 30'h0000_0000; p1_result_start_addr <= 30'h0000_0000;
-	result_mask <= 2'b00;
     #20 rst = 1;
     #10 rst = 0;
 `ifdef CMAC
     #100 op_type = 1; stride = 2; stride2 = 6;
-		p0_padding_head = 0; p0_padding_body = 0; p1_padding_head = 0; p1_padding_body = 0;
-		//kernel = 3; kernel_size = 9; i_channel = 3; o_channel = 1; i_side = 227; o_side = 113; result_mask <= 2'b01;
-		kernel = 3; kernel_size = 9; i_channel = 3; o_channel = 1; i_side = 5; o_side = 3; result_mask <= 2'b01;
+		//kernel = 3; kernel_size = 9; i_channel = 3; o_channel = 1; i_side = 227; o_side = 113;
+		kernel = 3; kernel_size = 9; i_channel = 3; o_channel = 1; i_side = 5; o_side = 3;
 `endif
 `ifdef SCMP
 	#100 op_type = 2; stride = 2; stride2 = 6;
-		p0_padding_head = 0; p0_padding_body = 0; p1_padding_head = 4; p1_padding_body = 2;
-		kernel = 3; kernel_size = 9; i_channel = 8; o_channel = 1; i_side = 3; o_side = 1; result_mask <= 2'b11;
+		kernel = 3; kernel_size = 9; i_channel = 8; o_channel = 1; i_side = 3; o_side = 1;
 `endif
 `ifdef SACC
 	#100 op_type = 3; stride = 1; 
-		p0_padding_head = 0; p0_padding_body = 0; p1_padding_head = 0; p1_padding_body = 0;
-		kernel = 13; kernel_size = 169; i_channel = 3; o_channel = 1; i_side = 13; o_side = 1; result_mask <= 2'b01;
+		kernel = 13; kernel_size = 169; i_channel = 3; o_channel = 1; i_side = 13; o_side = 1;
 `endif
-		data_start_addr <= 30'h0001_0000; weight_start_addr <= 30'h0000_1000; p0_result_start_addr <= 30'h0003_0000; p1_result_start_addr <= 30'h0004_0000;
     #10 engine_valid = 1; 
 end
 

@@ -21,9 +21,6 @@ wire [15:0] stride2;
 wire [7:0]  kernel, kernel_size;
 wire [15:0] i_channel, o_channel;
 wire [7:0]  i_side, o_side;
-wire [29:0] data_start_addr, weight_start_addr, p0_result_start_addr, p1_result_start_addr;
-wire [7:0]  p0_padding_head, p0_padding_body, p1_padding_head, p1_padding_body;
-wire [1:0]	result_mask;
 
 wire		engine_reset;
 wire [2:0]  csb_state;
@@ -40,6 +37,7 @@ IBUFGDS osc_clk(.O(sys_clk), .I(sys_clkp), .IB(sys_clkn));
 
 localparam BLOCK_SIZE      = 128;   // 512 bytes / 4 byte per word;
 localparam FIFO_SIZE       = 1023;  // note that Xilinx does not allow use of the full 1024 words
+localparam GEMM_FIFO_SIZE  = 8191;
 localparam BUFFER_HEADROOM = 20; // headroom for the FIFO count to account for latency
 
 // Front Panel Target interface bus:
@@ -49,8 +47,10 @@ wire [64:0]  okEH;
 
 wire        pipe_in_read, data_in_read, weig_in_read;
 wire [31:0] pipe_in_data, data_in_data, weig_in_data;
-wire [9:0]  pipe_in_rd_count, data_in_rd_count, weig_in_rd_count;
-wire [9:0]  pipe_in_wr_count, data_in_wr_count, weig_in_wr_count;
+wire [9:0]  pipe_in_rd_count;
+wire [9:0]  pipe_in_wr_count;
+wire [12:0] data_in_rd_count, weig_in_rd_count;
+wire [12:0] data_in_wr_count, weig_in_wr_count;
 wire        pipe_in_valid, data_in_valid, weig_in_valid;
 wire        pipe_in_full, data_in_full, weig_in_full;
 wire        pipe_in_empty, data_in_empty, weig_in_empty;
@@ -93,15 +93,6 @@ csb csb_(
 	.o_channel				(o_channel),
 	.kernel_size			(kernel_size),
 	.stride2				(stride2),
-	.data_start_addr		(data_start_addr),
-	.weight_start_addr		(weight_start_addr),
-    .p0_result_start_addr	(p0_result_start_addr),
-    .p1_result_start_addr	(p1_result_start_addr),
-	.p0_padding_head		(p0_padding_head),
-	.p0_padding_body		(p0_padding_body),
-	.p1_padding_head		(p1_padding_head),
-	.p1_padding_body		(p1_padding_body),
-	.result_mask			(result_mask),
 	.engine_reset			(engine_reset),
 	.curr_state				(csb_state),
 
@@ -121,15 +112,6 @@ engine engine_(
 	.o_channel				(o_channel),
 	.kernel_size			(kernel_size),
 	.stride2				(stride2),
-	.data_start_addr		(data_start_addr),
-	.weight_start_addr		(weight_start_addr),
-	.p0_result_start_addr	(p0_result_start_addr),
-	.p1_result_start_addr	(p1_result_start_addr),
-	.p0_padding_head		(p0_padding_head),
-	.p0_padding_body		(p0_padding_body),
-	.p1_padding_head		(p1_padding_head),
-	.p1_padding_body		(p1_padding_body),
-	.result_mask			(result_mask),
 //Response signals engine->csb
 	.engine_ready			(engine_ready),
 //Command path engine->dma
@@ -157,14 +139,14 @@ always @(posedge okClk) begin
 		pipe_in_ready <= 1'b0;
 	end
 
-	if(data_in_wr_count <= (FIFO_SIZE-BUFFER_HEADROOM-BLOCK_SIZE) ) begin
+	if(data_in_wr_count <= (GEMM_FIFO_SIZE-BUFFER_HEADROOM-BLOCK_SIZE) ) begin
 	  data_in_ready <= 1'b1;
 	end
 	else begin
 		data_in_ready <= 1'b0;
 	end
 
-	if(weig_in_wr_count <= (FIFO_SIZE-BUFFER_HEADROOM-BLOCK_SIZE) ) begin
+	if(weig_in_wr_count <= (GEMM_FIFO_SIZE-BUFFER_HEADROOM-BLOCK_SIZE) ) begin
 	  weig_in_ready <= 1'b1;
 	end
 	else begin
@@ -181,7 +163,7 @@ end
 
 // PC Communication using Front Panel(TM)
 // Instantiate the okHost and connect endpoints.
-wire [65*15-1:0]  okEHx;
+wire [65*9-1:0]  okEHx;
 
 okHost okHI(
 	.okUH(okUH),
@@ -193,23 +175,18 @@ okHost okHI(
 	.okEH(okEH)
 );
 
-okWireOR # (.N(15)) wireOR (okEH, okEHx);
+okWireOR # (.N(9)) wireOR (okEH, okEHx);
 okWireIn       wi00 (.okHE(okHE),                             .ep_addr(8'h00), .ep_dataout(ep00wire));
 okWireIn	  cmd00 (.okHE(okHE),							  .ep_addr(8'h01), .ep_dataout(cmd_size));
 okWireOut	  irq0	(.okHE(okHE), .okEH(okEHx[ 0*65 +: 65 ]), .ep_addr(8'h20), .ep_datain({31'h0000_0000, irq}));
 okWireOut	  cmd0 	(.okHE(okHE), .okEH(okEHx[ 1*65 +: 65 ]), .ep_addr(8'h21), .ep_datain({o_side, i_side, kernel, stride, 1'b0, op_type}));
 okWireOut	  cmd1 	(.okHE(okHE), .okEH(okEHx[ 2*65 +: 65 ]), .ep_addr(8'h22), .ep_datain({o_channel, i_channel}));
 okWireOut	  cmd2 	(.okHE(okHE), .okEH(okEHx[ 3*65 +: 65 ]), .ep_addr(8'h23), .ep_datain({stride2, kernel_size, 6'b000000, result_mask}));
-okWireOut	  cmd3 	(.okHE(okHE), .okEH(okEHx[ 4*65 +: 65 ]), .ep_addr(8'h24), .ep_datain({2'b00, weight_start_addr}));
-okWireOut	  cmd4 	(.okHE(okHE), .okEH(okEHx[ 5*65 +: 65 ]), .ep_addr(8'h25), .ep_datain({2'b00, data_start_addr}));
-okWireOut	  cmd5 	(.okHE(okHE), .okEH(okEHx[ 6*65 +: 65 ]), .ep_addr(8'h26), .ep_datain({2'b00, p0_result_start_addr}));
-okWireOut	  cmd6 	(.okHE(okHE), .okEH(okEHx[ 7*65 +: 65 ]), .ep_addr(8'h27), .ep_datain({2'b00, p1_result_start_addr}));
-okWireOut	  cmd7 	(.okHE(okHE), .okEH(okEHx[ 8*65 +: 65 ]), .ep_addr(8'h28), .ep_datain({p1_padding_body, p1_padding_head, p0_padding_body, p0_padding_head}));
-okWireOut	  cmd8 	(.okHE(okHE), .okEH(okEHx[ 9*65 +: 65 ]), .ep_addr(8'h29), .ep_datain(p1_addr_csb));
-okBTPipeIn     pi0  (.okHE(okHE), .okEH(okEHx[ 10*65 +: 65 ]), .ep_addr(8'h80), .ep_write(pi0_ep_write), .ep_blockstrobe(), .ep_dataout(pi0_ep_dataout), .ep_ready(pipe_in_ready));
-okBTPipeIn     pi1  (.okHE(okHE), .okEH(okEHx[ 11*65 +: 65 ]), .ep_addr(8'h81), .ep_write(pi1_ep_write), .ep_blockstrobe(), .ep_dataout(pi1_ep_dataout), .ep_ready(data_in_ready));
-okBTPipeIn     pi2  (.okHE(okHE), .okEH(okEHx[ 12*65 +: 65 ]), .ep_addr(8'h82), .ep_write(pi2_ep_write), .ep_blockstrobe(), .ep_dataout(pi2_ep_dataout), .ep_ready(weig_in_ready));
-okBTPipeOut    po0  (.okHE(okHE), .okEH(okEHx[ 13*65 +: 65 ]), .ep_addr(8'ha0), .ep_read(po0_ep_read),   .ep_blockstrobe(), .ep_datain(po0_ep_datain),   .ep_ready(pipe_out_ready));
+okWireOut	  cmd8 	(.okHE(okHE), .okEH(okEHx[ 4*65 +: 65 ]), .ep_addr(8'h29), .ep_datain(p1_addr_csb));
+okBTPipeIn     pi0  (.okHE(okHE), .okEH(okEHx[ 5*65 +: 65 ]), .ep_addr(8'h80), .ep_write(pi0_ep_write), .ep_blockstrobe(), .ep_dataout(pi0_ep_dataout), .ep_ready(pipe_in_ready));
+okBTPipeIn     pi1  (.okHE(okHE), .okEH(okEHx[ 6*65 +: 65 ]), .ep_addr(8'h81), .ep_write(pi1_ep_write), .ep_blockstrobe(), .ep_dataout(pi1_ep_dataout), .ep_ready(data_in_ready));
+okBTPipeIn     pi2  (.okHE(okHE), .okEH(okEHx[ 7*65 +: 65 ]), .ep_addr(8'h82), .ep_write(pi2_ep_write), .ep_blockstrobe(), .ep_dataout(pi2_ep_dataout), .ep_ready(weig_in_ready));
+okBTPipeOut    po0  (.okHE(okHE), .okEH(okEHx[ 8*65 +: 65 ]), .ep_addr(8'ha0), .ep_read(po0_ep_read),   .ep_blockstrobe(), .ep_datain(po0_ep_datain),   .ep_ready(pipe_out_ready));
 
 fifo_w32_1024_r32_1024 cmd_fifo (
 	.rst			(ep00wire[2]),			// input
@@ -225,7 +202,7 @@ fifo_w32_1024_r32_1024 cmd_fifo (
 	.rd_data_count	(pipe_in_rd_count), 	// output, Bus [9 : 0] 
 	.wr_data_count	(pipe_in_wr_count));	// output, Bus [9 : 0] 
 
-fifo_w32_1024_r32_1024 data_fifo (
+fifo_gemm data_fifo (
 	.rst			(ep00wire[2]),			// input
 	.wr_clk			(okClk),				// input
 	.rd_clk			(sys_clk),				// input
@@ -236,10 +213,10 @@ fifo_w32_1024_r32_1024 data_fifo (
 	.full			(data_in_full),			// output
 	.empty			(data_in_empty),		// output
 	.valid			(data_in_valid),		// output
-	.rd_data_count	(data_in_rd_count), 	// output, Bus [9 : 0] 
-	.wr_data_count	(data_in_wr_count));	// output, Bus [9 : 0] 
+	.rd_data_count	(data_in_rd_count), 	// output, Bus [12 : 0] 
+	.wr_data_count	(data_in_wr_count));	// output, Bus [12 : 0] 
 
-fifo_w32_1024_r32_1024 weig_fifo (
+fifo_gemm weig_fifo (
 	.rst			(ep00wire[2]),			// input
 	.wr_clk			(okClk),				// input
 	.rd_clk			(sys_clk),				// input
@@ -250,8 +227,8 @@ fifo_w32_1024_r32_1024 weig_fifo (
 	.full			(weig_in_full),			// output
 	.empty			(weig_in_empty),		// output
 	.valid			(weig_in_valid),		// output
-	.rd_data_count	(weig_in_rd_count), 	// output, Bus [9 : 0] 
-	.wr_data_count	(weig_in_wr_count));	// output, Bus [9 : 0] 
+	.rd_data_count	(weig_in_rd_count), 	// output, Bus [12 : 0] 
+	.wr_data_count	(weig_in_wr_count));	// output, Bus [12 : 0] 
 
 
 
