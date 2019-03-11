@@ -616,8 +616,10 @@ always @ (posedge clk or posedge rst) begin
 
 		//==================== Write back logic and write address ====================
 		if(p0_writeback_en) begin
-			if(p0_writeback_count < writeback_num) dma_p0_writes_en <= 1; //NOTES: Dual channel write back with shared data and independent address
-			else begin
+			if(p0_writeback_count < writeback_num) begin
+				dma_p0_writes_en <= 1; //NOTES: Dual channel write back with shared data and independent address
+				p0_writeback_count <= p0_writeback_count + 1;
+			end else begin
 				p0_writeback_en <= 0;
 				p0_writeback_count <= 0;
 				dma_p0_writes_en <= 0;
@@ -627,7 +629,6 @@ always @ (posedge clk or posedge rst) begin
 				MPOOL: dma_p0_ib_data <= cmp[p0_writeback_count * 16 +: 16];
 				APOOL: dma_p0_ib_data <= sacc_tmp_sum[p0_writeback_count * 16 +: 16];
 			endcase
-			p0_writeback_count <= p0_writeback_count + 1;
 		end 
 
 	end

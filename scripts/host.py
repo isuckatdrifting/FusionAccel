@@ -15,26 +15,18 @@ command_directory = 'C:/Users/shish/source/repos/FusionAccel/scripts/tmp/command
 weight_directory = 'C:/Users/shish/source/repos/FusionAccel/scripts/tmp/weight.npy'
 image_directory = 'C:/Users/shish/source/repos/FusionAccel/scripts/tmp/data.npy'
 RUN = 0
-MEM_TEST = 1
-SANITY = 2
+SANITY = 1
 test_mode = 0
 
 class host:
 	def __init__(self):
-		# RamTest Parameters, all memory size should be multiple of 512
-		self.memsize = 128 * 1024 * 1024
+		# All memory size should be multiple of 512
 		self.blocksize = 512
-		self.writesize = 8 * 1024 * 1024
-		self.readsize = 8 * 1024 * 1024
-		self.numtests = 1
-		self.num_of_rams = 1
-		self.buf = bytearray(self.memsize)
+		self.readsize = 1024
 		self.rbuf = bytearray(self.readsize)
 		# Run Parameters
-		self.outputsize = 4096
 		self.weight = bytearray() #dynamic array allocation
 		self.image = bytearray()
-		self.output = bytearray(self.outputsize)
 		self.command = bytearray()
 		return
 
@@ -76,31 +68,6 @@ class host:
 		self.xem.SetWireInValue(0x00, 0x0000)
 		self.xem.UpdateWireIns()
 	
-	def writeSDRAM(self, mem):
-		self.reset_fifo()
-		self.xem.SetWireInValue(0x00, 0x0002) #ep00wire[1], write memblock
-		self.xem.UpdateWireIns()
-		print("Writing to memory(%d)..." % mem)
-		for i in range(0, int(self.memsize/self.writesize)):
-			self.xem.WriteToBlockPipeIn(0x80 + mem, self.blocksize, self.buf[i*self.writesize:(i+1)*self.writesize])
-		self.xem.UpdateWireOuts()
-
-	def readSDRAM(self, mem):
-		self.reset_fifo()
-		self.xem.SetWireInValue(0x00, 0x0001) #ep00wire[0], read memblock
-		self.xem.UpdateWireIns()
-		print("Reading from memory(%d)..." % mem)
-		passed = True
-		for i in range(0, self.memsize, self.readsize):
-			self.xem.ReadFromBlockPipeOut(0xa0 + mem, self.blocksize, self.rbuf)
-			for j in range(0, self.blocksize):
-				if self.buf[i+j] != self.rbuf[j]:
-					passed = False
-			#print(sum(self.buf[i:i+self.readsize]), ", ", sum(self.rbuf)) # Checksum
-			#if i == 0:
-				#print(self.buf[0], ", ", self.rbuf[0])
-		return passed
-
 	def readBlob(self):
 		print("Loading commands")
 		commandfile = open(command_directory, "r")
@@ -131,7 +98,7 @@ class host:
 		self.reset_fifo()
 		self.xem.SetWireInValue(0x00, 0x0002) #ep00wire[1], write memblock
 		self.xem.UpdateWireIns()
-		self.xem.WriteToBlockPipeIn(0x80, self.blocksize, self.buf) # Notes: Write buf must be times of blocksize
+		self.xem.WriteToBlockPipeIn(0x80, self.blocksize, self.command) # Notes: Write buf must be times of blocksize
 		self.xem.UpdateWireOuts()
 		
 	def startOp(self):
@@ -172,47 +139,15 @@ class host:
 		return
 	
 	def readOutput(self):
-		addr = 5831912
-		start_pivot = int(addr*4/4096)
 		self.reset_fifo()
 		self.xem.SetWireInValue(0x00, 0x0001) #ep00wire[0], read memblock
 		self.xem.UpdateWireIns()
 		print("Reading Output...")
-		for i in range(0, self.memsize, self.readsize):
-			self.xem.ReadFromBlockPipeOut(0xa0, self.blocksize, self.rbuf)
-			#for j in range(0, self.blocksize):
-				#if self.buf[i+j] != self.rbuf[j]:
-				#	passed = False
-			print('block sum', sum(self.rbuf)) # Checksum
-		'''
-		for i in range(0, self.memsize, self.outputsize):
-			self.xem.ReadFromBlockPipeOut(0xa0, self.blocksize, self.output)
-			if start_pivot <= i <= start_pivot + 1:
-				for j in range(0, self.outputsize):
-					if j % 2 == 0:
-						print("%02x" % self.output[j], end="")
-					else:
-						print("%02x" % self.output[j], end=" ")
-		'''
+		self.xem.ReadFromBlockPipeOut(0xa0, self.blocksize, self.rbuf)
+		print('block sum', sum(self.rbuf)) # Checksum
 
 def main():   
 	dev = host()
-#----------------------------------------Test---------------------------------------#
-	if test_mode == MEM_TEST:
-		pass_num = 0
-		fail_num = 0
-		if (False == dev.InitializeDevice()):
-			exit
-		else:
-			for i in range(0, dev.numtests):
-				for j in range(0, dev.num_of_rams):
-					dev.buf = bytearray(os.urandom(dev.memsize))
-					dev.writeSDRAM(j)
-					if True == dev.readSDRAM(j):
-						pass_num += 1
-					else:
-						fail_num += 1
-					print("Passed: %d  Failed: %d\n" % (pass_num, fail_num))
 #----------------------------------------Run----------------------------------------#
 	if test_mode == RUN:
 		dev.readBlob()
