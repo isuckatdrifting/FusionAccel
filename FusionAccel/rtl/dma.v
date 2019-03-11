@@ -124,11 +124,11 @@ always @ (*) begin
 		read_block2:	if(rd_empty == 0) next_state = read_block3;
 						else next_state = read_block2;
 		read_block3:	next_state = read_block4;
-		read_block4:	if (block_burst_cnt == 0) begin
+		read_block4:	//if (block_burst_cnt == 0) begin
 							next_state = idle;
-						end else begin
-							next_state = read_block2;
-						end
+						//end else begin
+						//	next_state = read_block2;
+						//end
 
 		default:		next_state = idle;
 	endcase

@@ -108,6 +108,7 @@ class host:
 			tmp = bytearray.fromhex(line.replace('\t',' ').strip('\n'))
 			self.command = self.command + tmp
 		print(len(self.command)) # Actually 30 Commands x 32 Bytes
+		print(self.command)
 
 		print("Loading Weights")
 		weight = np.load(weight_directory)
@@ -154,7 +155,9 @@ class host:
 				i = 0
 				print("Querying")
 			self.xem.UpdateWireOuts()
+			
 			print("============================")
+			print(hex(self.xem.GetWireOutValue(0x20)))
 			print(hex(self.xem.GetWireOutValue(0x21)))
 			print(hex(self.xem.GetWireOutValue(0x22)))
 			print(hex(self.xem.GetWireOutValue(0x23)))
@@ -165,6 +168,7 @@ class host:
 			print(hex(self.xem.GetWireOutValue(0x28)))
 			print(hex(self.xem.GetWireOutValue(0x29)))
 			print("============================")
+			
 			if self.xem.GetWireOutValue(0x20) != 0x0000:
 				print("Got Interrupt...")
 				break
@@ -177,6 +181,13 @@ class host:
 		self.xem.SetWireInValue(0x00, 0x0001) #ep00wire[0], read memblock
 		self.xem.UpdateWireIns()
 		print("Reading Output...")
+		for i in range(0, self.memsize, self.readsize):
+			self.xem.ReadFromBlockPipeOut(0xa0, self.blocksize, self.rbuf)
+			#for j in range(0, self.blocksize):
+				#if self.buf[i+j] != self.rbuf[j]:
+				#	passed = False
+			print('block sum', sum(self.rbuf)) # Checksum
+		'''
 		for i in range(0, self.memsize, self.outputsize):
 			self.xem.ReadFromBlockPipeOut(0xa0, self.blocksize, self.output)
 			if start_pivot <= i <= start_pivot + 1:
@@ -185,6 +196,7 @@ class host:
 						print("%02x" % self.output[j], end="")
 					else:
 						print("%02x" % self.output[j], end=" ")
+		'''
 
 def main():   
 	dev = host()
