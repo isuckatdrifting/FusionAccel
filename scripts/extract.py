@@ -25,6 +25,9 @@ def extract_caffe_model(model, weights, output_path):
     #=============================Print reshaped and split weights============================#
     weight_list.append(net.params[name][0].data)
     weight_list.append(net.params[name][1].data)
+    if name == 'conv1':
+      print(net.params[name][0].data)
+      print(net.params[name][1].data)
     
   np.savez('./tmp/weight.npz', *weight_list)
 

@@ -18,7 +18,7 @@ weight_directory = 'C:/Users/shish/source/repos/FusionAccel/scripts/tmp/weight.n
 image_directory = 'C:/Users/shish/source/repos/FusionAccel/scripts/tmp/data.npy'
 RUN = 0
 SANITY = 1
-test_mode = 1
+test_mode = 0
 
 class host:
 	def __init__(self):
@@ -27,7 +27,7 @@ class host:
 		self.readsize = 1024
 		self.rbuf = bytearray(self.readsize)
 		# Run Parameters
-		self.image = bytearray()
+		self.image = np.ndarray(0)
 		self.command = bytearray()
 		self.layer_weight = bytearray()
 		self.bias = [] # list of numpy ndarrays
@@ -66,15 +66,23 @@ class host:
 		print("FrontPanel support is available.")
 		return(True)
 	
-	def reset_fifo(self):
+	def reset_cmd_fifo(self):
 		self.xem.SetWireInValue(0x00, 0x0004) #ep00wire[2], reset fifo
 		self.xem.UpdateWireIns()
-		self.xem.SetWireInValue(0x00, 0x0000)
+		self.xem.SetWireInValue(0x00, 0x0000) # clear ep00wire
 		self.xem.UpdateWireIns()
 	
-	def gemm_magic(self, weight, pivot, kernel):
-		
-		pass
+	def reset_dw_fifo(self):
+		self.xem.SetWireInValue(0x00, 0x0001) #ep00wire[0], reset fifo
+		self.xem.UpdateWireIns()
+		self.xem.SetWireInValue(0x00, 0x0000) # clear ep00wire
+		self.xem.UpdateWireIns()
+
+	def reset_result_fifo(self):
+		self.xem.SetWireInValue(0x00, 0x0002) #ep00wire[1], reset fifo
+		self.xem.UpdateWireIns()
+		self.xem.SetWireInValue(0x00, 0x0000) # clear ep00wire
+		self.xem.UpdateWireIns()
 
 	def readBlob(self):
 		print("Loading commands")
@@ -82,15 +90,15 @@ class host:
 		for line in commandfile.readlines():
 			tmp = bytearray.fromhex(line.replace('\t',' ').strip('\n'))
 			self.command = self.command + tmp
-		print(len(self.command)) # Actually 30 Commands x 32 Bytes
+		print(len(self.command)) # Actually 30 Commands x 12 Bytes
 		# print(self.command)
 		self.command = self.command + bytearray(1024-len(self.command))
 
 		print("Loading Image")
-		data = np.load(image_directory)
-		print(data.shape)
-		self.image = np.dstack((np.zeros_like(data.reshape(-1)), data.reshape(-1))).reshape(-1).tobytes() # padding zero
-		print(len(self.image))
+		self.image = np.load(image_directory)
+		print(self.image.shape)
+		self.image = self.image.astype(dtype=np.float16)
+		print(self.image.shape)
 
 		print("Loading Weights")
 		weight = np.load(weight_directory)
@@ -116,8 +124,8 @@ class host:
 				sliced_dat = np.stack(np.split(tmp, tmp.shape[3]/8, axis = 3), axis = 1) # create a new axis after splitting
 				print("sliced shape:\t" + str(sliced_dat.shape))
 				# print(sliced_dat[0][0][0][0])
-				self.layer_weight = np.dstack((np.zeros_like(sliced_dat.reshape(-1)), sliced_dat.reshape(-1))).reshape(-1).astype(dtype=np.float16) # pad 16 zeros for fp16
-				self.weight.append(self.layer_weight) # byteappend all weights
+				
+				self.weight.append(sliced_dat.astype(dtype=np.float16)) # byteappend all weights
 			# Bias layer
 			if i % 2 == 1:
 				self.bias.append(weight[name]) #append bias of all layers together
@@ -125,27 +133,81 @@ class host:
 		print("layers of weight = %d" % len(self.weight))
 		print("layers of bias = %d" % len(self.bias))
 
-
-	def loadBlob(self):
-		self.reset_fifo()
-		self.xem.SetWireInValue(0x00, 0x0002) #ep00wire[1], write memblock
+	def loadCommands(self):
+		print("Setting Commands...")
+		self.reset_cmd_fifo()
+		self.xem.SetWireInValue(0x01, 0x001d) # cmd_size
 		self.xem.UpdateWireIns()
 		self.xem.WriteToBlockPipeIn(0x80, self.blocksize, self.command) # Notes: Write buf must be times of blocksize
 		self.xem.UpdateWireOuts()
-		self.xem.WriteToBlockPipeIn(0x81, self.blocksize, self.image) # Notes: Write buf must be times of blocksize
+
+	def loadWeights_Bias(self, bias, weight_bytes):
+		tmp = bytearray()
+		tmp = tmp + weight_bytes
+		# print(bias)
+		# print(tmp)
+		self.reset_dw_fifo()
+		self.xem.SetWireInValue(0x02, bias) # bias value
+		self.xem.UpdateWireIns()
+		self.xem.WriteToBlockPipeIn(0x82, self.blocksize, tmp) # Notes: Write buf must be times of blocksize
 		self.xem.UpdateWireOuts()
-		self.xem.WriteToBlockPipeIn(0x82, self.blocksize, self.weight) # Notes: Write buf must be times of blocksize
+
+	def loadGemm(self, gemm_bytes):
+		tmp = bytearray()
+		tmp = tmp + gemm_bytes
+		self.xem.WriteToBlockPipeIn(0x81, self.blocksize, tmp) # Notes: Write buf must be times of blocksize
 		self.xem.UpdateWireOuts()
+		self.xem.SetWireInValue(0x00, 0x0040) # ep00wire[6], engine reset
+		self.xem.UpdateWireIns()
+		self.xem.SetWireInValue(0x00, 0x0080) # ep00wire[6], engine reset
+		self.xem.UpdateWireIns()
+		self.xem.SetWireInValue(0x00, 0x0000) # clear ep00wire
+		self.xem.UpdateWireIns()
 		
 	def startOp(self):
-		print("Resetting CSB...")
-		self.xem.SetWireInValue(0x01, 0x001d) #cmd_size
-		self.xem.UpdateWireIns()
+		self.reset_result_fifo()
 		self.xem.SetWireInValue(0x00, 0x0008) #ep00wire[3], reset CSB
 		self.xem.UpdateWireIns()
+		self.xem.SetWireInValue(0x00, 0x0000) #clear ep00wire
 		print("Starting Operation...")
 		self.xem.SetWireInValue(0x00, 0x0010) #ep00wire[4], op_en
 		self.xem.UpdateWireIns()
+		self.xem.SetWireInValue(0x00, 0x0000) #clear ep00wire
+		self.xem.UpdateWireIns()
+	
+	def gemm_magic(self, data, pivot, kernel, layer, number, piece):
+		weight = self.weight[layer][number]
+		tmp_bias = self.bias[layer][number].astype(dtype=np.float16).tobytes()
+		hex_bias = struct.unpack("<H", tmp_bias)[0]
+		print(hex_bias)
+		print(self.bias[layer][number])
+		print(weight.shape)
+
+		print(data.shape)
+		tmp_data = data[pivot:pivot+kernel,:,:]
+		print(tmp_data.shape)
+		print(tmp_data)
+		tmp_data = tmp_data.transpose((1,0,2))
+		print(tmp_data.shape)
+		print("======data=======")
+		print(tmp_data)
+		print(tmp_data.reshape(-1))
+		tmp = np.dstack((tmp_data.reshape(-1), np.zeros_like(tmp_data.reshape(-1)))) # padding zero
+		tmp = tmp.reshape(-1)
+		gemm_data = tmp.tobytes() + bytearray((int(len(tmp.reshape(-1).tobytes())/512)+1)*512-int(len(tmp.reshape(-1).tobytes())))
+		print(len(gemm_data))
+		print(gemm_data.hex())
+
+		print(weight[piece].shape)
+		print(weight[piece])
+		weight[piece] = weight[piece].transpose((1,0,2))
+		print("======weight=======")
+		print(weight[piece])
+		tmp_weight = np.dstack((weight[piece].reshape(-1), np.zeros_like(weight[piece].reshape(-1)))).astype(dtype=np.float16) # pad 16-bit zero for fp16
+		weight_data = tmp_weight.reshape(-1).tobytes() + bytearray((int(len(tmp_weight.reshape(-1).tobytes())/512)+1)*512-int(len(tmp_weight.reshape(-1).tobytes())))
+		print(len(weight_data))
+		print(weight_data.hex())
+		return gemm_data, hex_bias, weight_data
 
 	def waitIrq(self):
 		i = 0
@@ -157,39 +219,66 @@ class host:
 			self.xem.UpdateWireOuts()
 			
 			print("=========COMMANDS===========")
-			print(hex(self.xem.GetWireOutValue(0x20)))
 			print(hex(self.xem.GetWireOutValue(0x21)))
 			print(hex(self.xem.GetWireOutValue(0x22)))
 			print(hex(self.xem.GetWireOutValue(0x23)))
+			print(hex(self.xem.GetWireOutValue(0x24)))
 			
-			if self.xem.GetWireOutValue(0x20) != 0x0000:
+			if self.xem.GetWireOutValue(0x20) == 0x0001:
 				print("Got Interrupt...")
+				break
+			if self.xem.GetWireOutValue(0x25) == 0x0001:
+				print("Got GEMM finish")
+				print('timer = ' + str(hex(self.xem.GetWireOutValue(0x26))))
+				print('rd_count = ' + str(hex(self.xem.GetWireOutValue(0x27))))
+				print('wr_count = ' + str(hex(self.xem.GetWireOutValue(0x28))))
 				break
 		return
 	
 	def readOutput(self):
-		self.reset_fifo()
-		self.xem.SetWireInValue(0x00, 0x0001) #ep00wire[0], read memblock
-		self.xem.UpdateWireIns()
 		print("Reading Output...")
 		self.xem.ReadFromBlockPipeOut(0xa0, self.blocksize, self.rbuf)
-		print('block sum', sum(self.rbuf)) # Checksum
+		print("Got output...")
+		# print(self.rbuf)
+		print(self.rbuf.hex())
+		print(np.frombuffer(self.rbuf, dtype=np.float16)) # Checksum
+		self.xem.UpdateWireOuts()
+		print('rd_count = ' + str(hex(self.xem.GetWireOutValue(0x27))))
+		print('wr_count = ' + str(hex(self.xem.GetWireOutValue(0x28))))
+		self.reset_result_fifo()
 
 def main():   
 	dev = host()
 #----------------------------------------Run----------------------------------------#
 	if test_mode == RUN:
+		# read blob and store layers of weights in list, store image in bytearray
 		dev.readBlob()
+		blob = dev.image
+		# initialize device
 		if (False == dev.InitializeDevice()):
 			exit
 		else:
-			dev.loadBlob()
+			# send all commands
+			dev.loadCommands()
+			# process, load all weights for this layer, --loop st
 			dev.startOp()
+			data, bias, weight = dev.gemm_magic(blob, 0, 3, 0, 0, 0)
+			dev.loadWeights_Bias(bias, weight)
+			dev.loadGemm(data)
 			dev.waitIrq()
 			dev.readOutput()
+				# gemm magic, loop st
+				# load gemm data and gemm weight (whole channel)
+				# start engine operation
+				# wait for engine ready and interrupt
+				# read output fifo
+				# --loop end (finish all channels for all weight groups)
+			# --loop end (finish all layers)
+			
 #------------------------------Sanity without Hardware------------------------------#
 	if test_mode == SANITY:
 		dev.readBlob()
+		dev.gemm_magic(dev.image, 0, 3, 0, 0, 0)
 
 if __name__ == '__main__':
     main()

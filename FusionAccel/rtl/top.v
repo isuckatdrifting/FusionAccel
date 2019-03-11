@@ -11,7 +11,7 @@ module top
 	output      [7:0]   led
 );
 
-wire [6:0]  cmd_size;
+wire [31:0] cmd_size;
 wire [31:0] bias;
 // Command wires
 wire [2:0] 	op_type;
@@ -20,7 +20,6 @@ wire [15:0] stride2;
 wire [7:0]  kernel, kernel_size;
 wire [15:0] i_channel, o_channel;
 wire [7:0]  i_side, o_side;
-wire		engine_reset;
 wire [2:0]  csb_state;
 wire [3:0]	engine_state;
 wire [31:0] ep00wire;
@@ -65,18 +64,20 @@ wire        pi0_ep_write, po0_ep_read, pi1_ep_write, pi2_ep_write;
 wire [31:0] pi0_ep_dataout, po0_ep_datain, pi1_ep_dataout, pi2_ep_dataout;
 
 //-------------------------LED Stage Monitor-------------------------------//
-assign led = ~{csb_state[0], csb_state[1], csb_state[2], engine_valid, engine_state[0], engine_state[1], engine_ready, irq};
+assign led = ~{csb_state[0], csb_state[1], csb_state[2], ep00wire[7], engine_state[0], engine_state[1], engine_state[2], gemm_finish};
 
+wire gemm_finish;
+wire [15:0] i_channel_count;
+wire [31:0] timer;
 csb csb_(
     .clk					(sys_clk),
     .rst					(ep00wire[3]),
 	.op_en					(ep00wire[4]),		// A wire from ep
-    .engine_valid			(engine_valid),
 	.engine_ready			(engine_ready),
 	.rd_en					(pipe_in_read),
 	.valid					(pipe_in_valid),
 	.cmd					(pipe_in_data),
-	.cmd_size				(cmd_size),
+	.cmd_size				(cmd_size[6:0]),
 	.op_type				(op_type),
 	.stride					(stride),
 	.kernel					(kernel),
@@ -86,15 +87,14 @@ csb csb_(
 	.o_channel				(o_channel),
 	.kernel_size			(kernel_size),
 	.stride2				(stride2),
-	.engine_reset			(engine_reset),
 	.curr_state				(csb_state),
     .irq					(irq));
 
 engine engine_(
 	.clk					(sys_clk),
 //Control signals csb->engine
-	.rst					(engine_reset),
-	.engine_valid			(engine_valid),
+	.rst					(ep00wire[6]),
+	.engine_valid			(ep00wire[7]),
 	.op_type				(op_type),
 	.stride					(stride),
 	.kernel					(kernel),
@@ -106,18 +106,21 @@ engine engine_(
 	.stride2				(stride2),
 	.bias					(bias[15:0]),
 //Response signals engine->csb
+	.gemm_finish			(gemm_finish),
+	.i_channel_count		(i_channel_count),
 	.engine_ready			(engine_ready),
 //Command path engine->dma
 	.dma_p0_writes_en		(pipe_out_write),
 	.dma_p2_reads_en		(data_in_read),
     .dma_p3_reads_en		(weig_in_read),
 //Data path dma->engine
-	.dma_p2_ob_data			(data_in_data),
-	.dma_p3_ob_data			(weig_in_data),
+	.dma_p2_ob_data			(data_in_data[15:0]),
+	.dma_p3_ob_data			(weig_in_data[15:0]),
 	.dma_p2_ob_we			(data_in_valid),
 	.dma_p3_ob_we			(weig_in_valid),
-	.dma_p0_ib_data			(pipe_out_data),
-	.curr_state				(engine_state)
+	.dma_p0_ib_data			(pipe_out_data[15:0]),
+	.curr_state				(engine_state),
+    .timer                  (timer)
 );
 
 //Block Throttle
@@ -146,7 +149,7 @@ always @(posedge okClk) begin
 		weig_in_ready <= 1'b0;
 	end
 	
-	if(pipe_out_rd_count >= BLOCK_SIZE) begin
+	if(pipe_out_rd_count >= 0) begin
 	  pipe_out_ready <= 1'b1;
 	end
 	else begin
@@ -156,7 +159,7 @@ end
 
 // PC Communication using Front Panel(TM)
 // Instantiate the okHost and connect endpoints.
-wire [65*8-1:0]  okEHx;
+wire [65*13-1:0]  okEHx;
 
 okHost okHI(
 	.okUH(okUH),
@@ -168,18 +171,25 @@ okHost okHI(
 	.okEH(okEH)
 );
 
-okWireOR # (.N(8)) wireOR (okEH, okEHx);
+okWireOR # (.N(13)) wireOR (okEH, okEHx);
 okWireIn      wi00  (.okHE(okHE),                             .ep_addr(8'h00), .ep_dataout(ep00wire));
 okWireIn	  cmdi  (.okHE(okHE),							  .ep_addr(8'h01), .ep_dataout(cmd_size));
-okWireIn	  bias	(.okHE(okHE),							  .ep_addr(8'h02), .ep_dataout(bias));
+okWireIn   bias_in	(.okHE(okHE),							  .ep_addr(8'h02), .ep_dataout(bias));
+
 okWireOut	  irq0	(.okHE(okHE), .okEH(okEHx[ 0*65 +: 65 ]), .ep_addr(8'h20), .ep_datain({31'h0000_0000, irq}));
 okWireOut	  cmd0 	(.okHE(okHE), .okEH(okEHx[ 1*65 +: 65 ]), .ep_addr(8'h21), .ep_datain({o_side, i_side, kernel, stride, 1'b0, op_type}));
 okWireOut	  cmd1 	(.okHE(okHE), .okEH(okEHx[ 2*65 +: 65 ]), .ep_addr(8'h22), .ep_datain({o_channel, i_channel}));
 okWireOut	  cmd2 	(.okHE(okHE), .okEH(okEHx[ 3*65 +: 65 ]), .ep_addr(8'h23), .ep_datain({stride2, kernel_size, 8'h00}));
-okBTPipeIn     pi0  (.okHE(okHE), .okEH(okEHx[ 4*65 +: 65 ]), .ep_addr(8'h80), .ep_write(pi0_ep_write), .ep_blockstrobe(), .ep_dataout(pi0_ep_dataout), .ep_ready(pipe_in_ready));
-okBTPipeIn     pi1  (.okHE(okHE), .okEH(okEHx[ 5*65 +: 65 ]), .ep_addr(8'h81), .ep_write(pi1_ep_write), .ep_blockstrobe(), .ep_dataout(pi1_ep_dataout), .ep_ready(data_in_ready));
-okBTPipeIn     pi2  (.okHE(okHE), .okEH(okEHx[ 6*65 +: 65 ]), .ep_addr(8'h82), .ep_write(pi2_ep_write), .ep_blockstrobe(), .ep_dataout(pi2_ep_dataout), .ep_ready(weig_in_ready));
-okBTPipeOut    po0  (.okHE(okHE), .okEH(okEHx[ 7*65 +: 65 ]), .ep_addr(8'ha0), .ep_read(po0_ep_read),   .ep_blockstrobe(), .ep_datain(po0_ep_datain),   .ep_ready(pipe_out_ready));
+okWireOut	  ich 	(.okHE(okHE), .okEH(okEHx[ 4*65 +: 65 ]), .ep_addr(8'h24), .ep_datain({16'h0000, i_channel_count}));
+okWireOut	  irq1 	(.okHE(okHE), .okEH(okEHx[ 5*65 +: 65 ]), .ep_addr(8'h25), .ep_datain({31'h0000_0000, gemm_finish}));
+okWireOut	timer0 	(.okHE(okHE), .okEH(okEHx[ 6*65 +: 65 ]), .ep_addr(8'h26), .ep_datain(timer));
+okWireOut	count0 	(.okHE(okHE), .okEH(okEHx[ 7*65 +: 65 ]), .ep_addr(8'h27), .ep_datain({22'h00_0000, pipe_out_rd_count}));
+okWireOut	count1 	(.okHE(okHE), .okEH(okEHx[ 8*65 +: 65 ]), .ep_addr(8'h28), .ep_datain({22'h00_0000, pipe_out_wr_count}));
+
+okBTPipeIn     pi0  (.okHE(okHE), .okEH(okEHx[ 9*65 +: 65 ]), .ep_addr(8'h80), .ep_write(pi0_ep_write), .ep_blockstrobe(), .ep_dataout(pi0_ep_dataout), .ep_ready(pipe_in_ready));
+okBTPipeIn     pi1  (.okHE(okHE), .okEH(okEHx[ 10*65 +: 65 ]), .ep_addr(8'h81), .ep_write(pi1_ep_write), .ep_blockstrobe(), .ep_dataout(pi1_ep_dataout), .ep_ready(data_in_ready));
+okBTPipeIn     pi2  (.okHE(okHE), .okEH(okEHx[ 11*65 +: 65 ]), .ep_addr(8'h82), .ep_write(pi2_ep_write), .ep_blockstrobe(), .ep_dataout(pi2_ep_dataout), .ep_ready(weig_in_ready));
+okBTPipeOut    po0  (.okHE(okHE), .okEH(okEHx[ 12*65 +: 65 ]), .ep_addr(8'ha0), .ep_read(po0_ep_read),   .ep_blockstrobe(), .ep_datain(po0_ep_datain),   .ep_ready(pipe_out_ready));
 
 fifo_w32_1024_r32_1024 cmd_fifo (
 	.rst			(ep00wire[2]),			// input
@@ -196,7 +206,7 @@ fifo_w32_1024_r32_1024 cmd_fifo (
 	.wr_data_count	(pipe_in_wr_count));	// output, Bus [9 : 0] 
 
 fifo_gemm data_fifo (
-	.rst			(ep00wire[2]),			// input
+	.rst			(ep00wire[0]),			// input
 	.wr_clk			(okClk),				// input
 	.rd_clk			(sys_clk),				// input
 	.din			(pi1_ep_dataout), 		// input, Bus [31 : 0] 
@@ -210,7 +220,7 @@ fifo_gemm data_fifo (
 	.wr_data_count	(data_in_wr_count));	// output, Bus [12 : 0] 
 
 fifo_gemm weig_fifo (
-	.rst			(ep00wire[2]),			// input
+	.rst			(ep00wire[0]),			// input
 	.wr_clk			(okClk),				// input
 	.rd_clk			(sys_clk),				// input
 	.din			(pi2_ep_dataout), 		// input, Bus [31 : 0] 
@@ -224,7 +234,7 @@ fifo_gemm weig_fifo (
 	.wr_data_count	(weig_in_wr_count));	// output, Bus [12 : 0] 
 
 fifo_w32_1024_r32_1024 result_fifo (
-	.rst			(ep00wire[2]),			// input
+	.rst			(ep00wire[1]),			// input
 	.wr_clk			(sys_clk),				// input
 	.rd_clk			(okClk),				// input
 	.din			(pipe_out_data), 		// input, Bus [31 : 0] 
