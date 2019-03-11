@@ -9,10 +9,10 @@ module csb
     output          engine_valid,
 
     //FIFO Interface
-    input           dma_p1_ob_we,
+    input           valid,
+    output          rd_en,
     input  [31:0]   cmd,
     input  [6:0]    cmd_size,   //total command size received from okHost after loading memory.
-    output          dma_p1_reads_en,
 
     output [2:0]    op_type,
     output [3:0]    stride,     //TODO: valid check: stride < padding < kernel
@@ -34,7 +34,6 @@ module csb
     output [1:0]    result_mask,
     output          engine_reset,
     output [2:0]    curr_state,
-    output [29:0]   p1_addr_csb,
 
     output          irq
 );
@@ -66,10 +65,9 @@ module csb
 
 //Handshake signals to submodules
 reg         engine_valid;
-
+reg         rd_en;
 //Command Parsing
 reg [3:0]   cmd_burst_count;
-reg         dma_p1_reads_en;
 
 //Output Command
 reg [2:0]   op_type;
@@ -83,7 +81,6 @@ reg [29:0]  data_start_addr;
 reg [29:0]  p0_result_start_addr, p1_result_start_addr;
 reg [7:0]   p0_padding_head, p0_padding_body, p1_padding_head, p1_padding_body;
 reg [1:0]   result_mask;
-reg [29:0]  p1_addr_csb;
 
 reg [6:0]   done_cmd_count;
 reg         engine_reset;
@@ -156,12 +153,10 @@ always @ (posedge clk or posedge rst) begin
         p1_result_start_addr <= 29'h0000_0000; 
         p0_padding_head <= 8'h00; p0_padding_body <= 8'h00; p1_padding_head <= 8'h00; p1_padding_body <= 8'h00;
         result_mask <= 2'b00;
-        dma_p1_reads_en <= 0;
-        p1_addr_csb <= 29'h0000_0000;
 
         done_cmd_count <= 8'd0; engine_valid <= 0;
         cmd_collect_done <= 0; cmd_issue_done <= 0; op_done <= 0;
-
+        rd_en <= 0;
         engine_reset <= 1;
         irq <= 0;
     end else begin
@@ -170,12 +165,11 @@ always @ (posedge clk or posedge rst) begin
                 cmd_burst_count <= `CMD_BURST_LEN;
             end
             cmd_get: begin
+                rd_en <= 1;
                 engine_reset <= 1;
                 op_done <= 0;
-                dma_p1_reads_en <= 1;
-                if(dma_p1_ob_we) begin
+                if(valid) begin
                     cmd_burst_count <= cmd_burst_count - 1;
-                    p1_addr_csb <= p1_addr_csb + 4;
                     case (cmd_burst_count) //Split cmds from fifo into separate attributes
                         4'd8: begin op_type <= cmd[2:0]; stride <= cmd[7:4]; kernel <= cmd[15:8]; i_side <= cmd[23:16]; o_side <= cmd[31:24]; end
                         4'd7: begin i_channel <= cmd[15:0]; o_channel <= cmd[31:16]; end
@@ -184,11 +178,10 @@ always @ (posedge clk or posedge rst) begin
                         4'd4: begin data_start_addr <= cmd[29:0]; end
                         4'd3: begin p0_result_start_addr <= cmd[29:0]; end
                         4'd2: begin p1_result_start_addr <= cmd[29:0]; end
-                        4'd1: begin p0_padding_head <= cmd[7:0]; p0_padding_body <= cmd[15:8]; p1_padding_head <= cmd[23:16]; p1_padding_body <= cmd[31:24]; cmd_collect_done <= 1; dma_p1_reads_en <= 0; end
+                        4'd1: begin p0_padding_head <= cmd[7:0]; p0_padding_body <= cmd[15:8]; p1_padding_head <= cmd[23:16]; p1_padding_body <= cmd[31:24]; cmd_collect_done <= 1; rd_en <= 0; end
                         default: ;
                     endcase
                 end
-                
             end
             cmd_issue: begin
                 engine_reset <= 0;

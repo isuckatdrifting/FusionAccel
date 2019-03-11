@@ -17,7 +17,7 @@ image_directory = 'C:/Users/shish/source/repos/FusionAccel/scripts/tmp/data.npy'
 RUN = 0
 MEM_TEST = 1
 SANITY = 2
-test_mode = RUN
+test_mode = 0
 
 class host:
 	def __init__(self):
@@ -96,9 +96,9 @@ class host:
 			for j in range(0, self.blocksize):
 				if self.buf[i+j] != self.rbuf[j]:
 					passed = False
-			print(sum(self.buf[i:i+self.readsize]), ", ", sum(self.rbuf)) # Checksum
-			if i == 0:
-				print(self.buf[0], ", ", self.rbuf[0])
+			#print(sum(self.buf[i:i+self.readsize]), ", ", sum(self.rbuf)) # Checksum
+			#if i == 0:
+				#print(self.buf[0], ", ", self.rbuf[0])
 		return passed
 
 	def readBlob(self):
@@ -109,6 +109,7 @@ class host:
 			self.command = self.command + tmp
 		print(len(self.command)) # Actually 30 Commands x 32 Bytes
 		print(self.command)
+		self.command = self.command + bytearray(1024-len(self.command))
 
 		print("Loading Weights")
 		weight = np.load(weight_directory)
@@ -124,22 +125,18 @@ class host:
 		print(len(self.image))
 
 		print("Merging Blobs")
-		self.buf = 	self.command + bytearray(4096*4-len(self.command)) + \
-				   	self.weight + bytearray(2048*1024*4-4096*4-len(self.weight)) + \
-					self.image + bytearray(self.memsize-2048*1024*4-len(self.image))
 		print(len(self.buf))
 
 	def loadBlob(self):
 		self.reset_fifo()
 		self.xem.SetWireInValue(0x00, 0x0002) #ep00wire[1], write memblock
 		self.xem.UpdateWireIns()
-		for i in range(0, int(self.memsize/self.writesize)):
-			self.xem.WriteToBlockPipeIn(0x80, self.blocksize, self.buf[i*self.writesize:(i+1)*self.writesize]) # Notes: Write buf must be times of blocksize
+		self.xem.WriteToBlockPipeIn(0x80, self.blocksize, self.buf) # Notes: Write buf must be times of blocksize
 		self.xem.UpdateWireOuts()
 		
 	def startOp(self):
 		print("Resetting CSB...")
-		self.xem.SetWireInValue(0x01, 0x0001) #cmd_size
+		self.xem.SetWireInValue(0x01, 0x001d) #cmd_size
 		self.xem.UpdateWireIns()
 		self.xem.SetWireInValue(0x00, 0x0008) #ep00wire[3], reset CSB
 		self.xem.UpdateWireIns()

@@ -34,32 +34,18 @@ wire        dma_p0_writes_en;
 wire        dma_p1_writes_en;
 wire        dma_p2_reads_en;
 wire        dma_p3_reads_en;
-wire        dma_p4_reads_en;
-wire        dma_p5_reads_en;
-wire [29:0] p0_addr;
-wire [29:0] p1_addr;
-wire [29:0] p2_addr;
-wire [29:0] p3_addr;
-wire [29:0] p4_addr;
-wire [29:0] p5_addr;
 //Data path dma->engine
 reg [15:0] 	dma_p2_ob_data;
 reg [15:0] 	dma_p3_ob_data;
-reg [15:0] 	dma_p4_ob_data;
-reg [15:0] 	dma_p5_ob_data;
 reg			dma_p0_ib_re;
 reg			dma_p1_ib_re;
 reg 		dma_p2_ob_we;
 reg 		dma_p3_ob_we;
-reg 		dma_p4_ob_we;
-reg 		dma_p5_ob_we;
 //Data path engine->dma
 wire [15:0]	dma_p0_ib_data;
 wire [15:0]	dma_p1_ib_data;
 wire		dma_p0_ib_valid;
 wire		dma_p1_ib_valid;
-
-reg [2:0] p0_state, p1_state, p2_state, p3_state;
 
 `ifdef CMAC
 	reg [15:0] data [0:74];
@@ -137,37 +123,19 @@ engine engine_(
 	.weight_start_addr		(weight_start_addr),
 	.p0_result_start_addr	(p0_result_start_addr),
 	.p1_result_start_addr	(p1_result_start_addr),
-	.result_mask				(result_mask),
+	.result_mask			(result_mask),
 //Response signals engine->csb
 	.engine_ready			(engine_ready),
 //Command path engine->dma
 	.dma_p0_writes_en		(dma_p0_writes_en),
-    .dma_p1_writes_en		(dma_p1_writes_en),
 	.dma_p2_reads_en		(dma_p2_reads_en),
     .dma_p3_reads_en		(dma_p3_reads_en),
-	.dma_p4_reads_en		(dma_p4_reads_en),
-    .dma_p5_reads_en		(dma_p5_reads_en),
-	.p0_addr          		(p0_addr),
-	.p1_addr          		(p1_addr),
-	.p2_addr				(p2_addr),
-	.p3_addr				(p3_addr),
-	.p4_addr				(p4_addr),
-	.p5_addr				(p5_addr),
 //Data path dma->engine
 	.dma_p2_ob_data			(dma_p2_ob_data),
 	.dma_p3_ob_data			(dma_p3_ob_data),
-	.dma_p4_ob_data			(dma_p4_ob_data),
-	.dma_p5_ob_data			(dma_p5_ob_data),
-	.dma_p0_ib_re			(dma_p0_ib_re),
-	.dma_p1_ib_re			(dma_p1_ib_re),
 	.dma_p2_ob_we			(dma_p2_ob_we),
 	.dma_p3_ob_we			(dma_p3_ob_we),
-	.dma_p4_ob_we			(dma_p4_ob_we),
-	.dma_p5_ob_we			(dma_p5_ob_we),
-	.dma_p0_ib_data			(dma_p0_ib_data),
-	.dma_p1_ib_data			(dma_p1_ib_data),
-	.dma_p0_ib_valid		(dma_p0_ib_valid),
-	.dma_p1_ib_valid		(dma_p1_ib_valid)
+	.dma_p0_ib_data			(dma_p0_ib_data)
 );
 
 always #5 clk = ~clk;
@@ -189,7 +157,6 @@ initial begin
 	dma_p1_ib_re = 0;
 	data_start_addr <= 30'h0000_0000; weight_start_addr <= 30'h0000_0000; p0_result_start_addr <= 30'h0000_0000; p1_result_start_addr <= 30'h0000_0000;
 	result_mask <= 2'b00;
-	p0_state = 0; p1_state = 0; p2_state = 0; p3_state = 0;
     #20 rst = 1;
     #10 rst = 0;
 `ifdef CMAC
@@ -215,62 +182,48 @@ end
 always @(posedge clk) begin
 	if(engine_valid) begin
 		if(dma_p2_reads_en) begin 
-			if(p2_state < 2) p2_state <= p2_state + 1;
-			else p2_state = 0;
-			if(p2_state == 1) begin
-				dma_p2_ob_we <= 1;
+			dma_p2_ob_we <= 1;
 `ifdef CMAC
+			dma_p2_ob_data <= data[m]; 
 				dma_p2_ob_data <= data[m]; 
+			dma_p2_ob_data <= data[m]; 
+			m <= m + 1; 
 				m <= m + 1; 
-				if(m == offset + 45) begin
-					m <= offset + 1;
-					offset <= offset + 1;
-				end
+			m <= m + 1; 
+			if(m == offset + 45) begin
+				m <= offset + 1;
+				offset <= offset + 1;
+			end
 `endif
 `ifdef SCMP
-				dma_p2_ob_data <= maxpooldata[m*16 +: 16];
-				offset <= offset + 1;
-				if(offset == 7) begin
-					m <= m + 1;
-					offset <= 0;
-				end
+			dma_p2_ob_data <= maxpooldata[m*16 +: 16];
+			offset <= offset + 1;
+			if(offset == 7) begin
+				m <= m + 1;
+				offset <= 0;
+			end
 `endif
 `ifdef SACC
-				dma_p2_ob_data <= avepooldata[m*16 +: 16];
-				offset <= offset + 1;
-				if(offset == 7) begin
-					m <= m + 1;
-					offset <= 0;
-				end
+			dma_p2_ob_data <= avepooldata[m*16 +: 16];
+			offset <= offset + 1;
+			if(offset == 7) begin
+				m <= m + 1;
+				offset <= 0;
+			end
 `endif
-			end else dma_p2_ob_we <= 0;
-		end
+		end else dma_p2_ob_we <= 0;
 `ifdef CMAC
 		if(dma_p3_reads_en) begin 
-			if(p3_state < 2) p3_state <= p3_state + 1;
-			else p3_state = 0;
-			if(p3_state == 1) begin
-				dma_p3_ob_we <= 1;
+			dma_p3_ob_we <= 1;
+			dma_p3_ob_data <= weight[n]; 
 				dma_p3_ob_data <= weight[n]; 
+			dma_p3_ob_data <= weight[n]; 
+			n <= n + 1; 
 				n <= n + 1; 
-				if(n==26) n <= 0;
-			end else dma_p3_ob_we <= 0;
-		end
+			n <= n + 1; 
+			if(n==26) n <= 0;
+		end else dma_p3_ob_we <= 0;
 `endif
-		if(dma_p0_writes_en) begin 
-			if(p0_state < 2) p0_state <= p0_state + 1;
-			else p0_state = 0;
-			if(p0_state == 1) begin
-				dma_p0_ib_re <= 1;
-			end else dma_p0_ib_re <= 0;
-		end
-		if(dma_p1_writes_en) begin 
-			if(p1_state < 2) p1_state <= p1_state + 1;
-			else p1_state = 0;
-			if(p1_state == 1) begin
-				dma_p1_ib_re <= 1;
-			end else dma_p1_ib_re <= 0;
-		end
 	end
 end
 
