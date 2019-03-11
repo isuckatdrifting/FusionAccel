@@ -75,7 +75,9 @@ print(z.tobytes())
 print(np.unpackbits(z.reshape(-1,8)))
 
 print("==================")
-mem = b'\x00\x00\x00<\x00@\x00B'
+mem = b'\x00\x00\x01<\x00@\x00B'
 x = np.fromstring(mem, dtype=np.uint8)
 print(np.unpackbits(x).reshape(-1,8))
 print(num.byteswap().tobytes().hex()) # endian swap
+w = np.frombuffer(mem, dtype=np.float16)
+print(w)

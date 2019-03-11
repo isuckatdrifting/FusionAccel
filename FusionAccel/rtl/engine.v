@@ -16,6 +16,7 @@ module engine  //Instantiate 16CMACs for conv3x3, 16CMACs for conv1x1, maxpool a
 	input [15:0]	stride2,	//kernel * stride
 	input [15:0]	bias,
 //Response signals engine->csb
+	output			gemm_finish,
 	output 			engine_ready,
 //Command path engine->dma
 	output          dma_p0_writes_en,
@@ -139,7 +140,7 @@ always @(posedge clk) sacc_ready <= rdy_sacc;
 reg  [15:0] i_channel_count;
 reg  [7:0]  gemm_count;
 reg  [15:0] o_channel_count;
-reg			layer_finish;
+reg			gemm_finish, layer_finish;
 reg 		to_clear;
 reg 		engine_ready;
 
@@ -259,7 +260,7 @@ always @ (posedge clk or posedge rst) begin
 		fsum_enable <= 0; fsum_data_ready <= 0; fsum_a <= 16'h0000; fsum_b <= 16'h0000; fsum_count <= 8'h00; fsum_index <= 8'h00;
 		to_clear <= 0; 
 		//==================== Cross-channel registers ====================
-		i_channel_count <= 16'h0000; gemm_count <= 8'h00; o_channel_count <= 16'h0000; layer_finish <= 0;
+		i_channel_count <= 16'h0000; gemm_count <= 8'h00; o_channel_count <= 16'h0000; gemm_finish <= 0; layer_finish <= 0;
 		p0_writeback_en <= 0; p0_writeback_count <= 8'h00; writeback_num <= 8'h00;
 	end else begin
 		case (curr_state)
@@ -289,7 +290,8 @@ always @ (posedge clk or posedge rst) begin
 				atom_count <= 8'h00; line_count <= 16'h0000; cmac_output_pipe_count <= 8'h00;
 				cmac_input_pipe_count <= 8'h00; cmac_middle_pipe_count <= 8'h00; scmp_input_pipe_count <= 8'h00; scmp_output_pipe_count <= 8'h00; 
 				fsum_enable <= 0; fsum_data_ready <= 0; fsum_a <= 16'h0000; fsum_b <= 16'h0000; fsum_count <= 8'h00; fsum_index <= 8'h00;
-				to_clear <= 0;  
+				to_clear <= 0; 
+				gemm_finish <= 0;
 			end
 // CMD = 1 ==================== CONVOLUTION: Process a line ====================//
 			gemm_busy: begin
@@ -561,6 +563,7 @@ always @ (posedge clk or posedge rst) begin
 				if(i_channel_count + `BURST_LEN >= i_channel) begin
 					i_channel_count <= 0;
 					gemm_count <= gemm_count + 1; //NOTES: a gemm is finished
+					gemm_finish <= 1;
 					if(gemm_count + 1 == o_side) begin
 						gemm_count <= 0;
 						case(op_type)

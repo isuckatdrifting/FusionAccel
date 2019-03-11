@@ -196,7 +196,7 @@ fifo_w32_1024_r32_1024 cmd_fifo (
 	.wr_data_count	(pipe_in_wr_count));	// output, Bus [9 : 0] 
 
 fifo_gemm data_fifo (
-	.rst			(ep00wire[2]),			// input
+	.rst			(ep00wire[0]),			// input
 	.wr_clk			(okClk),				// input
 	.rd_clk			(sys_clk),				// input
 	.din			(pi1_ep_dataout), 		// input, Bus [31 : 0] 
@@ -210,7 +210,7 @@ fifo_gemm data_fifo (
 	.wr_data_count	(data_in_wr_count));	// output, Bus [12 : 0] 
 
 fifo_gemm weig_fifo (
-	.rst			(ep00wire[2]),			// input
+	.rst			(ep00wire[0]),			// input
 	.wr_clk			(okClk),				// input
 	.rd_clk			(sys_clk),				// input
 	.din			(pi2_ep_dataout), 		// input, Bus [31 : 0] 
@@ -224,7 +224,7 @@ fifo_gemm weig_fifo (
 	.wr_data_count	(weig_in_wr_count));	// output, Bus [12 : 0] 
 
 fifo_w32_1024_r32_1024 result_fifo (
-	.rst			(ep00wire[2]),			// input
+	.rst			(ep00wire[1]),			// input
 	.wr_clk			(sys_clk),				// input
 	.rd_clk			(okClk),				// input
 	.din			(pipe_out_data), 		// input, Bus [31 : 0] 

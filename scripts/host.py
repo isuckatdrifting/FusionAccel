@@ -66,8 +66,20 @@ class host:
 		print("FrontPanel support is available.")
 		return(True)
 	
-	def reset_fifo(self):
+	def reset_cmd_fifo(self):
 		self.xem.SetWireInValue(0x00, 0x0004) #ep00wire[2], reset fifo
+		self.xem.UpdateWireIns()
+		self.xem.SetWireInValue(0x00, 0x0000)
+		self.xem.UpdateWireIns()
+	
+	def reset_dw_fifo(self):
+		self.xem.SetWireInValue(0x00, 0x0001) #ep00wire[0], reset fifo
+		self.xem.UpdateWireIns()
+		self.xem.SetWireInValue(0x00, 0x0000)
+		self.xem.UpdateWireIns()
+
+	def reset_result_fifo(self):
+		self.xem.SetWireInValue(0x00, 0x0002) #ep00wire[1], reset fifo
 		self.xem.UpdateWireIns()
 		self.xem.SetWireInValue(0x00, 0x0000)
 		self.xem.UpdateWireIns()
@@ -82,7 +94,7 @@ class host:
 		for line in commandfile.readlines():
 			tmp = bytearray.fromhex(line.replace('\t',' ').strip('\n'))
 			self.command = self.command + tmp
-		print(len(self.command)) # Actually 30 Commands x 32 Bytes
+		print(len(self.command)) # Actually 30 Commands x 12 Bytes
 		# print(self.command)
 		self.command = self.command + bytearray(1024-len(self.command))
 
@@ -125,22 +137,22 @@ class host:
 		print("layers of weight = %d" % len(self.weight))
 		print("layers of bias = %d" % len(self.bias))
 
-
-	def loadBlob(self):
-		self.reset_fifo()
-		self.xem.SetWireInValue(0x00, 0x0002) #ep00wire[1], write memblock
+	def loadCommands(self):
+		print("Setting Commands...")
+		self.xem.SetWireInValue(0x01, 0x001d) #cmd_size
 		self.xem.UpdateWireIns()
 		self.xem.WriteToBlockPipeIn(0x80, self.blocksize, self.command) # Notes: Write buf must be times of blocksize
 		self.xem.UpdateWireOuts()
-		self.xem.WriteToBlockPipeIn(0x81, self.blocksize, self.image) # Notes: Write buf must be times of blocksize
-		self.xem.UpdateWireOuts()
+
+	def loadWeights_Bias(self):
 		self.xem.WriteToBlockPipeIn(0x82, self.blocksize, self.weight) # Notes: Write buf must be times of blocksize
+		self.xem.UpdateWireOuts()
+
+	def loadGemm(self):
+		self.xem.WriteToBlockPipeIn(0x81, self.blocksize, self.image) # Notes: Write buf must be times of blocksize
 		self.xem.UpdateWireOuts()
 		
 	def startOp(self):
-		print("Resetting CSB...")
-		self.xem.SetWireInValue(0x01, 0x001d) #cmd_size
-		self.xem.UpdateWireIns()
 		self.xem.SetWireInValue(0x00, 0x0008) #ep00wire[3], reset CSB
 		self.xem.UpdateWireIns()
 		print("Starting Operation...")
@@ -168,21 +180,31 @@ class host:
 		return
 	
 	def readOutput(self):
-		self.reset_fifo()
-		self.xem.SetWireInValue(0x00, 0x0001) #ep00wire[0], read memblock
-		self.xem.UpdateWireIns()
 		print("Reading Output...")
 		self.xem.ReadFromBlockPipeOut(0xa0, self.blocksize, self.rbuf)
-		print('block sum', sum(self.rbuf)) # Checksum
+		print(np.frombuffer(self.rbuf, dtype=np.float16)) # Checksum
 
 def main():   
 	dev = host()
 #----------------------------------------Run----------------------------------------#
 	if test_mode == RUN:
+		# read blob and store layers of weights in list, store image in bytearray
 		dev.readBlob()
+		# initialize device
 		if (False == dev.InitializeDevice()):
 			exit
 		else:
+			dev.reset_fifo()
+			# send all commands
+			dev.loadCommands()
+			# process, load all weights for this layer, --loop st
+				# gemm magic, loop st
+				# load gemm data and gemm weight (whole channel)
+				# start engine operation
+				# wait for engine ready and interrupt
+				# read output fifo
+				# --loop end (finish all channels for all weight groups)
+			# --loop end (finish all layers)
 			dev.loadBlob()
 			dev.startOp()
 			dev.waitIrq()
