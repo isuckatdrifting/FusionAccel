@@ -408,7 +408,7 @@ assign dma_p0_ib_re = dma_p0_writes_en ? p0_ib_re : 1'b0;
 assign pipe_in_read = dma_p0_writes_en ? 1'b0 : p0_ib_re;
 assign p0_ib_data = dma_p0_writes_en ? dma_p0_ib_data : pipe_in_data; // TODO: Update this mux logic after updating engine-dma
 assign p0_ib_valid = dma_p0_writes_en ? dma_p0_ib_valid : pipe_in_valid;
-assign p1_addr_muxout = dma_p1_reads_en ? p1_addr: p1_addr_csb;
+assign p1_addr_muxout = engine_valid ? p1_addr: p1_addr_csb;
 
 dma dma_p0 ( // Read/Write port0: pipeout read, pipein write, p0 write
 	.clk			(c3_clk0),
