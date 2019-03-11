@@ -14,46 +14,19 @@ module engine  //Instantiate 16CMACs for conv3x3, 16CMACs for conv1x1, maxpool a
 	input [15:0]	o_channel,
 	input [7:0]		kernel_size,
 	input [15:0]	stride2,	//kernel * stride
-	input [29:0]	data_start_addr,
-	input [29:0]	weight_start_addr,
-	input [29:0]    p0_result_start_addr,
-	input [29:0]    p1_result_start_addr,
-	input [7:0]		p0_padding_head,
-	input [7:0]		p0_padding_body,
-	input [7:0]		p1_padding_head,
-	input [7:0]		p1_padding_body,
-	input [1:0]		result_mask,
 //Response signals engine->csb
 	output 			engine_ready,
 //Command path engine->dma
 	output          dma_p0_writes_en,
-	output          dma_p1_writes_en,
     output          dma_p2_reads_en,
     output          dma_p3_reads_en,
-    output          dma_p4_reads_en,
-    output          dma_p5_reads_en,
-	output [29:0]   p0_addr,
-	output [29:0]   p1_addr,
-	output [29:0]   p2_addr,
-    output [29:0]   p3_addr,
-    output [29:0]   p4_addr,
-    output [29:0]   p5_addr,
 //Data path dma->engine
 	input [15:0] 	dma_p2_ob_data,
 	input [15:0] 	dma_p3_ob_data,
-	input [15:0] 	dma_p4_ob_data,
-	input [15:0] 	dma_p5_ob_data,
-	input			dma_p0_ib_re,
-	input			dma_p1_ib_re,
 	input 			dma_p2_ob_we,
 	input 			dma_p3_ob_we,
-	input 			dma_p4_ob_we,
-	input 			dma_p5_ob_we,
 //Data path engine->dma
 	output [15:0]	dma_p0_ib_data,
-	output [15:0]	dma_p1_ib_data,
-	output			dma_p0_ib_valid,
-	output			dma_p1_ib_valid,
 	output [3:0]	curr_state
 );
 
@@ -176,27 +149,23 @@ reg  [7:0]  atom_count;						//NOTES: atom count is used only in address parsing
 reg  [15:0] line_count;						//NOTES: counter for one gemm line, range:(0, kernel * o_side)
 reg  [7:0]  cache_count [2:0]; 				//FIXME: use max conv side support defined in include files.
 reg  [7:0]  dma_p2_burst_cnt, dma_p3_burst_cnt, dma_p3_offset; // de-serializer counter, burst get 16 data, then send to operation unit.
-reg			dma_p0_writes_en, dma_p1_writes_en, dma_p2_reads_en, dma_p3_reads_en, dma_p4_reads_en, dma_p5_reads_en;
-reg  [29:0] p0_addr, p1_addr, p2_addr, p3_addr, p4_addr, p5_addr;              //Output to DMA, burst start address. 
-reg  [29:0] gemm_addr, data_addr_block, weight_addr_block, data_addr_offset, weight_addr_offset;
-reg  [29:0] p0_result_addr_surface, p0_result_addr_block, p0_result_addr_offset, p1_result_addr_surface, p1_result_addr_block, p1_result_addr_offset;
-reg  [15:0] dma_p0_ib_data, dma_p1_ib_data;
-reg			dma_p0_ib_valid, dma_p1_ib_valid;
-reg			p0_writeback_en, p1_writeback_en;
-reg	 [7:0]	p0_writeback_count, p1_writeback_count;
+reg			dma_p0_writes_en, dma_p2_reads_en, dma_p3_reads_en;
+reg  [15:0] dma_p0_ib_data;
+reg			p0_writeback_en;
+reg	 [7:0]	p0_writeback_count;
 reg	 [7:0]	writeback_num;
 
 // NOTES: Generate accumulator for atom(1 * 1 * channel) and cube(k * k * channel), this data path is dedicated to convolution only.
 // NOTES: deserializer for write back is only enabled in pooling
 //State Machine
-localparam init 		= 4'b0000;
-localparam idle 		= 4'b0001;
-localparam load_bias	= 4'b0010;
-localparam gemm_busy 	= 4'b0011;
-localparam sacc_busy 	= 4'b0100;
-localparam scmp_busy 	= 4'b0101;
-localparam clear 		= 4'b0110;
-localparam finish 		= 4'b0111;
+localparam init 		= 0;
+localparam idle 		= 1;
+localparam load_bias	= 2;
+localparam gemm_busy 	= 3;
+localparam sacc_busy 	= 4;
+localparam scmp_busy 	= 5;
+localparam clear 		= 6;
+localparam finish 		= 7;
 
 reg [3:0] curr_state;
 reg [3:0] next_state;
@@ -279,16 +248,11 @@ always @ (posedge clk or posedge rst) begin
 	if(rst) begin
 		conv_valid <= 0; avepool_valid <= 0; maxpool_valid <= 0; engine_ready <= 0;
 		dma_p2_burst_cnt <= 16'h0000; dma_p3_burst_cnt <= 16'h0000; dma_p3_offset <= 8'h00;
-		dma_p0_writes_en <= 0; dma_p1_writes_en <= 0;
-		dma_p2_reads_en <= 0; dma_p3_reads_en <= 0; dma_p4_reads_en <= 0; dma_p5_reads_en <= 0;
-		dma_p0_ib_data <= 16'h0000; dma_p1_ib_data <= 16'h0000;
-		dma_p0_ib_valid <= 0; dma_p1_ib_valid <= 0;
+		dma_p0_writes_en <= 0; dma_p2_reads_en <= 0; dma_p3_reads_en <= 0;
+		dma_p0_ib_data <= 16'h0000;
 		//==================== Channel operation registers ====================
 		dbuf <= 'd0; data <= 'd0; psum <= 'd0; cmp <= 'd0; sacc_tmp_sum <= 'd0;
 		for(b=0;b<`MAX_KERNEL_SIZE;b=b+1) wbuf[b] <= 'd0;
-		//wbuf[0] <= 'd0; wbuf[1] <= 'd0; wbuf[2] <= 'd0; 
-		//wbuf[3] <= 'd0; wbuf[4] <= 'd0; wbuf[5] <= 'd0; 
-		//wbuf[6] <= 'd0; wbuf[7] <= 'd0; wbuf[8] <= 'd0; 
 		//==================== Slot registers ====================
 		for(b=0;b<`MAX_KERNEL;b=b+1) begin
 			cache_count[b] <= 8'h00;
@@ -299,38 +263,19 @@ always @ (posedge clk or posedge rst) begin
 			scmp_data_cache[b] <= 'd0;
 			cmac_weight_cache[b] <= 'd0;
 		end
-		//cache_count[0] <= 8'h00; cache_count[1] <= 8'h00; cache_count[2] <= 8'h00;
-		//psum_count[0] <= 8'h00; psum_count[1] <= 8'h00; psum_count[2] <= 8'h00;
-		//scmp_count[0] <= 8'h00; scmp_count[1] <= 8'h00; scmp_count[2] <= 8'h00;
-		//cmac_sum[0] <= 'd0; cmac_sum[1] <= 'd0; cmac_sum[2] <= 'd0;
-		//scmp_cmp[0] <= 'd0; scmp_cmp[1] <= 'd0; scmp_cmp[2] <= 'd0;
-		//scmp_data_cache[0] <= 'd0; scmp_data_cache[1] <= 'd0; scmp_data_cache[2] <= 'd0;
-		//cmac_weight_cache[0] <= 'd0; cmac_weight_cache[1] <= 'd0; cmac_weight_cache[2] <= 'd0;
 		cmac_enable <= 0; cmac_data_ready <= 0; avepool_enable <= 0; avepool_data_ready <= 0; maxpool_enable <= 0; maxpool_data_ready <= 0; div_en <= 0;
 		atom_count <= 8'h00; line_count <= 16'h0000; cmac_output_pipe_count <= 8'h00;
 		cmac_input_pipe_count <= 8'h00; cmac_middle_pipe_count <= 8'h00; scmp_input_pipe_count <= 8'h00; scmp_output_pipe_count <= 8'h00; 
-		fsum_enable <= 0; fsum_data_ready <= 0;
-		fsum_a <= 16'h0000; fsum_b <= 16'h0000; fsum_count <= 8'h00; fsum_index <= 8'h00;
+		fsum_enable <= 0; fsum_data_ready <= 0; fsum_a <= 16'h0000; fsum_b <= 16'h0000; fsum_count <= 8'h00; fsum_index <= 8'h00;
 		to_clear <= 0; 
 		//==================== Cross-channel registers ====================
-		p0_addr <= 30'h0000_0000; p1_addr <= 30'h0000_0000; p2_addr <= 30'h0000_0000; 
-		p3_addr <= 30'h0000_0000; p4_addr <= 30'h0000_0000; p5_addr <= 30'h0000_0000;
-		gemm_addr <= 30'h0000_0000; bias <= 'd0; to_load_bias <= 0;
-		data_addr_block <= 30'h0000_0000; weight_addr_block <= 30'h0000_0000; 
-		data_addr_offset <= 30'h0000_0000; weight_addr_offset <= 30'h0000_0000;
-		p0_result_addr_surface <= 30'h0000_0000; p0_result_addr_block <= 30'h0000_0000; p0_result_addr_offset <= 30'h0000_0000;
-		p1_result_addr_surface <= 30'h0000_0000; p1_result_addr_block <= 30'h0000_0000; p1_result_addr_offset <= 30'h0000_0000;
+		bias <= 'd0; to_load_bias <= 0;
 		i_channel_count <= 16'h0000; gemm_count <= 8'h00; o_channel_count <= 16'h0000; layer_finish <= 0;
-		p0_writeback_en <= 0; p1_writeback_en <= 0; p0_writeback_count <= 8'h00; p1_writeback_count <= 8'h00; writeback_num <= 8'h00;
+		p0_writeback_en <= 0; p0_writeback_count <= 8'h00; writeback_num <= 8'h00;
 	end else begin
 		case (curr_state)
 			init: begin
 				engine_ready <= 0;
-				data_addr_block <= data_start_addr; weight_addr_block <= weight_start_addr; 
-				gemm_addr <= data_start_addr;
-				p0_result_addr_surface <= p0_result_start_addr + p0_padding_head; p1_result_addr_surface <= p1_result_start_addr + p1_padding_head;
-				p0_result_addr_block <= p0_result_addr_surface; p1_result_addr_block <= p1_result_addr_surface;
-				p0_result_addr_offset <= 0; p1_result_addr_offset <= 0;
 			end
 			load_bias: begin
 				to_load_bias <= 0;
@@ -344,16 +289,11 @@ always @ (posedge clk or posedge rst) begin
 			idle: begin 
 				conv_valid <= 0; avepool_valid <= 0; maxpool_valid <= 0; engine_ready <= 0;
 				dma_p2_burst_cnt <= 16'h0000; dma_p3_burst_cnt <= 16'h0000; dma_p3_offset <= 8'h00;
-				dma_p0_writes_en <= 0; dma_p1_writes_en <= 0;
-				dma_p2_reads_en <= 0; dma_p3_reads_en <= 0; dma_p4_reads_en <= 0; dma_p5_reads_en <= 0;
-				dma_p0_ib_data <= 16'h0000; dma_p1_ib_data <= 16'h0000;
-				dma_p0_ib_valid <= 0; dma_p1_ib_valid <= 0;
+				dma_p0_writes_en <= 0; dma_p2_reads_en <= 0; dma_p3_reads_en <= 0;
+				dma_p0_ib_data <= 16'h0000;
 				//==================== Channel operation registers ====================
 				dbuf <= 'd0; data <= 'd0; psum <= 'd0; cmp <= 'd0; sacc_tmp_sum <= 'd0;
 				for(b=0;b<`MAX_KERNEL_SIZE;b=b+1) wbuf[b] <= 'd0;
-				//wbuf[0] <= 'd0; wbuf[1] <= 'd0; wbuf[2] <= 'd0; 
-				//wbuf[3] <= 'd0; wbuf[4] <= 'd0; wbuf[5] <= 'd0; 
-				//wbuf[6] <= 'd0; wbuf[7] <= 'd0; wbuf[8] <= 'd0; 
 				//==================== Slot registers ====================
 				for(b=0;b<`MAX_KERNEL;b=b+1) begin
 					cache_count[b] <= 8'h00;
@@ -364,55 +304,37 @@ always @ (posedge clk or posedge rst) begin
 					scmp_data_cache[b] <= 'd0;
 					cmac_weight_cache[b] <= 'd0;
 				end
-				//cache_count[0] <= 8'h00; cache_count[1] <= 8'h00; cache_count[2] <= 8'h00;
-				//psum_count[0] <= 8'h00; psum_count[1] <= 8'h00; psum_count[2] <= 8'h00;
-				//scmp_count[0] <= 8'h00; scmp_count[1] <= 8'h00; scmp_count[2] <= 8'h00;
-				//cmac_sum[0] <= 'd0; cmac_sum[1] <= 'd0; cmac_sum[2] <= 'd0;
-				//scmp_cmp[0] <= 'd0; scmp_cmp[1] <= 'd0; scmp_cmp[2] <= 'd0;
-				//scmp_data_cache[0] <= 'd0; scmp_data_cache[1] <= 'd0; scmp_data_cache[2] <= 'd0;
-				//cmac_weight_cache[0] <= 'd0; cmac_weight_cache[1] <= 'd0; cmac_weight_cache[2] <= 'd0;
 				cmac_enable <= 0; cmac_data_ready <= 0; avepool_enable <= 0; avepool_data_ready <= 0; maxpool_enable <= 0; maxpool_data_ready <= 0; div_en <= 0;
 				atom_count <= 8'h00; line_count <= 16'h0000; cmac_output_pipe_count <= 8'h00;
 				cmac_input_pipe_count <= 8'h00; cmac_middle_pipe_count <= 8'h00; scmp_input_pipe_count <= 8'h00; scmp_output_pipe_count <= 8'h00; 
-				fsum_enable <= 0; fsum_data_ready <= 0;
-				fsum_a <= 16'h0000; fsum_b <= 16'h0000; fsum_count <= 8'h00; fsum_index <= 8'h00;
+				fsum_enable <= 0; fsum_data_ready <= 0; fsum_a <= 16'h0000; fsum_b <= 16'h0000; fsum_count <= 8'h00; fsum_index <= 8'h00;
 				to_clear <= 0;  
 			end
 // CMD = 1 ==================== CONVOLUTION: Process a line ====================//
 			gemm_busy: begin
-				p2_addr <= data_addr_block + data_addr_offset; p3_addr <= weight_addr_block + weight_addr_offset;//NOTES: Update addr @ the same edge of reads_en
-				p0_addr <= p0_result_addr_block + p0_result_addr_offset; p1_addr <= p1_result_addr_block + p1_result_addr_offset;
-				dma_p2_reads_en <= 1; dma_p3_reads_en <= 1;
+				if(engine_valid) begin
+					dma_p2_reads_en <= 1; 
+					dma_p3_reads_en <= 1;
+				end
 
 				//========== CONVOLUTION PIPELINE STEP1: enable data read and weight read (this part is the slowest and defines the available timing space of the pipeline)
 				if(dma_p2_ob_we) begin
 					dma_p2_burst_cnt <= dma_p2_burst_cnt + 1;
 					if(dma_p2_burst_cnt + 1 == `BURST_LEN) begin	//NOTES: start cmac when finishing reading the first atom (1x1xpara)
+						dma_p2_reads_en <= 0; 
 						dma_p2_burst_cnt <= 0;
 						conv_valid <= 1;
 						cmac_enable <= 1;	//NOTES: use this signal to latch buffer
 					end
 					dbuf <= {dma_p2_ob_data, dbuf[16*`BURST_LEN-1 : 16]}; // deserialize data to dbuf
-					data_addr_offset <= data_addr_offset + 1;
-					if(data_addr_offset + 1 == `BURST_LEN) begin
-						data_addr_offset <= 0;
-						data_addr_block <= data_addr_block + `BURST_LEN;
-						if(atom_count + 1 == kernel) begin //jump to the next row
-							data_addr_block <= data_addr_block + {(i_side - kernel), 3'b000}; //(i_side - kernel) * BURST_LEN;
-						end
-					end
 				end
 				if(dma_p3_ob_we) begin // @ this edge dma_p3_ob_data is also updated.
 					if(dma_p3_burst_cnt + 1 == `BURST_LEN) begin
+						dma_p3_reads_en <= 0; 
 						dma_p3_burst_cnt <= 0;
 						dma_p3_offset <= dma_p3_offset + 1;
 					end else dma_p3_burst_cnt <= dma_p3_burst_cnt + 1;
 					wbuf[dma_p3_offset] <= {dma_p3_ob_data, wbuf[dma_p3_offset][16*`BURST_LEN-1 : 16]};
-					weight_addr_offset <= weight_addr_offset + 1;
-					if(weight_addr_offset + 1 == `BURST_LEN) begin //do not need to jump, weights are continuous
-						weight_addr_offset <= 0;
-						weight_addr_block <= weight_addr_block + `BURST_LEN;
-					end
 				end
 				if(dma_p3_offset == kernel_size) begin
 					dma_p3_reads_en <= 0; // pull down weight read
@@ -516,8 +438,7 @@ always @ (posedge clk or posedge rst) begin
 						fsum[fsum_index] <= fsum_result; //NOTES: it will overwrite the fsum_result in the first c-1 channel groups
 					end
 					if(i_channel_count + `BURST_LEN >= i_channel && fsum_count == `BURST_LEN) begin
-						if(result_mask[0]) p0_writeback_en <= 1;
-						if(result_mask[1]) p1_writeback_en <= 1;
+						p0_writeback_en <= 1;
 						writeback_num <= 1;
 					end
 				end
@@ -528,9 +449,7 @@ always @ (posedge clk or posedge rst) begin
 
 // CMD = 4 ==================== MAXPOOLING: Process a line ====================//
 			scmp_busy: begin
-				p2_addr <= data_addr_block + data_addr_offset; //NOTES: Update addr @ the same edge of reads_en
-				p0_addr <= p0_result_addr_block + p0_result_addr_offset; p1_addr <= p1_result_addr_block + p1_result_addr_offset;
-				dma_p2_reads_en <= 1;
+				if(engine_valid) dma_p2_reads_en <= 1;
 
 				//========== MAXPOOLING PIPELINE STEP1: enable data read (this part is the slowest and defines the available timing space of the pipeline)
 				if(dma_p2_ob_we) begin
@@ -541,14 +460,6 @@ always @ (posedge clk or posedge rst) begin
 						maxpool_enable <= 1;
 					end
 					dbuf <= {dma_p2_ob_data, dbuf[16*`BURST_LEN-1 : 16]}; // deserialize data to dbuf
-					data_addr_offset <= data_addr_offset + 1;
-					if(data_addr_offset + 1 == `BURST_LEN) begin
-						data_addr_offset <= 0;
-						data_addr_block <= data_addr_block + `BURST_LEN;
-						if(atom_count + 1 == kernel) begin //jump to the next row
-							data_addr_block <= data_addr_block + {(i_side - kernel), 3'b000}; //(i_side - kernel) * BURST_LEN;
-						end
-					end
 				end
 
 				//========== MAXPOOLING PIPELINE STEP2: start passing deserialized data scmp (including data reuse)
@@ -606,20 +517,17 @@ always @ (posedge clk or posedge rst) begin
 					//Logic for setting psum_count according to cache_count
 					if(scmp_count[0] + 1 == kernel_size) begin
 						cmp <= scmp_cmp[0];
-						if(result_mask[0]) p0_writeback_en <= 1; //Trigger for channel memory writeback
-						if(result_mask[1]) p1_writeback_en <= 1; //Trigger for channel memory writeback
+						p0_writeback_en <= 1; //Trigger for channel memory writeback
 						writeback_num <= `BURST_LEN;
 					end
 					if(scmp_count[1] + 1 == kernel_size) begin
 						cmp <= scmp_cmp[1];
-						if(result_mask[0]) p0_writeback_en <= 1; //Trigger for channel memory writeback
-						if(result_mask[1]) p1_writeback_en <= 1; //Trigger for channel memory writeback
+						p0_writeback_en <= 1; //Trigger for channel memory writeback
 						writeback_num <= `BURST_LEN;
 					end
 					if(scmp_count[2] + 1 == kernel_size) begin
 						cmp <= scmp_cmp[2];
-						if(result_mask[0]) p0_writeback_en <= 1; //Trigger for channel memory writeback
-						if(result_mask[1]) p1_writeback_en <= 1; //Trigger for channel memory writeback
+						p0_writeback_en <= 1; //Trigger for channel memory writeback
 						writeback_num <= `BURST_LEN;
 					end
 				end
@@ -627,9 +535,7 @@ always @ (posedge clk or posedge rst) begin
 
 // CMD = 5 ==================== AVEPOOLING: Process a line * surface ====================//
 			sacc_busy: begin
-				p2_addr <= data_addr_block + data_addr_offset; //NOTES: Update addr @ the same edge of reads_en
-				p0_addr <= p0_result_addr_block + p0_result_addr_offset; p1_addr <= p1_result_addr_block + p1_result_addr_offset;
-				dma_p2_reads_en <= 1;
+				if(engine_valid) dma_p2_reads_en <= 1;
 
 				//========== AVEPOOLING PIPELINE STEP1: enable data read (this part is the slowest and defines the available timing space of the pipeline)
 				if(dma_p2_ob_we) begin
@@ -640,14 +546,6 @@ always @ (posedge clk or posedge rst) begin
 						avepool_enable <= 1;
 					end
 					dbuf <= {dma_p2_ob_data, dbuf[16*`BURST_LEN-1 : 16]}; // deserialize data to dbuf
-					data_addr_offset <= data_addr_offset + 1;
-					if(data_addr_offset + 1 == `BURST_LEN) begin
-						data_addr_offset <= 0;
-						data_addr_block <= data_addr_block + `BURST_LEN;
-						if(atom_count + 1 == kernel) begin //jump to the next row
-							data_addr_block <= data_addr_block + {(i_side - kernel), 3'b000}; //(i_side - kernel) * BURST_LEN;
-						end
-					end
 				end
 				//========== AVEPOOLING PIPELINE STEP2: accumulate and divide
 				if(avepool_enable) begin
@@ -670,8 +568,7 @@ always @ (posedge clk or posedge rst) begin
 				if(div_en && sacc_ready) begin
 					div_en <= 0;
 					to_clear <= 1;
-					if(result_mask[0]) p0_writeback_en <= 1; //NOTES: Writeback all channels
-					if(result_mask[1]) p1_writeback_en <= 1; //NOTES: Writeback all channels
+					p0_writeback_en <= 1; //NOTES: Writeback all channels
 					writeback_num <= `BURST_LEN;
 				end
 			end
@@ -683,9 +580,6 @@ always @ (posedge clk or posedge rst) begin
 				if(i_channel_count + `BURST_LEN >= i_channel) begin
 					i_channel_count <= 0;
 					gemm_count <= gemm_count + 1; //NOTES: a gemm is finished
-					//updating gemm addr only after finishing the whole line + channel
-					gemm_addr <= gemm_addr + {stride[3:0], 3'b000}; //NOTES: gemm addr parsing. kernel > stride >= 1
-					data_addr_block <= gemm_addr + {stride[3:0], 3'b000};
 					if(gemm_count + 1 == o_side) begin
 						gemm_count <= 0;
 						case(op_type)
@@ -709,94 +603,20 @@ always @ (posedge clk or posedge rst) begin
 
 		//==================== Write back logic and write address ====================
 		if(p0_writeback_en) begin
-			if(p0_writeback_count < writeback_num) dma_p0_writes_en <= 1; //NOTES: Dual channel write back with shared data and independent address
-			else begin
+			if(p0_writeback_count < writeback_num) begin
+				dma_p0_writes_en <= 1; //NOTES: Dual channel write back with shared data and independent address
+				p0_writeback_count <= p0_writeback_count + 1;
+			end else begin
 				p0_writeback_en <= 0;
 				p0_writeback_count <= 0;
+				dma_p0_writes_en <= 0;
 			end
-		end
-		if(dma_p0_ib_re) begin
-			dma_p0_writes_en <= 0;
 			case(op_type)
 				CONV: dma_p0_ib_data <= fsum_result[15]? 16'h0000: fsum_result; //Notes: ReLu Activation
 				MPOOL: dma_p0_ib_data <= cmp[p0_writeback_count * 16 +: 16];
 				APOOL: dma_p0_ib_data <= sacc_tmp_sum[p0_writeback_count * 16 +: 16];
 			endcase
-			dma_p0_ib_valid <= 1;
-			p0_writeback_count <= p0_writeback_count + 1;
-		end else begin
-			dma_p0_ib_valid <= 0;
-		end
-		if(dma_p0_ib_valid) begin //Update addr @ after updating data
-			case(op_type)
-				CONV: begin
-					p0_result_addr_offset <= p0_result_addr_offset + {o_side + p0_padding_body, 3'b000}; //p0_addr will be updated after one cycle
-					if(fsum_index == 0) begin // start a new gemm
-						p0_result_addr_block <= p0_result_addr_block + `BURST_LEN;
-						p0_result_addr_offset <= 0;
-					end
-				end
-				MPOOL: begin 
-					p0_result_addr_offset <= p0_result_addr_offset + 1;
-					if(p0_result_addr_offset + 1 == `BURST_LEN) begin
-						p0_result_addr_block <= p0_result_addr_block + {o_side + p0_padding_body, 3'b000};
-						p0_result_addr_offset <= 0;
-					end
-				end
-				APOOL: begin
-					p0_result_addr_offset <= p0_result_addr_offset + 1;
-					if(p0_result_addr_offset + 1 == `BURST_LEN) begin
-						p0_result_addr_block <= p0_result_addr_block + {o_side + p0_padding_body, 3'b000};
-						p0_result_addr_offset <= 0;
-					end
-				end
-			endcase
-		end
-
-		if(p1_writeback_en) begin
-			if(p1_writeback_count < writeback_num) dma_p1_writes_en <= 1; //NOTES: Dual channel write back with shared data and independent address
-			else begin
-				p1_writeback_en <= 0;
-				p1_writeback_count <= 0;
-			end
-		end
-		if(dma_p1_ib_re) begin
-			dma_p1_writes_en <= 0;
-			case(op_type)
-				CONV: dma_p1_ib_data <= fsum_result[15]? 16'h0000: fsum_result; //Notes: ReLu Activation
-				MPOOL: dma_p1_ib_data <= cmp[p1_writeback_count * 16 +: 16];
-				APOOL: dma_p1_ib_data <= sacc_tmp_sum[p1_writeback_count * 16 +: 16];
-			endcase
-			dma_p1_ib_valid <= 1;
-			p1_writeback_count <= p1_writeback_count + 1;
-		end else begin
-			dma_p1_ib_valid <= 0;
-		end
-		if(dma_p1_ib_valid) begin //Update addr @ after updating data
-			case(op_type)
-				CONV: begin
-					p1_result_addr_offset <= p1_result_addr_offset + {o_side + p1_padding_body, 3'b000}; //p1_addr will be updated after one cycle
-					if(fsum_index == 0) begin // start a new gemm
-						p1_result_addr_block <= p1_result_addr_block + `BURST_LEN;
-						p1_result_addr_offset <= 0;
-					end
-				end
-				MPOOL: begin 
-					p1_result_addr_offset <= p1_result_addr_offset + 1;
-					if(p1_result_addr_offset + 1 == `BURST_LEN) begin
-						p1_result_addr_block <= p1_result_addr_block + {o_side + p1_padding_body, 3'b000};
-						p1_result_addr_offset <= 0;
-					end
-				end
-				APOOL: begin
-					p1_result_addr_offset <= p1_result_addr_offset + 1;
-					if(p1_result_addr_offset + 1 == `BURST_LEN) begin
-						p1_result_addr_block <= p1_result_addr_block + {o_side + p1_padding_body, 3'b000};
-						p1_result_addr_offset <= 0;
-					end
-				end
-			endcase
-		end
+		end 
 
 	end
 end
