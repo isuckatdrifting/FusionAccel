@@ -89,7 +89,7 @@ class host:
 		print("Loading Image")
 		data = np.load(image_directory)
 		print(data.shape)
-		self.image = self.image.join(bytearray.fromhex(str(hex(struct.unpack('<H', j)[0]))[2:].zfill(8)) for j in data.reshape(-1))
+		self.image = np.dstack((np.zeros_like(data.reshape(-1)), data.reshape(-1))).reshape(-1).tobytes() # padding zero
 		print(len(self.image))
 
 		print("Loading Weights")
@@ -100,23 +100,26 @@ class host:
 			self.layer_weight = bytearray()
 			# Weight layer
 			if i % 2 == 0:
+				print('arr_%d'%i)
 				shape = weight[name].shape # get shape of weight layer
-				# print(shape)
+				print("original shape:\t" + str(shape))
 				pad = 0
 				if shape[1] <= 8:
 					pad = 8 - shape[1] # channel dimension
-				for p in range(0, shape[0]):
-					if pad > 0:
-						padded_dat = np.pad(weight[name][p], ((0,0),(0,0),(0,pad)), 'constant')
-					else:
-						padded_dat = weight[name][p]
-					if(shape[1] > 8):
-						sliced_dat = np.vstack(np.dsplit(padded_dat.transpose((1,2,0)), shape[1]/8)).reshape(-1)
-					else:
-						sliced_dat = padded_dat.reshape(-1)
-					# print(sliced_dat.shape)
+				if pad > 0:
+					padded_dat = np.pad(weight[name], ((0,0),(0,pad),(0,0),(0,0)), 'constant') # pad at channel axis
+				else:
+					padded_dat = weight[name]
+				print("padded shape:\t" + str(padded_dat.shape))
+				if(shape[1] > 8):
+					tmp = padded_dat.transpose((0,2,3,1)) # move channel axis to the inner most
+					print("trans shape:\t" + str(tmp.shape))
+					sliced_dat = np.stack(np.split(tmp, shape[1]/8, axis = 3), axis = 1) # create a new axis after splitting
+				else:
+					sliced_dat = padded_dat
+				print("sliced shape:\t" + str(sliced_dat.shape))
 					# print(sliced_dat)
-				self.layer_weight = np.dstack((np.zeros_like(sliced_dat), sliced_dat)).reshape(-1).astype(dtype=np.float16) # pad 16 zeros
+				self.layer_weight = np.dstack((np.zeros_like(sliced_dat.reshape(-1)), sliced_dat.reshape(-1))).reshape(-1).astype(dtype=np.float16) # pad 16 zeros
 				self.weight.append(self.layer_weight) # byteappend all weights
 			# Bias layer
 			if i % 2 == 1:
