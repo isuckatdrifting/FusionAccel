@@ -104,6 +104,7 @@ engine engine_(
 	.o_channel				(o_channel),
 	.kernel_size			(kernel_size),
 	.stride2				(stride2),
+	.bias					(bias[15:0]),
 //Response signals engine->csb
 	.engine_ready			(engine_ready),
 //Command path engine->dma

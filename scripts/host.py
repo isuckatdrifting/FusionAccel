@@ -10,7 +10,7 @@ import os
 import ok
 import struct
 
-np.set_printoptions(precision=4)
+# np.set_printoptions(precision=4)
 
 bit_directory = 'C:/Users/shish/source/repos/FusionAccel/scripts/top.bit'
 command_directory = 'C:/Users/shish/source/repos/FusionAccel/scripts/tmp/command.txt'
@@ -72,6 +72,10 @@ class host:
 		self.xem.SetWireInValue(0x00, 0x0000)
 		self.xem.UpdateWireIns()
 	
+	def gemm_magic(self, weight, pivot, kernel):
+		
+		pass
+
 	def readBlob(self):
 		print("Loading commands")
 		commandfile = open(command_directory, "r")
@@ -82,6 +86,12 @@ class host:
 		# print(self.command)
 		self.command = self.command + bytearray(1024-len(self.command))
 
+		print("Loading Image")
+		data = np.load(image_directory)
+		print(data.shape)
+		self.image = self.image.join(bytearray.fromhex(str(hex(struct.unpack('<H', j)[0]))[2:].zfill(8)) for j in data.reshape(-1))
+		print(len(self.image))
+
 		print("Loading Weights")
 		weight = np.load(weight_directory)
 		i = 0
@@ -91,31 +101,30 @@ class host:
 			# Weight layer
 			if i % 2 == 0:
 				shape = weight[name].shape # get shape of weight layer
-				print(shape)
+				# print(shape)
 				pad = 0
 				if shape[1] <= 8:
 					pad = 8 - shape[1] # channel dimension
 				for p in range(0, shape[0]):
-					padded_dat = np.pad(weight[name][p], ((0,0),(0,0),(0,pad)), 'constant')
-					if(shape[1] > 8):
-						sliced_dat = np.vstack(np.dsplit(padded_dat.transpose((1,2,0)), shape[1]/8))
+					if pad > 0:
+						padded_dat = np.pad(weight[name][p], ((0,0),(0,0),(0,pad)), 'constant')
 					else:
-						sliced_dat = padded_dat
+						padded_dat = weight[name][p]
+					if(shape[1] > 8):
+						sliced_dat = np.vstack(np.dsplit(padded_dat.transpose((1,2,0)), shape[1]/8)).reshape(-1)
+					else:
+						sliced_dat = padded_dat.reshape(-1)
 					# print(sliced_dat.shape)
 					# print(sliced_dat)
-				self.layer_weight = self.layer_weight.join(bytearray.fromhex(str(hex(struct.unpack('<H', j)[0]))[2:].zfill(8)) for j in sliced_dat.reshape(-1).astype(dtype=np.float16))
-				print(self.layer_weight)
+				self.layer_weight = np.dstack((np.zeros_like(sliced_dat), sliced_dat)).reshape(-1).astype(dtype=np.float16) # pad 16 zeros
 				self.weight.append(self.layer_weight) # byteappend all weights
 			# Bias layer
 			if i % 2 == 1:
 				self.bias.append(weight[name]) #append bias of all layers together
-				print(weight[name])
+				# print(weight[name])
+		print("layers of weight = %d" % len(self.weight))
+		print("layers of bias = %d" % len(self.bias))
 
-		print("Loading Image")
-		data = np.load(image_directory)
-		print(data.shape)
-		self.image = self.image.join(bytearray.fromhex(str(hex(struct.unpack('<H', j)[0]))[2:].zfill(8)) for j in data.reshape(-1))
-		print(len(self.image))
 
 	def loadBlob(self):
 		self.reset_fifo()

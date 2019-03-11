@@ -54,8 +54,28 @@ print(sys.byteorder.capitalize())
 data = b'\xAD\xDE\xDE\xC0\xAD\xDE\xDE\xC0'
 swap_data = bytearray(data).reverse()
 print(swap_data)
-'''
+
 data = [np.arange(8).reshape(2, 4), np.arange(10).reshape(2, 5)]
 np.savez('C:/Users/shish/source/repos/FusionAccel/scripts/tmp/mat.npz', *data)
 container = np.load('C:/Users/shish/source/repos/FusionAccel/scripts/tmp/mat.npz')
 print(container['arr_0'])
+'''
+num = np.arange(4).reshape(2,2).reshape(-1).astype(dtype=np.float16)
+print(num.tobytes())
+x = np.fromstring(num.tobytes(), dtype=np.uint8) #little endian
+print(x.tobytes())
+print(np.unpackbits(x.reshape(-1,8)))
+print("")
+y = np.dstack((np.zeros_like(num), num)).reshape(num.shape[0],-1)
+print(y)
+print(y.tobytes())
+print("")
+z = np.fromstring(y.tobytes(), dtype=np.uint8) #little endian
+print(z.tobytes())
+print(np.unpackbits(z.reshape(-1,8)))
+
+print("==================")
+mem = b'\x00\x00\x00<\x00@\x00B'
+x = np.fromstring(mem, dtype=np.uint8)
+print(np.unpackbits(x).reshape(-1,8))
+print(num.byteswap().tobytes().hex()) # endian swap
