@@ -49,8 +49,13 @@ endian = bytearray.fromhex('0000 3c00 4000 4200')
 print(endian)
 print(endian.hex())
 print(sys.byteorder.capitalize())
-'''
+
 
 data = b'\xAD\xDE\xDE\xC0\xAD\xDE\xDE\xC0'
 swap_data = bytearray(data).reverse()
 print(swap_data)
+'''
+data = [np.arange(8).reshape(2, 4), np.arange(10).reshape(2, 5)]
+np.savez('C:/Users/shish/source/repos/FusionAccel/scripts/tmp/mat.npz', *data)
+container = np.load('C:/Users/shish/source/repos/FusionAccel/scripts/tmp/mat.npz')
+print(container['arr_0'])

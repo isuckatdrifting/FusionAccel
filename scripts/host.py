@@ -10,9 +10,11 @@ import os
 import ok
 import struct
 
+np.set_printoptions(precision=4)
+
 bit_directory = 'C:/Users/shish/source/repos/FusionAccel/scripts/top.bit'
 command_directory = 'C:/Users/shish/source/repos/FusionAccel/scripts/tmp/command.txt'
-weight_directory = 'C:/Users/shish/source/repos/FusionAccel/scripts/tmp/weight.npy'
+weight_directory = 'C:/Users/shish/source/repos/FusionAccel/scripts/tmp/weight.npz'
 image_directory = 'C:/Users/shish/source/repos/FusionAccel/scripts/tmp/data.npy'
 RUN = 0
 SANITY = 1
@@ -25,9 +27,11 @@ class host:
 		self.readsize = 1024
 		self.rbuf = bytearray(self.readsize)
 		# Run Parameters
-		self.weight = bytearray() #dynamic array allocation
 		self.image = bytearray()
 		self.command = bytearray()
+		self.layer_weight = bytearray()
+		self.bias = [] # list of numpy ndarrays
+		self.weight = [] # list of ?
 		return
 
 	def InitializeDevice(self):
@@ -75,15 +79,37 @@ class host:
 			tmp = bytearray.fromhex(line.replace('\t',' ').strip('\n'))
 			self.command = self.command + tmp
 		print(len(self.command)) # Actually 30 Commands x 32 Bytes
-		print(self.command)
+		# print(self.command)
 		self.command = self.command + bytearray(1024-len(self.command))
 
 		print("Loading Weights")
 		weight = np.load(weight_directory)
-		print(weight.shape)
-		self.weight = self.weight.join(bytearray.fromhex(str(hex(struct.unpack('<H', j)[0]))[2:].zfill(8)) for j in weight.reshape(-1))
-		print(len(self.weight))
-		#print(self.weight.hex())
+		i = 0
+		for i in range(0,len(weight)):
+			name = 'arr_' + str(i)
+			self.layer_weight = bytearray()
+			# Weight layer
+			if i % 2 == 0:
+				shape = weight[name].shape # get shape of weight layer
+				print(shape)
+				pad = 0
+				if shape[1] <= 8:
+					pad = 8 - shape[1] # channel dimension
+				for p in range(0, shape[0]):
+					padded_dat = np.pad(weight[name][p], ((0,0),(0,0),(0,pad)), 'constant')
+					if(shape[1] > 8):
+						sliced_dat = np.vstack(np.dsplit(padded_dat.transpose((1,2,0)), shape[1]/8))
+					else:
+						sliced_dat = padded_dat
+					# print(sliced_dat.shape)
+					# print(sliced_dat)
+				self.layer_weight = self.layer_weight.join(bytearray.fromhex(str(hex(struct.unpack('<H', j)[0]))[2:].zfill(8)) for j in sliced_dat.reshape(-1).astype(dtype=np.float16))
+				print(self.layer_weight)
+				self.weight.append(self.layer_weight) # byteappend all weights
+			# Bias layer
+			if i % 2 == 1:
+				self.bias.append(weight[name]) #append bias of all layers together
+				print(weight[name])
 
 		print("Loading Image")
 		data = np.load(image_directory)
@@ -121,18 +147,11 @@ class host:
 				print("Querying")
 			self.xem.UpdateWireOuts()
 			
-			print("============================")
+			print("=========COMMANDS===========")
 			print(hex(self.xem.GetWireOutValue(0x20)))
 			print(hex(self.xem.GetWireOutValue(0x21)))
 			print(hex(self.xem.GetWireOutValue(0x22)))
 			print(hex(self.xem.GetWireOutValue(0x23)))
-			print(hex(self.xem.GetWireOutValue(0x24)))
-			print(hex(self.xem.GetWireOutValue(0x25)))
-			print(hex(self.xem.GetWireOutValue(0x26)))
-			print(hex(self.xem.GetWireOutValue(0x27)))
-			print(hex(self.xem.GetWireOutValue(0x28)))
-			print(hex(self.xem.GetWireOutValue(0x29)))
-			print("============================")
 			
 			if self.xem.GetWireOutValue(0x20) != 0x0000:
 				print("Got Interrupt...")
