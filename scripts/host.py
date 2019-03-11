@@ -100,7 +100,7 @@ class host:
 			self.layer_weight = bytearray()
 			# Weight layer
 			if i % 2 == 0:
-				print('arr_%d'%i)
+				print('========= arr_%d ========'%i)
 				shape = weight[name].shape # get shape of weight layer
 				print("original shape:\t" + str(shape))
 				pad = 0
@@ -111,15 +111,12 @@ class host:
 				else:
 					padded_dat = weight[name]
 				print("padded shape:\t" + str(padded_dat.shape))
-				if(shape[1] > 8):
-					tmp = padded_dat.transpose((0,2,3,1)) # move channel axis to the inner most
-					print("trans shape:\t" + str(tmp.shape))
-					sliced_dat = np.stack(np.split(tmp, shape[1]/8, axis = 3), axis = 1) # create a new axis after splitting
-				else:
-					sliced_dat = padded_dat
+				tmp = padded_dat.transpose((0,2,3,1)) # move channel axis to the inner most
+				print("trans shape:\t" + str(tmp.shape))
+				sliced_dat = np.stack(np.split(tmp, tmp.shape[3]/8, axis = 3), axis = 1) # create a new axis after splitting
 				print("sliced shape:\t" + str(sliced_dat.shape))
-					# print(sliced_dat)
-				self.layer_weight = np.dstack((np.zeros_like(sliced_dat.reshape(-1)), sliced_dat.reshape(-1))).reshape(-1).astype(dtype=np.float16) # pad 16 zeros
+				# print(sliced_dat[0][0][0][0])
+				self.layer_weight = np.dstack((np.zeros_like(sliced_dat.reshape(-1)), sliced_dat.reshape(-1))).reshape(-1).astype(dtype=np.float16) # pad 16 zeros for fp16
 				self.weight.append(self.layer_weight) # byteappend all weights
 			# Bias layer
 			if i % 2 == 1:
