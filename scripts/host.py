@@ -18,7 +18,7 @@ weight_directory = 'C:/Users/shish/source/repos/FusionAccel/scripts/tmp/weight.n
 image_directory = 'C:/Users/shish/source/repos/FusionAccel/scripts/tmp/data.npy'
 RUN = 0
 SANITY = 1
-test_mode = 1
+test_mode = 0
 
 class host:
 	def __init__(self):
@@ -190,14 +190,20 @@ class host:
 		tmp_data = tmp_data.transpose((1,0,2))
 		print(tmp_data.shape)
 		print("======data=======")
-		print(tmp_data)
+		# print(tmp_data)
+		print(tmp_data[0])
+		print(tmp_data[1])
+		print(tmp_data[2])
+		print(tmp_data[3])
+		print(tmp_data[4])
 		print(tmp_data.reshape(-1))
 		tmp = np.dstack((tmp_data.reshape(-1), np.zeros_like(tmp_data.reshape(-1)))) # padding zero
 		tmp = tmp.reshape(-1)
 		gemm_data = tmp.tobytes() + bytearray((int(len(tmp.reshape(-1).tobytes())/512)+1)*512-int(len(tmp.reshape(-1).tobytes())))
 		print(len(gemm_data))
 		# print(gemm_data.hex())
-		print(*list(map(''.join, zip(*[iter(gemm_data.hex())]*64))), sep = "\n")
+		# gemm_data_ = tmp.byteswap().tobytes() + bytearray((int(len(tmp.reshape(-1).tobytes())/512)+1)*512-int(len(tmp.reshape(-1).tobytes())))
+		# print(*list(map(''.join, zip(*[iter(gemm_data_.hex())]*64))), sep = "\n")
 
 		print(weight[piece].shape)
 		print(weight[piece])

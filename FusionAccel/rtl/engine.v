@@ -367,31 +367,30 @@ always @ (posedge clk or posedge rst) begin
 				if(cmac_ready == {`BURST_LEN{1'b1}}) begin
 					cmac_output_pipe_count <= cmac_output_pipe_count + 1;
 					cmac_sum[cmac_output_pipe_count] <= cmac_result;
-				end
-				if(cmac_output_pipe_count == kernel - stride) begin
-					cmac_output_pipe_count <= 0;
+				//end
+					if(cmac_output_pipe_count == kernel - stride) cmac_output_pipe_count <= 0;
 					psum_count[0] <= cache_count[0];
 					psum_count[1] <= cache_count[1];
 					psum_count[2] <= cache_count[2];
 					//Logic for setting psum_count according to cache_count
-					if(psum_count[0] + 1 == kernel_size) begin
-						psum <= cmac_sum[0];
+					if(psum_count[cmac_output_pipe_count] == kernel_size) begin
+						psum <= cmac_result;
 						fsum_enable <= 1; //Trigger for channel partial sum
 						fsum_count <= 0;
 						if(i_channel_count == 0) fsum[fsum_index] <= bias; // Load bias
 					end
-					if(psum_count[1] + 1 == kernel_size) begin
-						psum <= cmac_sum[1];
+					/*if(psum_count[1] == kernel_size) begin
+						psum <= cmac_result;
 						fsum_enable <= 1; //Trigger for channel partial sum
 						fsum_count <= 0;
 						if(i_channel_count == 0) fsum[fsum_index] <= bias;
 					end
-					if(psum_count[2] + 1 == kernel_size) begin
-						psum <= cmac_sum[2];
+					if(psum_count[2] == kernel_size) begin
+						psum <= cmac_result;
 						fsum_enable <= 1; //Trigger for channel partial sum
 						fsum_count <= 0;
 						if(i_channel_count == 0) fsum[fsum_index] <= bias;
-					end
+					end*/
 				end 
 				
 				// ========== CONVOLUTION PIPELINE STEP4: full channel sum stored in -> sum, sum all channels
