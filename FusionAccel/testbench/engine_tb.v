@@ -38,29 +38,40 @@ wire [15:0]	dma_p0_ib_data;
 	reg [15:0] data [0:74];
 	reg [15:0] weight [0:26];
 	initial begin
-	data[0] = 16'h3a07; data[1] = 16'h3413; data[2] = 16'h382f; data[3] = 16'h378a; data[4] = 16'h2d2d;
-	data[5] = 16'h3af5; data[6] = 16'h2e19; data[7] = 16'h38db; data[8] = 16'h3ba1; data[9] = 16'h344b;
-	data[10] = 16'h38fd; data[11] = 16'h392b; data[12] = 16'h357a; data[13] = 16'h3733; data[14] = 16'h37d3;
-	data[15] = 16'h3ab5; data[16] = 16'h3abe; data[17] = 16'h3a2f; data[18] = 16'h32ba; data[19] = 16'h1012;
-	data[20] = 16'h33d4; data[21] = 16'h3bee; data[22] = 16'h3850; data[23] = 16'h3764; data[24] = 16'h36c3;
-	data[25] = 16'h33d2; data[26] = 16'h384e; data[27] = 16'h375a; data[28] = 16'h31f6; data[29] = 16'h34d0;
-	data[30] = 16'h3a67; data[31] = 16'h348f; data[32] = 16'h3667; data[33] = 16'h3927; data[34] = 16'h292e;
-	data[35] = 16'h305f; data[36] = 16'h3b41; data[37] = 16'h39d9; data[38] = 16'h3702; data[39] = 16'h39b1;
-	data[40] = 16'h3982; data[41] = 16'h3ad2; data[42] = 16'h3971; data[43] = 16'h3a0a; data[44] = 16'h3296;
-	data[45] = 16'h304e; data[46] = 16'h357a; data[47] = 16'h3653; data[48] = 16'h3b74; data[49] = 16'h3b13;
-	data[50] = 16'h3231; data[51] = 16'h3a94; data[52] = 16'h3ae9; data[53] = 16'h381a; data[54] = 16'h362a;
-	data[55] = 16'h2f07; data[56] = 16'h2b95; data[57] = 16'h2392; data[58] = 16'h3979; data[59] = 16'h35b6;
-	data[60] = 16'h3a87; data[61] = 16'h38f1; data[62] = 16'h3734; data[63] = 16'h3a8d; data[64] = 16'h33be;
-	data[65] = 16'h29be; data[66] = 16'h3a19; data[67] = 16'h37e1; data[68] = 16'h3561; data[69] = 16'h2f33;
-	data[70] = 16'h3168; data[71] = 16'h3720; data[72] = 16'h31fe; data[73] = 16'h39c0; data[74] = 16'h2847;
+	data[0] = 16'hce83; data[1] = 16'h4f98; data[2] = 16'h4e17; data[3] = 16'h0000; 
+	data[4] = 16'h0000; data[5] = 16'h0000; data[6] = 16'h0000; data[7] = 16'h0000; 
+	data[8] = 16'hce24; data[9] = 16'h5087; data[10] = 16'h4F8D; data[11] = 16'h0000; 
+	data[12] = 16'h0000; data[13] = 16'h0000; data[14] = 16'h0000; data[15] = 16'h0000; 
+	data[16] = 16'hCCEF; data[17] = 16'h51FB; data[18] = 16'h50DE; data[19] = 16'h0000;
+	data[20] = 16'h0000; data[21] = 16'h0000; data[22] = 16'h0000; data[23] = 16'h0000;
+
+	data[24] = 16'hCDE5; data[25] = 16'h5087; data[26] = 16'h4F10; data[27] = 16'h0000; 
+	data[28] = 16'h0000; data[29] = 16'h0000; data[30] = 16'h0000; data[31] = 16'h0000; 
+	data[32] = 16'hCFEB; data[33] = 16'h4FA7; data[34] = 16'h4DA9; data[35] = 16'h0000; 
+	data[36] = 16'h0000; data[37] = 16'h0000; data[38] = 16'h0000; data[39] = 16'h0000;
+	data[40] = 16'hD035; data[41] = 16'h5050; data[42] = 16'h4E61; data[43] = 16'h0000; 
+	data[44] = 16'h0000; data[45] = 16'h0000; data[46] = 16'h0000; data[47] = 16'h0000;
+
+	data[48] = 16'hD0A0; data[49] = 16'h4E32; data[50] = 16'h4C33; data[51] = 16'h0000; 
+	data[52] = 16'h0000; data[53] = 16'h0000; data[54] = 16'h0000; data[55] = 16'h0000; 
+	data[56] = 16'hD151; data[57] = 16'h4D6D; data[58] = 16'h49E7; data[59] = 16'h0000;
+	data[60] = 16'h0000; data[61] = 16'h0000; data[62] = 16'h0000; data[63] = 16'h0000; 
+	data[64] = 16'hD157; data[65] = 16'h4E9C; data[66] = 16'h4BC3; data[67] = 16'h0000; 
+	data[68] = 16'h0000; data[69] = 16'h0000; data[70] = 16'h0000; data[71] = 16'h0000; 
+	data[72] = 16'h31fe; data[73] = 16'h39c0; data[74] = 16'h2847;
 
 
-	weight[0] = 16'h3bd2; weight[1] = 16'h36c1; weight[2] = 16'h2e79; weight[3] = 16'h3623; weight[4] = 16'h376d;
-	weight[5] = 16'h3b55; weight[6] = 16'h3a80; weight[7] = 16'h27e7; weight[8] = 16'h2107; weight[9] = 16'h2d87;
-	weight[10] = 16'h38b4; weight[11] = 16'h36b9; weight[12] = 16'h39b8; weight[13] = 16'h3172; weight[14] = 16'h3983;
-	weight[15] = 16'h2e00; weight[16] = 16'h2d8c; weight[17] = 16'h380a; weight[18] = 16'h37e6; weight[19] = 16'h39cc;
-	weight[20] = 16'h3919; weight[21] = 16'h35fc; weight[22] = 16'h27ab; weight[23] = 16'h3979; weight[24] = 16'h2005;
-	weight[25] = 16'h3a07; weight[26] = 16'h38f5;
+	weight[0] = 16'h341E; weight[1] = 16'h3867; weight[2] = 16'h3509; 
+	weight[3] = 16'hAE6E; weight[4] = 16'hB0BF;	weight[5] = 16'hB0F7; 
+	weight[6] = 16'hAC84; weight[7] = 16'hB2B4; weight[8] = 16'hAF54; 
+
+	weight[9] = 16'h35C0; weight[10] = 16'h396D; weight[11] = 16'h36E1; 
+	weight[12] = 16'hB10F; weight[13] = 16'hB456; weight[14] = 16'hB2C4;
+	weight[15] = 16'hB209; weight[16] = 16'hB76D; weight[17] = 16'hB3F0; 
+
+	weight[18] = 16'h3282; weight[19] = 16'h376F; weight[20] = 16'h3504; 
+	weight[21] = 16'hAE46; weight[22] = 16'hB1E7; weight[23] = 16'hACF0; 
+	weight[24] = 16'hB249; weight[25] = 16'hB72B; weight[26] = 16'hB338;
 	end
 `endif
 `ifdef SACC
@@ -142,7 +153,7 @@ initial begin
 `ifdef CMAC
     #100 op_type = 1; stride = 2; stride2 = 6;
 		//kernel = 3; kernel_size = 9; i_channel = 3; o_channel = 1; i_side = 227; o_side = 113;
-		kernel = 3; kernel_size = 9; i_channel = 3; o_channel = 1; i_side = 7; o_side = 4; bias = 16'h4000;
+		kernel = 3; kernel_size = 9; i_channel = 3; o_channel = 1; i_side = 7; o_side = 4; bias = 16'hA35C;
 `endif
 `ifdef SCMP
 	#100 op_type = 2; stride = 2; stride2 = 6;
