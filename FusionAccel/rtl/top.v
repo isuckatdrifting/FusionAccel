@@ -26,9 +26,6 @@ wire [31:0] ep00wire;
 wire 		sys_clk;
 
 IBUFGDS osc_clk(.O(sys_clk), .I(sys_clkp), .IB(sys_clkn));
-//------------------------------------------------
-// Control Signal Block for all cores
-//------------------------------------------------
 
 localparam BLOCK_SIZE      = 128;   // 512 bytes / 4 byte per word;
 localparam FIFO_SIZE       = 1023;  // note that Xilinx does not allow use of the full 1024 words
@@ -69,6 +66,7 @@ assign led = ~{csb_state[0], csb_state[1], csb_state[2], ep00wire[7], engine_sta
 wire gemm_finish;
 wire [15:0] i_channel_count;
 wire [31:0] timer;
+
 csb csb_(
     .clk					(sys_clk),
     .rst					(ep00wire[3]),

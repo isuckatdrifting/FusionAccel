@@ -3,8 +3,7 @@ module scmp( //max pooling
     input  wire         rst,
     input  wire [15:0]  new_data,
     input  wire [15:0]  ori_data,
-    output reg  [15:0]  result,
-    input  wire         pool_valid,
+    output reg          result,
     input  wire         data_ready,
     output reg          data_valid,
     output reg          pool_ready
@@ -17,15 +16,9 @@ wire        operation_rfd_cmp;
 wire        rdy;
 wire        result_cmp;
 
-//Unordered             000100
-//Less Than             001100
-//Equal                 010100
-//Less Than or Equal    011100
-//Greater Than          100100
-//Not Equal             101100
-//Greater Than or Equal 110100
+// Output is high if a > b
 
-comparator cmp_ (.a(a_cmp), .b(b_cmp), .clk(clk), .operation(6'b100100), .operation_nd(operation_nd_cmp), .operation_rfd(operation_rfd_cmp), .result(result_cmp), .rdy(rdy));
+comparator cmp_ (.a(a_cmp), .b(b_cmp), .clk(clk), .operation_nd(operation_nd_cmp), .operation_rfd(operation_rfd_cmp), .result(result_cmp), .rdy(rdy));
 
 always @ (posedge clk or posedge rst) begin
     if (rst) begin
@@ -39,7 +32,7 @@ always @ (posedge clk or posedge rst) begin
         operation_nd_cmp <= data_ready;
         if(data_ready) begin a_cmp <= new_data; b_cmp <= ori_data; end
         pool_ready <= rdy;
-        result <= result_cmp? a_cmp : b_cmp;
+        result <= result_cmp;
     end
 end
 endmodule

@@ -1,5 +1,5 @@
 `include "macros.vh"
-module engine  //Instantiate 16CMACs for conv3x3, 16CMACs for conv1x1, maxpool and avepool in engine.
+module engine  // Instantiate 8CMACs for conv, 8SCMP for maxpool and 8SACC for avepool in engine.
 (
 	input 			clk,
 //Control signals csb->engine
@@ -36,7 +36,7 @@ module engine  //Instantiate 16CMACs for conv3x3, 16CMACs for conv1x1, maxpool a
 
 localparam CONV = 1, MPOOL = 2, APOOL = 3;
 //==================== CMAC Wires and Registers ====================//
-reg  					 conv_valid, cmac_data_ready, cmac_enable;
+reg  					 cmac_data_ready, cmac_enable;
 wire [`BURST_LEN-1:0] 	 cmac_data_valid, mult_ready_buf;
 wire [`BURST_LEN-1:0] 	 rdy_cmac;
 reg  [`BURST_LEN-1:0] 	 cmac_ready;
@@ -61,44 +61,50 @@ reg  [7:0]  			 psum_count [`MAX_KERNEL-1:0];			//NOTES: counter for results in 
 reg  [16*`BURST_LEN-1:0] psum;						//NOTES: registers for 16-channel sum output, it is selected from the memory cmac_sum
 
 //Full sum registers
-reg  [15:0] 			 fsum [`MAX_O_SIDE-1:0]; //max support 128 x 128 output side
-reg  [15:0] 			 fsum_a, fsum_b, fsum_result;
-reg  [7:0]  			 fsum_count;
-reg  [7:0]  			 fsum_index;
-reg         			 fsum_data_valid;
-reg						 fsum_enable;
-reg						 fsum_data_ready;
-reg		    			 fsum_ready;
+reg						 writes_en;
+wire					 reads_en;
+wire [15:0]				 fsum_result;
+wire					 fsum_ready;
+reg  [7:0]				 fsum_index;
+reg  [15:0] 			 i_channel_count;
+wire [127:0] 			 psum_;
+wire 					 fifo_empty;
 
 genvar i;
 generate 
 	for (i = 0; i < `BURST_LEN; i = i + 1) begin: gencmac
-		cmac cmac_(.clk(clk), .rst(rst), .data(data[i*16 +: 16]), .weight(weight[i*16 +: 16]), .result(conv_result[i*16 +: 16]), .tmp_sum(cmac_tmp_sum[i*16 +: 16]), .mult_ready_buf(mult_ready_buf[i]), .conv_valid(conv_valid), .data_ready(cmac_data_ready), .data_valid(cmac_data_valid[i]), .conv_ready(rdy_cmac[i]));
+		cmac cmac_(.clk(clk), .rst(rst), .data(data[i*16 +: 16]), .weight(weight[i*16 +: 16]), .result(conv_result[i*16 +: 16]), .tmp_sum(cmac_tmp_sum[i*16 +: 16]), .mult_ready_buf(mult_ready_buf[i]), .data_ready(cmac_data_ready), .data_valid(cmac_data_valid[i]), .conv_ready(rdy_cmac[i]));
 	end 
 endgenerate
+//NOTES: weight and tmp_sum is directly wired out from the corresponding registers
 always @(posedge clk) cmac_result <= conv_result;
 always @(posedge clk) cmac_ready <= rdy_cmac;
 assign weight = cmac_weight_cache[cmac_input_pipe_count];
 assign cmac_tmp_sum = cmac_sum[cmac_middle_pipe_count];
 
-wire operation_rfd_fsum, rdy_fsum;
-wire [15:0] result_fsum;
-accum fsum_ (.a(fsum_a), .b(fsum_b), .clk(clk), .operation_nd(fsum_data_ready), .operation_rfd(operation_rfd_fsum), .result(result_fsum), .rdy(rdy_fsum));
+fifo_fsum ff_ (
+	.rst			(rst),			// input
+	.wr_clk			(clk),			// input
+	.rd_clk			(clk),			// input
+	.din			(psum), 		// input, Bus [31 : 0] 
+	.wr_en			(writes_en),	// input
+	.rd_en			(reads_en),		// input
+	.dout			(psum_), 		// output, Bus [31 : 0] 
+	.full			(),				// output
+	.empty			(fifo_empty),	// output
+	.valid			(valid));		// output
 
-always @(posedge clk) fsum_data_valid <= operation_rfd_fsum;
-always @(posedge clk) fsum_result <= result_fsum;
-always @(posedge clk) fsum_ready <= rdy_fsum;
-
+fsum f_ (.clk(clk), .rst(rst), .fifo_empty(fifo_empty), .reads_en(reads_en), .bias(bias), .data(psum_), .valid(valid), .fsum_result(fsum_result), .i_channel_count(i_channel_count), .fsum_index(fsum_index), .ready(fsum_ready));
 //==================== SCMP Wires and Registers ====================//
-reg 					 maxpool_valid, maxpool_data_ready, maxpool_enable;
+reg 					 maxpool_data_ready, maxpool_enable;
 wire [`BURST_LEN-1:0] 	 maxpool_data_valid;
 wire [`BURST_LEN-1:0] 	 rdy_scmp;
 reg  [`BURST_LEN-1:0] 	 scmp_ready;
 wire [16*`BURST_LEN-1:0] scmp_data; 				// parallel
 
 wire [16*`BURST_LEN-1:0] scmp_tmp_cmp;				// parallel, wired out from scmp_cmp 
-wire [16*`BURST_LEN-1:0] maxpool_result; 			// parallel
-reg  [16*`BURST_LEN-1:0] scmp_result;
+wire [`BURST_LEN-1:0]    maxpool_result; 			// parallel
+reg  [`BURST_LEN-1:0]    scmp_result;
 reg  [7:0] 				 scmp_input_pipe_count;		//NOTES: counter for data reuse in scmp
 reg  [7:0] 				 scmp_output_pipe_count;	//NOTES: counter for data reuse in scmp
 reg  [16*`BURST_LEN-1:0] scmp_data_cache [`MAX_KERNEL-1:0];		//NOTES: memory for storing scmp reuse input data
@@ -109,37 +115,37 @@ reg  [16*`BURST_LEN-1:0] cmp;						//NOTES: registers for 16-channel cmp output,
 genvar l;
 generate
 	for (l = 0; l < `BURST_LEN; l = l + 1) begin: genscmp
-		scmp scmp_(.clk(clk), .rst(rst), .new_data(scmp_data[l*16 +: 16]), .ori_data(scmp_tmp_cmp[l*16 +: 16]), .result(maxpool_result[l*16 +: 16]), .pool_valid(maxpool_valid), .data_ready(maxpool_data_ready), .data_valid(maxpool_data_valid[l]), .pool_ready(rdy_scmp[l]));
+		scmp scmp_(.clk(clk), .rst(rst), .new_data(scmp_data[l*16 +: 16]), .ori_data(scmp_tmp_cmp[l*16 +: 16]), .result(maxpool_result[l]), .data_ready(maxpool_data_ready), .data_valid(maxpool_data_valid[l]), .pool_ready(rdy_scmp[l]));
 	end
 endgenerate
 always @(posedge clk) scmp_result <= maxpool_result;
 always @(posedge clk) scmp_ready <= rdy_scmp;
 assign scmp_data = scmp_data_cache[scmp_input_pipe_count];
-assign scmp_tmp_cmp = scmp_cmp[scmp_output_pipe_count];
+assign scmp_tmp_cmp = scmp_cmp[scmp_input_pipe_count];
 
 //==================== SACC Wires and Registers ====================//
-reg avepool_valid, avepool_data_ready, avepool_enable;
-wire [`BURST_LEN-1:0] avepool_data_valid;
-wire [`BURST_LEN-1:0] rdy_sacc;
-reg  [`BURST_LEN-1:0] sacc_ready;
+reg 					 avepool_data_ready, avepool_enable;
+wire [`BURST_LEN-1:0] 	 avepool_data_valid;
+wire [`BURST_LEN-1:0] 	 rdy_sacc;
+reg  [`BURST_LEN-1:0] 	 sacc_ready;
 
 reg  [16*`BURST_LEN-1:0] sacc_tmp_sum;
-wire [16*`BURST_LEN-1:0] avepool_result; // parallel
-reg  [16*`BURST_LEN-1:0] sacc_result;
+wire [16*`BURST_LEN-1:0] tmp_result, avepool_result; // parallel
+reg  [16*`BURST_LEN-1:0] sacc_result, sacc_result_div;
 
 reg div_en;
 
 genvar k;
 generate
 	for (k = 0; k < `BURST_LEN; k = k + 1) begin: gensacc
-		sacc sacc_(.clk(clk), .rst(rst), .data(data[k*16 +: 16]), .result(avepool_result[k*16 +: 16]), .tmp_sum(sacc_tmp_sum[k*16 +: 16]), .pool_valid(avepool_valid), .data_ready(avepool_data_ready), .data_valid(avepool_data_valid[k]), .div_en(div_en), .pool_ready(rdy_sacc[k]));
+		sacc sacc_(.clk(clk), .rst(rst), .data(data[k*16 +: 16]), .result(tmp_result[k*16 +: 16]), .result_sacc(avepool_result[k*16 +: 16]), .tmp_sum(sacc_tmp_sum[k*16 +: 16]), .data_ready(avepool_data_ready), .data_valid(avepool_data_valid[k]), .div_en(div_en), .pool_ready(rdy_sacc[k]));
 	end
 endgenerate
-always @(posedge clk) sacc_result <= avepool_result;
+always @(posedge clk) sacc_result <= tmp_result;
+always @(posedge clk) sacc_result_div <= avepool_result;
 always @(posedge clk) sacc_ready <= rdy_sacc;
 
 //==================== Address registers ===========================//
-reg  [15:0] i_channel_count;
 reg  [7:0]  gemm_count;
 reg  [15:0] o_channel_count;
 reg			gemm_finish, layer_finish;
@@ -147,8 +153,8 @@ reg 		to_clear;
 reg 		engine_ready;
 
 //==================== DMA related registers========================//
-reg  [7:0]  atom_count;						//NOTES: atom count is used only in address parsing, it is not used in operation logic
-reg  [15:0] line_count;						//NOTES: counter for one gemm line, range:(0, kernel * o_side)
+reg  [15:0] input_count;						//NOTES: counter for one gemm line, range:(0, kernel * o_side)
+reg  [15:0] output_count;
 reg  [7:0]  cache_count [`MAX_KERNEL-1:0]; 	//NOTES: use max conv side support defined in include files.
 reg  [7:0]  dma_p2_burst_cnt, dma_p3_burst_cnt, dma_p3_offset; // de-serializer counter, burst get 16 data, then send to operation unit.
 reg			dma_p0_writes_en, dma_p2_reads_en, dma_p3_reads_en;
@@ -161,13 +167,13 @@ reg  [31:0] timer;
 // NOTES: Generate accumulator for atom(1 * 1 * channel) and cube(k * k * channel), this data path is dedicated to convolution only.
 // NOTES: deserializer for write back is only enabled in pooling
 //State Machine
-localparam idle 		= 1;
-localparam gemm_busy 	= 2;
-localparam sacc_busy 	= 3;
-localparam scmp_busy 	= 4;
-localparam clear 		= 5;
-localparam wait_		= 6;
-localparam finish 		= 7;
+localparam idle 		= 0;
+localparam gemm_busy 	= 1;
+localparam sacc_busy 	= 2;
+localparam scmp_busy 	= 3;
+localparam clear 		= 4;
+localparam wait_		= 5;
+localparam finish 		= 6;
 
 reg [3:0] curr_state;
 reg [3:0] next_state;
@@ -187,9 +193,9 @@ always @ (*) begin
         idle: begin
 			if(engine_valid) begin
 				case(op_type)
-					3'b001: next_state = gemm_busy;
-					3'b010: next_state = scmp_busy;
-					3'b011: next_state = sacc_busy;
+					CONV: next_state = gemm_busy;
+					MPOOL: next_state = scmp_busy;
+					APOOL: next_state = sacc_busy;
 				endcase
 			end else next_state = idle;
         end
@@ -206,7 +212,11 @@ always @ (*) begin
 			else next_state = sacc_busy;
 		end
 		clear: begin
-			next_state = clear;
+			if(i_channel_count + `BURST_LEN >= i_channel) next_state = wait_;
+			else next_state = idle; // FIXME: if not keeping at this state, gemm_finish is not captured. keeping this state leads to o_channel_count burst
+		end
+		wait_: begin
+			next_state = wait_;
 		end
 		finish: begin
 			next_state = finish;
@@ -217,22 +227,14 @@ always @ (*) begin
 end
 //NOTES: MEC convolution: k * k kernel in BURST_LEN -> finish the line -> next channel group(channel += BURST_LEN) -> next_gemm
 //		 Register level:       cmac_sum -> psum -> sum
-//		 Counter level:		   atom_count -> line_count, cache_count -> cmac_output_pipe_count, psum_count -> fsum_index
-//NOTES: Sum point is ready only after the all channel 3x3 kernel mac is complete
-//NOTES: weight and tmp_sum is directly wired out from the corresponding registers
-
-integer a; // initialize buffer for cmac
-initial begin
-	for (a=0; a<`MAX_O_SIDE; a=a+1) begin
-		fsum[a] <= 16'h0000;
-	end
-end
+//		 Counter level:		   input_count, cache_count -> XXX_pipe_count -> output_count, psum_count -> fsum_index
+//NOTES: Sum point is ready only after the all channel is complete
 
 //    Output, non-blocking
 integer b;
 always @ (posedge clk or posedge rst) begin
 	if(rst) begin
-		conv_valid <= 0; avepool_valid <= 0; maxpool_valid <= 0; engine_ready <= 0;
+		engine_ready <= 0;
 		dma_p2_burst_cnt <= 16'h0000; dma_p3_burst_cnt <= 16'h0000; dma_p3_offset <= 8'h00;
 		dma_p0_writes_en <= 0; dma_p2_reads_en <= 0; dma_p3_reads_en <= 0;
 		dma_p0_ib_data <= 16'h0000;
@@ -250,9 +252,9 @@ always @ (posedge clk or posedge rst) begin
 			cmac_weight_cache[b] <= 'd0;
 		end
 		cmac_enable <= 0; cmac_data_ready <= 0; avepool_enable <= 0; avepool_data_ready <= 0; maxpool_enable <= 0; maxpool_data_ready <= 0; div_en <= 0;
-		atom_count <= 8'h00; line_count <= 16'h0000; cmac_output_pipe_count <= 8'h00;
+		input_count <= 16'h0000; output_count <= 16'h0000; cmac_output_pipe_count <= 8'h00;
 		cmac_input_pipe_count <= 8'h00; cmac_middle_pipe_count <= 8'h00; scmp_input_pipe_count <= 8'h00; scmp_output_pipe_count <= 8'h00; 
-		fsum_enable <= 0; fsum_data_ready <= 0; fsum_a <= 16'h0000; fsum_b <= 16'h0000; fsum_count <= 8'h00; fsum_index <= 8'h00;
+		writes_en <= 0; fsum_index <= 8'h00;
 		to_clear <= 0; 
 		//==================== Cross-channel registers ====================
 		i_channel_count <= 16'h0000; gemm_count <= 8'h00; o_channel_count <= 16'h0000; gemm_finish <= 0; layer_finish <= 0;
@@ -261,7 +263,7 @@ always @ (posedge clk or posedge rst) begin
 		case (curr_state)
 			//==================== Clear all registers except cross-channel registers ====================
 			idle: begin 
-				conv_valid <= 0; avepool_valid <= 0; maxpool_valid <= 0; engine_ready <= 0;
+				engine_ready <= 0;
 				dma_p2_burst_cnt <= 16'h0000; dma_p3_burst_cnt <= 16'h0000; dma_p3_offset <= 8'h00;
 				dma_p0_writes_en <= 0; dma_p2_reads_en <= 0; dma_p3_reads_en <= 0;
 				dma_p0_ib_data <= 16'h0000;
@@ -279,9 +281,9 @@ always @ (posedge clk or posedge rst) begin
 					cmac_weight_cache[b] <= 'd0;
 				end
 				cmac_enable <= 0; cmac_data_ready <= 0; avepool_enable <= 0; avepool_data_ready <= 0; maxpool_enable <= 0; maxpool_data_ready <= 0; div_en <= 0;
-				atom_count <= 8'h00; line_count <= 16'h0000; cmac_output_pipe_count <= 8'h00;
+				input_count <= 16'h0000; output_count <= 16'h0000; cmac_output_pipe_count <= 8'h00;
 				cmac_input_pipe_count <= 8'h00; cmac_middle_pipe_count <= 8'h00; scmp_input_pipe_count <= 8'h00; scmp_output_pipe_count <= 8'h00; 
-				fsum_enable <= 0; fsum_data_ready <= 0; fsum_a <= 16'h0000; fsum_b <= 16'h0000; fsum_count <= 8'h00; fsum_index <= 8'h00;
+				writes_en <= 0; fsum_index <= 8'h00;
 				to_clear <= 0; gemm_finish <= 0;
 			end
 // CMD = 1 ==================== CONVOLUTION: Process a line ====================//
@@ -298,7 +300,6 @@ always @ (posedge clk or posedge rst) begin
 					if(dma_p2_burst_cnt == `BURST_LEN-1) begin	//NOTES: start cmac when finishing reading the first atom (1x1xpara)
 						dma_p2_reads_en <= 0; 
 						dma_p2_burst_cnt <= 0;
-						conv_valid <= 1;
 						cmac_enable <= 1;	//NOTES: use this signal to latch buffer
 					end
 					dbuf <= {dma_p2_ob_data, dbuf[16*`BURST_LEN-1 : 16]}; // deserialize data to dbuf
@@ -334,29 +335,28 @@ always @ (posedge clk or posedge rst) begin
 					cmac_enable <= 0;
 					if(cmac_data_valid == {`BURST_LEN{1'b1}}) data <= dbuf;
 
-					atom_count <= atom_count + 1;
-					line_count <= line_count + 1;
-					if(atom_count + 1 == kernel) begin
-						atom_count <= 0;
-					end
-					// Logic for setting cache_count according to line_count
-					if(line_count >= 0 && (kernel - stride) >= 7'd0) begin // stride2 * a
+					input_count <= input_count + 1;
+					// Logic for setting cache_count according to input_count
+					if(input_count >= 0 && (kernel - stride) >= 7'd0) begin // stride2 * a
 						cache_count[0] <= cache_count[0] + 1;
 						if(cache_count[0] < kernel_size) cmac_weight_cache[0] <= wbuf[cache_count[0]];
+						else cmac_weight_cache[0] <= 0;
 					end 
 					if(cache_count[0] + 1 == kernel_size + stride2 - kernel) begin
 						cache_count[0] <= 0;
 					end
-					if(line_count >= stride2 && (kernel - stride) >= 7'd1) begin
+					if(input_count >= stride2 && (kernel - stride) >= 7'd1) begin
 						cache_count[1] <= cache_count[1] + 1;
 						if(cache_count[1] < kernel_size) cmac_weight_cache[1] <= wbuf[cache_count[1]];
+						else cmac_weight_cache[1] <= 0;
 					end 
 					if(cache_count[1] + 1 == kernel_size + stride2 - kernel) begin
 						cache_count[1] <= 0;
 					end
-					if(line_count >= stride2 + stride2 && (kernel - stride) >= 7'd2) begin
+					if(input_count >= stride2 + stride2 && (kernel - stride) >= 7'd2) begin
 						cache_count[2] <= cache_count[2] + 1;
 						if(cache_count[2] < kernel_size) cmac_weight_cache[2] <= wbuf[cache_count[2]];
+						else cmac_weight_cache[2] <= 0;
 					end
 					if(cache_count[2] + 1 == kernel_size + stride2 - kernel) begin
 						cache_count[2] <= 0;
@@ -366,59 +366,43 @@ always @ (posedge clk or posedge rst) begin
 				//========== CONVOLUTION PIPELINE STEP3: Partial SUM of channel outputs, independent of the pipeline
 				if(cmac_ready == {`BURST_LEN{1'b1}}) begin
 					cmac_output_pipe_count <= cmac_output_pipe_count + 1;
-					cmac_sum[cmac_output_pipe_count] <= cmac_result;
-				end
-				if(cmac_output_pipe_count == kernel - stride) begin
-					cmac_output_pipe_count <= 0;
-					psum_count[0] <= cache_count[0];
-					psum_count[1] <= cache_count[1];
-					psum_count[2] <= cache_count[2];
+					cmac_sum[cmac_output_pipe_count] <= (psum_count[cmac_output_pipe_count] + 1 < kernel_size)? cmac_result: 0;
+					if(cmac_output_pipe_count == kernel - stride) begin // to ensure the following actions do only once in cmac_ready = 1
+						cmac_output_pipe_count <= 0;
+
+						output_count <= output_count + 1;
+						if(output_count >= 0 && (kernel - stride) >= 7'd0) begin // stride2 * a
+							psum_count[0] <= psum_count[0] + 1;
+						end 
+						if(psum_count[0] + 1 == kernel_size + stride2 - kernel) begin
+							psum_count[0] <= 0;
+						end
+						if(output_count >= stride2 && (kernel - stride) >= 7'd1) begin
+							psum_count[1] <= psum_count[1] + 1;
+						end 
+						if(psum_count[1] + 1 == kernel_size + stride2 - kernel) begin
+							psum_count[1] <= 0;
+						end
+						if(output_count >= stride2 + stride2 && (kernel - stride) >= 7'd2) begin
+							psum_count[2] <= psum_count[2] + 1;
+						end
+						if(psum_count[2] + 1 == kernel_size + stride2 - kernel) begin
+							psum_count[2] <= 0;
+						end
+					end
 					//Logic for setting psum_count according to cache_count
-					if(psum_count[0] + 1 == kernel_size) begin
-						psum <= cmac_sum[0];
-						fsum_enable <= 1; //Trigger for channel partial sum
-						fsum_count <= 0;
-						if(i_channel_count == 0) fsum[fsum_index] <= bias; // Load bias
-					end
-					if(psum_count[1] + 1 == kernel_size) begin
-						psum <= cmac_sum[1];
-						fsum_enable <= 1; //Trigger for channel partial sum
-						fsum_count <= 0;
-						if(i_channel_count == 0) fsum[fsum_index] <= bias;
-					end
-					if(psum_count[2] + 1 == kernel_size) begin
-						psum <= cmac_sum[2];
-						fsum_enable <= 1; //Trigger for channel partial sum
-						fsum_count <= 0;
-						if(i_channel_count == 0) fsum[fsum_index] <= bias;
+					if(psum_count[cmac_output_pipe_count] + 1 == kernel_size) begin
+						psum <= cmac_result;
+						writes_en <= 1; //Trigger for channel partial sum
 					end
 				end 
-				
 				// ========== CONVOLUTION PIPELINE STEP4: full channel sum stored in -> sum, sum all channels
-				if(fsum_data_valid) begin
-					fsum_data_ready <= fsum_enable;
-				end
-				if(fsum_enable) begin
-					fsum_enable <= 0;
-					if(fsum_count == 0) fsum_a <= fsum[fsum_index]; //NOTES: initially bias value, accumulated sum is called after the first channel group
-					else fsum_a <= fsum_result;
-					fsum_b <= psum[15:0];
-					psum <= {16'h0000, psum[16*`BURST_LEN-1:16]};
-					if(fsum_count < `BURST_LEN) fsum_count <= fsum_count + 1;
-				end
-				if(fsum_ready) begin
-					if(fsum_count < `BURST_LEN) fsum_enable <= 1;
-					if(fsum_count == `BURST_LEN) begin
-						fsum_index <= fsum_index + 1; //pipeline index sampling (delay align)
-						fsum[fsum_index] <= fsum_result; //NOTES: it will overwrite the fsum_result in the first c-1 channel groups
-					end
-					if(i_channel_count + `BURST_LEN >= i_channel && fsum_count == `BURST_LEN) begin
-						p0_writeback_en <= 1;
-						writeback_num <= 1;
-					end
-				end
-				if(fsum_index + 1 == o_side && fsum_ready && fsum_count == `BURST_LEN) begin
-					to_clear <= 1;
+				if(writes_en) writes_en <= 0;
+				if(fsum_ready) begin 
+					p0_writeback_en <= 1; 
+					writeback_num <= 1; 
+					fsum_index <= fsum_index + 1;
+					if(fsum_index + 1 == o_side) to_clear <= 1; 
 				end
 			end
 
@@ -430,8 +414,8 @@ always @ (posedge clk or posedge rst) begin
 				if(dma_p2_ob_we) begin
 					dma_p2_burst_cnt <= dma_p2_burst_cnt + 1;
 					if(dma_p2_burst_cnt == `BURST_LEN-1) begin	//NOTES: start scmp when finishing reading the first atom (1x1xpara)
+						dma_p2_reads_en <= 0;
 						dma_p2_burst_cnt <= 0;
-						maxpool_valid <= 1;
 						maxpool_enable <= 1;
 					end
 					dbuf <= {dma_p2_ob_data, dbuf[16*`BURST_LEN-1 : 16]}; // deserialize data to dbuf
@@ -439,38 +423,40 @@ always @ (posedge clk or posedge rst) begin
 
 				//========== MAXPOOLING PIPELINE STEP2: start passing deserialized data scmp (including data reuse)
 				if(maxpool_data_ready) begin
-					maxpool_data_ready <= 0;
 					scmp_input_pipe_count <= scmp_input_pipe_count + 1;
+				end
+				if(scmp_input_pipe_count == kernel - stride) begin //cmac_data_ready width is max of cmac_input_pipe_count
+					scmp_input_pipe_count <= 0;
+					maxpool_data_ready <= 0;
 				end
 				if(maxpool_enable) begin
 					maxpool_data_ready <= 1;
 					maxpool_enable <= 0;
 					scmp_input_pipe_count <= 0;
 					
-					atom_count <= atom_count + 1;
-					line_count <= line_count + 1;
-					if(atom_count + 1 == kernel) begin
-						atom_count <= 0;
-					end
-					// Logic for setting cache_count according to line_count
+					input_count <= input_count + 1;
+					// Logic for setting cache_count according to input_count
 					if(maxpool_data_valid == {`BURST_LEN{1'b1}}) begin
-						if(line_count >= 0 && (kernel - stride) >= 7'd0) begin // stride2 * a
+						if(input_count >= 0 && (kernel - stride) >= 7'd0) begin // stride2 * a
 							cache_count[0] <= cache_count[0] + 1;
 							if(cache_count[0] < kernel_size) scmp_data_cache[0] <= dbuf;
+							else begin scmp_data_cache[0] <= 0; scmp_cmp[0] <= 0; end // clear buffer
 						end 
 						if(cache_count[0] + 1 == kernel_size + stride2 - kernel) begin
 							cache_count[0] <= 0;
 						end
-						if(line_count >= stride2 && (kernel - stride) >= 7'd1) begin
+						if(input_count >= stride2 && (kernel - stride) >= 7'd1) begin
 							cache_count[1] <= cache_count[1] + 1;
 							if(cache_count[1] < kernel_size) scmp_data_cache[1] <= dbuf;
+							else begin scmp_data_cache[1] <= 0; scmp_cmp[1] <= 0; end
 						end 
 						if(cache_count[1] + 1 == kernel_size + stride2 - kernel) begin
 							cache_count[1] <= 0;
 						end
-						if(line_count >= stride2 + stride2 && (kernel - stride) >= 7'd2) begin
+						if(input_count >= stride2 + stride2 && (kernel - stride) >= 7'd2) begin
 							cache_count[2] <= cache_count[2] + 1;
 							if(cache_count[2] < kernel_size) scmp_data_cache[2] <= dbuf;
+							else begin scmp_data_cache[2] <= 0; scmp_cmp[2] <= 0; end
 						end
 						if(cache_count[2] + 1 == kernel_size + stride2 - kernel) begin
 							cache_count[2] <= 0;
@@ -480,30 +466,36 @@ always @ (posedge clk or posedge rst) begin
 
 				//========== MAXPOOLING PIPELINE STEP3: Results of channel outputs, independent of the pipeline
 				if(scmp_ready == {`BURST_LEN{1'b1}}) begin
-					if(scmp_input_pipe_count <= kernel - stride) maxpool_data_ready <= 1;
 					scmp_output_pipe_count <= scmp_output_pipe_count + 1;
-					scmp_cmp[scmp_output_pipe_count] <= scmp_result;
+					for(b=0;b<`BURST_LEN;b=b+1) begin
+						scmp_cmp[scmp_output_pipe_count][16*b +: 16] <= scmp_result[b] ? scmp_data_cache[scmp_output_pipe_count][16*b +: 16]: scmp_cmp[scmp_output_pipe_count][16*b +: 16];
+					end
 					if(scmp_output_pipe_count == kernel - stride) begin
 						scmp_output_pipe_count <= 0;
+
+						output_count <= output_count + 1;
+						if(output_count >= 0 && (kernel - stride) >= 7'd0) begin // stride2 * a
+							scmp_count[0] <= scmp_count[0] + 1;
+						end 
+						if(scmp_count[0] + 1 == kernel_size + stride2 - kernel) begin
+							scmp_count[0] <= 0;
+						end
+						if(output_count >= stride2 && (kernel - stride) >= 7'd1) begin
+							scmp_count[1] <= scmp_count[1] + 1;
+						end 
+						if(scmp_count[1] + 1 == kernel_size + stride2 - kernel) begin
+							scmp_count[1] <= 0;
+						end
+						if(output_count >= stride2 + stride2 && (kernel - stride) >= 7'd2) begin
+							scmp_count[2] <= scmp_count[2] + 1;
+						end
+						if(scmp_count[2] + 1 == kernel_size + stride2 - kernel) begin
+							scmp_count[2] <= 0;
+						end
 					end
-				end
-				if(scmp_output_pipe_count == kernel - stride) begin
-					scmp_count[0] <= cache_count[0];
-					scmp_count[1] <= cache_count[1];
-					scmp_count[2] <= cache_count[2];
-					//Logic for setting psum_count according to cache_count
-					if(scmp_count[0] + 1 == kernel_size) begin
-						cmp <= scmp_cmp[0];
-						p0_writeback_en <= 1; //Trigger for channel memory writeback
-						writeback_num <= `BURST_LEN;
-					end
-					if(scmp_count[1] + 1 == kernel_size) begin
-						cmp <= scmp_cmp[1];
-						p0_writeback_en <= 1; //Trigger for channel memory writeback
-						writeback_num <= `BURST_LEN;
-					end
-					if(scmp_count[2] + 1 == kernel_size) begin
-						cmp <= scmp_cmp[2];
+					//Logic for setting scmp_count according to cache_count
+					if(scmp_count[scmp_output_pipe_count] + 1 == kernel_size) begin
+						cmp <= scmp_cmp[scmp_output_pipe_count];
 						p0_writeback_en <= 1; //Trigger for channel memory writeback
 						writeback_num <= `BURST_LEN;
 					end
@@ -512,14 +504,14 @@ always @ (posedge clk or posedge rst) begin
 
 // CMD = 5 ==================== AVEPOOLING: Process a line * surface ====================//
 			sacc_busy: begin
-				if(engine_valid) dma_p2_reads_en <= 1;
+				if(engine_valid && input_count + 1 < kernel_size) dma_p2_reads_en <= 1;
 
 				//========== AVEPOOLING PIPELINE STEP1: enable data read (this part is the slowest and defines the available timing space of the pipeline)
 				if(dma_p2_ob_we) begin
 					dma_p2_burst_cnt <= dma_p2_burst_cnt + 1;
 					if(dma_p2_burst_cnt == `BURST_LEN-1) begin	//NOTES: start cmac when finishing reading the first atom (1x1xpara)
 						dma_p2_burst_cnt <= 0;
-						avepool_valid <= 1;
+						dma_p2_reads_en <= 0;
 						avepool_enable <= 1;
 					end
 					dbuf <= {dma_p2_ob_data, dbuf[16*`BURST_LEN-1 : 16]}; // deserialize data to dbuf
@@ -529,18 +521,18 @@ always @ (posedge clk or posedge rst) begin
 					avepool_enable <= 0;
 					avepool_data_ready <= 1;
 					if(avepool_data_valid == {`BURST_LEN{1'b1}}) data <= dbuf;
-					atom_count <= atom_count + 1;
-					line_count <= line_count + 1;
-					if(fsum_index == kernel_size) begin
-						div_en <= 1; //NOTES: divide trigger
-					end
+					input_count <= input_count + 1;
 				end
 				if(avepool_data_ready) begin
 					avepool_data_ready <= 0;
 				end
 				if(sacc_ready) begin
-					sacc_tmp_sum <= sacc_result;
+					if(fsum_index < kernel_size) sacc_tmp_sum <= sacc_result;
 					fsum_index <= fsum_index + 1;
+					if(fsum_index + 1 == kernel_size) begin
+						div_en <= 1; //NOTES: divide trigger
+						avepool_data_ready <= 1;
+					end
 				end
 				if(div_en && sacc_ready) begin
 					div_en <= 0;
@@ -592,7 +584,7 @@ always @ (posedge clk or posedge rst) begin
 			case(op_type)
 				CONV: dma_p0_ib_data <= fsum_result[15]? 16'h0000: fsum_result; //Notes: ReLu Activation
 				MPOOL: dma_p0_ib_data <= cmp[p0_writeback_count * 16 +: 16];
-				APOOL: dma_p0_ib_data <= sacc_tmp_sum[p0_writeback_count * 16 +: 16];
+				APOOL: dma_p0_ib_data <= sacc_result_div[p0_writeback_count * 16 +: 16];
 			endcase
 		end 
 

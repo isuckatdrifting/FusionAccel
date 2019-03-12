@@ -4,9 +4,7 @@ module csb
     input           clk,
     input           rst,
     input           op_en,
-
     input           engine_ready,
-
     //FIFO Interface
     input           valid,
     output          rd_en,
@@ -40,7 +38,7 @@ module csb
 //| output channel size: 16Bit |        |64 |IDLE               |      000      |
 //|         kernel size:  8Bit |  8Bit  |   |Convolution + ReLU |      001      |
 //|             stride2: 16Bit |        |96 |Max Pooling        |      100      |
-//|-------Totally 256Bit-------|--------|   |Average Pooling    |      101      |
+//|-------Totally  96Bit-------|--------|   |Average Pooling    |      101      |
 
 //Handshake signals to submodules
 reg         rd_en;
@@ -61,12 +59,10 @@ reg         irq;                        //Output, interrupt signal
 //State Machine
 localparam  idle = 3'b000;
 localparam  cmd_get = 3'b001;           //Get commands from USB
-localparam  cmd_issue = 3'b010;         //Generate engine commands
 localparam  op_run = 3'b011;            //Get done signals from engine
 localparam  finish = 3'b100;
 // State jump triggers
 reg         cmd_collect_done;
-reg         cmd_issue_done;
 reg         op_done;
 
 reg [2:0]   curr_state;
@@ -88,39 +84,34 @@ always @ (*) begin
             else next_state = idle;
         end
         cmd_get: begin
-            if(cmd_collect_done) next_state = cmd_issue;
+            if(cmd_collect_done) next_state = op_run;
             else next_state = cmd_get;
-        end
-        cmd_issue: begin
-            if(cmd_issue_done) next_state = op_run;
-            else next_state = cmd_issue;
         end
         op_run: begin
             if(op_done) begin
                 if(done_cmd_count == cmd_size) next_state = finish;
-                else next_state = cmd_get;
+                else next_state = idle;
             end
             else next_state = op_run;
         end
         finish: begin
             next_state = finish;
         end
-        default:
-            next_state = idle;
+        default: next_state = idle;
     endcase
 end
 
 //    Output, non-blocking, Command issue, Interface with FIFO
 always @ (posedge clk or posedge rst) begin
     if (rst) begin
-        cmd_burst_count <= 4'd0;
         //Commands
         op_type <= 3'd0; stride <= 4'h0; kernel <= 8'h00;
         i_channel <= 16'h0000; o_channel <= 16'h0000;
         i_side <= 8'h00; o_side <= 8'h00; kernel_size <= 8'h00; stride2 <= 16'h0000;
 
+        cmd_burst_count <= 4'd0;
         done_cmd_count <= 8'd0; 
-        cmd_collect_done <= 0; cmd_issue_done <= 0; op_done <= 0;
+        cmd_collect_done <= 0; op_done <= 0;
         rd_en <= 0;
         irq <= 0; 
     end else begin
@@ -141,13 +132,9 @@ always @ (posedge clk or posedge rst) begin
                     endcase
                 end
             end
-            cmd_issue: begin
+            op_run: begin
                 cmd_burst_count <= `CMD_BURST_LEN;
                 cmd_collect_done <= 0;
-                cmd_issue_done <= 1; // start engine
-            end
-            op_run: begin
-                cmd_issue_done <= 0; //Reset the registers in cmd_issue and wait for submodules to finish
                 if(engine_ready) begin
                     done_cmd_count <= done_cmd_count + 1;
                     op_done <= 1;

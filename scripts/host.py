@@ -9,6 +9,7 @@ import numpy as np
 import os
 import ok
 import struct
+import time
 
 # np.set_printoptions(precision=4)
 
@@ -18,7 +19,7 @@ weight_directory = 'C:/Users/shish/source/repos/FusionAccel/scripts/tmp/weight.n
 image_directory = 'C:/Users/shish/source/repos/FusionAccel/scripts/tmp/data.npy'
 RUN = 0
 SANITY = 1
-test_mode = 0
+test_mode = RUN
 
 class host:
 	def __init__(self):
@@ -31,39 +32,39 @@ class host:
 		self.command = bytearray()
 		self.layer_weight = bytearray()
 		self.bias = [] # list of numpy ndarrays
-		self.weight = [] # list of ?
+		self.weight = [] # list of numpy ndarrays
 		return
 
 	def InitializeDevice(self):
 		# Open the first device we find.
 		self.xem = ok.okCFrontPanel()
 		if (self.xem.NoError != self.xem.OpenBySerial("")):
-			print("A device could not be opened.  Is one connected?")
+			print("[INITIAL]", "A device could not be opened.  Is one connected?")
 			return(False)
 
 		# Get some general information about the device.
 		self.devInfo = ok.okTDeviceInfo()
 		if (self.xem.NoError != self.xem.GetDeviceInfo(self.devInfo)):
-			print("Unable to retrieve device information.")
+			print("[INITIAL]", "Unable to retrieve device information.")
 			return(False)
-		print("         Product: " + self.devInfo.productName)
-		print("Firmware version: %d.%d" % (self.devInfo.deviceMajorVersion, self.devInfo.deviceMinorVersion))
-		print("   Serial Number: %s" % self.devInfo.serialNumber)
-		print("       Device ID: %s" % self.devInfo.deviceID)
+		print("[INITIAL]", "         Product: ", self.devInfo.productName)
+		print("[INITIAL]", "Firmware version: %d.%d" % (self.devInfo.deviceMajorVersion, self.devInfo.deviceMinorVersion))
+		print("[INITIAL]", "   Serial Number: %s" % self.devInfo.serialNumber)
+		print("[INITIAL]", "       Device ID: %s" % self.devInfo.deviceID)
 		
 		self.xem.LoadDefaultPLLConfiguration()
 
 		# Download the configuration file.
 		if (self.xem.NoError != self.xem.ConfigureFPGA(bit_directory)):
-			print("FPGA configuration failed.")
+			print("[INITIAL]", "FPGA configuration failed.")
 			return(False)
 
 		# Check for FrontPanel support in the FPGA configuration.
 		if (False == self.xem.IsFrontPanelEnabled()):
-			print("FrontPanel support is not available.")
+			print("[INITIAL]", "FrontPanel support is not available.")
 			return(False)
 		
-		print("FrontPanel support is available.")
+		print("[INITIAL]", "FrontPanel support is available.")
 		return(True)
 	
 	def reset_cmd_fifo(self):
@@ -85,32 +86,26 @@ class host:
 		self.xem.UpdateWireIns()
 
 	def readBlob(self):
-		print("Loading commands")
 		commandfile = open(command_directory, "r")
 		for line in commandfile.readlines():
 			tmp = bytearray.fromhex(line.replace('\t',' ').strip('\n'))
 			self.command = self.command + tmp
-		print(len(self.command)) # Actually 30 Commands x 12 Bytes
-		# print(self.command)
-		self.command = self.command + bytearray(1024-len(self.command))
+		print("[INITIAL]", "Loading commands", len(self.command)) # Actually 30 Commands x 12 Bytes
+		self.command = self.command + bytearray(512-len(self.command))
 
-		print("Loading Image")
 		self.image = np.load(image_directory)
-		print(self.image.shape)
 		self.image = self.image.astype(dtype=np.float16)
-		print(self.image.shape)
+		print("[INITIAL]", "Loading Image", self.image.shape)
 
-		print("Loading Weights")
+		print("[INITIAL]", "Loading Weights")
 		weight = np.load(weight_directory)
-		i = 0
 		for i in range(0,len(weight)):
 			name = 'arr_' + str(i)
 			self.layer_weight = bytearray()
 			# Weight layer
 			if i % 2 == 0:
-				print('========= arr_%d ========'%i)
 				shape = weight[name].shape # get shape of weight layer
-				print("original shape:\t" + str(shape))
+				print("[INITIAL]", "original shape:", str(shape))
 				pad = 0
 				if shape[1] <= 8:
 					pad = 8 - shape[1] # channel dimension
@@ -118,34 +113,30 @@ class host:
 					padded_dat = np.pad(weight[name], ((0,0),(0,pad),(0,0),(0,0)), 'constant') # pad at channel axis
 				else:
 					padded_dat = weight[name]
-				print("padded shape:\t" + str(padded_dat.shape))
+				print("[INITIAL]", "padded shape:\t", str(padded_dat.shape))
 				tmp = padded_dat.transpose((0,2,3,1)) # move channel axis to the inner most
-				print("trans shape:\t" + str(tmp.shape))
+				print("[INITIAL]", "trans shape:\t", str(tmp.shape))
 				sliced_dat = np.stack(np.split(tmp, tmp.shape[3]/8, axis = 3), axis = 1) # create a new axis after splitting
-				print("sliced shape:\t" + str(sliced_dat.shape))
-				# print(sliced_dat[0][0][0][0])
+				print("[INITIAL]", "sliced shape:\t", str(sliced_dat.shape))
 				
 				self.weight.append(sliced_dat.astype(dtype=np.float16)) # byteappend all weights
 			# Bias layer
 			if i % 2 == 1:
 				self.bias.append(weight[name]) #append bias of all layers together
-				# print(weight[name])
-		print("layers of weight = %d" % len(self.weight))
-		print("layers of bias = %d" % len(self.bias))
+		print("[INITIAL]", "layers of weight = %d" % len(self.weight))
+		print("[INITIAL]", "layers of bias = %d" % len(self.bias))
 
 	def loadCommands(self):
-		print("Setting Commands...")
+		print("[INITIAL]", "Setting Commands...")
 		self.reset_cmd_fifo()
 		self.xem.SetWireInValue(0x01, 0x001d) # cmd_size
 		self.xem.UpdateWireIns()
 		self.xem.WriteToBlockPipeIn(0x80, self.blocksize, self.command) # Notes: Write buf must be times of blocksize
 		self.xem.UpdateWireOuts()
 
-	def loadWeights_Bias(self, bias, weight_bytes):
+	def loadWeights_Bias(self, bias, weight_bytes): # bias: integer(hex), weight_bytes: bytes
 		tmp = bytearray()
 		tmp = tmp + weight_bytes
-		# print(bias)
-		# print(tmp)
 		self.reset_dw_fifo()
 		self.xem.SetWireInValue(0x02, bias) # bias value
 		self.xem.UpdateWireIns()
@@ -159,7 +150,7 @@ class host:
 		self.xem.UpdateWireOuts()
 		self.xem.SetWireInValue(0x00, 0x0040) # ep00wire[6], engine reset
 		self.xem.UpdateWireIns()
-		self.xem.SetWireInValue(0x00, 0x0080) # ep00wire[6], engine reset
+		self.xem.SetWireInValue(0x00, 0x0080) # ep00wire[7], engine valid
 		self.xem.UpdateWireIns()
 		self.xem.SetWireInValue(0x00, 0x0000) # clear ep00wire
 		self.xem.UpdateWireIns()
@@ -169,82 +160,59 @@ class host:
 		self.xem.SetWireInValue(0x00, 0x0008) #ep00wire[3], reset CSB
 		self.xem.UpdateWireIns()
 		self.xem.SetWireInValue(0x00, 0x0000) #clear ep00wire
-		print("Starting Operation...")
+		print("[INITIAL]", "Starting Operation...")
 		self.xem.SetWireInValue(0x00, 0x0010) #ep00wire[4], op_en
 		self.xem.UpdateWireIns()
 		self.xem.SetWireInValue(0x00, 0x0000) #clear ep00wire
 		self.xem.UpdateWireIns()
 	
-	def gemm_magic(self, data, pivot, kernel, layer, number, piece):
-		weight = self.weight[layer][number]
+	def gemm_magic(self, data, kernel, layer, number, gemm):
 		tmp_bias = self.bias[layer][number].astype(dtype=np.float16).tobytes()
 		hex_bias = struct.unpack("<H", tmp_bias)[0]
-		print(hex_bias)
-		print(self.bias[layer][number])
-		print(weight.shape)
 
-		print(data.shape)
-		tmp_data = data[pivot:pivot+kernel,:,:]
-		print(tmp_data.shape)
-		print(tmp_data)
-		tmp_data = tmp_data.transpose((1,0,2))
-		print(tmp_data.shape)
-		print("======data=======")
-		print(tmp_data)
-		print(tmp_data.reshape(-1))
-		tmp = np.dstack((tmp_data.reshape(-1), np.zeros_like(tmp_data.reshape(-1)))) # padding zero
+		print("[MAGIC]", "      GEMM data shape:", data.shape)
+		tmp_data = data[gemm:gemm+kernel,:,:]
+		tmp_data = tmp_data.transpose((1,0,2)) # transpose and get the first gemm
+		tmp = np.dstack((tmp_data.reshape(-1), np.zeros_like(tmp_data.reshape(-1)))) # padding zero for fp16
 		tmp = tmp.reshape(-1)
 		gemm_data = tmp.tobytes() + bytearray((int(len(tmp.reshape(-1).tobytes())/512)+1)*512-int(len(tmp.reshape(-1).tobytes())))
-		print(len(gemm_data))
-		print(gemm_data.hex())
-
-		print(weight[piece].shape)
-		print(weight[piece])
-		weight[piece] = weight[piece].transpose((1,0,2))
-		print("======weight=======")
-		print(weight[piece])
-		tmp_weight = np.dstack((weight[piece].reshape(-1), np.zeros_like(weight[piece].reshape(-1)))).astype(dtype=np.float16) # pad 16-bit zero for fp16
+		print("[MAGIC]", "  Reshaped data shape:", len(gemm_data))
+		
+		print("[MAGIC]", "   Layer weight shape:", self.weight[layer].shape)
+		weight = self.weight[layer][number]
+		print("[MAGIC]", "    GEMM weight shape:", weight.shape)
+		weight = weight.transpose((0,2,1,3)) # transpose and get the first gemm
+		tmp_weight = np.dstack((weight.reshape(-1), np.zeros_like(weight.reshape(-1)))).astype(dtype=np.float16) # pad 16-bit zero for fp16
 		weight_data = tmp_weight.reshape(-1).tobytes() + bytearray((int(len(tmp_weight.reshape(-1).tobytes())/512)+1)*512-int(len(tmp_weight.reshape(-1).tobytes())))
-		print(len(weight_data))
-		print(weight_data.hex())
+		print("[MAGIC]", "Reshaped weight shape:", len(weight_data))
+
 		return gemm_data, hex_bias, weight_data
 
 	def waitIrq(self):
-		i = 0
 		while True:
-			i = i + 1
-			if i == 10000: 
-				i = 0
-				print("Querying")
 			self.xem.UpdateWireOuts()
-			
-			print("=========COMMANDS===========")
-			print(hex(self.xem.GetWireOutValue(0x21)))
-			print(hex(self.xem.GetWireOutValue(0x22)))
-			print(hex(self.xem.GetWireOutValue(0x23)))
-			print(hex(self.xem.GetWireOutValue(0x24)))
-			
+			print("[COMMANDS]", "0x%08x" % self.xem.GetWireOutValue(0x21))
+			print("[COMMANDS]", "0x%08x" % self.xem.GetWireOutValue(0x22))
+			print("[COMMANDS]", "0x%08x" % self.xem.GetWireOutValue(0x23))
+			print("[COMMANDS]", "0x%08x" % self.xem.GetWireOutValue(0x24))
 			if self.xem.GetWireOutValue(0x20) == 0x0001:
-				print("Got Interrupt...")
+				print("[INTERRUPT]", "Got Interrupt...")
 				break
 			if self.xem.GetWireOutValue(0x25) == 0x0001:
-				print("Got GEMM finish")
-				print('timer = ' + str(hex(self.xem.GetWireOutValue(0x26))))
-				print('rd_count = ' + str(hex(self.xem.GetWireOutValue(0x27))))
-				print('wr_count = ' + str(hex(self.xem.GetWireOutValue(0x28))))
+				print("[INTERRUPT]", "Got GEMM finish", 'timer = 0x%04x' % self.xem.GetWireOutValue(0x26), ', elapsed time = %f us' % (self.xem.GetWireOutValue(0x26)/100))
 				break
 		return
 	
 	def readOutput(self):
-		print("Reading Output...")
+		print("[INTERRUPT]", 'rd_count = 0x%08x' % self.xem.GetWireOutValue(0x27))
+		print("[INTERRUPT]", 'wr_count = 0x%08x' % self.xem.GetWireOutValue(0x28))
+		count = self.xem.GetWireOutValue(0x27)
+		print("[PARSING]", "Reading Output...")
 		self.xem.ReadFromBlockPipeOut(0xa0, self.blocksize, self.rbuf)
-		print("Got output...")
-		# print(self.rbuf)
-		print(self.rbuf.hex())
-		print(np.frombuffer(self.rbuf, dtype=np.float16)) # Checksum
+		print(np.frombuffer(self.rbuf, dtype=np.float16)[0::2][0:count]) # Results
 		self.xem.UpdateWireOuts()
-		print('rd_count = ' + str(hex(self.xem.GetWireOutValue(0x27))))
-		print('wr_count = ' + str(hex(self.xem.GetWireOutValue(0x28))))
+		print("[PARSING]", 'rd_count = 0x%08x' % self.xem.GetWireOutValue(0x27))
+		print("[PARSING]", 'wr_count = 0x%08x' % self.xem.GetWireOutValue(0x28))
 		self.reset_result_fifo()
 
 def main():   
@@ -262,23 +230,26 @@ def main():
 			dev.loadCommands()
 			# process, load all weights for this layer, --loop st
 			dev.startOp()
-			data, bias, weight = dev.gemm_magic(blob, 0, 3, 0, 0, 0)
+			timestamp_0 = time.clock()
+			# gemm magic, loop st
+			data, bias, weight = dev.gemm_magic(blob, kernel=3, layer=0, number=0, gemm=0)
+			# load gemm data and gemm weight (whole channel), then start operation
 			dev.loadWeights_Bias(bias, weight)
 			dev.loadGemm(data)
+			timestamp_1 = time.clock()
 			dev.waitIrq()
+			timestamp_2 = time.clock()
 			dev.readOutput()
-				# gemm magic, loop st
-				# load gemm data and gemm weight (whole channel)
-				# start engine operation
-				# wait for engine ready and interrupt
-				# read output fifo
+			timestamp_3 = time.clock()
+			print("[PARSING]", "Engine elapsed", str(timestamp_2-timestamp_1))
+			print("[PARSING]", "Host elapsed", str(timestamp_3-timestamp_0))
 				# --loop end (finish all channels for all weight groups)
 			# --loop end (finish all layers)
 			
 #------------------------------Sanity without Hardware------------------------------#
 	if test_mode == SANITY:
 		dev.readBlob()
-		dev.gemm_magic(dev.image, 0, 3, 0, 0, 0)
+		dev.gemm_magic(dev.image, 0, 3, 0, 0)
 
 if __name__ == '__main__':
     main()

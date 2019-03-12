@@ -7,7 +7,7 @@
 // \   \   \/     Version: P.20131013
 //  \   \         Application: netgen
 //  /   /         Filename: comparator.v
-// /___/   /\     Timestamp: Mon Mar 04 19:18:32 2019
+// /___/   /\     Timestamp: Thu Mar 14 19:04:30 2019
 // \   \  /  \ 
 //  \___\/\___\
 //             
@@ -34,7 +34,7 @@
 `timescale 1 ns/1 ps
 
 module comparator (
-  operation_nd, clk, operation_rfd, rdy, a, b, operation, result
+  operation_nd, clk, operation_rfd, rdy, a, b, result
 )/* synthesis syn_black_box syn_noprune=1 */;
   input operation_nd;
   input clk;
@@ -42,7 +42,6 @@ module comparator (
   output rdy;
   input [15 : 0] a;
   input [15 : 0] b;
-  input [5 : 0] operation;
   output [0 : 0] result;
   
   // synthesis translate_off
@@ -114,9 +113,6 @@ module comparator (
   wire sig0000003e;
   wire sig0000003f;
   wire sig00000040;
-  wire sig00000041;
-  wire sig00000042;
-  wire sig00000043;
   assign
     result[0] = \U0/op_inst/FLT_PT_OP/COMP_OP.SPD.OP/MET_REG/RTL.delay<0>_0 ,
     operation_rfd = NlwRenamedSig_OI_operation_rfd,
@@ -148,7 +144,7 @@ module comparator (
     .C(clk),
     .CE(NlwRenamedSig_OI_operation_rfd),
     .D(sig00000008),
-    .Q(sig00000029)
+    .Q(sig00000027)
   );
   MUXCY   blk00000006 (
     .CI(NlwRenamedSig_OI_operation_rfd),
@@ -278,82 +274,68 @@ module comparator (
     .INIT ( 1'b0 ))
   blk00000019 (
     .C(clk),
-    .D(operation[3]),
+    .D(NlwRenamedSig_OI_operation_rfd),
     .Q(sig00000026)
   );
-  FD #(
-    .INIT ( 1'b0 ))
-  blk0000001a (
-    .C(clk),
-    .D(operation[4]),
-    .Q(sig00000027)
+  MUXCY   blk0000001a (
+    .CI(sig00000039),
+    .DI(sig00000028),
+    .S(sig00000029),
+    .O(sig00000038)
   );
-  FD #(
-    .INIT ( 1'b0 ))
-  blk0000001b (
-    .C(clk),
-    .D(operation[5]),
-    .Q(sig00000028)
+  MUXCY   blk0000001b (
+    .CI(sig0000003a),
+    .DI(sig0000002a),
+    .S(sig0000002b),
+    .O(sig00000039)
   );
   MUXCY   blk0000001c (
     .CI(sig0000003b),
-    .DI(sig0000002a),
-    .S(sig0000002b),
+    .DI(sig0000002c),
+    .S(sig0000002d),
     .O(sig0000003a)
   );
   MUXCY   blk0000001d (
     .CI(sig0000003c),
-    .DI(sig0000002c),
-    .S(sig0000002d),
+    .DI(sig0000002e),
+    .S(sig0000002f),
     .O(sig0000003b)
   );
   MUXCY   blk0000001e (
     .CI(sig0000003d),
-    .DI(sig0000002e),
-    .S(sig0000002f),
+    .DI(sig00000030),
+    .S(sig00000031),
     .O(sig0000003c)
   );
   MUXCY   blk0000001f (
     .CI(sig0000003e),
-    .DI(sig00000030),
-    .S(sig00000031),
+    .DI(sig00000032),
+    .S(sig00000033),
     .O(sig0000003d)
   );
   MUXCY   blk00000020 (
     .CI(sig0000003f),
-    .DI(sig00000032),
-    .S(sig00000033),
+    .DI(sig00000034),
+    .S(sig00000035),
     .O(sig0000003e)
   );
   MUXCY   blk00000021 (
-    .CI(sig00000040),
-    .DI(sig00000034),
-    .S(sig00000035),
-    .O(sig0000003f)
-  );
-  MUXCY   blk00000022 (
-    .CI(sig00000041),
+    .CI(sig00000001),
     .DI(sig00000036),
     .S(sig00000037),
-    .O(sig00000040)
-  );
-  MUXCY   blk00000023 (
-    .CI(sig00000001),
-    .DI(sig00000038),
-    .S(sig00000039),
-    .O(sig00000041)
+    .O(sig0000003f)
   );
   FDE #(
     .INIT ( 1'b0 ))
-  blk00000024 (
+  blk00000022 (
     .C(clk),
     .CE(NlwRenamedSig_OI_operation_rfd),
-    .D(sig0000003a),
+    .D(sig00000038),
     .Q(sig00000020)
   );
   LUT6 #(
     .INIT ( 64'h9009000000009009 ))
-  blk00000025 (
+  blk00000023 (
     .I0(a[12]),
     .I1(b[12]),
     .I2(a[14]),
@@ -364,7 +346,7 @@ module comparator (
   );
   LUT6 #(
     .INIT ( 64'h9009000000009009 ))
-  blk00000026 (
+  blk00000024 (
     .I0(a[10]),
     .I1(b[10]),
     .I2(a[9]),
@@ -375,7 +357,7 @@ module comparator (
   );
   LUT6 #(
     .INIT ( 64'h9009000000009009 ))
-  blk00000027 (
+  blk00000025 (
     .I0(a[6]),
     .I1(b[6]),
     .I2(a[8]),
@@ -386,7 +368,7 @@ module comparator (
   );
   LUT6 #(
     .INIT ( 64'h9009000000009009 ))
-  blk00000028 (
+  blk00000026 (
     .I0(a[3]),
     .I1(b[3]),
     .I2(a[5]),
@@ -397,7 +379,7 @@ module comparator (
   );
   LUT6 #(
     .INIT ( 64'h9009000000009009 ))
-  blk00000029 (
+  blk00000027 (
     .I0(a[0]),
     .I1(b[0]),
     .I2(a[2]),
@@ -408,14 +390,14 @@ module comparator (
   );
   LUT2 #(
     .INIT ( 4'h9 ))
-  blk0000002a (
+  blk00000028 (
     .I0(b[15]),
     .I1(a[15]),
     .O(sig0000001c)
   );
   LUT5 #(
     .INIT ( 32'h80000000 ))
-  blk0000002b (
+  blk00000029 (
     .I0(a[10]),
     .I1(a[11]),
     .I2(a[12]),
@@ -425,7 +407,7 @@ module comparator (
   );
   LUT5 #(
     .INIT ( 32'h80000000 ))
-  blk0000002c (
+  blk0000002a (
     .I0(b[10]),
     .I1(b[11]),
     .I2(b[12]),
@@ -435,7 +417,7 @@ module comparator (
   );
   LUT4 #(
     .INIT ( 16'h0001 ))
-  blk0000002d (
+  blk0000002b (
     .I0(a[6]),
     .I1(a[7]),
     .I2(a[8]),
@@ -444,7 +426,7 @@ module comparator (
   );
   LUT6 #(
     .INIT ( 64'h0000000000000001 ))
-  blk0000002e (
+  blk0000002c (
     .I0(a[0]),
     .I1(a[1]),
     .I2(a[2]),
@@ -455,7 +437,7 @@ module comparator (
   );
   LUT4 #(
     .INIT ( 16'h0001 ))
-  blk0000002f (
+  blk0000002d (
     .I0(b[6]),
     .I1(b[7]),
     .I2(b[8]),
@@ -464,7 +446,7 @@ module comparator (
   );
   LUT6 #(
     .INIT ( 64'h0000000000000001 ))
-  blk00000030 (
+  blk0000002e (
     .I0(b[0]),
     .I1(b[1]),
     .I2(b[2]),
@@ -475,7 +457,7 @@ module comparator (
   );
   LUT4 #(
     .INIT ( 16'h0001 ))
-  blk00000031 (
+  blk0000002f (
     .I0(a[11]),
     .I1(a[12]),
     .I2(a[13]),
@@ -484,7 +466,7 @@ module comparator (
   );
   LUT6 #(
     .INIT ( 64'h0000000000000001 ))
-  blk00000032 (
+  blk00000030 (
     .I0(b[10]),
     .I1(b[11]),
     .I2(b[12]),
@@ -495,183 +477,171 @@ module comparator (
   );
   LUT2 #(
     .INIT ( 4'h8 ))
-  blk00000033 (
+  blk00000031 (
     .I0(a[15]),
     .I1(b[15]),
     .O(sig0000001e)
   );
   LUT4 #(
     .INIT ( 16'h9009 ))
-  blk00000034 (
+  blk00000032 (
     .I0(a[15]),
     .I1(b[15]),
     .I2(a[14]),
     .I3(b[14]),
-    .O(sig0000002b)
+    .O(sig00000029)
   );
   LUT4 #(
     .INIT ( 16'h9009 ))
-  blk00000035 (
+  blk00000033 (
     .I0(a[13]),
     .I1(b[13]),
     .I2(a[12]),
     .I3(b[12]),
-    .O(sig0000002d)
+    .O(sig0000002b)
   );
   LUT4 #(
     .INIT ( 16'h9009 ))
-  blk00000036 (
+  blk00000034 (
     .I0(a[11]),
     .I1(b[11]),
     .I2(a[10]),
     .I3(b[10]),
-    .O(sig0000002f)
+    .O(sig0000002d)
   );
   LUT4 #(
     .INIT ( 16'h9009 ))
-  blk00000037 (
+  blk00000035 (
     .I0(a[9]),
     .I1(b[9]),
     .I2(a[8]),
     .I3(b[8]),
-    .O(sig00000031)
+    .O(sig0000002f)
   );
   LUT4 #(
     .INIT ( 16'h9009 ))
-  blk00000038 (
+  blk00000036 (
     .I0(a[7]),
     .I1(b[7]),
     .I2(a[6]),
     .I3(b[6]),
-    .O(sig00000033)
+    .O(sig00000031)
   );
   LUT4 #(
     .INIT ( 16'h9009 ))
-  blk00000039 (
+  blk00000037 (
     .I0(a[5]),
     .I1(b[5]),
     .I2(a[4]),
     .I3(b[4]),
-    .O(sig00000035)
+    .O(sig00000033)
   );
   LUT4 #(
     .INIT ( 16'h9009 ))
-  blk0000003a (
+  blk00000038 (
     .I0(a[3]),
     .I1(b[3]),
     .I2(a[2]),
     .I3(b[2]),
-    .O(sig00000037)
+    .O(sig00000035)
   );
   LUT4 #(
     .INIT ( 16'h9009 ))
-  blk0000003b (
+  blk00000039 (
     .I0(a[1]),
     .I1(b[1]),
     .I2(a[0]),
     .I3(b[0]),
-    .O(sig00000039)
+    .O(sig00000037)
   );
   LUT4 #(
     .INIT ( 16'h44D4 ))
-  blk0000003c (
+  blk0000003a (
     .I0(a[15]),
     .I1(b[15]),
     .I2(a[14]),
     .I3(b[14]),
-    .O(sig0000002a)
+    .O(sig00000028)
   );
   LUT4 #(
     .INIT ( 16'h44D4 ))
-  blk0000003d (
+  blk0000003b (
     .I0(b[13]),
     .I1(a[13]),
     .I2(a[12]),
     .I3(b[12]),
-    .O(sig0000002c)
+    .O(sig0000002a)
   );
   LUT4 #(
     .INIT ( 16'h44D4 ))
-  blk0000003e (
+  blk0000003c (
     .I0(b[11]),
     .I1(a[11]),
     .I2(a[10]),
     .I3(b[10]),
-    .O(sig0000002e)
+    .O(sig0000002c)
   );
   LUT4 #(
     .INIT ( 16'h44D4 ))
-  blk0000003f (
+  blk0000003d (
     .I0(b[9]),
     .I1(a[9]),
     .I2(a[8]),
     .I3(b[8]),
-    .O(sig00000030)
+    .O(sig0000002e)
   );
   LUT4 #(
     .INIT ( 16'h44D4 ))
-  blk00000040 (
+  blk0000003e (
     .I0(b[7]),
     .I1(a[7]),
     .I2(a[6]),
     .I3(b[6]),
-    .O(sig00000032)
+    .O(sig00000030)
   );
   LUT4 #(
     .INIT ( 16'h44D4 ))
-  blk00000041 (
+  blk0000003f (
     .I0(b[5]),
     .I1(a[5]),
     .I2(a[4]),
     .I3(b[4]),
-    .O(sig00000034)
+    .O(sig00000032)
   );
   LUT4 #(
     .INIT ( 16'h44D4 ))
-  blk00000042 (
+  blk00000040 (
     .I0(b[3]),
     .I1(a[3]),
     .I2(a[2]),
     .I3(b[2]),
-    .O(sig00000036)
+    .O(sig00000034)
   );
   LUT4 #(
     .INIT ( 16'h44D4 ))
-  blk00000043 (
+  blk00000041 (
     .I0(b[1]),
     .I1(a[1]),
     .I2(a[0]),
     .I3(b[0]),
-    .O(sig00000038)
+    .O(sig00000036)
   );
-  LUT6 #(
-    .INIT ( 64'h51454D51BBAF8FBB ))
-  blk00000044 (
-    .I0(sig00000029),
-    .I1(sig00000026),
-    .I2(sig00000028),
-    .I3(sig00000020),
-    .I4(sig0000001f),
-    .I5(sig00000027),
-    .O(sig00000042)
-  );
-  LUT3 #(
-    .INIT ( 8'hF6 ))
-  blk00000045 (
-    .I0(sig00000026),
-    .I1(sig00000028),
-    .I2(sig00000027),
-    .O(sig00000043)
-  );
-  LUT6 #(
-    .INIT ( 64'h0200FEFC0301FFFD ))
-  blk00000046 (
-    .I0(sig00000025),
+  LUT2 #(
+    .INIT ( 4'h1 ))
+  blk00000042 (
+    .I0(sig00000021),
     .I1(sig00000023),
-    .I2(sig00000021),
-    .I3(sig00000027),
-    .I4(sig00000043),
-    .I5(sig00000042),
+    .O(sig00000040)
+  );
+  LUT6 #(
+    .INIT ( 64'h001C00000000FFFF ))
+  blk00000043 (
+    .I0(sig00000027),
+    .I1(sig00000020),
+    .I2(sig0000001f),
+    .I3(sig00000025),
+    .I4(sig00000026),
+    .I5(sig00000040),
     .O(sig0000001d)
   );
 
