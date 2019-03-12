@@ -5,7 +5,6 @@ module engine  //Instantiate 16CMACs for conv3x3, 16CMACs for conv1x1, maxpool a
 //Control signals csb->engine
 	input 			rst,
 	input 			engine_valid,
-	input			gemm_clear,
 	input [2:0] 	op_type,
 	input [3:0]		stride,	
 	input [7:0]		kernel,
@@ -333,7 +332,7 @@ always @ (posedge clk or posedge rst) begin
 				if(cmac_enable) begin
 					cmac_data_ready <= 1;
 					cmac_enable <= 0;
-					data <= dbuf;
+					if(cmac_data_valid == {`BURST_LEN{1'b1}}) data <= dbuf;
 
 					atom_count <= atom_count + 1;
 					line_count <= line_count + 1;
@@ -454,26 +453,28 @@ always @ (posedge clk or posedge rst) begin
 						atom_count <= 0;
 					end
 					// Logic for setting cache_count according to line_count
-					if(line_count >= 0 && (kernel - stride) >= 7'd0) begin // stride2 * a
-						cache_count[0] <= cache_count[0] + 1;
-						if(cache_count[0] < kernel_size) scmp_data_cache[0] <= dbuf;
-					end 
-					if(cache_count[0] + 1 == kernel_size + stride2 - kernel) begin
-						cache_count[0] <= 0;
-					end
-					if(line_count >= stride2 && (kernel - stride) >= 7'd1) begin
-						cache_count[1] <= cache_count[1] + 1;
-						if(cache_count[1] < kernel_size) scmp_data_cache[1] <= dbuf;
-					end 
-					if(cache_count[1] + 1 == kernel_size + stride2 - kernel) begin
-						cache_count[1] <= 0;
-					end
-					if(line_count >= stride2 + stride2 && (kernel - stride) >= 7'd2) begin
-						cache_count[2] <= cache_count[2] + 1;
-						if(cache_count[2] < kernel_size) scmp_data_cache[2] <= dbuf;
-					end
-					if(cache_count[2] + 1 == kernel_size + stride2 - kernel) begin
-						cache_count[2] <= 0;
+					if(maxpool_data_valid == {`BURST_LEN{1'b1}}) begin
+						if(line_count >= 0 && (kernel - stride) >= 7'd0) begin // stride2 * a
+							cache_count[0] <= cache_count[0] + 1;
+							if(cache_count[0] < kernel_size) scmp_data_cache[0] <= dbuf;
+						end 
+						if(cache_count[0] + 1 == kernel_size + stride2 - kernel) begin
+							cache_count[0] <= 0;
+						end
+						if(line_count >= stride2 && (kernel - stride) >= 7'd1) begin
+							cache_count[1] <= cache_count[1] + 1;
+							if(cache_count[1] < kernel_size) scmp_data_cache[1] <= dbuf;
+						end 
+						if(cache_count[1] + 1 == kernel_size + stride2 - kernel) begin
+							cache_count[1] <= 0;
+						end
+						if(line_count >= stride2 + stride2 && (kernel - stride) >= 7'd2) begin
+							cache_count[2] <= cache_count[2] + 1;
+							if(cache_count[2] < kernel_size) scmp_data_cache[2] <= dbuf;
+						end
+						if(cache_count[2] + 1 == kernel_size + stride2 - kernel) begin
+							cache_count[2] <= 0;
+						end
 					end
 				end
 
@@ -527,7 +528,7 @@ always @ (posedge clk or posedge rst) begin
 				if(avepool_enable) begin
 					avepool_enable <= 0;
 					avepool_data_ready <= 1;
-					data <= dbuf;
+					if(avepool_data_valid == {`BURST_LEN{1'b1}}) data <= dbuf;
 					atom_count <= atom_count + 1;
 					line_count <= line_count + 1;
 					if(fsum_index == kernel_size) begin

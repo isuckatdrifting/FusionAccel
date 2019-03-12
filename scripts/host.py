@@ -18,7 +18,7 @@ weight_directory = 'C:/Users/shish/source/repos/FusionAccel/scripts/tmp/weight.n
 image_directory = 'C:/Users/shish/source/repos/FusionAccel/scripts/tmp/data.npy'
 RUN = 0
 SANITY = 1
-test_mode = 0
+test_mode = 1
 
 class host:
 	def __init__(self):
@@ -146,6 +146,7 @@ class host:
 		tmp = tmp + weight_bytes
 		# print(bias)
 		# print(tmp)
+		self.reset_dw_fifo()
 		self.xem.SetWireInValue(0x02, bias) # bias value
 		self.xem.UpdateWireIns()
 		self.xem.WriteToBlockPipeIn(0x82, self.blocksize, tmp) # Notes: Write buf must be times of blocksize
@@ -187,16 +188,24 @@ class host:
 		print(tmp_data)
 		tmp_data = tmp_data.transpose((1,0,2))
 		print(tmp_data.shape)
+		print("======data=======")
 		print(tmp_data)
 		print(tmp_data.reshape(-1))
-		tmp = np.dstack((np.zeros_like(tmp_data.reshape(-1)), tmp_data.reshape(-1))) # padding zero
+		tmp = np.dstack((tmp_data.reshape(-1), np.zeros_like(tmp_data.reshape(-1)))) # padding zero
 		tmp = tmp.reshape(-1)
 		gemm_data = tmp.tobytes() + bytearray((int(len(tmp.reshape(-1).tobytes())/512)+1)*512-int(len(tmp.reshape(-1).tobytes())))
 		print(len(gemm_data))
+		print(gemm_data.hex())
 
-		tmp_weight = np.dstack((np.zeros_like(weight[piece].reshape(-1)), weight[piece].reshape(-1))).astype(dtype=np.float16) # pad 16-bit zero for fp16
+		print(weight[piece].shape)
+		print(weight[piece])
+		weight[piece] = weight[piece].transpose((1,0,2))
+		print("======weight=======")
+		print(weight[piece])
+		tmp_weight = np.dstack((weight[piece].reshape(-1), np.zeros_like(weight[piece].reshape(-1)))).astype(dtype=np.float16) # pad 16-bit zero for fp16
 		weight_data = tmp_weight.reshape(-1).tobytes() + bytearray((int(len(tmp_weight.reshape(-1).tobytes())/512)+1)*512-int(len(tmp_weight.reshape(-1).tobytes())))
 		print(len(weight_data))
+		print(weight_data.hex())
 		return gemm_data, hex_bias, weight_data
 
 	def waitIrq(self):
@@ -229,7 +238,8 @@ class host:
 		print("Reading Output...")
 		self.xem.ReadFromBlockPipeOut(0xa0, self.blocksize, self.rbuf)
 		print("Got output...")
-		print(self.rbuf)
+		# print(self.rbuf)
+		print(self.rbuf.hex())
 		print(np.frombuffer(self.rbuf, dtype=np.float16)) # Checksum
 		self.xem.UpdateWireOuts()
 		print('rd_count = ' + str(hex(self.xem.GetWireOutValue(0x27))))

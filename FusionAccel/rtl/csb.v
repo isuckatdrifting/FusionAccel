@@ -5,10 +5,7 @@ module csb
     input           rst,
     input           op_en,
 
-    input           gemm_valid,
-    input           gemm_finish,
     input           engine_ready,
-    output          engine_valid,
 
     //FIFO Interface
     input           valid,
@@ -25,9 +22,7 @@ module csb
     output [15:0]   o_channel,
     output [7:0]    kernel_size,
     output [15:0]   stride2,    //kernel * stride
-    output          engine_reset,
     output [2:0]    curr_state,
-    output          gemm_clear,
 
     output          irq
 );
@@ -48,8 +43,6 @@ module csb
 //|-------Totally 256Bit-------|--------|   |Average Pooling    |      101      |
 
 //Handshake signals to submodules
-reg         engine_valid;
-reg         gemm_clear;
 reg         rd_en;
 //Command Parsing
 reg [3:0]   cmd_burst_count;
@@ -63,8 +56,6 @@ reg [15:0]  i_channel, o_channel, stride2;
 reg [7:0]   kernel_size, i_side, o_side;
 
 reg [6:0]   done_cmd_count;
-reg         engine_reset;
-
 reg         irq;                        //Output, interrupt signal
 
 //State Machine
@@ -128,11 +119,10 @@ always @ (posedge clk or posedge rst) begin
         i_channel <= 16'h0000; o_channel <= 16'h0000;
         i_side <= 8'h00; o_side <= 8'h00; kernel_size <= 8'h00; stride2 <= 16'h0000;
 
-        done_cmd_count <= 8'd0; engine_valid <= 0;
+        done_cmd_count <= 8'd0; 
         cmd_collect_done <= 0; cmd_issue_done <= 0; op_done <= 0;
         rd_en <= 0;
-        engine_reset <= 1;
-        irq <= 0; gemm_clear <= 0;
+        irq <= 0; 
     end else begin
         case (curr_state)
             idle: begin
@@ -140,7 +130,6 @@ always @ (posedge clk or posedge rst) begin
             end
             cmd_get: begin
                 rd_en <= 1;
-                engine_reset <= 1;
                 op_done <= 0;
                 if(valid) begin
                     cmd_burst_count <= cmd_burst_count - 1;
@@ -153,18 +142,13 @@ always @ (posedge clk or posedge rst) begin
                 end
             end
             cmd_issue: begin
-                engine_reset <= 0;
                 cmd_burst_count <= `CMD_BURST_LEN;
                 cmd_collect_done <= 0;
                 cmd_issue_done <= 1; // start engine
             end
             op_run: begin
                 cmd_issue_done <= 0; //Reset the registers in cmd_issue and wait for submodules to finish
-                if(gemm_finish) engine_valid <= 0;
-                if(gemm_valid) gemm_clear <= 1; 
-                if(gemm_clear) begin gemm_clear <= 0; engine_valid <= 1; end
                 if(engine_ready) begin
-                    engine_valid <= 0;
                     done_cmd_count <= done_cmd_count + 1;
                     op_done <= 1;
                 end

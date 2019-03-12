@@ -9,7 +9,6 @@ reg 		clk;
 //Control signals csb->engine
 reg 		rst;
 reg 		engine_valid;
-reg 		gemm_clear;
 reg [2:0] 	op_type;
 reg	[3:0]	stride;
 reg [15:0]  stride2;
@@ -94,7 +93,6 @@ engine engine_(
 //Control signals csb->engine
 	.rst					(rst),
 	.engine_valid			(engine_valid),
-	.gemm_clear				(gemm_clear),
 	.op_type				(op_type),
 	.stride					(stride),
 	.stride2				(stride2),
@@ -138,7 +136,6 @@ initial begin
 	dma_p3_ob_data = 16'h0000;
 	dma_p2_ob_we = 0;
 	dma_p3_ob_we = 0;
-	gemm_clear = 0;
 	bias = 16'h0000;
     #20 rst = 1;
     #10 rst = 0;
