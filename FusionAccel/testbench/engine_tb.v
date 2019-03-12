@@ -35,8 +35,8 @@ reg 		dma_p3_ob_we;
 wire [15:0]	dma_p0_ib_data;
 
 `ifdef CMAC
-	reg [15:0] data [0:74];
-	reg [15:0] weight [0:26];
+	reg [15:0] data [0:95];
+	reg [15:0] weight [0:72];
 	initial begin
 	data[0] = 16'hce83; data[1] = 16'h4f98; data[2] = 16'h4e17; data[3] = 16'h0000; 
 	data[4] = 16'h0000; data[5] = 16'h0000; data[6] = 16'h0000; data[7] = 16'h0000; 
@@ -58,20 +58,34 @@ wire [15:0]	dma_p0_ib_data;
 	data[60] = 16'h0000; data[61] = 16'h0000; data[62] = 16'h0000; data[63] = 16'h0000; 
 	data[64] = 16'hD157; data[65] = 16'h4E9C; data[66] = 16'h4BC3; data[67] = 16'h0000; 
 	data[68] = 16'h0000; data[69] = 16'h0000; data[70] = 16'h0000; data[71] = 16'h0000; 
-	data[72] = 16'h31fe; data[73] = 16'h39c0; data[74] = 16'h2847;
+	
+	data[72] = 16'hd2b2; data[73] = 16'h4bef; data[74] = 16'h5e40; data[75] = 16'h0000; 
+	data[76] = 16'h0000; data[77] = 16'h0000; data[78] = 16'h0000; data[79] = 16'h0000; 
+	data[80] = 16'hd1fc; data[81] = 16'h4d8b; data[82] = 16'h482d; data[83] = 16'h0000;
+	data[84] = 16'h0000; data[85] = 16'h0000; data[86] = 16'h0000; data[87] = 16'h0000; 
+	data[88] = 16'hd1db; data[89] = 16'h4e52; data[90] = 16'h49b4; data[91] = 16'h0000;
+	data[92] = 16'h0000; data[93] = 16'h0000; data[94] = 16'h0000; data[95] = 16'h0000; 
 
+	weight[0] = 16'h341E; weight[1] = 16'h3867; weight[2] = 16'h3509; weight[3] = 16'h0000;
+	weight[4] = 16'h0000; weight[5] = 16'h0000; weight[6] = 16'h0000; weight[7] = 16'h0000;
+	weight[8] = 16'hAE6E; weight[9] = 16'hB0BF;	weight[10] = 16'hB0F7; weight[11] = 16'h0000;
+	weight[12] = 16'h0000; weight[13] = 16'h0000; weight[14] = 16'h0000; weight[15] = 16'h0000;
+	weight[16] = 16'hAC84; weight[17] = 16'hB2B4; weight[18] = 16'hAF54; weight[19] = 16'h0000;
+	weight[20] = 16'h0000; weight[21] = 16'h0000; weight[22] = 16'h0000; weight[23] = 16'h0000;
 
-	weight[0] = 16'h341E; weight[1] = 16'h3867; weight[2] = 16'h3509; 
-	weight[3] = 16'hAE6E; weight[4] = 16'hB0BF;	weight[5] = 16'hB0F7; 
-	weight[6] = 16'hAC84; weight[7] = 16'hB2B4; weight[8] = 16'hAF54; 
+	weight[24] = 16'h35C0; weight[25] = 16'h396D; weight[26] = 16'h36E1; weight[27] = 16'h0000;
+	weight[28] = 16'h0000; weight[29] = 16'h0000; weight[30] = 16'h0000; weight[31] = 16'h0000;
+	weight[32] = 16'hB10F; weight[33] = 16'hB456; weight[34] = 16'hB2C4; weight[35] = 16'h0000;
+	weight[36] = 16'h0000; weight[37] = 16'h0000; weight[38] = 16'h0000; weight[39] = 16'h0000;
+	weight[40] = 16'hB209; weight[41] = 16'hB76D; weight[42] = 16'hB3F0; weight[43] = 16'h0000;
+	weight[44] = 16'h0000; weight[45] = 16'h0000; weight[46] = 16'h0000; weight[47] = 16'h0000;
 
-	weight[9] = 16'h35C0; weight[10] = 16'h396D; weight[11] = 16'h36E1; 
-	weight[12] = 16'hB10F; weight[13] = 16'hB456; weight[14] = 16'hB2C4;
-	weight[15] = 16'hB209; weight[16] = 16'hB76D; weight[17] = 16'hB3F0; 
-
-	weight[18] = 16'h3282; weight[19] = 16'h376F; weight[20] = 16'h3504; 
-	weight[21] = 16'hAE46; weight[22] = 16'hB1E7; weight[23] = 16'hACF0; 
-	weight[24] = 16'hB249; weight[25] = 16'hB72B; weight[26] = 16'hB338;
+	weight[48] = 16'h3282; weight[49] = 16'h376F; weight[50] = 16'h3504; weight[51] = 16'h0000;
+	weight[52] = 16'h0000; weight[53] = 16'h0000; weight[54] = 16'h0000; weight[55] = 16'h0000;
+	weight[56] = 16'hAE46; weight[57] = 16'hB1E7; weight[58] = 16'hACF0; weight[59] = 16'h0000;
+	weight[60] = 16'h0000; weight[61] = 16'h0000; weight[62] = 16'h0000; weight[63] = 16'h0000;
+	weight[64] = 16'hB249; weight[65] = 16'hB72B; weight[66] = 16'hB338; weight[67] = 16'h0000;
+	weight[68] = 16'h0000; weight[69] = 16'h0000; weight[70] = 16'h0000; weight[71] = 16'h0000;
 	end
 `endif
 `ifdef SACC
@@ -175,15 +189,7 @@ always @(posedge clk) begin
 			dma_p2_ob_we <= 1;
 `ifdef CMAC
 			dma_p2_ob_data <= data[m]; 
-				dma_p2_ob_data <= data[m]; 
-			dma_p2_ob_data <= data[m]; 
 			m <= m + 1; 
-				m <= m + 1; 
-			m <= m + 1; 
-			if(m == offset + 45) begin
-				m <= offset + 1;
-				offset <= offset + 1;
-			end
 `endif
 `ifdef SCMP
 			dma_p2_ob_data <= maxpooldata[m*16 +: 16];
@@ -206,12 +212,7 @@ always @(posedge clk) begin
 		if(dma_p3_reads_en) begin 
 			dma_p3_ob_we <= 1;
 			dma_p3_ob_data <= weight[n]; 
-				dma_p3_ob_data <= weight[n]; 
-			dma_p3_ob_data <= weight[n]; 
 			n <= n + 1; 
-				n <= n + 1; 
-			n <= n + 1; 
-			if(n==26) n <= 0;
 		end else dma_p3_ob_we <= 0;
 `endif
 	end

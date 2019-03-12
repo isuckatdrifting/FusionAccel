@@ -75,6 +75,8 @@ for layer_name, blob in net.blobs.items():
         # print(image)
         # print(net.blobs[layer_name].data)
         print(net.blobs['conv1'].data[0][0][0])
+        print(net.blobs['conv1'].data[0][0][1])
+        print(net.blobs['conv1'].data[0][0][2])
         print(net.blobs['conv1'].data.shape)
         # print(net.params['conv1'][0].data)
         # print(net.params['conv1'][1].data)

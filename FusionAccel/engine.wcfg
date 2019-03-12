@@ -58,6 +58,33 @@
          <obj_property name="ObjectShortName">dma_p3_ob_data[15:0]</obj_property>
          <obj_property name="Radix">HEXRADIX</obj_property>
       </wvobject>
+      <wvobject fp_name="/engine_tb/engine_/weight" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">weight[127:0]</obj_property>
+         <obj_property name="ObjectShortName">weight[127:0]</obj_property>
+         <obj_property name="Radix">HEXRADIX</obj_property>
+      </wvobject>
+      <wvobject fp_name="/engine_tb/engine_/dma_p2_burst_cnt" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">dma_p2_burst_cnt[7:0]</obj_property>
+         <obj_property name="ObjectShortName">dma_p2_burst_cnt[7:0]</obj_property>
+         <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+      </wvobject>
+      <wvobject fp_name="/engine_tb/engine_/dma_p3_offset" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">dma_p3_offset[7:0]</obj_property>
+         <obj_property name="ObjectShortName">dma_p3_offset[7:0]</obj_property>
+         <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+      </wvobject>
+      <wvobject fp_name="/engine_tb/engine_/dma_p3_burst_cnt" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">dma_p3_burst_cnt[7:0]</obj_property>
+         <obj_property name="ObjectShortName">dma_p3_burst_cnt[7:0]</obj_property>
+         <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+      </wvobject>
+      <wvobject fp_name="/engine_tb/engine_/atom_count" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">atom_count[7:0]</obj_property>
+         <obj_property name="ObjectShortName">atom_count[7:0]</obj_property>
+         <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+         <obj_property name="UseCustomSignalColor">true</obj_property>
+         <obj_property name="CustomSignalColor">#ffa500</obj_property>
+      </wvobject>
       <wvobject fp_name="/engine_tb/engine_/bias" type="array" db_ref_id="1">
          <obj_property name="ElementShortName">bias[15:0]</obj_property>
          <obj_property name="ObjectShortName">bias[15:0]</obj_property>
@@ -138,28 +165,6 @@
          <obj_property name="ElementShortName">cmac_data_ready</obj_property>
          <obj_property name="ObjectShortName">cmac_data_ready</obj_property>
       </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/dma_p2_burst_cnt" type="array" db_ref_id="1">
-         <obj_property name="ElementShortName">dma_p2_burst_cnt[7:0]</obj_property>
-         <obj_property name="ObjectShortName">dma_p2_burst_cnt[7:0]</obj_property>
-         <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
-      </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/dma_p3_offset" type="array" db_ref_id="1">
-         <obj_property name="ElementShortName">dma_p3_offset[7:0]</obj_property>
-         <obj_property name="ObjectShortName">dma_p3_offset[7:0]</obj_property>
-         <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
-      </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/dma_p3_burst_cnt" type="array" db_ref_id="1">
-         <obj_property name="ElementShortName">dma_p3_burst_cnt[7:0]</obj_property>
-         <obj_property name="ObjectShortName">dma_p3_burst_cnt[7:0]</obj_property>
-         <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
-      </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/atom_count" type="array" db_ref_id="1">
-         <obj_property name="ElementShortName">atom_count[7:0]</obj_property>
-         <obj_property name="ObjectShortName">atom_count[7:0]</obj_property>
-         <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
-         <obj_property name="UseCustomSignalColor">true</obj_property>
-         <obj_property name="CustomSignalColor">#ffa500</obj_property>
-      </wvobject>
       <wvobject fp_name="divider78" type="divider">
          <obj_property name="label">CMAC</obj_property>
          <obj_property name="DisplayName">label</obj_property>
@@ -177,6 +182,11 @@
       <wvobject fp_name="/engine_tb/engine_/\gencmac[0].cmac_ /conv_valid" type="logic" db_ref_id="1">
          <obj_property name="ElementShortName">conv_valid</obj_property>
          <obj_property name="ObjectShortName">conv_valid</obj_property>
+      </wvobject>
+      <wvobject fp_name="/engine_tb/engine_/dbuf" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">dbuf[127:0]</obj_property>
+         <obj_property name="ObjectShortName">dbuf[127:0]</obj_property>
+         <obj_property name="Radix">HEXRADIX</obj_property>
       </wvobject>
       <wvobject fp_name="/engine_tb/engine_/data" type="array" db_ref_id="1">
          <obj_property name="ElementShortName">data[127:0]</obj_property>

@@ -18,7 +18,7 @@ weight_directory = 'C:/Users/shish/source/repos/FusionAccel/scripts/tmp/weight.n
 image_directory = 'C:/Users/shish/source/repos/FusionAccel/scripts/tmp/data.npy'
 RUN = 0
 SANITY = 1
-test_mode = 0
+test_mode = 1
 
 class host:
 	def __init__(self):
@@ -196,7 +196,8 @@ class host:
 		tmp = tmp.reshape(-1)
 		gemm_data = tmp.tobytes() + bytearray((int(len(tmp.reshape(-1).tobytes())/512)+1)*512-int(len(tmp.reshape(-1).tobytes())))
 		print(len(gemm_data))
-		print(gemm_data.hex())
+		# print(gemm_data.hex())
+		print(*list(map(''.join, zip(*[iter(gemm_data.hex())]*64))), sep = "\n")
 
 		print(weight[piece].shape)
 		print(weight[piece])
