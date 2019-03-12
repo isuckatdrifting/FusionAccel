@@ -18,7 +18,7 @@ weight_directory = 'C:/Users/shish/source/repos/FusionAccel/scripts/tmp/weight.n
 image_directory = 'C:/Users/shish/source/repos/FusionAccel/scripts/tmp/data.npy'
 RUN = 0
 SANITY = 1
-test_mode = 1
+test_mode = 0
 
 class host:
 	def __init__(self):
@@ -165,6 +165,7 @@ class host:
 		self.xem.UpdateWireIns()
 		
 	def startOp(self):
+		self.reset_result_fifo()
 		self.xem.SetWireInValue(0x00, 0x0008) #ep00wire[3], reset CSB
 		self.xem.UpdateWireIns()
 		self.xem.SetWireInValue(0x00, 0x0000) #clear ep00wire
