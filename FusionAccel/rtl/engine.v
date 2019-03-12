@@ -5,6 +5,7 @@ module engine  //Instantiate 16CMACs for conv3x3, 16CMACs for conv1x1, maxpool a
 //Control signals csb->engine
 	input 			rst,
 	input 			engine_valid,
+	input			gemm_clear,
 	input [2:0] 	op_type,
 	input [3:0]		stride,	
 	input [7:0]		kernel,
@@ -17,6 +18,7 @@ module engine  //Instantiate 16CMACs for conv3x3, 16CMACs for conv1x1, maxpool a
 	input [15:0]	bias,
 //Response signals engine->csb
 	output			gemm_finish,
+	output [15:0]   i_channel_count,
 	output 			engine_ready,
 //Command path engine->dma
 	output          dma_p0_writes_en,
@@ -29,7 +31,8 @@ module engine  //Instantiate 16CMACs for conv3x3, 16CMACs for conv1x1, maxpool a
 	input 			dma_p3_ob_we,
 //Data path engine->dma
 	output [15:0]	dma_p0_ib_data,
-	output [3:0]	curr_state
+	output [3:0]	curr_state,
+	output [31:0]   timer
 );
 
 localparam CONV = 1, MPOOL = 2, APOOL = 3;
@@ -154,17 +157,18 @@ reg  [15:0] dma_p0_ib_data;
 reg			p0_writeback_en;
 reg	 [7:0]	p0_writeback_count;
 reg	 [7:0]	writeback_num;
+reg  [31:0] timer;
 
 // NOTES: Generate accumulator for atom(1 * 1 * channel) and cube(k * k * channel), this data path is dedicated to convolution only.
 // NOTES: deserializer for write back is only enabled in pooling
 //State Machine
-localparam init 		= 0;
 localparam idle 		= 1;
 localparam gemm_busy 	= 2;
 localparam sacc_busy 	= 3;
 localparam scmp_busy 	= 4;
 localparam clear 		= 5;
-localparam finish 		= 6;
+localparam wait_		= 6;
+localparam finish 		= 7;
 
 reg [3:0] curr_state;
 reg [3:0] next_state;
@@ -172,25 +176,23 @@ reg [3:0] next_state;
 //    Current State, non-blocking
 always @ (posedge clk or posedge rst)    begin
     if (rst)
-        curr_state    <= init;
+        curr_state    <= idle;
     else
         curr_state    <= next_state;
 end
 
 //    Status Jump, blocking
 always @ (*) begin
-    next_state = init;    //    Initialize
+    next_state = idle;    //    Initialize
     case (curr_state)
-		init: begin
-			if(engine_valid) next_state = idle;
-			else next_state = init;
-		end
         idle: begin
-			case(op_type)
-				3'b001: next_state = gemm_busy;
-				3'b010: next_state = scmp_busy;
-				3'b011: next_state = sacc_busy;
-			endcase
+			if(engine_valid) begin
+				case(op_type)
+					3'b001: next_state = gemm_busy;
+					3'b010: next_state = scmp_busy;
+					3'b011: next_state = sacc_busy;
+				endcase
+			end else next_state = idle;
         end
 		gemm_busy: begin
 			if(to_clear) next_state = clear;
@@ -205,19 +207,13 @@ always @ (*) begin
 			else next_state = sacc_busy;
 		end
 		clear: begin
-			if(gemm_count + 1 == o_side) begin
-				if(o_channel_count + 1 == o_channel) begin
-					next_state = finish;
-				end else begin
-					next_state = idle;
-				end
-			end else next_state = idle;
+			next_state = clear;
 		end
 		finish: begin
 			next_state = finish;
 		end
         default:
-            next_state = init;
+            next_state = idle;
     endcase
 end
 //NOTES: MEC convolution: k * k kernel in BURST_LEN -> finish the line -> next channel group(channel += BURST_LEN) -> next_gemm
@@ -261,12 +257,9 @@ always @ (posedge clk or posedge rst) begin
 		to_clear <= 0; 
 		//==================== Cross-channel registers ====================
 		i_channel_count <= 16'h0000; gemm_count <= 8'h00; o_channel_count <= 16'h0000; gemm_finish <= 0; layer_finish <= 0;
-		p0_writeback_en <= 0; p0_writeback_count <= 8'h00; writeback_num <= 8'h00;
+		p0_writeback_en <= 0; p0_writeback_count <= 8'h00; writeback_num <= 8'h00; timer <= 0;
 	end else begin
 		case (curr_state)
-			init: begin
-				engine_ready <= 0;
-			end
 			//==================== Clear all registers except cross-channel registers ====================
 			idle: begin 
 				conv_valid <= 0; avepool_valid <= 0; maxpool_valid <= 0; engine_ready <= 0;
@@ -290,11 +283,11 @@ always @ (posedge clk or posedge rst) begin
 				atom_count <= 8'h00; line_count <= 16'h0000; cmac_output_pipe_count <= 8'h00;
 				cmac_input_pipe_count <= 8'h00; cmac_middle_pipe_count <= 8'h00; scmp_input_pipe_count <= 8'h00; scmp_output_pipe_count <= 8'h00; 
 				fsum_enable <= 0; fsum_data_ready <= 0; fsum_a <= 16'h0000; fsum_b <= 16'h0000; fsum_count <= 8'h00; fsum_index <= 8'h00;
-				to_clear <= 0; 
-				gemm_finish <= 0;
+				to_clear <= 0; gemm_finish <= 0;
 			end
 // CMD = 1 ==================== CONVOLUTION: Process a line ====================//
 			gemm_busy: begin
+				timer <= timer + 1;
 				if(engine_valid) begin
 					dma_p2_reads_en <= 1; 
 					dma_p3_reads_en <= 1;

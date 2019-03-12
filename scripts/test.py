@@ -81,3 +81,5 @@ print(np.unpackbits(x).reshape(-1,8))
 print(num.byteswap().tobytes().hex()) # endian swap
 w = np.frombuffer(mem, dtype=np.float16)
 print(w)
+print(num.tobytes())
+print(bytearray(5))

@@ -9,6 +9,7 @@ reg 		clk;
 //Control signals csb->engine
 reg 		rst;
 reg 		engine_valid;
+reg 		gemm_clear;
 reg [2:0] 	op_type;
 reg	[3:0]	stride;
 reg [15:0]  stride2;
@@ -20,6 +21,7 @@ reg [7:0]	i_side;
 reg [7:0]   o_side;
 reg	[15:0]  bias;
 //Response signals engine->csb
+wire		gemm_finish;
 wire 		engine_ready;
 //Command path engine->dma
 wire        dma_p0_writes_en;
@@ -92,6 +94,7 @@ engine engine_(
 //Control signals csb->engine
 	.rst					(rst),
 	.engine_valid			(engine_valid),
+	.gemm_clear				(gemm_clear),
 	.op_type				(op_type),
 	.stride					(stride),
 	.stride2				(stride2),
@@ -103,6 +106,7 @@ engine engine_(
 	.o_side					(o_side),
 	.bias					(bias),
 //Response signals engine->csb
+	.gemm_finish			(gemm_finish),
 	.engine_ready			(engine_ready),
 //Command path engine->dma
 	.dma_p0_writes_en		(dma_p0_writes_en),
@@ -117,7 +121,10 @@ engine engine_(
 );
 
 always #5 clk = ~clk;
-always @(posedge clk) if(engine_ready) engine_valid <= 0; // pull down engine_valid after the whole op is done
+reg [7:0] count; initial count = 0;
+always @(posedge clk) begin
+	if(gemm_finish) engine_valid <= 0; // pull down engine_valid after the whole op is done
+end
 
 integer m,n,offset;
 initial begin
@@ -131,13 +138,14 @@ initial begin
 	dma_p3_ob_data = 16'h0000;
 	dma_p2_ob_we = 0;
 	dma_p3_ob_we = 0;
+	gemm_clear = 0;
 	bias = 16'h0000;
     #20 rst = 1;
     #10 rst = 0;
 `ifdef CMAC
     #100 op_type = 1; stride = 2; stride2 = 6;
 		//kernel = 3; kernel_size = 9; i_channel = 3; o_channel = 1; i_side = 227; o_side = 113;
-		kernel = 3; kernel_size = 9; i_channel = 3; o_channel = 1; i_side = 5; o_side = 3; bias = 16'hdead;
+		kernel = 3; kernel_size = 9; i_channel = 3; o_channel = 1; i_side = 7; o_side = 4; bias = 16'h4000;
 `endif
 `ifdef SCMP
 	#100 op_type = 2; stride = 2; stride2 = 6;
@@ -147,7 +155,10 @@ initial begin
 	#100 op_type = 3; stride = 1; 
 		kernel = 13; kernel_size = 169; i_channel = 3; o_channel = 1; i_side = 13; o_side = 1; bias = 16'h0000;
 `endif
-    #10 engine_valid = 1; 
+    #10 engine_valid = 1;
+	#3000 rst = 1;
+	#20 rst = 0;
+	#20 engine_valid = 1;
 end
 
 always @(posedge clk) begin
