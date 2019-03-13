@@ -271,6 +271,8 @@
          <obj_property name="ElementShortName">result[15:0]</obj_property>
          <obj_property name="ObjectShortName">result[15:0]</obj_property>
          <obj_property name="Radix">HEXRADIX</obj_property>
+         <obj_property name="UseCustomSignalColor">true</obj_property>
+         <obj_property name="CustomSignalColor">#ffa500</obj_property>
       </wvobject>
       <wvobject fp_name="/engine_tb/engine_/cmac_tmp_sum" type="array" db_ref_id="1">
          <obj_property name="ElementShortName">cmac_tmp_sum[127:0]</obj_property>
@@ -336,31 +338,6 @@
       <wvobject fp_name="/engine_tb/engine_/cmac_enable" type="logic" db_ref_id="1">
          <obj_property name="ElementShortName">cmac_enable</obj_property>
          <obj_property name="ObjectShortName">cmac_enable</obj_property>
-      </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/\gencmac[2].cmac_ /tmp_sum" type="array" db_ref_id="1">
-         <obj_property name="ElementShortName">tmp_sum[15:0]</obj_property>
-         <obj_property name="ObjectShortName">tmp_sum[15:0]</obj_property>
-         <obj_property name="Radix">HEXRADIX</obj_property>
-      </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/\gencmac[2].cmac_ /data" type="array" db_ref_id="1">
-         <obj_property name="ElementShortName">data[15:0]</obj_property>
-         <obj_property name="ObjectShortName">data[15:0]</obj_property>
-         <obj_property name="Radix">HEXRADIX</obj_property>
-      </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/\gencmac[2].cmac_ /weight" type="array" db_ref_id="1">
-         <obj_property name="ElementShortName">weight[15:0]</obj_property>
-         <obj_property name="ObjectShortName">weight[15:0]</obj_property>
-         <obj_property name="Radix">HEXRADIX</obj_property>
-      </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/\gencmac[2].cmac_ /result_mult" type="array" db_ref_id="1">
-         <obj_property name="ElementShortName">result_mult[15:0]</obj_property>
-         <obj_property name="ObjectShortName">result_mult[15:0]</obj_property>
-         <obj_property name="Radix">HEXRADIX</obj_property>
-      </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/\gencmac[2].cmac_ /result" type="array" db_ref_id="1">
-         <obj_property name="ElementShortName">result[15:0]</obj_property>
-         <obj_property name="ObjectShortName">result[15:0]</obj_property>
-         <obj_property name="Radix">HEXRADIX</obj_property>
       </wvobject>
       <wvobject fp_name="/engine_tb/engine_/line_count" type="array" db_ref_id="1">
          <obj_property name="ElementShortName">line_count[15:0]</obj_property>

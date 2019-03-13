@@ -77,7 +77,11 @@ for layer_name, blob in net.blobs.items():
         print(net.blobs['conv1'].data[0][0][0])
         print(net.blobs['conv1'].data[0][0][1])
         print(net.blobs['conv1'].data[0][0][2])
+        print(net.blobs['conv1'].data[0][0][3])
+        print(net.blobs['conv1'].data[0][0][4])
+        print(net.blobs['conv1'].data[0][0][5])
         print(net.blobs['conv1'].data.shape)
+        print(net.blobs['conv1'].data[0].shape)
         # print(net.params['conv1'][0].data)
         # print(net.params['conv1'][1].data)
     dat = filters.reshape(1, -1)[0][0:1].astype(dtype=np.float16) # get the first two of the layer output

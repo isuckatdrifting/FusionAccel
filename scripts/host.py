@@ -196,6 +196,10 @@ class host:
 		print(tmp_data[2])
 		print(tmp_data[3])
 		print(tmp_data[4])
+		print(tmp_data[5])
+		print(tmp_data[6])
+		print(tmp_data[7])
+		print(tmp_data[8])
 		print(tmp_data.reshape(-1))
 		tmp = np.dstack((tmp_data.reshape(-1), np.zeros_like(tmp_data.reshape(-1)))) # padding zero
 		tmp = tmp.reshape(-1)
