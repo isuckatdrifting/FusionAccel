@@ -97,8 +97,8 @@ reg  [`BURST_LEN-1:0] 	 scmp_ready;
 wire [16*`BURST_LEN-1:0] scmp_data; 				// parallel
 
 wire [16*`BURST_LEN-1:0] scmp_tmp_cmp;				// parallel, wired out from scmp_cmp 
-wire [16*`BURST_LEN-1:0] maxpool_result; 			// parallel
-reg  [16*`BURST_LEN-1:0] scmp_result;
+wire [`BURST_LEN-1:0] maxpool_result; 			// parallel
+reg  [`BURST_LEN-1:0] scmp_result;
 reg  [7:0] 				 scmp_input_pipe_count;		//NOTES: counter for data reuse in scmp
 reg  [7:0] 				 scmp_output_pipe_count;	//NOTES: counter for data reuse in scmp
 reg  [16*`BURST_LEN-1:0] scmp_data_cache [`MAX_KERNEL-1:0];		//NOTES: memory for storing scmp reuse input data
@@ -109,13 +109,13 @@ reg  [16*`BURST_LEN-1:0] cmp;						//NOTES: registers for 16-channel cmp output,
 genvar l;
 generate
 	for (l = 0; l < `BURST_LEN; l = l + 1) begin: genscmp
-		scmp scmp_(.clk(clk), .rst(rst), .new_data(scmp_data[l*16 +: 16]), .ori_data(scmp_tmp_cmp[l*16 +: 16]), .result(maxpool_result[l*16 +: 16]), .pool_valid(maxpool_valid), .data_ready(maxpool_data_ready), .data_valid(maxpool_data_valid[l]), .pool_ready(rdy_scmp[l]));
-	end
+		scmp scmp_(.clk(clk), .rst(rst), .new_data(scmp_data[l*16 +: 16]), .ori_data(scmp_tmp_cmp[l*16 +: 16]), .result(maxpool_result[l]), .pool_valid(maxpool_valid), .data_ready(maxpool_data_ready), .data_valid(maxpool_data_valid[l]), .pool_ready(rdy_scmp[l]));
+	end //FIXME: scmp logic
 endgenerate
 always @(posedge clk) scmp_result <= maxpool_result;
 always @(posedge clk) scmp_ready <= rdy_scmp;
 assign scmp_data = scmp_data_cache[scmp_input_pipe_count];
-assign scmp_tmp_cmp = scmp_cmp[scmp_output_pipe_count];
+assign scmp_tmp_cmp = scmp_cmp[scmp_input_pipe_count];
 
 //==================== SACC Wires and Registers ====================//
 reg avepool_valid, avepool_data_ready, avepool_enable;
@@ -370,10 +370,12 @@ always @ (posedge clk or posedge rst) begin
 				if(cmac_ready == {`BURST_LEN{1'b1}}) begin
 					cmac_output_pipe_count <= cmac_output_pipe_count + 1;
 					cmac_sum[cmac_output_pipe_count] <= (psum_count[cmac_output_pipe_count] <= kernel_size)? cmac_result: 0;
-					if(cmac_output_pipe_count == kernel - stride) begin cmac_output_pipe_count <= 0;
-					psum_count[0] <= cache_count[0];
-					psum_count[1] <= cache_count[1];
-					psum_count[2] <= cache_count[2];end
+					if(cmac_output_pipe_count == kernel - stride) begin 
+						cmac_output_pipe_count <= 0;
+						psum_count[0] <= cache_count[0];
+						psum_count[1] <= cache_count[1];
+						psum_count[2] <= cache_count[2];
+					end
 					//Logic for setting psum_count according to cache_count
 					if(psum_count[cmac_output_pipe_count] == kernel_size) begin
 						psum <= cmac_result;
@@ -419,6 +421,7 @@ always @ (posedge clk or posedge rst) begin
 				if(dma_p2_ob_we) begin
 					dma_p2_burst_cnt <= dma_p2_burst_cnt + 1;
 					if(dma_p2_burst_cnt == `BURST_LEN-1) begin	//NOTES: start scmp when finishing reading the first atom (1x1xpara)
+						dma_p2_reads_en <= 0;
 						dma_p2_burst_cnt <= 0;
 						maxpool_valid <= 1;
 						maxpool_enable <= 1;
@@ -428,8 +431,11 @@ always @ (posedge clk or posedge rst) begin
 
 				//========== MAXPOOLING PIPELINE STEP2: start passing deserialized data scmp (including data reuse)
 				if(maxpool_data_ready) begin
-					maxpool_data_ready <= 0;
 					scmp_input_pipe_count <= scmp_input_pipe_count + 1;
+				end
+				if(scmp_input_pipe_count == kernel - stride) begin //cmac_data_ready width is max of cmac_input_pipe_count
+					scmp_input_pipe_count <= 0;
+					maxpool_data_ready <= 0;
 				end
 				if(maxpool_enable) begin
 					maxpool_data_ready <= 1;
@@ -446,6 +452,7 @@ always @ (posedge clk or posedge rst) begin
 						if(line_count >= 0 && (kernel - stride) >= 7'd0) begin // stride2 * a
 							cache_count[0] <= cache_count[0] + 1;
 							if(cache_count[0] < kernel_size) scmp_data_cache[0] <= dbuf;
+							else begin scmp_data_cache[0] <= 0; scmp_cmp[0] <= 0; end // clear buffer
 						end 
 						if(cache_count[0] + 1 == kernel_size + stride2 - kernel) begin
 							cache_count[0] <= 0;
@@ -453,6 +460,7 @@ always @ (posedge clk or posedge rst) begin
 						if(line_count >= stride2 && (kernel - stride) >= 7'd1) begin
 							cache_count[1] <= cache_count[1] + 1;
 							if(cache_count[1] < kernel_size) scmp_data_cache[1] <= dbuf;
+							else begin scmp_data_cache[1] <= 0; scmp_cmp[1] <= 0; end
 						end 
 						if(cache_count[1] + 1 == kernel_size + stride2 - kernel) begin
 							cache_count[1] <= 0;
@@ -460,6 +468,7 @@ always @ (posedge clk or posedge rst) begin
 						if(line_count >= stride2 + stride2 && (kernel - stride) >= 7'd2) begin
 							cache_count[2] <= cache_count[2] + 1;
 							if(cache_count[2] < kernel_size) scmp_data_cache[2] <= dbuf;
+							else begin scmp_data_cache[2] <= 0; scmp_cmp[2] <= 0; end
 						end
 						if(cache_count[2] + 1 == kernel_size + stride2 - kernel) begin
 							cache_count[2] <= 0;
@@ -469,30 +478,19 @@ always @ (posedge clk or posedge rst) begin
 
 				//========== MAXPOOLING PIPELINE STEP3: Results of channel outputs, independent of the pipeline
 				if(scmp_ready == {`BURST_LEN{1'b1}}) begin
-					if(scmp_input_pipe_count <= kernel - stride) maxpool_data_ready <= 1;
 					scmp_output_pipe_count <= scmp_output_pipe_count + 1;
-					scmp_cmp[scmp_output_pipe_count] <= scmp_result;
+					for(b=0;b<`BURST_LEN;b=b+1) begin
+						scmp_cmp[scmp_output_pipe_count][16*b +: 16] <= scmp_result[b] ? scmp_data_cache[scmp_output_pipe_count][16*b +: 16]: scmp_cmp[scmp_output_pipe_count][16*b +: 16];
+					end
 					if(scmp_output_pipe_count == kernel - stride) begin
 						scmp_output_pipe_count <= 0;
+						scmp_count[0] <= cache_count[0];
+						scmp_count[1] <= cache_count[1];
+						scmp_count[2] <= cache_count[2];
 					end
-				end
-				if(scmp_output_pipe_count == kernel - stride) begin
-					scmp_count[0] <= cache_count[0];
-					scmp_count[1] <= cache_count[1];
-					scmp_count[2] <= cache_count[2];
 					//Logic for setting psum_count according to cache_count
-					if(scmp_count[0] + 1 == kernel_size) begin
-						cmp <= scmp_cmp[0];
-						p0_writeback_en <= 1; //Trigger for channel memory writeback
-						writeback_num <= `BURST_LEN;
-					end
-					if(scmp_count[1] + 1 == kernel_size) begin
-						cmp <= scmp_cmp[1];
-						p0_writeback_en <= 1; //Trigger for channel memory writeback
-						writeback_num <= `BURST_LEN;
-					end
-					if(scmp_count[2] + 1 == kernel_size) begin
-						cmp <= scmp_cmp[2];
+					if(scmp_count[scmp_output_pipe_count] + 1 == kernel_size) begin
+						cmp <= scmp_cmp[scmp_output_pipe_count];
 						p0_writeback_en <= 1; //Trigger for channel memory writeback
 						writeback_num <= `BURST_LEN;
 					end
