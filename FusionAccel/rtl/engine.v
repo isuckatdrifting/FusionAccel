@@ -61,11 +61,14 @@ reg  [7:0]  			 psum_count [`MAX_KERNEL-1:0];			//NOTES: counter for results in 
 reg  [16*`BURST_LEN-1:0] psum;						//NOTES: registers for 16-channel sum output, it is selected from the memory cmac_sum
 
 //Full sum registers
-reg						 fsum_enable;
+reg						 writes_en;
+wire					 reads_en;
 wire [15:0]				 fsum_result;
 wire					 fsum_ready;
 reg  [7:0]				 fsum_index;
 reg  [15:0] 			 i_channel_count;
+wire [127:0] 			 psum_;
+wire 					 fifo_empty;
 
 genvar i;
 generate 
@@ -78,20 +81,19 @@ always @(posedge clk) cmac_ready <= rdy_cmac;
 assign weight = cmac_weight_cache[cmac_input_pipe_count];
 assign cmac_tmp_sum = cmac_sum[cmac_middle_pipe_count];
 
-wire [127:0] psum_;
 fifo_fsum ff_ (
 	.rst			(rst),			// input
 	.wr_clk			(clk),				// input
 	.rd_clk			(clk),				// input
 	.din			(psum), 		// input, Bus [31 : 0] 
-	.wr_en			(fsum_enable),			// input
+	.wr_en			(writes_en),			// input
 	.rd_en			(reads_en),			// input
 	.dout			(psum_), 		// output, Bus [31 : 0] 
 	.full			(),			// output
-	.empty			(),		// output
+	.empty			(fifo_empty),		// output
 	.valid			(valid));		// output
 
-fsum f_ (.clk(clk), .rst(rst), .fsum_enable(fsum_enable), .reads_en(reads_en), .bias(bias), .data(psum_), .valid(valid), .fsum_result(fsum_result), .i_channel_count(i_channel_count), .fsum_index(fsum_index), .ready(fsum_ready));
+fsum f_ (.clk(clk), .rst(rst), .fifo_empty(fifo_empty), .reads_en(reads_en), .bias(bias), .data(psum_), .valid(valid), .fsum_result(fsum_result), .i_channel_count(i_channel_count), .fsum_index(fsum_index), .ready(fsum_ready));
 //==================== SCMP Wires and Registers ====================//
 reg 					 maxpool_valid, maxpool_data_ready, maxpool_enable;
 wire [`BURST_LEN-1:0] 	 maxpool_data_valid;
@@ -247,7 +249,7 @@ always @ (posedge clk or posedge rst) begin
 		cmac_enable <= 0; cmac_data_ready <= 0; avepool_enable <= 0; avepool_data_ready <= 0; maxpool_enable <= 0; maxpool_data_ready <= 0; div_en <= 0;
 		atom_count <= 8'h00; line_count <= 16'h0000; cmac_output_pipe_count <= 8'h00;
 		cmac_input_pipe_count <= 8'h00; cmac_middle_pipe_count <= 8'h00; scmp_input_pipe_count <= 8'h00; scmp_output_pipe_count <= 8'h00; 
-		fsum_enable <= 0;
+		writes_en <= 0; fsum_index <= 8'h00;
 		to_clear <= 0; 
 		//==================== Cross-channel registers ====================
 		i_channel_count <= 16'h0000; gemm_count <= 8'h00; o_channel_count <= 16'h0000; gemm_finish <= 0; layer_finish <= 0;
@@ -276,7 +278,7 @@ always @ (posedge clk or posedge rst) begin
 				cmac_enable <= 0; cmac_data_ready <= 0; avepool_enable <= 0; avepool_data_ready <= 0; maxpool_enable <= 0; maxpool_data_ready <= 0; div_en <= 0;
 				atom_count <= 8'h00; line_count <= 16'h0000; cmac_output_pipe_count <= 8'h00;
 				cmac_input_pipe_count <= 8'h00; cmac_middle_pipe_count <= 8'h00; scmp_input_pipe_count <= 8'h00; scmp_output_pipe_count <= 8'h00; 
-				fsum_enable <= 0; fsum_index <= 8'h00;
+				writes_en <= 0; fsum_index <= 8'h00;
 				to_clear <= 0; gemm_finish <= 0;
 			end
 // CMD = 1 ==================== CONVOLUTION: Process a line ====================//
@@ -374,11 +376,11 @@ always @ (posedge clk or posedge rst) begin
 					//Logic for setting psum_count according to cache_count
 					if(psum_count[cmac_output_pipe_count] == kernel_size) begin
 						psum <= cmac_result;
-						fsum_enable <= 1; //Trigger for channel partial sum
+						writes_en <= 1; //Trigger for channel partial sum
 					end
 				end 
 				// ========== CONVOLUTION PIPELINE STEP4: full channel sum stored in -> sum, sum all channels
-				if(fsum_enable) fsum_enable <= 0;
+				if(writes_en) writes_en <= 0;
 				if(fsum_ready) begin 
 					p0_writeback_en <= 1; 
 					writeback_num <= 1; 

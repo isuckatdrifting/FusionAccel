@@ -2,16 +2,15 @@
 module fsum(
     input           clk,
     input           rst,
-    input           fsum_enable,
+    input           fifo_empty,
     output          reads_en,
-    input [15:0]    bias,
-    input [127:0]   data,
+    input  [15:0]   bias,
+    input  [127:0]  data,
     input           valid,
     output [15:0]   fsum_result,
-    input [15:0]    i_channel_count,
-    input [7:0]    fsum_index,
+    input  [15:0]   i_channel_count,
+    input  [7:0]    fsum_index,
     output          ready
-
 );
 
 //Full sum registers
@@ -44,7 +43,7 @@ always @ (posedge clk or posedge rst) begin
 	if(rst) begin
         fsum_data_ready <= 0; fsum_a <= 16'h0000; fsum_b <= 16'h0000; fsum_count <= 8'h00; ready <= 0; reads_en <= 0;
     end else begin
-        if(fsum_enable) begin
+        if(!fifo_empty) begin
             reads_en <= 1;
             fsum_count <= 0;
         end

@@ -240,7 +240,7 @@ class host:
 				break
 			if self.xem.GetWireOutValue(0x25) == 0x0001:
 				print("Got GEMM finish")
-				print('timer = ' + str(hex(self.xem.GetWireOutValue(0x26))))
+				print('timer = ' + str(hex(self.xem.GetWireOutValue(0x26))) + ', elapsed time = %f us' % (self.xem.GetWireOutValue(0x26)/100))
 				print('rd_count = ' + str(hex(self.xem.GetWireOutValue(0x27))))
 				print('wr_count = ' + str(hex(self.xem.GetWireOutValue(0x28))))
 				break
