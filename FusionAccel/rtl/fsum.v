@@ -100,6 +100,7 @@ always @ (posedge clk or posedge rst) begin
                     fsum_b <= data[16*fsum_count +: 16];
                     fsum_data_ready <= 1;
                 end else begin
+                    fsum[fsum_index] <= fsum_result;
                     fsum_b <= 0;
                     ready <= 1;
                 end

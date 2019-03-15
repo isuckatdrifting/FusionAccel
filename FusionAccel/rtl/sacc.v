@@ -4,7 +4,6 @@ module sacc( // average pooling
     input  wire [15:0]  tmp_sum,
     input  wire [15:0]  data,
     output reg  [15:0]  result,
-    input  wire         pool_valid,
     input  wire         data_ready,
     output reg          data_valid,
     input  wire         div_en,

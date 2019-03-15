@@ -4,7 +4,6 @@ module scmp( //max pooling
     input  wire [15:0]  new_data,
     input  wire [15:0]  ori_data,
     output reg          result,
-    input  wire         pool_valid,
     input  wire         data_ready,
     output reg          data_valid,
     output reg          pool_ready
