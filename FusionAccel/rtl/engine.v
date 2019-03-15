@@ -130,18 +130,19 @@ wire [`BURST_LEN-1:0] 	 rdy_sacc;
 reg  [`BURST_LEN-1:0] 	 sacc_ready;
 
 reg  [16*`BURST_LEN-1:0] sacc_tmp_sum;
-wire [16*`BURST_LEN-1:0] avepool_result; // parallel
-reg  [16*`BURST_LEN-1:0] sacc_result;
+wire [16*`BURST_LEN-1:0] tmp_result, avepool_result; // parallel
+reg  [16*`BURST_LEN-1:0] sacc_result, sacc_result_div;
 
 reg div_en;
 
 genvar k;
 generate
 	for (k = 0; k < `BURST_LEN; k = k + 1) begin: gensacc
-		sacc sacc_(.clk(clk), .rst(rst), .data(data[k*16 +: 16]), .result(avepool_result[k*16 +: 16]), .tmp_sum(sacc_tmp_sum[k*16 +: 16]), .data_ready(avepool_data_ready), .data_valid(avepool_data_valid[k]), .div_en(div_en), .pool_ready(rdy_sacc[k]));
+		sacc sacc_(.clk(clk), .rst(rst), .data(data[k*16 +: 16]), .result(tmp_result[k*16 +: 16]), .result_sacc(avepool_result[k*16 +: 16]), .tmp_sum(sacc_tmp_sum[k*16 +: 16]), .data_ready(avepool_data_ready), .data_valid(avepool_data_valid[k]), .div_en(div_en), .pool_ready(rdy_sacc[k]));
 	end
 endgenerate
-always @(posedge clk) sacc_result <= avepool_result;
+always @(posedge clk) sacc_result <= tmp_result;
+always @(posedge clk) sacc_result_div <= avepool_result;
 always @(posedge clk) sacc_ready <= rdy_sacc;
 
 //==================== Address registers ===========================//
@@ -211,7 +212,7 @@ always @ (*) begin
 			else next_state = sacc_busy;
 		end
 		clear: begin
-			next_state = clear;
+			next_state = clear; // FIXME: if not keeping at this state, gemm_finish is not finished. keeping this state leads to o_channel_count burst
 		end
 		finish: begin
 			next_state = finish;
@@ -499,13 +500,14 @@ always @ (posedge clk or posedge rst) begin
 
 // CMD = 5 ==================== AVEPOOLING: Process a line * surface ====================//
 			sacc_busy: begin
-				if(engine_valid) dma_p2_reads_en <= 1;
+				if(engine_valid && input_count + 1 < kernel_size) dma_p2_reads_en <= 1;
 
 				//========== AVEPOOLING PIPELINE STEP1: enable data read (this part is the slowest and defines the available timing space of the pipeline)
 				if(dma_p2_ob_we) begin
 					dma_p2_burst_cnt <= dma_p2_burst_cnt + 1;
 					if(dma_p2_burst_cnt == `BURST_LEN-1) begin	//NOTES: start cmac when finishing reading the first atom (1x1xpara)
 						dma_p2_burst_cnt <= 0;
+						dma_p2_reads_en <= 0;
 						avepool_enable <= 1;
 					end
 					dbuf <= {dma_p2_ob_data, dbuf[16*`BURST_LEN-1 : 16]}; // deserialize data to dbuf
@@ -516,16 +518,17 @@ always @ (posedge clk or posedge rst) begin
 					avepool_data_ready <= 1;
 					if(avepool_data_valid == {`BURST_LEN{1'b1}}) data <= dbuf;
 					input_count <= input_count + 1;
-					if(fsum_index + 1 == kernel_size) begin
-						div_en <= 1; //NOTES: divide trigger
-					end
 				end
 				if(avepool_data_ready) begin
 					avepool_data_ready <= 0;
 				end
 				if(sacc_ready) begin
-					sacc_tmp_sum <= sacc_result;
+					if(fsum_index < kernel_size) sacc_tmp_sum <= sacc_result;
 					fsum_index <= fsum_index + 1;
+					if(fsum_index + 1 == kernel_size) begin
+						div_en <= 1; //NOTES: divide trigger
+						avepool_data_ready <= 1;
+					end
 				end
 				if(div_en && sacc_ready) begin
 					div_en <= 0;
@@ -577,7 +580,7 @@ always @ (posedge clk or posedge rst) begin
 			case(op_type)
 				CONV: dma_p0_ib_data <= fsum_result[15]? 16'h0000: fsum_result; //Notes: ReLu Activation
 				MPOOL: dma_p0_ib_data <= cmp[p0_writeback_count * 16 +: 16];
-				APOOL: dma_p0_ib_data <= sacc_tmp_sum[p0_writeback_count * 16 +: 16];
+				APOOL: dma_p0_ib_data <= sacc_result_div[p0_writeback_count * 16 +: 16];
 			endcase
 		end 
 

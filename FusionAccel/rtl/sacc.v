@@ -4,6 +4,7 @@ module sacc( // average pooling
     input  wire [15:0]  tmp_sum,
     input  wire [15:0]  data,
     output reg  [15:0]  result,
+    output reg  [15:0]  result_sacc,
     input  wire         data_ready,
     output reg          data_valid,
     input  wire         div_en,
@@ -32,10 +33,11 @@ always @ (posedge clk or posedge rst) begin
     end else begin
         data_valid <= operation_rfd_acc;
         operation_nd_acc <= data_ready;
-        if(data_ready) begin a_acc <= tmp_sum; b_acc <= data; end
+        if(data_ready && !div_en) begin a_acc <= tmp_sum; b_acc <= data; end
         if(div_en) begin a_div <= tmp_sum; b_div <= 16'h5948; operation_nd_div <= data_ready; end //196:5a20, 169:5948
         pool_ready <= div_en? div_ready: acc_ready;
-        result <= div_en? result_div: result_acc;
+        result <= result_acc;
+        result_sacc <= result_div;
     end
 end
 endmodule
