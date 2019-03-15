@@ -339,12 +339,10 @@
          <obj_property name="ElementShortName">cmac_enable</obj_property>
          <obj_property name="ObjectShortName">cmac_enable</obj_property>
       </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/line_count" type="array" db_ref_id="1">
-         <obj_property name="ElementShortName">line_count[15:0]</obj_property>
-         <obj_property name="ObjectShortName">line_count[15:0]</obj_property>
+      <wvobject fp_name="/engine_tb/engine_/input_count" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">input_count[15:0]</obj_property>
+         <obj_property name="ObjectShortName">input_count[15:0]</obj_property>
          <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
-         <obj_property name="UseCustomSignalColor">true</obj_property>
-         <obj_property name="CustomSignalColor">#ffa500</obj_property>
       </wvobject>
       <wvobject fp_name="/engine_tb/engine_/cache_count" type="array" db_ref_id="1">
          <obj_property name="ElementShortName">cache_count[2:0,7:0]</obj_property>
@@ -371,6 +369,16 @@
          <obj_property name="DisplayName">label</obj_property>
          <obj_property name="BkColor">128 128 255</obj_property>
          <obj_property name="TextColor">230 230 230</obj_property>
+      </wvobject>
+      <wvobject fp_name="/engine_tb/engine_/cmac_ready" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">cmac_ready[7:0]</obj_property>
+         <obj_property name="ObjectShortName">cmac_ready[7:0]</obj_property>
+         <obj_property name="Radix">HEXRADIX</obj_property>
+      </wvobject>
+      <wvobject fp_name="/engine_tb/engine_/output_count" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">output_count[15:0]</obj_property>
+         <obj_property name="ObjectShortName">output_count[15:0]</obj_property>
+         <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
       </wvobject>
       <wvobject fp_name="/engine_tb/engine_/psum" type="array" db_ref_id="1">
          <obj_property name="ElementShortName">psum[127:0]</obj_property>
@@ -841,11 +849,6 @@
       <wvobject fp_name="/engine_tb/engine_/atom_count" type="array" db_ref_id="1">
          <obj_property name="ElementShortName">atom_count[7:0]</obj_property>
          <obj_property name="ObjectShortName">atom_count[7:0]</obj_property>
-         <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
-      </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/line_count" type="array" db_ref_id="1">
-         <obj_property name="ElementShortName">line_count[15:0]</obj_property>
-         <obj_property name="ObjectShortName">line_count[15:0]</obj_property>
          <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
       </wvobject>
       <wvobject fp_name="/engine_tb/engine_/cache_count" type="array" db_ref_id="1">

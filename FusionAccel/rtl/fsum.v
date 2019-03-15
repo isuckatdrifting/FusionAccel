@@ -79,9 +79,9 @@ always @ (posedge clk or posedge rst) begin
                 fsum_count <= 0;
             end
             busy: begin
+            reads_en <= 0; 
             if(valid) begin 
                 fsum_data_ready <= 1; 
-                reads_en <= 0; 
                 if(i_channel_count == 0) fsum_a <= bias;
                 else fsum_a <= fsum[fsum_index];
                 fsum_b <= data[16*fsum_count +: 16];
