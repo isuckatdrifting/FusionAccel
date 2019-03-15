@@ -61,14 +61,11 @@ reg  [7:0]  			 psum_count [`MAX_KERNEL-1:0];			//NOTES: counter for results in 
 reg  [16*`BURST_LEN-1:0] psum;						//NOTES: registers for 16-channel sum output, it is selected from the memory cmac_sum
 
 //Full sum registers
-reg  [15:0] 			 fsum [`MAX_O_SIDE-1:0]; //max support 128 x 128 output side
-reg  [15:0] 			 fsum_a, fsum_b, fsum_result;
-reg  [7:0]  			 fsum_count;
-reg  [7:0]  			 fsum_index;
-reg         			 fsum_data_valid;
 reg						 fsum_enable;
-reg						 fsum_data_ready;
-reg		    			 fsum_ready;
+wire [15:0]				 fsum_result;
+wire					 fsum_ready;
+reg  [7:0]				 fsum_index;
+reg  [15:0] 			 i_channel_count;
 
 genvar i;
 generate 
@@ -81,14 +78,20 @@ always @(posedge clk) cmac_ready <= rdy_cmac;
 assign weight = cmac_weight_cache[cmac_input_pipe_count];
 assign cmac_tmp_sum = cmac_sum[cmac_middle_pipe_count];
 
-wire operation_rfd_fsum, rdy_fsum;
-wire [15:0] result_fsum;
-accum fsum_ (.a(fsum_a), .b(fsum_b), .clk(clk), .operation_nd(fsum_data_ready), .operation_rfd(operation_rfd_fsum), .result(result_fsum), .rdy(rdy_fsum));
+wire [127:0] psum_;
+fifo_fsum ff_ (
+	.rst			(rst),			// input
+	.wr_clk			(clk),				// input
+	.rd_clk			(clk),				// input
+	.din			(psum), 		// input, Bus [31 : 0] 
+	.wr_en			(fsum_enable),			// input
+	.rd_en			(reads_en),			// input
+	.dout			(psum_), 		// output, Bus [31 : 0] 
+	.full			(),			// output
+	.empty			(),		// output
+	.valid			(valid));		// output
 
-always @(posedge clk) fsum_data_valid <= operation_rfd_fsum;
-always @(posedge clk) fsum_result <= result_fsum;
-always @(posedge clk) fsum_ready <= rdy_fsum;
-
+fsum f_ (.clk(clk), .rst(rst), .fsum_enable(fsum_enable), .reads_en(reads_en), .bias(bias), .data(psum_), .valid(valid), .fsum_result(fsum_result), .i_channel_count(i_channel_count), .fsum_index(fsum_index), .ready(fsum_ready));
 //==================== SCMP Wires and Registers ====================//
 reg 					 maxpool_valid, maxpool_data_ready, maxpool_enable;
 wire [`BURST_LEN-1:0] 	 maxpool_data_valid;
@@ -110,7 +113,7 @@ genvar l;
 generate
 	for (l = 0; l < `BURST_LEN; l = l + 1) begin: genscmp
 		scmp scmp_(.clk(clk), .rst(rst), .new_data(scmp_data[l*16 +: 16]), .ori_data(scmp_tmp_cmp[l*16 +: 16]), .result(maxpool_result[l]), .pool_valid(maxpool_valid), .data_ready(maxpool_data_ready), .data_valid(maxpool_data_valid[l]), .pool_ready(rdy_scmp[l]));
-	end //FIXME: scmp logic
+	end
 endgenerate
 always @(posedge clk) scmp_result <= maxpool_result;
 always @(posedge clk) scmp_ready <= rdy_scmp;
@@ -139,7 +142,6 @@ always @(posedge clk) sacc_result <= avepool_result;
 always @(posedge clk) sacc_ready <= rdy_sacc;
 
 //==================== Address registers ===========================//
-reg  [15:0] i_channel_count;
 reg  [7:0]  gemm_count;
 reg  [15:0] o_channel_count;
 reg			gemm_finish, layer_finish;
@@ -221,13 +223,6 @@ end
 //NOTES: Sum point is ready only after the all channel 3x3 kernel mac is complete
 //NOTES: weight and tmp_sum is directly wired out from the corresponding registers
 
-integer a; // initialize buffer for cmac
-initial begin
-	for (a=0; a<`MAX_O_SIDE; a=a+1) begin
-		fsum[a] <= 16'h0000;
-	end
-end
-
 //    Output, non-blocking
 integer b;
 always @ (posedge clk or posedge rst) begin
@@ -252,7 +247,7 @@ always @ (posedge clk or posedge rst) begin
 		cmac_enable <= 0; cmac_data_ready <= 0; avepool_enable <= 0; avepool_data_ready <= 0; maxpool_enable <= 0; maxpool_data_ready <= 0; div_en <= 0;
 		atom_count <= 8'h00; line_count <= 16'h0000; cmac_output_pipe_count <= 8'h00;
 		cmac_input_pipe_count <= 8'h00; cmac_middle_pipe_count <= 8'h00; scmp_input_pipe_count <= 8'h00; scmp_output_pipe_count <= 8'h00; 
-		fsum_enable <= 0; fsum_data_ready <= 0; fsum_a <= 16'h0000; fsum_b <= 16'h0000; fsum_count <= 8'h00; fsum_index <= 8'h00;
+		fsum_enable <= 0;
 		to_clear <= 0; 
 		//==================== Cross-channel registers ====================
 		i_channel_count <= 16'h0000; gemm_count <= 8'h00; o_channel_count <= 16'h0000; gemm_finish <= 0; layer_finish <= 0;
@@ -281,7 +276,7 @@ always @ (posedge clk or posedge rst) begin
 				cmac_enable <= 0; cmac_data_ready <= 0; avepool_enable <= 0; avepool_data_ready <= 0; maxpool_enable <= 0; maxpool_data_ready <= 0; div_en <= 0;
 				atom_count <= 8'h00; line_count <= 16'h0000; cmac_output_pipe_count <= 8'h00;
 				cmac_input_pipe_count <= 8'h00; cmac_middle_pipe_count <= 8'h00; scmp_input_pipe_count <= 8'h00; scmp_output_pipe_count <= 8'h00; 
-				fsum_enable <= 0; fsum_data_ready <= 0; fsum_a <= 16'h0000; fsum_b <= 16'h0000; fsum_count <= 8'h00; fsum_index <= 8'h00;
+				fsum_enable <= 0; fsum_index <= 8'h00;
 				to_clear <= 0; gemm_finish <= 0;
 			end
 // CMD = 1 ==================== CONVOLUTION: Process a line ====================//
@@ -380,36 +375,15 @@ always @ (posedge clk or posedge rst) begin
 					if(psum_count[cmac_output_pipe_count] == kernel_size) begin
 						psum <= cmac_result;
 						fsum_enable <= 1; //Trigger for channel partial sum
-						fsum_count <= 0;
-						if(i_channel_count == 0) fsum[fsum_index] <= bias; // Load bias
 					end
 				end 
-				
 				// ========== CONVOLUTION PIPELINE STEP4: full channel sum stored in -> sum, sum all channels
-				if(fsum_data_valid) begin
-					fsum_data_ready <= fsum_enable;
-				end
-				if(fsum_enable) begin
-					fsum_enable <= 0;
-					if(fsum_count == 0) fsum_a <= fsum[fsum_index]; //NOTES: initially bias value, accumulated sum is called after the first channel group
-					else fsum_a <= fsum_result;
-					fsum_b <= psum[15:0];
-					psum <= {16'h0000, psum[16*`BURST_LEN-1:16]};
-					if(fsum_count < `BURST_LEN) fsum_count <= fsum_count + 1;
-				end
-				if(fsum_ready) begin
-					if(fsum_count < `BURST_LEN) fsum_enable <= 1;
-					if(fsum_count == `BURST_LEN) begin
-						fsum_index <= fsum_index + 1; //pipeline index sampling (delay align)
-						fsum[fsum_index] <= fsum_result; //NOTES: it will overwrite the fsum_result in the first c-1 channel groups
-					end
-					if(i_channel_count + `BURST_LEN >= i_channel && fsum_count == `BURST_LEN) begin
-						p0_writeback_en <= 1;
-						writeback_num <= 1;
-					end
-				end
-				if(fsum_index + 1 == o_side && fsum_ready && fsum_count == `BURST_LEN) begin
-					to_clear <= 1;
+				if(fsum_enable) fsum_enable <= 0;
+				if(fsum_ready) begin 
+					p0_writeback_en <= 1; 
+					writeback_num <= 1; 
+					fsum_index <= fsum_index + 1;
+					if(fsum_index + 1 == o_side) to_clear <= 1; 
 				end
 			end
 

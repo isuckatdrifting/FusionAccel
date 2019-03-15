@@ -399,47 +399,69 @@
             <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
          </wvobject>
       </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/fsum" type="array" db_ref_id="1">
-         <obj_property name="ElementShortName">fsum[127:0,15:0]</obj_property>
-         <obj_property name="ObjectShortName">fsum[127:0,15:0]</obj_property>
-         <obj_property name="Radix">HEXRADIX</obj_property>
-      </wvobject>
       <wvobject fp_name="/engine_tb/engine_/fsum_enable" type="logic" db_ref_id="1">
          <obj_property name="ElementShortName">fsum_enable</obj_property>
          <obj_property name="ObjectShortName">fsum_enable</obj_property>
       </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/fsum_data_ready" type="logic" db_ref_id="1">
+      <wvobject fp_name="/engine_tb/engine_/f_/reads_en" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">reads_en</obj_property>
+         <obj_property name="ObjectShortName">reads_en</obj_property>
+      </wvobject>
+      <wvobject fp_name="/engine_tb/engine_/f_/bias" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">bias[15:0]</obj_property>
+         <obj_property name="ObjectShortName">bias[15:0]</obj_property>
+         <obj_property name="Radix">HEXRADIX</obj_property>
+      </wvobject>
+      <wvobject fp_name="/engine_tb/engine_/f_/data" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">data[127:0]</obj_property>
+         <obj_property name="ObjectShortName">data[127:0]</obj_property>
+         <obj_property name="Radix">HEXRADIX</obj_property>
+      </wvobject>
+      <wvobject fp_name="/engine_tb/engine_/f_/valid" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">valid</obj_property>
+         <obj_property name="ObjectShortName">valid</obj_property>
+      </wvobject>
+      <wvobject fp_name="/engine_tb/engine_/f_/fsum_data_ready" type="logic" db_ref_id="1">
          <obj_property name="ElementShortName">fsum_data_ready</obj_property>
          <obj_property name="ObjectShortName">fsum_data_ready</obj_property>
       </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/fsum_count" type="array" db_ref_id="1">
-         <obj_property name="ElementShortName">fsum_count[7:0]</obj_property>
-         <obj_property name="ObjectShortName">fsum_count[7:0]</obj_property>
-         <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+      <wvobject fp_name="/engine_tb/engine_/f_/fsum" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">fsum[127:0,15:0]</obj_property>
+         <obj_property name="ObjectShortName">fsum[127:0,15:0]</obj_property>
+         <obj_property name="Radix">HEXRADIX</obj_property>
       </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/fsum_a" type="array" db_ref_id="1">
+      <wvobject fp_name="/engine_tb/engine_/f_/fsum_a" type="array" db_ref_id="1">
          <obj_property name="ElementShortName">fsum_a[15:0]</obj_property>
          <obj_property name="ObjectShortName">fsum_a[15:0]</obj_property>
          <obj_property name="Radix">HEXRADIX</obj_property>
       </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/fsum_b" type="array" db_ref_id="1">
+      <wvobject fp_name="/engine_tb/engine_/f_/fsum_b" type="array" db_ref_id="1">
          <obj_property name="ElementShortName">fsum_b[15:0]</obj_property>
          <obj_property name="ObjectShortName">fsum_b[15:0]</obj_property>
          <obj_property name="Radix">HEXRADIX</obj_property>
       </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/fsum_result" type="array" db_ref_id="1">
+      <wvobject fp_name="/engine_tb/engine_/f_/fsum_result" type="array" db_ref_id="1">
          <obj_property name="ElementShortName">fsum_result[15:0]</obj_property>
          <obj_property name="ObjectShortName">fsum_result[15:0]</obj_property>
          <obj_property name="Radix">HEXRADIX</obj_property>
       </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/fsum_index" type="array" db_ref_id="1">
+      <wvobject fp_name="/engine_tb/engine_/f_/fsum_count" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">fsum_count[7:0]</obj_property>
+         <obj_property name="ObjectShortName">fsum_count[7:0]</obj_property>
+         <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+      </wvobject>
+      <wvobject fp_name="/engine_tb/engine_/f_/fsum_index" type="array" db_ref_id="1">
          <obj_property name="ElementShortName">fsum_index[7:0]</obj_property>
          <obj_property name="ObjectShortName">fsum_index[7:0]</obj_property>
          <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
       </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/fsum_ready" type="logic" db_ref_id="1">
+      <wvobject fp_name="/engine_tb/engine_/f_/fsum_ready" type="logic" db_ref_id="1">
          <obj_property name="ElementShortName">fsum_ready</obj_property>
          <obj_property name="ObjectShortName">fsum_ready</obj_property>
+      </wvobject>
+      <wvobject fp_name="/engine_tb/engine_/f_/ready" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">ready</obj_property>
+         <obj_property name="ObjectShortName">ready</obj_property>
       </wvobject>
       <wvobject fp_name="/engine_tb/engine_/i_channel_count" type="array" db_ref_id="1">
          <obj_property name="ElementShortName">i_channel_count[15:0]</obj_property>
@@ -615,11 +637,6 @@
          <obj_property name="ElementShortName">sacc_ready[7:0]</obj_property>
          <obj_property name="ObjectShortName">sacc_ready[7:0]</obj_property>
          <obj_property name="Radix">HEXRADIX</obj_property>
-      </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/fsum_index" type="array" db_ref_id="1">
-         <obj_property name="ElementShortName">fsum_index[7:0]</obj_property>
-         <obj_property name="ObjectShortName">fsum_index[7:0]</obj_property>
-         <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
       </wvobject>
       <wvobject fp_name="/engine_tb/engine_/i_channel_count" type="array" db_ref_id="1">
          <obj_property name="ElementShortName">i_channel_count[15:0]</obj_property>
