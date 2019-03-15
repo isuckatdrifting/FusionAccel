@@ -399,22 +399,22 @@
             <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
          </wvobject>
       </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/fsum_enable" type="logic" db_ref_id="1">
-         <obj_property name="ElementShortName">fsum_enable</obj_property>
-         <obj_property name="ObjectShortName">fsum_enable</obj_property>
+      <wvobject fp_name="/engine_tb/engine_/f_/bias" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">bias[15:0]</obj_property>
+         <obj_property name="ObjectShortName">bias[15:0]</obj_property>
+         <obj_property name="Radix">HEXRADIX</obj_property>
       </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/f_/reads_en" type="logic" db_ref_id="1">
-         <obj_property name="ElementShortName">reads_en</obj_property>
-         <obj_property name="ObjectShortName">reads_en</obj_property>
+      <wvobject fp_name="/engine_tb/engine_/writes_en" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">writes_en</obj_property>
+         <obj_property name="ObjectShortName">writes_en</obj_property>
       </wvobject>
       <wvobject fp_name="/engine_tb/engine_/ff_/empty" type="logic" db_ref_id="1">
          <obj_property name="ElementShortName">empty</obj_property>
          <obj_property name="ObjectShortName">empty</obj_property>
       </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/f_/bias" type="array" db_ref_id="1">
-         <obj_property name="ElementShortName">bias[15:0]</obj_property>
-         <obj_property name="ObjectShortName">bias[15:0]</obj_property>
-         <obj_property name="Radix">HEXRADIX</obj_property>
+      <wvobject fp_name="/engine_tb/engine_/f_/reads_en" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">reads_en</obj_property>
+         <obj_property name="ObjectShortName">reads_en</obj_property>
       </wvobject>
       <wvobject fp_name="/engine_tb/engine_/f_/data" type="array" db_ref_id="1">
          <obj_property name="ElementShortName">data[127:0]</obj_property>
@@ -429,10 +429,9 @@
          <obj_property name="ElementShortName">fsum_data_ready</obj_property>
          <obj_property name="ObjectShortName">fsum_data_ready</obj_property>
       </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/fifo_fsum_count" type="array" db_ref_id="1">
-         <obj_property name="ElementShortName">fifo_fsum_count[6:0]</obj_property>
-         <obj_property name="ObjectShortName">fifo_fsum_count[6:0]</obj_property>
-         <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+      <wvobject fp_name="/engine_tb/engine_/f_/curr_state" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">curr_state[1:0]</obj_property>
+         <obj_property name="ObjectShortName">curr_state[1:0]</obj_property>
       </wvobject>
       <wvobject fp_name="/engine_tb/engine_/f_/fsum" type="array" db_ref_id="1">
          <obj_property name="ElementShortName">fsum[127:0,15:0]</obj_property>
