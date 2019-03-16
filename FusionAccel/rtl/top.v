@@ -61,9 +61,9 @@ wire        pi0_ep_write, po0_ep_read, pi1_ep_write, pi2_ep_write;
 wire [31:0] pi0_ep_dataout, po0_ep_datain, pi1_ep_dataout, pi2_ep_dataout;
 
 //-------------------------LED Stage Monitor-------------------------------//
-assign led = ~{csb_state[0], csb_state[1], csb_state[2], ep00wire[7], engine_state[0], engine_state[1], engine_state[2], gemm_finish};
+wire gemm_finish, layer_finish;
+assign led = ~{csb_state[0], csb_state[1], csb_state[2], engine_state[0], engine_state[1], engine_state[2], gemm_finish, layer_finish};
 
-wire gemm_finish;
 wire [15:0] i_channel_count;
 wire [31:0] timer;
 
@@ -105,6 +105,7 @@ engine engine_(
 	.bias					(bias[15:0]),
 //Response signals engine->csb
 	.gemm_finish			(gemm_finish),
+    .layer_finish           (layer_finish),
 	.i_channel_count		(i_channel_count),
 	.engine_ready			(engine_ready),
 //Command path engine->dma
