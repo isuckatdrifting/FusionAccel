@@ -9,6 +9,7 @@ import numpy as np
 import os
 import ok
 import struct
+import time
 
 # np.set_printoptions(precision=4)
 
@@ -149,7 +150,7 @@ class host:
 		self.xem.UpdateWireOuts()
 		self.xem.SetWireInValue(0x00, 0x0040) # ep00wire[6], engine reset
 		self.xem.UpdateWireIns()
-		self.xem.SetWireInValue(0x00, 0x0080) # ep00wire[6], engine reset
+		self.xem.SetWireInValue(0x00, 0x0080) # ep00wire[7], engine valid
 		self.xem.UpdateWireIns()
 		self.xem.SetWireInValue(0x00, 0x0000) # clear ep00wire
 		self.xem.UpdateWireIns()
@@ -230,11 +231,17 @@ def main():
 			dev.loadCommands()
 			# process, load all weights for this layer, --loop st
 			dev.startOp()
-			data, bias, weight = dev.gemm_magic(blob, 0, 3, 0, 0, 0)
+			timestamp_0 = time.clock()
+			data, bias, weight = dev.gemm_magic(blob, pivot=0, kernel=3, layer=0, number=0, piece=0)
 			dev.loadWeights_Bias(bias, weight)
 			dev.loadGemm(data)
+			timestamp_1 = time.clock()
 			dev.waitIrq()
+			timestamp_2 = time.clock()
 			dev.readOutput()
+			timestamp_3 = time.clock()
+			print("[PARSING]", "Engine elapsed", str(timestamp_2-timestamp_1))
+			print("[PARSING]", "Host elapsed", str(timestamp_3-timestamp_0))
 				# gemm magic, loop st
 				# load gemm data and gemm weight (whole channel)
 				# start engine operation
