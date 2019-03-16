@@ -628,6 +628,11 @@
          <obj_property name="ObjectShortName">result[15:0]</obj_property>
          <obj_property name="Radix">HEXRADIX</obj_property>
       </wvobject>
+      <wvobject fp_name="/engine_tb/engine_/tmp_result" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">tmp_result[127:0]</obj_property>
+         <obj_property name="ObjectShortName">tmp_result[127:0]</obj_property>
+         <obj_property name="Radix">HEXRADIX</obj_property>
+      </wvobject>
       <wvobject fp_name="/engine_tb/engine_/sacc_result" type="array" db_ref_id="1">
          <obj_property name="ElementShortName">sacc_result[127:0]</obj_property>
          <obj_property name="ObjectShortName">sacc_result[127:0]</obj_property>

@@ -167,13 +167,13 @@ reg  [31:0] timer;
 // NOTES: Generate accumulator for atom(1 * 1 * channel) and cube(k * k * channel), this data path is dedicated to convolution only.
 // NOTES: deserializer for write back is only enabled in pooling
 //State Machine
-localparam idle 		= 1;
-localparam gemm_busy 	= 2;
-localparam sacc_busy 	= 3;
-localparam scmp_busy 	= 4;
-localparam clear 		= 5;
-localparam wait_		= 6;
-localparam finish 		= 7;
+localparam idle 		= 0;
+localparam gemm_busy 	= 1;
+localparam sacc_busy 	= 2;
+localparam scmp_busy 	= 3;
+localparam clear 		= 4;
+localparam wait_		= 5;
+localparam finish 		= 6;
 
 reg [3:0] curr_state;
 reg [3:0] next_state;
@@ -212,7 +212,11 @@ always @ (*) begin
 			else next_state = sacc_busy;
 		end
 		clear: begin
-			next_state = clear; // FIXME: if not keeping at this state, gemm_finish is not finished. keeping this state leads to o_channel_count burst
+			if(i_channel_count + `BURST_LEN >= i_channel) next_state = wait_;
+			else next_state = idle; // FIXME: if not keeping at this state, gemm_finish is not captured. keeping this state leads to o_channel_count burst
+		end
+		wait_: begin
+			next_state = wait_;
 		end
 		finish: begin
 			next_state = finish;
