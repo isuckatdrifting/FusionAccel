@@ -22,15 +22,11 @@ module engine  // Instantiate 8CMACs for conv, 8SCMP for maxpool and 8SACC for a
 	output 			engine_ready,
 //Command path engine->dma
 	output          dma_p0_writes_en,
-    output          dma_p2_reads_en,
-    output          dma_p3_reads_en,
 	output [12:0]	d_fifo_read_addr,
 	output [12:0]	w_fifo_read_addr,
 //Data path dma->engine
 	input [15:0] 	dma_p2_ob_data,
 	input [15:0] 	dma_p3_ob_data,
-	input 			dma_p2_ob_we,
-	input 			dma_p3_ob_we,
 //Data path engine->dma
 	output [15:0]	dma_p0_ib_data,
 	output [3:0]	curr_state,
@@ -160,7 +156,7 @@ reg  [15:0] input_count;						//NOTES: counter for one gemm line, range:(0, kern
 reg  [15:0] output_count;
 reg  [7:0]  cache_count [`MAX_KERNEL-1:0]; 	//NOTES: use max conv side support defined in include files.
 reg  [7:0]  dma_p2_burst_cnt, dma_p3_burst_cnt, dma_p3_offset; // de-serializer counter, burst get 16 data, then send to operation unit.
-reg			dma_p0_writes_en, dma_p2_reads_en, dma_p3_reads_en;
+reg			dma_p0_writes_en;
 reg  [12:0] d_fifo_read_addr, w_fifo_read_addr;
 reg  [15:0] dma_p0_ib_data;
 reg			p0_writeback_en;
@@ -241,7 +237,7 @@ always @ (posedge clk or posedge rst) begin
 		engine_ready <= 0;
 		d_fifo_read_addr <= 0; w_fifo_read_addr <= 0;
 		dma_p2_burst_cnt <= 16'h0000; dma_p3_burst_cnt <= 16'h0000; dma_p3_offset <= 8'h00;
-		dma_p0_writes_en <= 0; dma_p2_reads_en <= 0; dma_p3_reads_en <= 0;
+		dma_p0_writes_en <= 0;
 		dma_p0_ib_data <= 16'h0000;
 		//==================== Channel operation registers ====================
 		dbuf <= 'd0; data <= 'd0; psum <= 'd0; cmp <= 'd0; sacc_tmp_sum <= 'd0;
@@ -270,7 +266,7 @@ always @ (posedge clk or posedge rst) begin
 			idle: begin 
 				engine_ready <= 0;
 				dma_p2_burst_cnt <= 16'h0000; dma_p3_burst_cnt <= 16'h0000; dma_p3_offset <= 8'h00;
-				dma_p0_writes_en <= 0; dma_p2_reads_en <= 0; dma_p3_reads_en <= 0;
+				dma_p0_writes_en <= 0;
 				dma_p0_ib_data <= 16'h0000;
 				//==================== Channel operation registers ====================
 				dbuf <= 'd0; data <= 'd0; psum <= 'd0; cmp <= 'd0; sacc_tmp_sum <= 'd0;
@@ -295,7 +291,6 @@ always @ (posedge clk or posedge rst) begin
 			gemm_busy: begin
 				timer <= timer + 1;
 				//========== CONVOLUTION PIPELINE STEP1: enable data read and weight read (this part is the slowest and defines the available timing space of the pipeline)
-				// if(dma_p2_ob_we) begin
 				if(engine_valid) begin
 					d_fifo_read_addr <= d_fifo_read_addr + 1;
 					if(dma_p3_offset < kernel_size) w_fifo_read_addr <= w_fifo_read_addr + 1;
@@ -303,23 +298,18 @@ always @ (posedge clk or posedge rst) begin
 				if(d_fifo_read_addr > 0) begin
 					dma_p2_burst_cnt <= dma_p2_burst_cnt + 1;
 					if(dma_p2_burst_cnt == `BURST_LEN-1) begin	//NOTES: start cmac when finishing reading the first atom (1x1xpara)
-						dma_p2_reads_en <= 0; 
 						dma_p2_burst_cnt <= 0;
 						cmac_enable <= 1;	//NOTES: use this signal to latch buffer
 					end
 					dbuf <= {dma_p2_ob_data, dbuf[16*`BURST_LEN-1 : 16]}; // deserialize data to dbuf
 				end
-				// if(dma_p3_ob_we) begin // @ this edge dma_p3_ob_data is also updated.
 				if(w_fifo_read_addr > 0) begin
 					if(dma_p3_burst_cnt == `BURST_LEN-1) begin
-						dma_p3_reads_en <= 0; 
 						dma_p3_burst_cnt <= 0;
 						dma_p3_offset <= dma_p3_offset + 1;
 					end else dma_p3_burst_cnt <= dma_p3_burst_cnt + 1;
 					wbuf[dma_p3_offset] <= {dma_p3_ob_data, wbuf[dma_p3_offset][16*`BURST_LEN-1 : 16]};
-					
 				end
-				
 
 				//========== CONVOLUTION PIPELINE STEP2: start passing deserialized data and weight to cmac (including weight reuse)
 				if(cmac_data_ready) begin
@@ -413,13 +403,12 @@ always @ (posedge clk or posedge rst) begin
 
 // CMD = 4 ==================== MAXPOOLING: Process a line ====================//
 			scmp_busy: begin
-				if(engine_valid) dma_p2_reads_en <= 1;
+				if(engine_valid) d_fifo_read_addr <= d_fifo_read_addr + 1;
 
 				//========== MAXPOOLING PIPELINE STEP1: enable data read (this part is the slowest and defines the available timing space of the pipeline)
-				if(dma_p2_ob_we) begin
+				if(d_fifo_read_addr > 0) begin
 					dma_p2_burst_cnt <= dma_p2_burst_cnt + 1;
 					if(dma_p2_burst_cnt == `BURST_LEN-1) begin	//NOTES: start scmp when finishing reading the first atom (1x1xpara)
-						dma_p2_reads_en <= 0;
 						dma_p2_burst_cnt <= 0;
 						maxpool_enable <= 1;
 					end
@@ -509,14 +498,13 @@ always @ (posedge clk or posedge rst) begin
 
 // CMD = 5 ==================== AVEPOOLING: Process a line * surface ====================//
 			sacc_busy: begin
-				if(engine_valid && input_count + 1 < kernel_size) dma_p2_reads_en <= 1;
+				if(engine_valid && input_count + 1 < kernel_size) d_fifo_read_addr <= d_fifo_read_addr + 1;
 
 				//========== AVEPOOLING PIPELINE STEP1: enable data read (this part is the slowest and defines the available timing space of the pipeline)
-				if(dma_p2_ob_we) begin
+				if(d_fifo_read_addr > 0) begin
 					dma_p2_burst_cnt <= dma_p2_burst_cnt + 1;
 					if(dma_p2_burst_cnt == `BURST_LEN-1) begin	//NOTES: start cmac when finishing reading the first atom (1x1xpara)
 						dma_p2_burst_cnt <= 0;
-						dma_p2_reads_en <= 0;
 						avepool_enable <= 1;
 					end
 					dbuf <= {dma_p2_ob_data, dbuf[16*`BURST_LEN-1 : 16]}; // deserialize data to dbuf
@@ -549,7 +537,6 @@ always @ (posedge clk or posedge rst) begin
 
 			//==================== Update cross-channel counters and read address ====================
 			clear: begin
-				dma_p2_reads_en <= 0; dma_p3_reads_en <= 0;
 				i_channel_count <= i_channel_count + `BURST_LEN; // within channel operation the address is not updated
 				if(i_channel_count + `BURST_LEN >= i_channel) begin
 					i_channel_count <= 0;

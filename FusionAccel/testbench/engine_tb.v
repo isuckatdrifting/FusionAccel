@@ -24,15 +24,11 @@ wire		gemm_finish;
 wire 		engine_ready;
 //Command path engine->dma
 wire        dma_p0_writes_en;
-wire        dma_p2_reads_en;
-wire        dma_p3_reads_en;
 wire [12:0] d_fifo_read_addr;
 wire [12:0] w_fifo_read_addr;
 //Data path dma->engine
 reg [15:0] 	dma_p2_ob_data;
 reg [15:0] 	dma_p3_ob_data;
-reg 		dma_p2_ob_we;
-reg 		dma_p3_ob_we;
 //Data path engine->dma
 wire [15:0]	dma_p0_ib_data;
 
@@ -828,15 +824,11 @@ engine engine_(
 	.engine_ready			(engine_ready),
 //Command path engine->dma
 	.dma_p0_writes_en		(dma_p0_writes_en),
-	.dma_p2_reads_en		(dma_p2_reads_en),
-    .dma_p3_reads_en		(dma_p3_reads_en),
 	.d_fifo_read_addr		(d_fifo_read_addr),
 	.w_fifo_read_addr		(w_fifo_read_addr),
 //Data path dma->engine
 	.dma_p2_ob_data			(dma_p2_ob_data),
 	.dma_p3_ob_data			(dma_p3_ob_data),
-	.dma_p2_ob_we			(dma_p2_ob_we),
-	.dma_p3_ob_we			(dma_p3_ob_we),
 	.dma_p0_ib_data			(dma_p0_ib_data)
 );
 
