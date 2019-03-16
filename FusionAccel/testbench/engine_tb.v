@@ -26,6 +26,8 @@ wire 		engine_ready;
 wire        dma_p0_writes_en;
 wire        dma_p2_reads_en;
 wire        dma_p3_reads_en;
+wire [12:0] d_fifo_read_addr;
+wire [12:0] w_fifo_read_addr;
 //Data path dma->engine
 reg [15:0] 	dma_p2_ob_data;
 reg [15:0] 	dma_p3_ob_data;
@@ -828,6 +830,8 @@ engine engine_(
 	.dma_p0_writes_en		(dma_p0_writes_en),
 	.dma_p2_reads_en		(dma_p2_reads_en),
     .dma_p3_reads_en		(dma_p3_reads_en),
+	.d_fifo_read_addr		(d_fifo_read_addr),
+	.w_fifo_read_addr		(w_fifo_read_addr),
 //Data path dma->engine
 	.dma_p2_ob_data			(dma_p2_ob_data),
 	.dma_p3_ob_data			(dma_p3_ob_data),
@@ -860,7 +864,7 @@ initial begin
 `ifdef CMAC
     #100 op_type = 1; stride = 2; stride2 = 6;
     // #100 op_type = 1; stride = 1; stride2 = 1;
-		kernel = 3; kernel_size = 9; i_channel = 3; o_channel = 1; i_side = 7; o_side = 4; bias = 16'hA35C;
+		kernel = 3; kernel_size = 9; i_channel = 3; o_channel = 1; i_side = 227; o_side = 113; bias = 16'hA35C;
 		// kernel = 1; kernel_size = 1; i_channel = 3; o_channel = 1; i_side = 7; o_side = 4; bias = 16'hA35C;
 `endif
 `ifdef SCMP
@@ -877,6 +881,11 @@ initial begin
 	//#20 engine_valid = 1;
 end
 
+always @(posedge clk) begin
+	dma_p2_ob_data = data[d_fifo_read_addr];
+	dma_p3_ob_data = weight[w_fifo_read_addr];
+end
+/*
 always @(posedge clk) begin
 	if(engine_valid) begin
 		if(dma_p2_reads_en) begin 
@@ -910,6 +919,6 @@ always @(posedge clk) begin
 		end else dma_p3_ob_we <= 0;
 `endif
 	end
-end
+end*/
 
 endmodule

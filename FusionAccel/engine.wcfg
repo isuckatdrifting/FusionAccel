@@ -39,6 +39,11 @@
          <obj_property name="ObjectShortName">dma_p2_ob_data[15:0]</obj_property>
          <obj_property name="Radix">HEXRADIX</obj_property>
       </wvobject>
+      <wvobject fp_name="/engine_tb/engine_/d_fifo_read_addr" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">d_fifo_read_addr[12:0]</obj_property>
+         <obj_property name="ObjectShortName">d_fifo_read_addr[12:0]</obj_property>
+         <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+      </wvobject>
       <wvobject fp_name="/engine_tb/engine_/dbuf" type="array" db_ref_id="1">
          <obj_property name="ElementShortName">dbuf[127:0]</obj_property>
          <obj_property name="ObjectShortName">dbuf[127:0]</obj_property>
@@ -52,6 +57,11 @@
       <wvobject fp_name="/engine_tb/dma_p3_ob_we" type="logic" db_ref_id="1">
          <obj_property name="ElementShortName">dma_p3_ob_we</obj_property>
          <obj_property name="ObjectShortName">dma_p3_ob_we</obj_property>
+      </wvobject>
+      <wvobject fp_name="/engine_tb/engine_/w_fifo_read_addr" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">w_fifo_read_addr[12:0]</obj_property>
+         <obj_property name="ObjectShortName">w_fifo_read_addr[12:0]</obj_property>
+         <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
       </wvobject>
       <wvobject fp_name="/engine_tb/engine_/dma_p3_ob_data" type="array" db_ref_id="1">
          <obj_property name="ElementShortName">dma_p3_ob_data[15:0]</obj_property>
