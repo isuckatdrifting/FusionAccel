@@ -19,7 +19,7 @@ weight_directory = 'C:/Users/shish/source/repos/FusionAccel/scripts/tmp/weight.n
 image_directory = 'C:/Users/shish/source/repos/FusionAccel/scripts/tmp/data.npy'
 RUN = 0
 SANITY = 1
-test_mode = 0
+test_mode = RUN
 
 class host:
 	def __init__(self):
@@ -166,22 +166,23 @@ class host:
 		self.xem.SetWireInValue(0x00, 0x0000) #clear ep00wire
 		self.xem.UpdateWireIns()
 	
-	def gemm_magic(self, data, pivot, kernel, layer, number, piece):
+	def gemm_magic(self, data, kernel, layer, number, gemm):
 		tmp_bias = self.bias[layer][number].astype(dtype=np.float16).tobytes()
 		hex_bias = struct.unpack("<H", tmp_bias)[0]
 
 		print("[MAGIC]", "      GEMM data shape:", data.shape)
-		tmp_data = data[pivot:pivot+kernel,:,:]
-		tmp_data = tmp_data.transpose((1,0,2))
+		tmp_data = data[gemm:gemm+kernel,:,:]
+		tmp_data = tmp_data.transpose((1,0,2)) # transpose and get the first gemm
 		tmp = np.dstack((tmp_data.reshape(-1), np.zeros_like(tmp_data.reshape(-1)))) # padding zero for fp16
 		tmp = tmp.reshape(-1)
 		gemm_data = tmp.tobytes() + bytearray((int(len(tmp.reshape(-1).tobytes())/512)+1)*512-int(len(tmp.reshape(-1).tobytes())))
 		print("[MAGIC]", "  Reshaped data shape:", len(gemm_data))
 		
+		print("[MAGIC]", "   Layer weight shape:", self.weight[layer].shape)
 		weight = self.weight[layer][number]
 		print("[MAGIC]", "    GEMM weight shape:", weight.shape)
-		weight[piece] = weight[piece].transpose((1,0,2))
-		tmp_weight = np.dstack((weight[piece].reshape(-1), np.zeros_like(weight[piece].reshape(-1)))).astype(dtype=np.float16) # pad 16-bit zero for fp16
+		weight = weight.transpose((0,2,1,3)) # transpose and get the first gemm
+		tmp_weight = np.dstack((weight.reshape(-1), np.zeros_like(weight.reshape(-1)))).astype(dtype=np.float16) # pad 16-bit zero for fp16
 		weight_data = tmp_weight.reshape(-1).tobytes() + bytearray((int(len(tmp_weight.reshape(-1).tobytes())/512)+1)*512-int(len(tmp_weight.reshape(-1).tobytes())))
 		print("[MAGIC]", "Reshaped weight shape:", len(weight_data))
 
@@ -190,30 +191,28 @@ class host:
 	def waitIrq(self):
 		while True:
 			self.xem.UpdateWireOuts()
-			
-			print("[COMMANDS]", hex(self.xem.GetWireOutValue(0x21)))
-			print("[COMMANDS]", hex(self.xem.GetWireOutValue(0x22)))
-			print("[COMMANDS]", hex(self.xem.GetWireOutValue(0x23)))
-			print("[COMMANDS]", hex(self.xem.GetWireOutValue(0x24)))
-			
+			print("[COMMANDS]", "0x%08x" % self.xem.GetWireOutValue(0x21))
+			print("[COMMANDS]", "0x%08x" % self.xem.GetWireOutValue(0x22))
+			print("[COMMANDS]", "0x%08x" % self.xem.GetWireOutValue(0x23))
+			print("[COMMANDS]", "0x%08x" % self.xem.GetWireOutValue(0x24))
 			if self.xem.GetWireOutValue(0x20) == 0x0001:
 				print("[INTERRUPT]", "Got Interrupt...")
 				break
 			if self.xem.GetWireOutValue(0x25) == 0x0001:
-				print("[INTERRUPT]", "Got GEMM finish", 'timer = ' + str(hex(self.xem.GetWireOutValue(0x26))) + ', elapsed time = %f us' % (self.xem.GetWireOutValue(0x26)/100))
+				print("[INTERRUPT]", "Got GEMM finish", 'timer = 0x%04x' % self.xem.GetWireOutValue(0x26), ', elapsed time = %f us' % (self.xem.GetWireOutValue(0x26)/100))
 				break
 		return
 	
 	def readOutput(self):
-		print("[INTERRUPT]", 'rd_count = ' + str(hex(self.xem.GetWireOutValue(0x27))))
-		print("[INTERRUPT]", 'wr_count = ' + str(hex(self.xem.GetWireOutValue(0x28))))
+		print("[INTERRUPT]", 'rd_count = 0x%08x' % self.xem.GetWireOutValue(0x27))
+		print("[INTERRUPT]", 'wr_count = 0x%08x' % self.xem.GetWireOutValue(0x28))
 		count = self.xem.GetWireOutValue(0x27)
 		print("[PARSING]", "Reading Output...")
 		self.xem.ReadFromBlockPipeOut(0xa0, self.blocksize, self.rbuf)
 		print(np.frombuffer(self.rbuf, dtype=np.float16)[0::2][0:count]) # Results
 		self.xem.UpdateWireOuts()
-		print("[PARSING]", 'rd_count = ' + str(hex(self.xem.GetWireOutValue(0x27))))
-		print("[PARSING]", 'wr_count = ' + str(hex(self.xem.GetWireOutValue(0x28))))
+		print("[PARSING]", 'rd_count = 0x%08x' % self.xem.GetWireOutValue(0x27))
+		print("[PARSING]", 'wr_count = 0x%08x' % self.xem.GetWireOutValue(0x28))
 		self.reset_result_fifo()
 
 def main():   
@@ -232,7 +231,9 @@ def main():
 			# process, load all weights for this layer, --loop st
 			dev.startOp()
 			timestamp_0 = time.clock()
-			data, bias, weight = dev.gemm_magic(blob, pivot=0, kernel=3, layer=0, number=0, piece=0)
+			# gemm magic, loop st
+			data, bias, weight = dev.gemm_magic(blob, kernel=3, layer=0, number=0, gemm=0)
+			# load gemm data and gemm weight (whole channel), then start operation
 			dev.loadWeights_Bias(bias, weight)
 			dev.loadGemm(data)
 			timestamp_1 = time.clock()
@@ -242,18 +243,13 @@ def main():
 			timestamp_3 = time.clock()
 			print("[PARSING]", "Engine elapsed", str(timestamp_2-timestamp_1))
 			print("[PARSING]", "Host elapsed", str(timestamp_3-timestamp_0))
-				# gemm magic, loop st
-				# load gemm data and gemm weight (whole channel)
-				# start engine operation
-				# wait for engine ready and interrupt
-				# read output fifo
 				# --loop end (finish all channels for all weight groups)
 			# --loop end (finish all layers)
 			
 #------------------------------Sanity without Hardware------------------------------#
 	if test_mode == SANITY:
 		dev.readBlob()
-		dev.gemm_magic(dev.image, 0, 3, 0, 0, 0)
+		dev.gemm_magic(dev.image, 0, 3, 0, 0)
 
 if __name__ == '__main__':
     main()
