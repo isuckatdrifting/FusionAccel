@@ -125,6 +125,7 @@ class host:
 				self.bias.append(weight[name]) #append bias of all layers together
 		print("[INITIAL]", "layers of weight = %d" % len(self.weight))
 		print("[INITIAL]", "layers of bias = %d" % len(self.bias))
+		return 
 
 	def loadCommands(self):
 		print("[INITIAL]", "Setting Commands...")
@@ -167,53 +168,50 @@ class host:
 		self.xem.UpdateWireIns()
 	
 	def gemm_magic(self, data, kernel, layer, number, gemm):
+
 		tmp_bias = self.bias[layer][number].astype(dtype=np.float16).tobytes()
 		hex_bias = struct.unpack("<H", tmp_bias)[0]
 
-		print("[MAGIC]", "      GEMM data shape:", data.shape)
+		# print("[MAGIC]", "      GEMM data shape:", data.shape)
 		tmp_data = data[gemm:gemm+kernel,:,:]
 		tmp_data = tmp_data.transpose((1,0,2)) # transpose and get the first gemm
 		tmp = np.dstack((tmp_data.reshape(-1), np.zeros_like(tmp_data.reshape(-1)))) # padding zero for fp16
 		tmp = tmp.reshape(-1)
 		gemm_data = tmp.tobytes() + bytearray((int(len(tmp.reshape(-1).tobytes())/512)+1)*512-int(len(tmp.reshape(-1).tobytes())))
-		print("[MAGIC]", "  Reshaped data shape:", len(gemm_data))
+		# print("[MAGIC]", "  Reshaped data shape:", len(gemm_data))
 		
-		print("[MAGIC]", "   Layer weight shape:", self.weight[layer].shape)
+		# print("[MAGIC]", "   Layer weight shape:", self.weight[layer].shape)
 		weight = self.weight[layer][number]
-		print("[MAGIC]", "    GEMM weight shape:", weight.shape)
+		# print("[MAGIC]", "    GEMM weight shape:", weight.shape)
 		weight = weight.transpose((0,2,1,3)) # transpose and get the first gemm
 		tmp_weight = np.dstack((weight.reshape(-1), np.zeros_like(weight.reshape(-1)))).astype(dtype=np.float16) # pad 16-bit zero for fp16
 		weight_data = tmp_weight.reshape(-1).tobytes() + bytearray((int(len(tmp_weight.reshape(-1).tobytes())/512)+1)*512-int(len(tmp_weight.reshape(-1).tobytes())))
-		print("[MAGIC]", "Reshaped weight shape:", len(weight_data))
+		# print("[MAGIC]", "Reshaped weight shape:", len(weight_data))
 
 		return gemm_data, hex_bias, weight_data
 
 	def waitIrq(self):
 		while True:
 			self.xem.UpdateWireOuts()
-			print("[COMMANDS]", "0x%08x" % self.xem.GetWireOutValue(0x21))
-			print("[COMMANDS]", "0x%08x" % self.xem.GetWireOutValue(0x22))
-			print("[COMMANDS]", "0x%08x" % self.xem.GetWireOutValue(0x23))
-			print("[COMMANDS]", "0x%08x" % self.xem.GetWireOutValue(0x24))
 			if self.xem.GetWireOutValue(0x20) == 0x0001:
 				print("[INTERRUPT]", "Got Interrupt...")
 				break
 			if self.xem.GetWireOutValue(0x25) == 0x0001:
-				print("[INTERRUPT]", "Got GEMM finish", 'timer = 0x%04x' % self.xem.GetWireOutValue(0x26), ', elapsed time = %f us' % (self.xem.GetWireOutValue(0x26)/100))
+				# print("[INTERRUPT]", "Got GEMM finish", 'timer = 0x%04x' % self.xem.GetWireOutValue(0x26), ', elapsed time = %f us' % (self.xem.GetWireOutValue(0x26)/100))
 				break
 		return
 	
 	def readOutput(self):
-		print("[INTERRUPT]", 'rd_count = 0x%08x' % self.xem.GetWireOutValue(0x27))
-		print("[INTERRUPT]", 'wr_count = 0x%08x' % self.xem.GetWireOutValue(0x28))
+		# print("[INTERRUPT]", 'rd_count = 0x%08x' % self.xem.GetWireOutValue(0x27))
+		# print("[INTERRUPT]", 'wr_count = 0x%08x' % self.xem.GetWireOutValue(0x28))
 		count = self.xem.GetWireOutValue(0x27)
-		print("[PARSING]", "Reading Output...")
+		# print("[PARSING]", "Reading Output...")
 		self.xem.ReadFromBlockPipeOut(0xa0, self.blocksize, self.rbuf)
-		print(np.frombuffer(self.rbuf, dtype=np.float16)[0::2][0:count]) # Results
 		self.xem.UpdateWireOuts()
-		print("[PARSING]", 'rd_count = 0x%08x' % self.xem.GetWireOutValue(0x27))
-		print("[PARSING]", 'wr_count = 0x%08x' % self.xem.GetWireOutValue(0x28))
+		# print("[PARSING]", 'rd_count = 0x%08x' % self.xem.GetWireOutValue(0x27))
+		# print("[PARSING]", 'wr_count = 0x%08x' % self.xem.GetWireOutValue(0x28))
 		self.reset_result_fifo()
+		return np.frombuffer(self.rbuf, dtype=np.float16)[0::2][0:count] # Results
 
 def main():   
 	dev = host()
@@ -221,30 +219,55 @@ def main():
 	if test_mode == RUN:
 		# read blob and store layers of weights in list, store image in bytearray
 		dev.readBlob()
-		blob = dev.image
+		output = dev.image
 		# initialize device
 		if (False == dev.InitializeDevice()):
 			exit
 		else:
 			# send all commands
 			dev.loadCommands()
-			# process, load all weights for this layer, --loop st
+			# process, load all weights for this layer
 			dev.startOp()
+			# gemm magic, loop start
+			dev.xem.UpdateWireOuts()
+			command_0 = dev.xem.GetWireOutValue(0x21)
+			command_1 = dev.xem.GetWireOutValue(0x22)
+			stride = (command_0 & 0x000000f0) >> 4
+			kernel = (command_0 & 0x0000ff00) >> 8
+			i_side = (command_0 & 0x00ff0000) >> 16
+			o_side = (command_0 & 0xff000000) >> 24
+			i_channel = (command_1 & 0x0000ffff)
+			o_channel = (command_1 & 0xffff0000) >> 16
+			print("[COMMANDS]", "0x%08x" % command_0)
+			print("[COMMANDS]", "0x%08x" % command_1)
+			print("[COMMANDS]", "    stide %d" % stride)
+			print("[COMMANDS]", "   kernel %d" % kernel)
+			print("[COMMANDS]", "   i_side %d" % i_side)
+			print("[COMMANDS]", "   o_side %d" % o_side)
+			print("[COMMANDS]", "i_channel %d" % i_channel)
+			print("[COMMANDS]", "o_channel %d" % o_channel)
 			timestamp_0 = time.clock()
-			# gemm magic, loop st
-			data, bias, weight = dev.gemm_magic(blob, kernel=3, layer=0, number=0, gemm=0)
-			# load gemm data and gemm weight (whole channel), then start operation
-			dev.loadWeights_Bias(bias, weight)
-			dev.loadGemm(data)
-			timestamp_1 = time.clock()
-			dev.waitIrq()
-			timestamp_2 = time.clock()
-			dev.readOutput()
+			timestamp_engine = 0
+			for layer in range(0, 1):
+				for number in range(0, 1):
+					blob = output
+					print("[DEBUG]", blob.shape)
+					result = []
+					for gemm in range(0, int((i_side - kernel)/stride)+1):
+						gemm_data, gemm_bias, gemm_weight = dev.gemm_magic(blob, kernel=kernel, layer=layer, number=number, gemm=gemm)
+						# load gemm data and gemm weight (whole channel), then start operation
+						dev.loadWeights_Bias(gemm_bias, gemm_weight)
+						dev.loadGemm(gemm_data)
+						timestamp_1 = time.clock()
+						dev.waitIrq()
+						timestamp_2 = time.clock()
+						timestamp_engine = timestamp_2 - timestamp_1
+						result.append(dev.readOutput())
+					output = np.stack(result, axis = 1)
+					print(output.shape)
 			timestamp_3 = time.clock()
-			print("[PARSING]", "Engine elapsed", str(timestamp_2-timestamp_1))
+			print("[PARSING]", "Engine elapsed", timestamp_engine)
 			print("[PARSING]", "Host elapsed", str(timestamp_3-timestamp_0))
-				# --loop end (finish all channels for all weight groups)
-			# --loop end (finish all layers)
 			
 #------------------------------Sanity without Hardware------------------------------#
 	if test_mode == SANITY:
