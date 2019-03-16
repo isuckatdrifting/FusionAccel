@@ -196,19 +196,19 @@ class host:
 				print("[INTERRUPT]", "Got Interrupt...")
 				break
 			if self.xem.GetWireOutValue(0x25) == 0x0001:
-				# print("[INTERRUPT]", "Got GEMM finish", 'timer = 0x%04x' % self.xem.GetWireOutValue(0x26), ', elapsed time = %f us' % (self.xem.GetWireOutValue(0x26)/100))
+				print("[INTERRUPT]", "Got GEMM finish", 'timer = 0x%04x' % self.xem.GetWireOutValue(0x26), ', elapsed time = %f us' % (self.xem.GetWireOutValue(0x26)/100))
 				break
 		return
 	
 	def readOutput(self):
-		# print("[INTERRUPT]", 'rd_count = 0x%08x' % self.xem.GetWireOutValue(0x27))
-		# print("[INTERRUPT]", 'wr_count = 0x%08x' % self.xem.GetWireOutValue(0x28))
+		print("[INTERRUPT]", 'rd_count = 0x%08x' % self.xem.GetWireOutValue(0x27))
+		print("[INTERRUPT]", 'wr_count = 0x%08x' % self.xem.GetWireOutValue(0x28))
 		count = self.xem.GetWireOutValue(0x27)
-		# print("[PARSING]", "Reading Output...")
+		print("[PARSING]", "Reading Output...")
 		self.xem.ReadFromBlockPipeOut(0xa0, self.blocksize, self.rbuf)
 		self.xem.UpdateWireOuts()
-		# print("[PARSING]", 'rd_count = 0x%08x' % self.xem.GetWireOutValue(0x27))
-		# print("[PARSING]", 'wr_count = 0x%08x' % self.xem.GetWireOutValue(0x28))
+		print("[PARSING]", 'rd_count = 0x%08x' % self.xem.GetWireOutValue(0x27))
+		print("[PARSING]", 'wr_count = 0x%08x' % self.xem.GetWireOutValue(0x28))
 		self.reset_result_fifo()
 		result = np.copy(np.frombuffer(self.rbuf, dtype=np.float16)[0::2][0:count]) # Return copy of results, otherwise will be changed
 		return result
@@ -253,7 +253,7 @@ def main():
 			for layer in range(0, 1):
 				blob = output
 				result_layer = []
-				for number in range(0, o_channel):
+				for number in range(0, 1):
 					# print("[DEBUG]", blob.shape)
 					result = []
 					gemm_bias, gemm_weight = dev.wb_magic(layer=layer, number=number)
@@ -270,12 +270,13 @@ def main():
 						tmp = dev.readOutput()
 						result.append(tmp)
 					# print(len(result))
+					print(result)
 					output = np.stack(result, axis = 0)
 					result_layer.append(output)
 				layer_output = np.stack(result_layer, axis = 0)
 			timestamp_3 = time.clock()
-			print(layer_output.shape)
-			print(layer_output)
+			# print(layer_output.shape)
+			# print(layer_output)
 			print("[PARSING]", "Engine elapsed", timestamp_engine)
 			print("[PARSING]", "Host elapsed", str(timestamp_3-timestamp_0))
 			

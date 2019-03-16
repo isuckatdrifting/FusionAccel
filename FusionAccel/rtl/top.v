@@ -59,7 +59,8 @@ reg         pipe_out_ready;
 // Pipe Fifos
 wire        pi0_ep_write, po0_ep_read, pi1_ep_write, pi2_ep_write;
 wire [31:0] pi0_ep_dataout, po0_ep_datain, pi1_ep_dataout, pi2_ep_dataout;
-
+reg [12:0] d_fifo_write_addr, w_fifo_write_addr;
+wire [12:0] d_fifo_read_addr, w_fifo_read_addr;
 //-------------------------LED Stage Monitor-------------------------------//
 wire gemm_finish, layer_finish;
 assign led = ~{csb_state[0], csb_state[1], csb_state[2], engine_state[0], engine_state[1], engine_state[2], gemm_finish, layer_finish};
@@ -112,6 +113,8 @@ engine engine_(
 	.dma_p0_writes_en		(pipe_out_write),
 	.dma_p2_reads_en		(data_in_read),
     .dma_p3_reads_en		(weig_in_read),
+    .d_fifo_read_addr       (d_fifo_read_addr),
+    .w_fifo_read_addr       (w_fifo_read_addr),
 //Data path dma->engine
 	.dma_p2_ob_data			(data_in_data[15:0]),
 	.dma_p3_ob_data			(weig_in_data[15:0]),
@@ -186,8 +189,8 @@ okWireOut	count0 	(.okHE(okHE), .okEH(okEHx[ 7*65 +: 65 ]), .ep_addr(8'h27), .ep
 okWireOut	count1 	(.okHE(okHE), .okEH(okEHx[ 8*65 +: 65 ]), .ep_addr(8'h28), .ep_datain({22'h00_0000, pipe_out_wr_count}));
 
 okBTPipeIn     pi0  (.okHE(okHE), .okEH(okEHx[ 9*65 +: 65 ]), .ep_addr(8'h80), .ep_write(pi0_ep_write), .ep_blockstrobe(), .ep_dataout(pi0_ep_dataout), .ep_ready(pipe_in_ready));
-okBTPipeIn     pi1  (.okHE(okHE), .okEH(okEHx[ 10*65 +: 65 ]), .ep_addr(8'h81), .ep_write(pi1_ep_write), .ep_blockstrobe(), .ep_dataout(pi1_ep_dataout), .ep_ready(data_in_ready));
-okBTPipeIn     pi2  (.okHE(okHE), .okEH(okEHx[ 11*65 +: 65 ]), .ep_addr(8'h82), .ep_write(pi2_ep_write), .ep_blockstrobe(), .ep_dataout(pi2_ep_dataout), .ep_ready(weig_in_ready));
+okBTPipeIn     pi1  (.okHE(okHE), .okEH(okEHx[ 10*65 +: 65 ]), .ep_addr(8'h81), .ep_write(pi1_ep_write), .ep_blockstrobe(), .ep_dataout(pi1_ep_dataout), .ep_ready(1));
+okBTPipeIn     pi2  (.okHE(okHE), .okEH(okEHx[ 11*65 +: 65 ]), .ep_addr(8'h82), .ep_write(pi2_ep_write), .ep_blockstrobe(), .ep_dataout(pi2_ep_dataout), .ep_ready(1));
 okBTPipeOut    po0  (.okHE(okHE), .okEH(okEHx[ 12*65 +: 65 ]), .ep_addr(8'ha0), .ep_read(po0_ep_read),   .ep_blockstrobe(), .ep_datain(po0_ep_datain),   .ep_ready(pipe_out_ready));
 
 fifo_w32_1024_r32_1024 cmd_fifo (
@@ -204,6 +207,34 @@ fifo_w32_1024_r32_1024 cmd_fifo (
 	.rd_data_count	(pipe_in_rd_count), 	// output, Bus [9 : 0] 
 	.wr_data_count	(pipe_in_wr_count));	// output, Bus [9 : 0] 
 
+bram_w32_d8192 d_fifo (
+    .clka           (okClk),
+    .wea            (pi1_ep_write), 
+    .addra          (d_fifo_write_addr),
+    .dina           (pi1_ep_dataout[15:0]),
+    .clkb           (sys_clk),
+    .addrb          (d_fifo_read_addr),
+    .doutb          (data_in_data[15:0]));
+
+bram_w32_d8192 w_fifo (
+    .clka           (okClk),
+    .wea            (pi2_ep_write), 
+    .addra          (w_fifo_write_addr),
+    .dina           (pi2_ep_dataout[15:0]),
+    .clkb           (sys_clk),
+    .addrb          (w_fifo_read_addr),
+    .doutb          (weig_in_data[15:0]));
+
+always @ (posedge okClk) begin
+    if(ep00wire[0]) begin
+        d_fifo_write_addr <= 0;
+        w_fifo_write_addr <= 0;
+    end else begin
+        if(pi1_ep_write) d_fifo_write_addr <= d_fifo_write_addr + 1;
+        if(pi2_ep_write) w_fifo_write_addr <= w_fifo_write_addr + 1;
+    end
+end
+/*
 fifo_gemm data_fifo (
 	.rst			(ep00wire[0]),			// input
 	.wr_clk			(okClk),				// input
@@ -230,7 +261,7 @@ fifo_gemm weig_fifo (
 	.empty			(weig_in_empty),		// output
 	.valid			(weig_in_valid),		// output
 	.rd_data_count	(weig_in_rd_count), 	// output, Bus [12 : 0] 
-	.wr_data_count	(weig_in_wr_count));	// output, Bus [12 : 0] 
+	.wr_data_count	(weig_in_wr_count));	// output, Bus [12 : 0] */
 
 fifo_w32_1024_r32_1024 result_fifo (
 	.rst			(ep00wire[1]),			// input
