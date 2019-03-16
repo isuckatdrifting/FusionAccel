@@ -17,6 +17,7 @@ module engine  // Instantiate 8CMACs for conv, 8SCMP for maxpool and 8SACC for a
 	input [15:0]	bias,
 //Response signals engine->csb
 	output			gemm_finish,
+	output			layer_finish,
 	output [15:0]   i_channel_count,
 	output 			engine_ready,
 //Command path engine->dma
