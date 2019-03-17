@@ -62,12 +62,12 @@ wire [9:0]  d_ram_read_addr, w_ram_read_addr;
 wire 		gemm_finish, layer_finish;
 assign led = ~{csb_state[0], w_ram_wr_en, d_ram_wr_en, engine_state[0], engine_state[1], engine_state[2], gemm_finish, layer_finish};
 
-wire [15:0] i_channel_count;
-wire [31:0] timer;
+wire [15:0] 			 i_channel_count;
+wire [31:0] 			 timer;
 wire [16*`BURST_LEN-1:0] data_in_data, weig_in_data;
-reg [2:0] d_ram_write_count, w_ram_write_count;
-reg [16*`BURST_LEN-1:0] d_ram_data, w_ram_data;
-wire d_ram_wr_en, w_ram_wr_en;
+reg  [2:0] 				 d_ram_write_count, w_ram_write_count;
+reg  [16*`BURST_LEN-1:0] d_ram_data, w_ram_data;
+wire 					 d_ram_wr_en, w_ram_wr_en;
 csb csb_(
     .clk					(sys_clk),
     .rst					(ep00wire[3]),
@@ -207,8 +207,8 @@ bram_w32_d8192 w_bram (
     .addrb          (w_ram_read_addr),
     .doutb          (weig_in_data));
 
-assign d_ram_wr_en = (d_ram_write_count == 7)? 1: 0;
-assign w_ram_wr_en = (w_ram_write_count == 7)? 1: 0;
+assign d_ram_wr_en = (d_ram_write_count == `BURST_LEN-1)? 1: 0;
+assign w_ram_wr_en = (w_ram_write_count == `BURST_LEN-1)? 1: 0;
 always @ (posedge okClk) begin
     if(ep00wire[0]) begin
         d_ram_write_addr <= 'd0;
@@ -219,22 +219,22 @@ always @ (posedge okClk) begin
 		w_ram_data <= 'd0;
     end else begin
         if(pi1_ep_write) begin
-			if(d_ram_write_count == 7) begin
+			if(d_ram_write_count == `BURST_LEN-1) begin
 				d_ram_write_count <= 'd0;
 				d_ram_write_addr <= d_ram_write_addr + 1;
 			end else begin
 				d_ram_write_count <= d_ram_write_count + 1;
 			end 
-			d_ram_data <= {pi1_ep_dataout[15:0], d_ram_data[127: 16]};
+			d_ram_data <= {pi1_ep_dataout[15:0], d_ram_data[16*`BURST_LEN-1: 16]};
 		end
         if(pi2_ep_write) begin
-			if(w_ram_write_count == 7) begin
+			if(w_ram_write_count == `BURST_LEN-1) begin
 				w_ram_write_count <= 'd0;
 				w_ram_write_addr <= w_ram_write_addr + 1;
 			end else begin
 				w_ram_write_count <= w_ram_write_count + 1;
 			end
-			w_ram_data <= {pi2_ep_dataout[15:0], w_ram_data[127: 16]};
+			w_ram_data <= {pi2_ep_dataout[15:0], w_ram_data[16*`BURST_LEN-1: 16]};
 		end
     end
 end

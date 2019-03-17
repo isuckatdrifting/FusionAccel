@@ -40,9 +40,7 @@ module csb
 //|             stride2: 16Bit |        |96 |Max Pooling        |      100      |
 //|-------Totally  96Bit-------|--------|   |Average Pooling    |      101      |
 
-//Handshake signals to submodules
 reg         rd_en;
-//Command Parsing
 reg [3:0]   cmd_burst_count;
 
 //Output Command

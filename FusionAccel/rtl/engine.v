@@ -22,8 +22,8 @@ module engine  // Instantiate 8CMACs for conv, 8SCMP for maxpool and 8SACC for a
 	output 			engine_ready,
 //Command path engine->dma
 	output          dma_p0_writes_en,
-	output [12:0]	d_ram_read_addr,
-	output [12:0]	w_ram_read_addr,
+	output [9:0]	d_ram_read_addr,
+	output [9:0]	w_ram_read_addr,
 //Data path dma->engine
 	input  [16*`BURST_LEN-1:0] 	dma_p2_ob_data,
 	input  [16*`BURST_LEN-1:0] 	dma_p3_ob_data,
@@ -203,8 +203,8 @@ localparam clear 		= 4;
 localparam wait_		= 5;
 localparam finish 		= 6;
 
-reg [3:0] curr_state;
-reg [3:0] next_state;
+reg [2:0] curr_state;
+reg [2:0] next_state;
 
 //    Current State, non-blocking
 always @ (posedge clk or posedge rst)    begin
@@ -257,7 +257,6 @@ end
 //NOTES: Sum point is ready only after the all channel is complete
 
 //    Output, non-blocking
-integer b;
 always @ (posedge clk or posedge rst) begin
 	if(rst) begin
 		engine_ready <= 0;
@@ -265,8 +264,8 @@ always @ (posedge clk or posedge rst) begin
 		data <= 'd0; weight <= 'd0;
 		//==================== Pipeline registers ====================
 		cmac_enable <= 0; cmac_data_ready <= 0; 
-		avepool_enable <= 0; div_data_ready <= 0;
-		maxpool_enable <= 0; a_div <= 0; b_div <= {16{16'h3c00}};
+		avepool_enable <= 0; div_data_ready <= 0; a_div <= 0; b_div <= {16{16'h3c00}};
+		maxpool_enable <= 0; 
 		c_fifo_wr_en <= 0; f_fifo_wr_en <= 0; s_fifo_wr_en <= 0; m_fifo_wr_en <= 0; fsum_index <= 8'h00;
 		to_clear <= 0; writeback_num <= 8'h00;
 		gemm_finish <= 0;
@@ -284,8 +283,8 @@ always @ (posedge clk or posedge rst) begin
 				data <= 'd0; weight <= 'd0;
 				//==================== Pipeline registers ====================
 				cmac_enable <= 0; cmac_data_ready <= 0; 
-				avepool_enable <= 0; maxpool_enable <= 0;
-				div_data_ready <= 0; a_div <= 0; b_div <= {16{16'h3c00}}; 
+				avepool_enable <= 0; div_data_ready <= 0; a_div <= 0; b_div <= {16{16'h3c00}}; 
+				maxpool_enable <= 0; 
 				c_fifo_wr_en <= 0; f_fifo_wr_en <= 0; s_fifo_wr_en <= 0; m_fifo_wr_en <= 0; fsum_index <= 8'h00;
 				to_clear <= 0; writeback_num <= 8'h00; 
 				gemm_finish <= 0;
@@ -293,7 +292,6 @@ always @ (posedge clk or posedge rst) begin
 // CMD = 1 ==================== CONVOLUTION: Process a line ====================//
 			gemm_busy: begin
 				timer <= timer + 1;
-				//========== CONVOLUTION PIPELINE 
 				if(engine_valid) begin
 					if(w_ram_read_addr + 1 < kernel_size) begin
 						d_ram_read_addr <= d_ram_read_addr + 1;
