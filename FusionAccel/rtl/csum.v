@@ -1,11 +1,11 @@
 `include "macros.vh"
 module csum(
-    input wire          clk,
-    input wire       rst,
-    input wire          fifo_empty,
-    output reg         reads_en,
+    input  wire         clk,
+    input  wire         rst,
+    input  wire         fifo_empty,
+    output reg          reads_en,
     input  wire [7:0]   kernel_size,
-    input  wire [15:0]   data,
+    input  wire [15:0]  data,
     input  wire         data_ready,
     output reg          data_valid,
     output reg [15:0]   csum_result,
