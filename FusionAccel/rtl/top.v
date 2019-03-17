@@ -56,18 +56,18 @@ reg         pipe_out_ready;
 // Pipe Fifos
 wire        pi0_ep_write, po0_ep_read, pi1_ep_write, pi2_ep_write;
 wire [31:0] pi0_ep_dataout, po0_ep_datain, pi1_ep_dataout, pi2_ep_dataout;
-reg [9:0] d_fifo_write_addr, w_fifo_write_addr;
-wire [9:0] d_fifo_read_addr, w_fifo_read_addr;
+reg  [9:0]  d_ram_write_addr, w_ram_write_addr;
+wire [9:0]  d_ram_read_addr, w_ram_read_addr;
 //-------------------------LED Stage Monitor-------------------------------//
-wire gemm_finish, layer_finish;
-assign led = ~{csb_state[0], w_fifo_wr_en, d_fifo_wr_en, engine_state[0], engine_state[1], engine_state[2], gemm_finish, layer_finish};
+wire 		gemm_finish, layer_finish;
+assign led = ~{csb_state[0], w_ram_wr_en, d_ram_wr_en, engine_state[0], engine_state[1], engine_state[2], gemm_finish, layer_finish};
 
 wire [15:0] i_channel_count;
 wire [31:0] timer;
-wire [127:0] data_in_data, weig_in_data;
-reg [2:0] d_fifo_write_count, w_fifo_write_count;
-reg [127:0] d_fifo_data, w_fifo_data;
-wire d_fifo_wr_en, w_fifo_wr_en;
+wire [16*`BURST_LEN-1:0] data_in_data, weig_in_data;
+reg [2:0] d_ram_write_count, w_ram_write_count;
+reg [16*`BURST_LEN-1:0] d_ram_data, w_ram_data;
+wire d_ram_wr_en, w_ram_wr_en;
 csb csb_(
     .clk					(sys_clk),
     .rst					(ep00wire[3]),
@@ -111,8 +111,8 @@ engine engine_(
 	.engine_ready			(engine_ready),
 //Command path engine->dma
 	.dma_p0_writes_en		(pipe_out_write),
-    .d_fifo_read_addr       (d_fifo_read_addr),
-    .w_fifo_read_addr       (w_fifo_read_addr),
+    .d_ram_read_addr       (d_ram_read_addr),
+    .w_ram_read_addr       (w_ram_read_addr),
 //Data path dma->engine
 	.dma_p2_ob_data			(data_in_data),
 	.dma_p3_ob_data			(weig_in_data),
@@ -189,58 +189,52 @@ fifo_w32_1024_r32_1024 cmd_fifo (
 	.rd_data_count	(pipe_in_rd_count), 	// output, Bus [9 : 0] 
 	.wr_data_count	(pipe_in_wr_count));	// output, Bus [9 : 0] 
 
-bram_w32_d8192 d_fifo (
+bram_w32_d8192 d_bram (
     .clka           (okClk),
-    .wea            (d_fifo_wr_en), 
-    .addra          (d_fifo_write_addr),
-    .dina           (d_fifo_data),
+    .wea            (d_ram_wr_en), 
+    .addra          (d_ram_write_addr),
+    .dina           (d_ram_data),
     .clkb           (sys_clk),
-    .addrb          (d_fifo_read_addr),
+    .addrb          (d_ram_read_addr),
     .doutb          (data_in_data));
 
-bram_w32_d8192 w_fifo (
+bram_w32_d8192 w_bram (
     .clka           (okClk),
-    .wea            (w_fifo_wr_en), 
-    .addra          (w_fifo_write_addr),
-    .dina           (w_fifo_data),
+    .wea            (w_ram_wr_en), 
+    .addra          (w_ram_write_addr),
+    .dina           (w_ram_data),
     .clkb           (sys_clk),
-    .addrb          (w_fifo_read_addr),
+    .addrb          (w_ram_read_addr),
     .doutb          (weig_in_data));
 
-assign d_fifo_wr_en = (d_fifo_write_count == 7)? 1: 0;
-assign w_fifo_wr_en = (w_fifo_write_count == 7)? 1: 0;
+assign d_ram_wr_en = (d_ram_write_count == 7)? 1: 0;
+assign w_ram_wr_en = (w_ram_write_count == 7)? 1: 0;
 always @ (posedge okClk) begin
     if(ep00wire[0]) begin
-        d_fifo_write_addr <= 'd0;
-        w_fifo_write_addr <= 'd0;
-		d_fifo_write_count <= 'd0;
-		w_fifo_write_count <= 'd0;
-		d_fifo_data <= 'd0;
-		w_fifo_data <= 'd0;
-		// d_fifo_wr_en <= 0;
-		// w_fifo_wr_en <= 0;
+        d_ram_write_addr <= 'd0;
+        w_ram_write_addr <= 'd0;
+		d_ram_write_count <= 'd0;
+		w_ram_write_count <= 'd0;
+		d_ram_data <= 'd0;
+		w_ram_data <= 'd0;
     end else begin
         if(pi1_ep_write) begin
-			if(d_fifo_write_count == 7) begin
-				d_fifo_write_count <= 'd0;
-				// d_fifo_wr_en <= 1;
-				d_fifo_write_addr <= d_fifo_write_addr + 1;
+			if(d_ram_write_count == 7) begin
+				d_ram_write_count <= 'd0;
+				d_ram_write_addr <= d_ram_write_addr + 1;
 			end else begin
-				d_fifo_write_count <= d_fifo_write_count + 1;
-				// d_fifo_wr_en <= 0;
+				d_ram_write_count <= d_ram_write_count + 1;
 			end 
-			d_fifo_data <= {pi1_ep_dataout[15:0], d_fifo_data[127: 16]};
+			d_ram_data <= {pi1_ep_dataout[15:0], d_ram_data[127: 16]};
 		end
         if(pi2_ep_write) begin
-			if(w_fifo_write_count == 7) begin
-				w_fifo_write_count <= 'd0;
-				// w_fifo_wr_en <= 1;
-				w_fifo_write_addr <= w_fifo_write_addr + 1;
+			if(w_ram_write_count == 7) begin
+				w_ram_write_count <= 'd0;
+				w_ram_write_addr <= w_ram_write_addr + 1;
 			end else begin
-				w_fifo_write_count <= w_fifo_write_count + 1;
-				// w_fifo_wr_en <= 0;
+				w_ram_write_count <= w_ram_write_count + 1;
 			end
-			w_fifo_data <= {pi2_ep_dataout[15:0], w_fifo_data[127: 16]};
+			w_ram_data <= {pi2_ep_dataout[15:0], w_ram_data[127: 16]};
 		end
     end
 end

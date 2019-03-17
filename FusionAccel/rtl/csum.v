@@ -1,4 +1,3 @@
-`include "macros.vh"
 module csum(
     input  wire         clk,
     input  wire         rst,
@@ -12,15 +11,13 @@ module csum(
     output reg          csum_ready
 );
 
-reg [15:0]  a_acc, b_acc;
-reg         operation_nd_acc;
+reg  [15:0] a_acc, b_acc;
 wire [15:0] result_acc;
 wire        operation_rfd_acc;
-wire         acc_ready;
-reg [7:0] count;
+wire        acc_ready;
+reg  [7:0]  count;
 
-accum acc_ (.a(a_acc), .b(b_acc), .clk(clk), .operation_nd(data_ready), .operation_rfd(operation_rfd_acc),
-.result(result_acc), .rdy(acc_ready));
+accum acc_ (.a(a_acc), .b(b_acc), .clk(clk), .operation_nd(data_ready), .operation_rfd(operation_rfd_acc), .result(result_acc), .rdy(acc_ready));
 
 localparam idle 		= 0;
 localparam busy         = 1;
@@ -55,7 +52,6 @@ always @ (posedge clk or posedge rst) begin
     if (rst) begin
         a_acc <= 16'h0000; b_acc <= 16'h0000; 
         csum_ready <= 0;
-        //operation_nd_acc <= 0;
         csum_result <= 16'h0000;
         data_valid <= 0;
         count <= 0;

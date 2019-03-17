@@ -1,6 +1,6 @@
 `timescale 1ns/1ps
-// `define CMAC
-`define SACC
+`define CMAC
+// `define SACC
 // `define SCMP
 
 module engine_tb;
@@ -871,53 +871,16 @@ initial begin
 	//#20 engine_valid = 1;
 end
 
-`ifdef CMAC
-	always @(posedge clk) begin
-		dma_p2_ob_data <= {data[d_fifo_read_addr*8+7], data[d_fifo_read_addr*8+6], data[d_fifo_read_addr*8+5], data[d_fifo_read_addr*8+4], data[d_fifo_read_addr*8+3], data[d_fifo_read_addr*8+2], data[d_fifo_read_addr*8+1], data[d_fifo_read_addr*8+0]};
-		dma_p3_ob_data <= {weight[w_fifo_read_addr*8+7], weight[w_fifo_read_addr*8+6], weight[w_fifo_read_addr*8+5], weight[w_fifo_read_addr*8+4], weight[w_fifo_read_addr*8+3], weight[w_fifo_read_addr*8+2], weight[w_fifo_read_addr*8+1], weight[w_fifo_read_addr*8+0]};
-	end
-`endif
-`ifdef SCMP
-`endif
-`ifdef SACC
-	always @(posedge clk) begin
-		dma_p2_ob_data <= {16{avepooldata[d_fifo_read_addr*16 +: 16]}};
-	end
-`endif
-/*
 always @(posedge clk) begin
-	if(engine_valid) begin
-		if(dma_p2_reads_en) begin 
-			dma_p2_ob_we <= 1;
 `ifdef CMAC
-			dma_p2_ob_data <= data[m]; 
-			m <= m + 1; 
+	dma_p2_ob_data <= {data[d_fifo_read_addr*8+7], data[d_fifo_read_addr*8+6], data[d_fifo_read_addr*8+5], data[d_fifo_read_addr*8+4], data[d_fifo_read_addr*8+3], data[d_fifo_read_addr*8+2], data[d_fifo_read_addr*8+1], data[d_fifo_read_addr*8+0]};
+	dma_p3_ob_data <= {weight[w_fifo_read_addr*8+7], weight[w_fifo_read_addr*8+6], weight[w_fifo_read_addr*8+5], weight[w_fifo_read_addr*8+4], weight[w_fifo_read_addr*8+3], weight[w_fifo_read_addr*8+2], weight[w_fifo_read_addr*8+1], weight[w_fifo_read_addr*8+0]};
 `endif
 `ifdef SCMP
-			dma_p2_ob_data <= maxpooldata[m*16 +: 16];
-			offset <= offset + 1;
-			if(offset == 7) begin
-				m <= m + 1;
-				offset <= 0;
-			end
+	dma_p2_ob_data <= {16{maxpooldata[d_fifo_read_addr*16 +: 16]}};
 `endif
 `ifdef SACC
-			dma_p2_ob_data <= avepooldata[m*16 +: 16];
-			offset <= offset + 1;
-			if(offset == 7) begin
-				m <= m + 1;
-				offset <= 0;
-			end
+	dma_p2_ob_data <= {16{avepooldata[d_fifo_read_addr*16 +: 16]}};
 `endif
-		end else dma_p2_ob_we <= 0;
-`ifdef CMAC
-		if(dma_p3_reads_en) begin 
-			dma_p3_ob_we <= 1;
-			dma_p3_ob_data <= weight[n]; 
-			n <= n + 1; 
-		end else dma_p3_ob_we <= 0;
-`endif
-	end
-end*/
-
+end
 endmodule

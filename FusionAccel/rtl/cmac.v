@@ -9,7 +9,7 @@ module cmac(
     output reg          conv_ready
 );
 
-reg [15:0]  a_mult, b_mult;
+reg  [15:0] a_mult, b_mult;
 wire        operation_rfd_mult;
 wire [15:0] result_mult;
 
