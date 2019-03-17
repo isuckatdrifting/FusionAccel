@@ -27,7 +27,7 @@ transformer.set_mean('data', mu) # subtract the dataset-mean value in each chann
 transformer.set_raw_scale('data', 255) # rescale from [0,1] to [0, 255]
 transformer.set_channel_swap('data', (2,1,0)) # swap channels from RGB to BGR
 
-net.blobs['data'].reshape(50,       # batch size
+net.blobs['data'].reshape(1,       # batch size
                           3,        # 3-channel (BGR) images
                           227, 227) # image size is 227x227
 
@@ -70,6 +70,20 @@ for layer_name, blob in net.blobs.items():
     filters = net.blobs[layer_name].data # intermediate responses of the filters (first 36 only) 
                                          # output_channels, input_channels, filter_height, filter_width
     # print(filters)
+    if layer_name == 'data':
+        print(filters.shape)
+        # print(image)
+        # print(net.blobs[layer_name].data)
+        print(net.blobs['conv1'].data[0][0][0])
+        print(net.blobs['conv1'].data[0][0][1])
+        print(net.blobs['conv1'].data[0][0][2])
+        print(net.blobs['conv1'].data[0][0][3])
+        print(net.blobs['conv1'].data[0][0][4])
+        print(net.blobs['conv1'].data[0][0][5])
+        print(net.blobs['conv1'].data.shape)
+        print(net.blobs['conv1'].data[0].shape)
+        # print(net.params['conv1'][0].data)
+        # print(net.params['conv1'][1].data)
     dat = filters.reshape(1, -1)[0][0:1].astype(dtype=np.float16) # get the first two of the layer output
     print(filters.size, dat)
     f.write(str(layer_name) + '\t')

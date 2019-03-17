@@ -23,28 +23,13 @@ def extract_caffe_model(model, weights, output_path):
     name, layer = item
     print('convert layer: ' + name)
     #=============================Print reshaped and split weights============================#
-    shape = net.params[name][0].data.shape
-    print(shape)
-    pad = 0
-    if shape[1] <= 8:
-      pad = 8 - shape[1]
-    for p in range(0, shape[0]):
-      #f.write(str(hex(struct.unpack('<H', net.params[name][1].data.astype(dtype=np.float16)[p])[0])).replace('0x','').zfill(8)+' ') #Little-endian，Write bias
-      weight_list.append(net.params[name][1].data.astype(dtype=np.float16)[p:p+1])
-      padded_dat = np.pad(net.params[name][0].data[p], ((0,0),(0,0),(0,pad)), 'constant')
-      if(shape[1] > 8):
-        sliced_dat = np.vstack(np.dsplit(padded_dat.transpose((1,2,0)), shape[1]/8))
-      else:
-        sliced_dat = padded_dat
-      dat = sliced_dat.astype(dtype=np.float16).reshape(-1)
-      weight_list.append(dat)
-      #for j in dat:
-      #  f.write(str(hex(struct.unpack('<H', j)[0])).replace('0x','').zfill(8)+' ') #Little-endian, Write weights
-      #f.write("\n")
-  merged_dat = np.hstack(weight_list)
-  print('===================')
-  print(merged_dat.shape)
-  np.save('./tmp/weight.npy', merged_dat)
+    weight_list.append(net.params[name][0].data)
+    weight_list.append(net.params[name][1].data)
+    if name == 'conv1':
+      print(net.params[name][0].data)
+      print(net.params[name][1].data)
+    
+  np.savez('./tmp/weight.npz', *weight_list)
 
     #=============================Print Original weights=======================================#
   '''

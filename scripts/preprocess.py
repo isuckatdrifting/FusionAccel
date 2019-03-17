@@ -33,9 +33,10 @@ transformed_image = transformer.preprocess('data', image)
 
 # copy the image data into the memory allocated for the net
 net.blobs['data'].data[...] = transformed_image
+print(transformed_image.shape)
 detransformed_img = transformed_image.transpose(1,2,0)
 padded_img = np.pad(detransformed_img, ((0,0),(0,0),(0,5)),'constant')
 print(padded_img)
 print(padded_img.shape)
-print(padded_img.astype(dtype=np.float16).byteswap().tobytes().hex())
-np.save("./tmp/data.npy", padded_img.reshape(-1).astype(dtype=np.float16))
+# print(padded_img.astype(dtype=np.float16).byteswap().tobytes().hex())
+np.save("./tmp/data.npy", padded_img)

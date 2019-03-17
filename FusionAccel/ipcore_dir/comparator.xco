@@ -1,7 +1,7 @@
 ##############################################################
 #
 # Xilinx Core Generator version 14.7
-# Date: Mon Mar 04 11:17:29 2019
+# Date: Thu Mar 14 11:03:22 2019
 #
 ##############################################################
 #
@@ -43,7 +43,7 @@ CSET a_precision_type=Custom
 CSET add_sub_value=Both
 CSET c_a_exponent_width=5
 CSET c_a_fraction_width=11
-CSET c_compare_operation=Programmable
+CSET c_compare_operation=Greater_Than
 CSET c_has_ce=false
 CSET c_has_divide_by_zero=false
 CSET c_has_invalid_op=false
@@ -69,4 +69,4 @@ CSET result_precision_type=Custom
 MISC pkg_timestamp=2012-07-02T11:22:24Z
 # END Extra information
 GENERATE
-# CRC:  575f9e8
+# CRC: 15060f83

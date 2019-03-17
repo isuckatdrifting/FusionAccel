@@ -6,7 +6,6 @@ module cmac(
     output reg  [15:0]  result,
     input  wire [15:0]  tmp_sum,
     output reg          mult_ready_buf,
-    input  wire         conv_valid,
     input  wire         data_ready,
     output reg          data_valid,
     output reg          conv_ready

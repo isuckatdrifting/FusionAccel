@@ -1,7 +1,7 @@
 ##############################################################
 #
 # Xilinx Core Generator version 14.7
-# Date: Sun Mar 03 06:44:00 2019
+# Date: Tue Mar 12 16:17:44 2019
 #
 ##############################################################
 #
@@ -53,7 +53,7 @@ CSET c_has_overflow=false
 CSET c_has_rdy=true
 CSET c_has_sclr=false
 CSET c_has_underflow=false
-CSET c_latency=8
+CSET c_latency=2
 CSET c_mult_usage=No_Usage
 CSET c_optimization=Speed_Optimized
 CSET c_rate=1
@@ -61,7 +61,7 @@ CSET c_result_exponent_width=5
 CSET c_result_fraction_width=11
 CSET c_speed=Maximum_speed
 CSET component_name=accum
-CSET maximum_latency=true
+CSET maximum_latency=false
 CSET operation_type=Add_Subtract
 CSET result_precision_type=Custom
 # END Parameters
@@ -69,4 +69,4 @@ CSET result_precision_type=Custom
 MISC pkg_timestamp=2012-07-02T11:22:24Z
 # END Extra information
 GENERATE
-# CRC: 8382d26d
+# CRC: 6b34141a
