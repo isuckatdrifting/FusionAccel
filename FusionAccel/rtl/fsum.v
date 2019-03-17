@@ -7,6 +7,7 @@ module fsum(
     input  [15:0]   bias,
     input  [127:0]  data,
     input           valid,
+    input  [15:0]   i_channel,
     output [15:0]   fsum_result,
     input  [15:0]   i_channel_count,
     input  [7:0]    fsum_index,
@@ -79,33 +80,33 @@ always @ (posedge clk or posedge rst) begin
                 fsum_count <= 0;
             end
             busy: begin
-            reads_en <= 0; 
-            if(valid) begin 
-                fsum_data_ready <= 1; 
-                if(i_channel_count == 0) fsum_a <= bias;
-                else fsum_a <= fsum[fsum_index];
-                fsum_b <= data[16*fsum_count +: 16];
-            end
-            if(fsum_data_ready) begin
-                fsum_data_ready <= 0;
-                if(fsum_count < `BURST_LEN) begin
-                    fsum_count <= fsum_count + 1;
-                end else begin
-                    fsum_count <= 0;
-                end
-            end
-            if(fsum_ready) begin
-                fsum_a <= result_fsum;
-                if(fsum_count < `BURST_LEN) begin
+                reads_en <= 0; 
+                if(valid) begin 
+                    fsum_data_ready <= 1; 
+                    if(i_channel_count == 0) fsum_a <= bias;
+                    else fsum_a <= fsum[fsum_index];
                     fsum_b <= data[16*fsum_count +: 16];
-                    fsum_data_ready <= 1;
-                end else begin
-                    fsum[fsum_index] <= fsum_result;
-                    fsum_b <= 0;
-                    ready <= 1;
                 end
-            end
-            if(ready) ready <= 0;
+                if(fsum_data_ready) begin
+                    fsum_data_ready <= 0;
+                    if(fsum_count < `BURST_LEN) begin
+                        fsum_count <= fsum_count + 1;
+                    end else begin
+                        fsum_count <= 0;
+                    end
+                end
+                if(fsum_ready) begin
+                    fsum_a <= result_fsum;
+                    if(fsum_count < `BURST_LEN) begin
+                        fsum_b <= data[16*fsum_count +: 16];
+                        fsum_data_ready <= 1;
+                    end else begin
+                        fsum[fsum_index] <= fsum_result;
+                        fsum_b <= 0;
+                        ready <= 1;
+                    end
+                end
+                if(ready) ready <= 0;
             end
         
         endcase
