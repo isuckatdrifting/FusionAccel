@@ -213,7 +213,7 @@ always @ (*) begin
 		end
 		clear: begin
 			if(i_channel_count + `BURST_LEN >= i_channel) next_state = wait_;
-			else next_state = idle; // FIXME: if not keeping at this state, gemm_finish is not captured. keeping this state leads to o_channel_count burst
+			else next_state = idle;
 		end
 		wait_: begin
 			next_state = wait_;
@@ -237,8 +237,7 @@ always @ (posedge clk or posedge rst) begin
 		engine_ready <= 0;
 		d_fifo_read_addr <= 0; w_fifo_read_addr <= 0;
 		dma_p2_burst_cnt <= 16'h0000; dma_p3_burst_cnt <= 16'h0000; dma_p3_offset <= 8'h00;
-		dma_p0_writes_en <= 0;
-		dma_p0_ib_data <= 16'h0000;
+		dma_p0_writes_en <= 0; dma_p0_ib_data <= 16'h0000;
 		//==================== Channel operation registers ====================
 		dbuf <= 'd0; data <= 'd0; psum <= 'd0; cmp <= 'd0; sacc_tmp_sum <= 'd0;
 		for(b=0;b<`MAX_KERNEL_SIZE;b=b+1) wbuf[b] <= 'd0;
@@ -266,8 +265,7 @@ always @ (posedge clk or posedge rst) begin
 			idle: begin 
 				engine_ready <= 0;
 				dma_p2_burst_cnt <= 16'h0000; dma_p3_burst_cnt <= 16'h0000; dma_p3_offset <= 8'h00;
-				dma_p0_writes_en <= 0;
-				dma_p0_ib_data <= 16'h0000;
+				dma_p0_writes_en <= 0; dma_p0_ib_data <= 16'h0000;
 				//==================== Channel operation registers ====================
 				dbuf <= 'd0; data <= 'd0; psum <= 'd0; cmp <= 'd0; sacc_tmp_sum <= 'd0;
 				for(b=0;b<`MAX_KERNEL_SIZE;b=b+1) wbuf[b] <= 'd0;
@@ -306,7 +304,7 @@ always @ (posedge clk or posedge rst) begin
 				if(w_fifo_read_addr > 0) begin
 					if(dma_p3_burst_cnt == `BURST_LEN-1) begin
 						dma_p3_burst_cnt <= 0;
-						dma_p3_offset <= dma_p3_offset + 1;
+						if(dma_p3_offset < kernel_size) dma_p3_offset <= dma_p3_offset + 1;
 					end else dma_p3_burst_cnt <= dma_p3_burst_cnt + 1;
 					wbuf[dma_p3_offset] <= {dma_p3_ob_data, wbuf[dma_p3_offset][16*`BURST_LEN-1 : 16]};
 				end
