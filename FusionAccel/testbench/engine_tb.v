@@ -848,8 +848,6 @@ initial begin
 	kernel = 0; kernel_size = 0; i_channel = 0; o_channel = 0; i_side = 0; o_side = 0; 
 	dma_p2_ob_data = 16'h0000;
 	dma_p3_ob_data = 16'h0000;
-	dma_p2_ob_we = 0;
-	dma_p3_ob_we = 0;
 	bias = 16'h0000;
     #20 rst = 1;
     #10 rst = 0;
