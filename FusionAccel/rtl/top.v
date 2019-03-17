@@ -29,7 +29,6 @@ IBUFGDS osc_clk(.O(sys_clk), .I(sys_clkp), .IB(sys_clkn));
 
 localparam BLOCK_SIZE      = 128;   // 512 bytes / 4 byte per word;
 localparam FIFO_SIZE       = 1023;  // note that Xilinx does not allow use of the full 1024 words
-localparam GEMM_FIFO_SIZE  = 8191;
 localparam BUFFER_HEADROOM = 20; 	// headroom for the FIFO count to account for latency
 
 // Front Panel Target interface bus:
@@ -41,8 +40,6 @@ wire        pipe_in_read;
 wire [31:0] pipe_in_data, data_in_data, weig_in_data;
 wire [9:0]  pipe_in_rd_count;
 wire [9:0]  pipe_in_wr_count;
-wire [12:0] data_in_rd_count, weig_in_rd_count;
-wire [12:0] data_in_wr_count, weig_in_wr_count;
 wire        pipe_in_valid;
 wire        pipe_in_full;
 wire        pipe_in_empty;

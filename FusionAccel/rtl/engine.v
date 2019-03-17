@@ -213,7 +213,7 @@ always @ (*) begin
 		end
 		clear: begin
 			if(i_channel_count + `BURST_LEN >= i_channel) next_state = wait_;
-			else next_state = idle; // FIXME: if not keeping at this state, gemm_finish is not captured. keeping this state leads to o_channel_count burst
+			else next_state = idle;
 		end
 		wait_: begin
 			next_state = wait_;
