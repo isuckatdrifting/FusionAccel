@@ -29,7 +29,6 @@ IBUFGDS osc_clk(.O(sys_clk), .I(sys_clkp), .IB(sys_clkn));
 
 localparam BLOCK_SIZE      = 128;   // 512 bytes / 4 byte per word;
 localparam FIFO_SIZE       = 1023;  // note that Xilinx does not allow use of the full 1024 words
-localparam GEMM_FIFO_SIZE  = 8191;
 localparam BUFFER_HEADROOM = 20; 	// headroom for the FIFO count to account for latency
 
 // Front Panel Target interface bus:
@@ -37,16 +36,14 @@ wire         okClk;
 wire [112:0] okHE;
 wire [64:0]  okEH;
 
-wire        pipe_in_read, data_in_read, weig_in_read;
+wire        pipe_in_read;
 wire [31:0] pipe_in_data, data_in_data, weig_in_data;
 wire [9:0]  pipe_in_rd_count;
 wire [9:0]  pipe_in_wr_count;
-wire [12:0] data_in_rd_count, weig_in_rd_count;
-wire [12:0] data_in_wr_count, weig_in_wr_count;
-wire        pipe_in_valid, data_in_valid, weig_in_valid;
-wire        pipe_in_full, data_in_full, weig_in_full;
-wire        pipe_in_empty, data_in_empty, weig_in_empty;
-reg         pipe_in_ready, data_in_ready, weig_in_ready;
+wire        pipe_in_valid;
+wire        pipe_in_full;
+wire        pipe_in_empty;
+reg         pipe_in_ready;
 
 wire        pipe_out_write;
 wire [31:0] pipe_out_data;
@@ -111,15 +108,11 @@ engine engine_(
 	.engine_ready			(engine_ready),
 //Command path engine->dma
 	.dma_p0_writes_en		(pipe_out_write),
-	.dma_p2_reads_en		(data_in_read),
-    .dma_p3_reads_en		(weig_in_read),
     .d_fifo_read_addr       (d_fifo_read_addr),
     .w_fifo_read_addr       (w_fifo_read_addr),
 //Data path dma->engine
 	.dma_p2_ob_data			(data_in_data[15:0]),
 	.dma_p3_ob_data			(weig_in_data[15:0]),
-	.dma_p2_ob_we			(data_in_valid),
-	.dma_p3_ob_we			(weig_in_valid),
 	.dma_p0_ib_data			(pipe_out_data[15:0]),
 	.curr_state				(engine_state),
     .timer                  (timer)
@@ -135,20 +128,6 @@ always @(posedge okClk) begin
 	end
 	else begin
 		pipe_in_ready <= 1'b0;
-	end
-
-	if(data_in_wr_count <= (GEMM_FIFO_SIZE-BUFFER_HEADROOM-BLOCK_SIZE) ) begin
-	  data_in_ready <= 1'b1;
-	end
-	else begin
-		data_in_ready <= 1'b0;
-	end
-
-	if(weig_in_wr_count <= (GEMM_FIFO_SIZE-BUFFER_HEADROOM-BLOCK_SIZE) ) begin
-	  weig_in_ready <= 1'b1;
-	end
-	else begin
-		weig_in_ready <= 1'b0;
 	end
 	
 	if(pipe_out_rd_count >= 0) begin
@@ -234,34 +213,6 @@ always @ (posedge okClk) begin
         if(pi2_ep_write) w_fifo_write_addr <= w_fifo_write_addr + 1;
     end
 end
-/*
-fifo_gemm data_fifo (
-	.rst			(ep00wire[0]),			// input
-	.wr_clk			(okClk),				// input
-	.rd_clk			(sys_clk),				// input
-	.din			(pi1_ep_dataout), 		// input, Bus [31 : 0] 
-	.wr_en			(pi1_ep_write),			// input
-	.rd_en			(data_in_read),			// input
-	.dout			(data_in_data), 		// output, Bus [31 : 0] 
-	.full			(data_in_full),			// output
-	.empty			(data_in_empty),		// output
-	.valid			(data_in_valid),		// output
-	.rd_data_count	(data_in_rd_count), 	// output, Bus [12 : 0] 
-	.wr_data_count	(data_in_wr_count));	// output, Bus [12 : 0] 
-
-fifo_gemm weig_fifo (
-	.rst			(ep00wire[0]),			// input
-	.wr_clk			(okClk),				// input
-	.rd_clk			(sys_clk),				// input
-	.din			(pi2_ep_dataout), 		// input, Bus [31 : 0] 
-	.wr_en			(pi2_ep_write),			// input
-	.rd_en			(weig_in_read),			// input
-	.dout			(weig_in_data), 		// output, Bus [31 : 0] 
-	.full			(weig_in_full),			// output
-	.empty			(weig_in_empty),		// output
-	.valid			(weig_in_valid),		// output
-	.rd_data_count	(weig_in_rd_count), 	// output, Bus [12 : 0] 
-	.wr_data_count	(weig_in_wr_count));	// output, Bus [12 : 0] */
 
 fifo_w32_1024_r32_1024 result_fifo (
 	.rst			(ep00wire[1]),			// input
