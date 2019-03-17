@@ -25,8 +25,8 @@ module engine  // Instantiate 8CMACs for conv, 8SCMP for maxpool and 8SACC for a
 	output [12:0]	d_fifo_read_addr,
 	output [12:0]	w_fifo_read_addr,
 //Data path dma->engine
-	input [15:0] 	dma_p2_ob_data,
-	input [15:0] 	dma_p3_ob_data,
+	input [16*`BURST_LEN-1:0] 	dma_p2_ob_data,
+	input [16*`BURST_LEN-1:0] 	dma_p3_ob_data,
 //Data path engine->dma
 	output [15:0]	dma_p0_ib_data,
 	output [3:0]	curr_state,
@@ -42,10 +42,10 @@ reg  [`BURST_LEN-1:0] 	 cmac_ready;
 
 //Data BUF and Weight BUF of serializer
 reg  [16*`BURST_LEN-1:0] dbuf; 						// serial buffer
-reg  [16*`BURST_LEN-1:0] wbuf [`MAX_KERNEL_SIZE-1:0]; 				// serial buffer
+reg  [16*`BURST_LEN-1:0] wbuf; 				// serial buffer
 
 reg  [16*`BURST_LEN-1:0] data; 						// parallel
-wire [16*`BURST_LEN-1:0] weight; 					// parallel 3x3xBURST_LEN, wired out from cmac_weight_cache
+reg  [16*`BURST_LEN-1:0] weight; 					// parallel 3x3xBURST_LEN, wired out from cmac_weight_cache
 wire [16*`BURST_LEN-1:0] cmac_tmp_sum;				// parallel, wired out from cmac_sum
 wire [16*`BURST_LEN-1:0] conv_result; 				// parallel
 reg  [16*`BURST_LEN-1:0] cmac_result;
@@ -60,40 +60,65 @@ reg  [7:0]  			 psum_count [`MAX_KERNEL-1:0];			//NOTES: counter for results in 
 reg  [16*`BURST_LEN-1:0] psum;						//NOTES: registers for 16-channel sum output, it is selected from the memory cmac_sum
 
 //Full sum registers
-reg						 writes_en;
-wire					 reads_en;
+reg						 f_fifo_wr_en, c_fifo_wr_en;
+wire					 f_fifo_rd_en, c_fifo_rd_en;
+wire [7:0]				 c_fifo_rd_en_mux;
 wire [15:0]				 fsum_result;
 wire					 fsum_ready;
 reg  [7:0]				 fsum_index;
 reg  [15:0] 			 i_channel_count;
 wire [127:0] 			 psum_;
-wire 					 fifo_empty;
+wire 					 c_fifo_empty, f_fifo_empty;
 
 genvar i;
 generate 
 	for (i = 0; i < `BURST_LEN; i = i + 1) begin: gencmac
-		cmac cmac_(.clk(clk), .rst(rst), .data(data[i*16 +: 16]), .weight(weight[i*16 +: 16]), .result(conv_result[i*16 +: 16]), .tmp_sum(cmac_tmp_sum[i*16 +: 16]), .mult_ready_buf(mult_ready_buf[i]), .data_ready(cmac_data_ready), .data_valid(cmac_data_valid[i]), .conv_ready(rdy_cmac[i]));
+		cmac cmac_(.clk(clk), .rst(rst), .data(data[i*16 +: 16]), .weight(weight[i*16 +: 16]), .result(conv_result[i*16 +: 16]), .data_ready(cmac_data_ready), .data_valid(cmac_data_valid[i]), .conv_ready(rdy_cmac[i]));
 	end 
 endgenerate
 //NOTES: weight and tmp_sum is directly wired out from the corresponding registers
-always @(posedge clk) cmac_result <= conv_result;
+// always @(posedge clk) cmac_result <= conv_result;
 always @(posedge clk) cmac_ready <= rdy_cmac;
-assign weight = cmac_weight_cache[cmac_input_pipe_count];
-assign cmac_tmp_sum = cmac_sum[cmac_middle_pipe_count];
+// assign weight = cmac_weight_cache[0];
+// assign cmac_tmp_sum = cmac_sum[cmac_middle_pipe_count];
+
+assign c_fifo_rd_en = &c_fifo_rd_en_mux;
+wire [127:0] csum_;
+wire [127:0] csum_result;
+wire [7:0] csum_ready;
+wire 	 c_fifo_valid;
+wire [`BURST_LEN-1:0] csum_data_valid;
+fifo_fsum cc_(
+	.rst			(rst),			// input
+	.wr_clk			(clk),			// input
+	.rd_clk			(clk),			// input
+	.din			(conv_result), 		// input, Bus [31 : 0] 
+	.wr_en			(c_fifo_wr_en),	// input
+	.rd_en			(c_fifo_rd_en),		// input
+	.dout			(csum_), 		// output, Bus [31 : 0] 
+	.full			(),				// output
+	.empty			(c_fifo_empty),	// output
+	.valid			(c_fifo_valid));
+genvar j;
+generate
+	for (j = 0; j < `BURST_LEN; j = j + 1) begin: gencsum
+		csum c_(.clk(clk), .rst(rst), .fifo_empty(c_fifo_empty), .reads_en(c_fifo_rd_en_mux[j]), .kernel_size(kernel_size), .data(csum_[j*16 +: 16]), .data_ready(c_fifo_valid), .data_valid(csum_data_valid[j]), .csum_result(csum_result[j*16 +: 16]), .csum_ready(csum_ready[j]));
+	end
+endgenerate
 
 fifo_fsum ff_ (
 	.rst			(rst),			// input
 	.wr_clk			(clk),			// input
 	.rd_clk			(clk),			// input
-	.din			(psum), 		// input, Bus [31 : 0] 
-	.wr_en			(writes_en),	// input
-	.rd_en			(reads_en),		// input
+	.din			(csum_result), 		// input, Bus [31 : 0] 
+	.wr_en			(f_fifo_wr_en),	// input
+	.rd_en			(f_fifo_rd_en),		// input
 	.dout			(psum_), 		// output, Bus [31 : 0] 
 	.full			(),				// output
 	.empty			(fifo_empty),	// output
 	.valid			(valid));		// output
 
-fsum f_ (.clk(clk), .rst(rst), .fifo_empty(fifo_empty), .reads_en(reads_en), .bias(bias), .data(psum_), .valid(valid), .fsum_result(fsum_result), .i_channel_count(i_channel_count), .fsum_index(fsum_index), .ready(fsum_ready));
+fsum f_ (.clk(clk), .rst(rst), .fifo_empty(fifo_empty), .reads_en(f_fifo_rd_en), .bias(bias), .data(psum_), .valid(valid), .fsum_result(fsum_result), .i_channel_count(i_channel_count), .fsum_index(fsum_index), .ready(fsum_ready));
 //==================== SCMP Wires and Registers ====================//
 reg 					 maxpool_data_ready, maxpool_enable;
 wire [`BURST_LEN-1:0] 	 maxpool_data_valid;
@@ -157,7 +182,7 @@ reg  [15:0] output_count;
 reg  [7:0]  cache_count [`MAX_KERNEL-1:0]; 	//NOTES: use max conv side support defined in include files.
 reg  [7:0]  dma_p2_burst_cnt, dma_p3_burst_cnt, dma_p3_offset; // de-serializer counter, burst get 16 data, then send to operation unit.
 reg			dma_p0_writes_en;
-reg  [12:0] d_fifo_read_addr, w_fifo_read_addr;
+reg  [9:0] d_fifo_read_addr, w_fifo_read_addr;
 reg  [15:0] dma_p0_ib_data;
 reg			p0_writeback_en;
 reg	 [7:0]	p0_writeback_count;
@@ -235,12 +260,12 @@ integer b;
 always @ (posedge clk or posedge rst) begin
 	if(rst) begin
 		engine_ready <= 0;
-		d_fifo_read_addr <= 0; w_fifo_read_addr <= 0;
+		d_fifo_read_addr <= 'd0; w_fifo_read_addr <= 'd0;
 		dma_p2_burst_cnt <= 16'h0000; dma_p3_burst_cnt <= 16'h0000; dma_p3_offset <= 8'h00;
 		dma_p0_writes_en <= 0; dma_p0_ib_data <= 16'h0000;
 		//==================== Channel operation registers ====================
 		dbuf <= 'd0; data <= 'd0; psum <= 'd0; cmp <= 'd0; sacc_tmp_sum <= 'd0;
-		for(b=0;b<`MAX_KERNEL_SIZE;b=b+1) wbuf[b] <= 'd0;
+		wbuf <= 'd0; weight <= 'd0;
 		//==================== Slot registers ====================
 		for(b=0;b<`MAX_KERNEL;b=b+1) begin
 			cache_count[b] <= 8'h00;
@@ -254,8 +279,8 @@ always @ (posedge clk or posedge rst) begin
 		cmac_enable <= 0; cmac_data_ready <= 0; avepool_enable <= 0; avepool_data_ready <= 0; maxpool_enable <= 0; maxpool_data_ready <= 0; div_en <= 0;
 		input_count <= 16'h0000; output_count <= 16'h0000; cmac_output_pipe_count <= 8'h00;
 		cmac_input_pipe_count <= 8'h00; cmac_middle_pipe_count <= 8'h00; scmp_input_pipe_count <= 8'h00; scmp_output_pipe_count <= 8'h00; 
-		writes_en <= 0; fsum_index <= 8'h00;
-		to_clear <= 0; 
+		f_fifo_wr_en <= 0; c_fifo_wr_en <= 0; fsum_index <= 8'h00;
+		to_clear <= 0;
 		//==================== Cross-channel registers ====================
 		i_channel_count <= 16'h0000; gemm_count <= 8'h00; o_channel_count <= 16'h0000; gemm_finish <= 0; layer_finish <= 0;
 		p0_writeback_en <= 0; p0_writeback_count <= 8'h00; writeback_num <= 8'h00; timer <= 0;
@@ -268,7 +293,7 @@ always @ (posedge clk or posedge rst) begin
 				dma_p0_writes_en <= 0; dma_p0_ib_data <= 16'h0000;
 				//==================== Channel operation registers ====================
 				dbuf <= 'd0; data <= 'd0; psum <= 'd0; cmp <= 'd0; sacc_tmp_sum <= 'd0;
-				for(b=0;b<`MAX_KERNEL_SIZE;b=b+1) wbuf[b] <= 'd0;
+				wbuf <= 'd0;
 				//==================== Slot registers ====================
 				for(b=0;b<`MAX_KERNEL;b=b+1) begin
 					cache_count[b] <= 8'h00;
@@ -282,7 +307,7 @@ always @ (posedge clk or posedge rst) begin
 				cmac_enable <= 0; cmac_data_ready <= 0; avepool_enable <= 0; avepool_data_ready <= 0; maxpool_enable <= 0; maxpool_data_ready <= 0; div_en <= 0;
 				input_count <= 16'h0000; output_count <= 16'h0000; cmac_output_pipe_count <= 8'h00;
 				cmac_input_pipe_count <= 8'h00; cmac_middle_pipe_count <= 8'h00; scmp_input_pipe_count <= 8'h00; scmp_output_pipe_count <= 8'h00; 
-				writes_en <= 0; fsum_index <= 8'h00;
+				f_fifo_wr_en <= 0; c_fifo_wr_en <= 0; fsum_index <= 8'h00;
 				to_clear <= 0; gemm_finish <= 0;
 			end
 // CMD = 1 ==================== CONVOLUTION: Process a line ====================//
@@ -290,25 +315,46 @@ always @ (posedge clk or posedge rst) begin
 				timer <= timer + 1;
 				//========== CONVOLUTION PIPELINE STEP1: enable data read and weight read (this part is the slowest and defines the available timing space of the pipeline)
 				if(engine_valid) begin
-					d_fifo_read_addr <= d_fifo_read_addr + 1;
-					if(dma_p3_offset < kernel_size) w_fifo_read_addr <= w_fifo_read_addr + 1;
-				end
-				if(d_fifo_read_addr > 0) begin
-					dma_p2_burst_cnt <= dma_p2_burst_cnt + 1;
-					if(dma_p2_burst_cnt == `BURST_LEN-1) begin	//NOTES: start cmac when finishing reading the first atom (1x1xpara)
-						dma_p2_burst_cnt <= 0;
-						cmac_enable <= 1;	//NOTES: use this signal to latch buffer
+					if(w_fifo_read_addr + 1 < kernel_size) begin
+						d_fifo_read_addr <= d_fifo_read_addr + 1;
+						w_fifo_read_addr <= w_fifo_read_addr + 1;
+					end	else begin
+						d_fifo_read_addr <= (d_fifo_read_addr + stride2) - (kernel_size - 1);
+						w_fifo_read_addr <= 0;
 					end
-					dbuf <= {dma_p2_ob_data, dbuf[16*`BURST_LEN-1 : 16]}; // deserialize data to dbuf
+					cmac_enable <= 1;
 				end
-				if(w_fifo_read_addr > 0) begin
-					if(dma_p3_burst_cnt == `BURST_LEN-1) begin
-						dma_p3_burst_cnt <= 0;
-						if(dma_p3_offset < kernel_size) dma_p3_offset <= dma_p3_offset + 1;
-					end else dma_p3_burst_cnt <= dma_p3_burst_cnt + 1;
-					wbuf[dma_p3_offset] <= {dma_p3_ob_data, wbuf[dma_p3_offset][16*`BURST_LEN-1 : 16]};
+				//if(d_fifo_read_addr > 0) begin
+					//dma_p2_burst_cnt <= dma_p2_burst_cnt + 1;
+					//if(dma_p2_burst_cnt == `BURST_LEN-1) begin	//NOTES: start cmac when finishing reading the first atom (1x1xpara)
+					//	dma_p2_burst_cnt <= 0;
+							//NOTES: use this signal to latch buffer
+					//end
+				if(cmac_enable) begin
+					if(cmac_data_valid == {`BURST_LEN{1'b1}}) begin
+					data <= dma_p2_ob_data;
+					//dbuf <= {dma_p2_ob_data, dbuf[16*`BURST_LEN-1 : 16]}; // deserialize data to dbuf
+				//end
+				//if(w_fifo_read_addr > 0) begin
+					//if(dma_p3_burst_cnt == `BURST_LEN-1) begin
+						//dma_p3_burst_cnt <= 0;
+						//if(dma_p3_offset + 1 < kernel_size) dma_p3_offset <= dma_p3_offset + 1;
+						//else dma_p3_offset <= 0;
+					//end else dma_p3_burst_cnt <= dma_p3_burst_cnt + 1;
+					//wbuf[dma_p3_offset] <= {dma_p3_ob_data, wbuf[dma_p3_offset][16*`BURST_LEN-1 : 16]};
+					weight <= dma_p3_ob_data;end
 				end
-
+				//end
+				if(cmac_enable) begin
+					cmac_data_ready <= 1;
+				end
+				if(rdy_cmac == {`BURST_LEN{1'b1}}) begin
+					c_fifo_wr_en <= 1;
+				end
+				if(csum_ready == {`BURST_LEN{1'b1}}) begin
+					f_fifo_wr_en <= 1;
+				end
+				/*
 				//========== CONVOLUTION PIPELINE STEP2: start passing deserialized data and weight to cmac (including weight reuse)
 				if(cmac_data_ready) begin
 					cmac_input_pipe_count <= cmac_input_pipe_count + 1;
@@ -388,9 +434,9 @@ always @ (posedge clk or posedge rst) begin
 						psum <= cmac_result;
 						writes_en <= 1; //Trigger for channel partial sum
 					end
-				end 
+				end */
 				// ========== CONVOLUTION PIPELINE STEP4: full channel sum stored in -> sum, sum all channels
-				if(writes_en) writes_en <= 0;
+				if(f_fifo_wr_en) f_fifo_wr_en <= 0;
 				if(fsum_ready) begin 
 					p0_writeback_en <= 1; 
 					writeback_num <= 1; 
