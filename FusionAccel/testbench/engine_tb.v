@@ -1,6 +1,6 @@
 `timescale 1ns/1ps
-`define CMAC
-// `define SACC
+// `define CMAC
+`define SACC
 // `define SCMP
 
 module engine_tb;
@@ -24,11 +24,11 @@ wire		gemm_finish;
 wire 		engine_ready;
 //Command path engine->dma
 wire        dma_p0_writes_en;
-wire [12:0] d_fifo_read_addr;
-wire [12:0] w_fifo_read_addr;
+wire [9:0] d_fifo_read_addr;
+wire [9:0] w_fifo_read_addr;
 //Data path dma->engine
-reg [15:0] 	dma_p2_ob_data;
-reg [15:0] 	dma_p3_ob_data;
+reg [127:0] 	dma_p2_ob_data;
+reg [127:0] 	dma_p3_ob_data;
 //Data path engine->dma
 wire [15:0]	dma_p0_ib_data;
 
@@ -846,8 +846,8 @@ initial begin
     engine_valid = 0;
     op_type = 0; stride = 0; stride2 = 0;
 	kernel = 0; kernel_size = 0; i_channel = 0; o_channel = 0; i_side = 0; o_side = 0; 
-	dma_p2_ob_data = 16'h0000;
-	dma_p3_ob_data = 16'h0000;
+	dma_p2_ob_data = 'd0;
+	dma_p3_ob_data = 'd0;
 	bias = 16'h0000;
     #20 rst = 1;
     #10 rst = 0;
@@ -871,10 +871,19 @@ initial begin
 	//#20 engine_valid = 1;
 end
 
-always @(posedge clk) begin
-	dma_p2_ob_data = data[d_fifo_read_addr];
-	dma_p3_ob_data = weight[w_fifo_read_addr];
-end
+`ifdef CMAC
+	always @(posedge clk) begin
+		dma_p2_ob_data <= {data[d_fifo_read_addr*8+7], data[d_fifo_read_addr*8+6], data[d_fifo_read_addr*8+5], data[d_fifo_read_addr*8+4], data[d_fifo_read_addr*8+3], data[d_fifo_read_addr*8+2], data[d_fifo_read_addr*8+1], data[d_fifo_read_addr*8+0]};
+		dma_p3_ob_data <= {weight[w_fifo_read_addr*8+7], weight[w_fifo_read_addr*8+6], weight[w_fifo_read_addr*8+5], weight[w_fifo_read_addr*8+4], weight[w_fifo_read_addr*8+3], weight[w_fifo_read_addr*8+2], weight[w_fifo_read_addr*8+1], weight[w_fifo_read_addr*8+0]};
+	end
+`endif
+`ifdef SCMP
+`endif
+`ifdef SACC
+	always @(posedge clk) begin
+		dma_p2_ob_data <= {16{avepooldata[d_fifo_read_addr*16 +: 16]}};
+	end
+`endif
 /*
 always @(posedge clk) begin
 	if(engine_valid) begin

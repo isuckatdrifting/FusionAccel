@@ -10,7 +10,7 @@
          </top_modules>
       </db_ref>
    </db_ref_list>
-   <WVObjectSize size="9" />
+   <WVObjectSize size="3" />
    <wvobject fp_name="group313" type="group">
       <obj_property name="label">convolution</obj_property>
       <obj_property name="DisplayName">label</obj_property>
@@ -22,31 +22,14 @@
          <obj_property name="ElementShortName">rst</obj_property>
          <obj_property name="ObjectShortName">rst</obj_property>
       </wvobject>
-      <wvobject fp_name="/engine_tb/dma_p2_reads_en" type="logic" db_ref_id="1">
-         <obj_property name="ElementShortName">dma_p2_reads_en</obj_property>
-         <obj_property name="ObjectShortName">dma_p2_reads_en</obj_property>
-      </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/dma_p3_reads_en" type="logic" db_ref_id="1">
-         <obj_property name="ElementShortName">dma_p3_reads_en</obj_property>
-         <obj_property name="ObjectShortName">dma_p3_reads_en</obj_property>
-      </wvobject>
-      <wvobject fp_name="/engine_tb/dma_p2_ob_we" type="logic" db_ref_id="1">
-         <obj_property name="ElementShortName">dma_p2_ob_we</obj_property>
-         <obj_property name="ObjectShortName">dma_p2_ob_we</obj_property>
-      </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/dma_p2_ob_data" type="array" db_ref_id="1">
-         <obj_property name="ElementShortName">dma_p2_ob_data[15:0]</obj_property>
-         <obj_property name="ObjectShortName">dma_p2_ob_data[15:0]</obj_property>
-         <obj_property name="Radix">HEXRADIX</obj_property>
-      </wvobject>
       <wvobject fp_name="/engine_tb/engine_/d_fifo_read_addr" type="array" db_ref_id="1">
-         <obj_property name="ElementShortName">d_fifo_read_addr[12:0]</obj_property>
-         <obj_property name="ObjectShortName">d_fifo_read_addr[12:0]</obj_property>
+         <obj_property name="ElementShortName">d_fifo_read_addr[9:0]</obj_property>
+         <obj_property name="ObjectShortName">d_fifo_read_addr[9:0]</obj_property>
          <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
       </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/dbuf" type="array" db_ref_id="1">
-         <obj_property name="ElementShortName">dbuf[127:0]</obj_property>
-         <obj_property name="ObjectShortName">dbuf[127:0]</obj_property>
+      <wvobject fp_name="/engine_tb/engine_/dma_p2_ob_data" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">dma_p2_ob_data[127:0]</obj_property>
+         <obj_property name="ObjectShortName">dma_p2_ob_data[127:0]</obj_property>
          <obj_property name="Radix">HEXRADIX</obj_property>
       </wvobject>
       <wvobject fp_name="/engine_tb/engine_/data" type="array" db_ref_id="1">
@@ -54,18 +37,14 @@
          <obj_property name="ObjectShortName">data[127:0]</obj_property>
          <obj_property name="Radix">HEXRADIX</obj_property>
       </wvobject>
-      <wvobject fp_name="/engine_tb/dma_p3_ob_we" type="logic" db_ref_id="1">
-         <obj_property name="ElementShortName">dma_p3_ob_we</obj_property>
-         <obj_property name="ObjectShortName">dma_p3_ob_we</obj_property>
-      </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/w_fifo_read_addr" type="array" db_ref_id="1">
-         <obj_property name="ElementShortName">w_fifo_read_addr[12:0]</obj_property>
-         <obj_property name="ObjectShortName">w_fifo_read_addr[12:0]</obj_property>
+      <wvobject fp_name="/engine_tb/w_fifo_read_addr" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">w_fifo_read_addr[9:0]</obj_property>
+         <obj_property name="ObjectShortName">w_fifo_read_addr[9:0]</obj_property>
          <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
       </wvobject>
       <wvobject fp_name="/engine_tb/engine_/dma_p3_ob_data" type="array" db_ref_id="1">
-         <obj_property name="ElementShortName">dma_p3_ob_data[15:0]</obj_property>
-         <obj_property name="ObjectShortName">dma_p3_ob_data[15:0]</obj_property>
+         <obj_property name="ElementShortName">dma_p3_ob_data[127:0]</obj_property>
+         <obj_property name="ObjectShortName">dma_p3_ob_data[127:0]</obj_property>
          <obj_property name="Radix">HEXRADIX</obj_property>
       </wvobject>
       <wvobject fp_name="/engine_tb/engine_/weight" type="array" db_ref_id="1">
@@ -73,75 +52,10 @@
          <obj_property name="ObjectShortName">weight[127:0]</obj_property>
          <obj_property name="Radix">HEXRADIX</obj_property>
       </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/dma_p2_burst_cnt" type="array" db_ref_id="1">
-         <obj_property name="ElementShortName">dma_p2_burst_cnt[7:0]</obj_property>
-         <obj_property name="ObjectShortName">dma_p2_burst_cnt[7:0]</obj_property>
-         <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
-      </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/dma_p3_offset" type="array" db_ref_id="1">
-         <obj_property name="ElementShortName">dma_p3_offset[7:0]</obj_property>
-         <obj_property name="ObjectShortName">dma_p3_offset[7:0]</obj_property>
-         <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
-      </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/dma_p3_burst_cnt" type="array" db_ref_id="1">
-         <obj_property name="ElementShortName">dma_p3_burst_cnt[7:0]</obj_property>
-         <obj_property name="ObjectShortName">dma_p3_burst_cnt[7:0]</obj_property>
-         <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
-      </wvobject>
       <wvobject fp_name="/engine_tb/engine_/bias" type="array" db_ref_id="1">
          <obj_property name="ElementShortName">bias[15:0]</obj_property>
          <obj_property name="ObjectShortName">bias[15:0]</obj_property>
          <obj_property name="Radix">HEXRADIX</obj_property>
-      </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/wbuf" type="array" db_ref_id="1">
-         <obj_property name="ElementShortName">wbuf[8:0,127:0]</obj_property>
-         <obj_property name="ObjectShortName">wbuf[8:0,127:0]</obj_property>
-         <obj_property name="Radix">HEXRADIX</obj_property>
-         <wvobject fp_name="/engine_tb/engine_/wbuf[8]" type="array" db_ref_id="1">
-            <obj_property name="ElementShortName">[8,127:0]</obj_property>
-            <obj_property name="ObjectShortName">wbuf[8,127:0]</obj_property>
-            <obj_property name="Radix">HEXRADIX</obj_property>
-         </wvobject>
-         <wvobject fp_name="/engine_tb/engine_/wbuf[7]" type="array" db_ref_id="1">
-            <obj_property name="ElementShortName">[7,127:0]</obj_property>
-            <obj_property name="ObjectShortName">wbuf[7,127:0]</obj_property>
-            <obj_property name="Radix">HEXRADIX</obj_property>
-         </wvobject>
-         <wvobject fp_name="/engine_tb/engine_/wbuf[6]" type="array" db_ref_id="1">
-            <obj_property name="ElementShortName">[6,127:0]</obj_property>
-            <obj_property name="ObjectShortName">wbuf[6,127:0]</obj_property>
-            <obj_property name="Radix">HEXRADIX</obj_property>
-         </wvobject>
-         <wvobject fp_name="/engine_tb/engine_/wbuf[5]" type="array" db_ref_id="1">
-            <obj_property name="ElementShortName">[5,127:0]</obj_property>
-            <obj_property name="ObjectShortName">wbuf[5,127:0]</obj_property>
-            <obj_property name="Radix">HEXRADIX</obj_property>
-         </wvobject>
-         <wvobject fp_name="/engine_tb/engine_/wbuf[4]" type="array" db_ref_id="1">
-            <obj_property name="ElementShortName">[4,127:0]</obj_property>
-            <obj_property name="ObjectShortName">wbuf[4,127:0]</obj_property>
-            <obj_property name="Radix">HEXRADIX</obj_property>
-         </wvobject>
-         <wvobject fp_name="/engine_tb/engine_/wbuf[3]" type="array" db_ref_id="1">
-            <obj_property name="ElementShortName">[3,127:0]</obj_property>
-            <obj_property name="ObjectShortName">wbuf[3,127:0]</obj_property>
-            <obj_property name="Radix">HEXRADIX</obj_property>
-         </wvobject>
-         <wvobject fp_name="/engine_tb/engine_/wbuf[2]" type="array" db_ref_id="1">
-            <obj_property name="ElementShortName">[2,127:0]</obj_property>
-            <obj_property name="ObjectShortName">wbuf[2,127:0]</obj_property>
-            <obj_property name="Radix">HEXRADIX</obj_property>
-         </wvobject>
-         <wvobject fp_name="/engine_tb/engine_/wbuf[1]" type="array" db_ref_id="1">
-            <obj_property name="ElementShortName">[1,127:0]</obj_property>
-            <obj_property name="ObjectShortName">wbuf[1,127:0]</obj_property>
-            <obj_property name="Radix">HEXRADIX</obj_property>
-         </wvobject>
-         <wvobject fp_name="/engine_tb/engine_/wbuf[0]" type="array" db_ref_id="1">
-            <obj_property name="ElementShortName">[0,127:0]</obj_property>
-            <obj_property name="ObjectShortName">wbuf[0,127:0]</obj_property>
-            <obj_property name="Radix">HEXRADIX</obj_property>
-         </wvobject>
       </wvobject>
       <wvobject fp_name="/engine_tb/engine_/engine_valid" type="logic" db_ref_id="1">
          <obj_property name="ElementShortName">engine_valid</obj_property>
@@ -178,11 +92,6 @@
          <obj_property name="ElementShortName">data_valid</obj_property>
          <obj_property name="ObjectShortName">data_valid</obj_property>
       </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/dbuf" type="array" db_ref_id="1">
-         <obj_property name="ElementShortName">dbuf[127:0]</obj_property>
-         <obj_property name="ObjectShortName">dbuf[127:0]</obj_property>
-         <obj_property name="Radix">HEXRADIX</obj_property>
-      </wvobject>
       <wvobject fp_name="/engine_tb/engine_/data" type="array" db_ref_id="1">
          <obj_property name="ElementShortName">data[127:0]</obj_property>
          <obj_property name="ObjectShortName">data[127:0]</obj_property>
@@ -198,18 +107,13 @@
          <obj_property name="ObjectShortName">weight[127:0]</obj_property>
          <obj_property name="Radix">HEXRADIX</obj_property>
       </wvobject>
+      <wvobject fp_name="/engine_tb/engine_/cmac_enable" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">cmac_enable</obj_property>
+         <obj_property name="ObjectShortName">cmac_enable</obj_property>
+      </wvobject>
       <wvobject fp_name="/engine_tb/engine_/\gencmac[0].cmac_ /data_ready" type="logic" db_ref_id="1">
          <obj_property name="ElementShortName">data_ready</obj_property>
          <obj_property name="ObjectShortName">data_ready</obj_property>
-      </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/cmac_input_pipe_count" type="array" db_ref_id="1">
-         <obj_property name="ElementShortName">cmac_input_pipe_count[7:0]</obj_property>
-         <obj_property name="ObjectShortName">cmac_input_pipe_count[7:0]</obj_property>
-      </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/\gencmac[0].cmac_ /tmp_sum" type="array" db_ref_id="1">
-         <obj_property name="ElementShortName">tmp_sum[15:0]</obj_property>
-         <obj_property name="ObjectShortName">tmp_sum[15:0]</obj_property>
-         <obj_property name="Radix">HEXRADIX</obj_property>
       </wvobject>
       <wvobject fp_name="/engine_tb/engine_/\gencmac[0].cmac_ /data" type="array" db_ref_id="1">
          <obj_property name="ElementShortName">data[15:0]</obj_property>
@@ -236,32 +140,6 @@
          <obj_property name="ObjectShortName">result_mult[15:0]</obj_property>
          <obj_property name="Radix">HEXRADIX</obj_property>
       </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/\gencmac[0].cmac_ /mult_ready" type="logic" db_ref_id="1">
-         <obj_property name="ElementShortName">mult_ready</obj_property>
-         <obj_property name="ObjectShortName">mult_ready</obj_property>
-      </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/\gencmac[0].cmac_ /mult_ready_buf" type="logic" db_ref_id="1">
-         <obj_property name="ElementShortName">mult_ready_buf</obj_property>
-         <obj_property name="ObjectShortName">mult_ready_buf</obj_property>
-      </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/cmac_middle_pipe_count" type="array" db_ref_id="1">
-         <obj_property name="ElementShortName">cmac_middle_pipe_count[7:0]</obj_property>
-         <obj_property name="ObjectShortName">cmac_middle_pipe_count[7:0]</obj_property>
-      </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/\gencmac[0].cmac_ /operation_nd_acc" type="logic" db_ref_id="1">
-         <obj_property name="ElementShortName">operation_nd_acc</obj_property>
-         <obj_property name="ObjectShortName">operation_nd_acc</obj_property>
-      </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/\gencmac[0].cmac_ /a_acc" type="array" db_ref_id="1">
-         <obj_property name="ElementShortName">a_acc[15:0]</obj_property>
-         <obj_property name="ObjectShortName">a_acc[15:0]</obj_property>
-         <obj_property name="Radix">HEXRADIX</obj_property>
-      </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/\gencmac[0].cmac_ /b_acc" type="array" db_ref_id="1">
-         <obj_property name="ElementShortName">b_acc[15:0]</obj_property>
-         <obj_property name="ObjectShortName">b_acc[15:0]</obj_property>
-         <obj_property name="Radix">HEXRADIX</obj_property>
-      </wvobject>
       <wvobject fp_name="/engine_tb/engine_/\gencmac[0].cmac_ /result" type="array" db_ref_id="1">
          <obj_property name="ElementShortName">result[15:0]</obj_property>
          <obj_property name="ObjectShortName">result[15:0]</obj_property>
@@ -269,147 +147,127 @@
          <obj_property name="UseCustomSignalColor">true</obj_property>
          <obj_property name="CustomSignalColor">#ffa500</obj_property>
       </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/cmac_tmp_sum" type="array" db_ref_id="1">
-         <obj_property name="ElementShortName">cmac_tmp_sum[127:0]</obj_property>
-         <obj_property name="ObjectShortName">cmac_tmp_sum[127:0]</obj_property>
-         <obj_property name="Radix">HEXRADIX</obj_property>
-      </wvobject>
       <wvobject fp_name="/engine_tb/engine_/conv_result" type="array" db_ref_id="1">
          <obj_property name="ElementShortName">conv_result[127:0]</obj_property>
          <obj_property name="ObjectShortName">conv_result[127:0]</obj_property>
          <obj_property name="Radix">HEXRADIX</obj_property>
+      </wvobject>
+      <wvobject fp_name="/engine_tb/engine_/\gencmac[0].cmac_ /mult_ready" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">mult_ready</obj_property>
+         <obj_property name="ObjectShortName">mult_ready</obj_property>
       </wvobject>
       <wvobject fp_name="/engine_tb/engine_/rdy_cmac" type="array" db_ref_id="1">
          <obj_property name="ElementShortName">rdy_cmac[7:0]</obj_property>
          <obj_property name="ObjectShortName">rdy_cmac[7:0]</obj_property>
          <obj_property name="Radix">HEXRADIX</obj_property>
       </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/cmac_ready" type="array" db_ref_id="1">
-         <obj_property name="ElementShortName">cmac_ready[7:0]</obj_property>
-         <obj_property name="ObjectShortName">cmac_ready[7:0]</obj_property>
-         <obj_property name="Radix">HEXRADIX</obj_property>
-      </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/cmac_output_pipe_count" type="array" db_ref_id="1">
-         <obj_property name="ElementShortName">cmac_output_pipe_count[7:0]</obj_property>
-         <obj_property name="ObjectShortName">cmac_output_pipe_count[7:0]</obj_property>
-      </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/cmac_result" type="array" db_ref_id="1">
-         <obj_property name="ElementShortName">cmac_result[127:0]</obj_property>
-         <obj_property name="ObjectShortName">cmac_result[127:0]</obj_property>
-         <obj_property name="Radix">HEXRADIX</obj_property>
-      </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/cmac_sum" type="array" db_ref_id="1">
-         <obj_property name="ElementShortName">cmac_sum[2:0,127:0]</obj_property>
-         <obj_property name="ObjectShortName">cmac_sum[2:0,127:0]</obj_property>
-         <obj_property name="Radix">HEXRADIX</obj_property>
-         <wvobject fp_name="/engine_tb/engine_/cmac_sum[0]" type="array" db_ref_id="1">
-            <obj_property name="ElementShortName">[0,127:0]</obj_property>
-            <obj_property name="ObjectShortName">cmac_sum[0,127:0]</obj_property>
-            <obj_property name="Radix">HEXRADIX</obj_property>
-            <obj_property name="UseCustomSignalColor">true</obj_property>
-            <obj_property name="CustomSignalColor">#ffff00</obj_property>
-         </wvobject>
-         <wvobject fp_name="/engine_tb/engine_/cmac_sum[1]" type="array" db_ref_id="1">
-            <obj_property name="ElementShortName">[1,127:0]</obj_property>
-            <obj_property name="ObjectShortName">cmac_sum[1,127:0]</obj_property>
-            <obj_property name="Radix">HEXRADIX</obj_property>
-            <obj_property name="UseCustomSignalColor">true</obj_property>
-            <obj_property name="CustomSignalColor">#ffff00</obj_property>
-         </wvobject>
-         <wvobject fp_name="/engine_tb/engine_/cmac_sum[2]" type="array" db_ref_id="1">
-            <obj_property name="ElementShortName">[2,127:0]</obj_property>
-            <obj_property name="ObjectShortName">cmac_sum[2,127:0]</obj_property>
-            <obj_property name="Radix">HEXRADIX</obj_property>
-            <obj_property name="UseCustomSignalColor">true</obj_property>
-            <obj_property name="CustomSignalColor">#ffff00</obj_property>
-         </wvobject>
-      </wvobject>
-      <wvobject fp_name="divider87" type="divider">
-         <obj_property name="label">Counters</obj_property>
+      <wvobject fp_name="divider187" type="divider">
+         <obj_property name="label">CSUM</obj_property>
          <obj_property name="DisplayName">label</obj_property>
          <obj_property name="BkColor">128 128 255</obj_property>
          <obj_property name="TextColor">230 230 230</obj_property>
       </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/cmac_enable" type="logic" db_ref_id="1">
-         <obj_property name="ElementShortName">cmac_enable</obj_property>
-         <obj_property name="ObjectShortName">cmac_enable</obj_property>
+      <wvobject fp_name="/engine_tb/engine_/c_fifo_wr_en" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">c_fifo_wr_en</obj_property>
+         <obj_property name="ObjectShortName">c_fifo_wr_en</obj_property>
       </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/input_count" type="array" db_ref_id="1">
-         <obj_property name="ElementShortName">input_count[15:0]</obj_property>
-         <obj_property name="ObjectShortName">input_count[15:0]</obj_property>
+      <wvobject fp_name="/engine_tb/engine_/c_fifo_empty" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">c_fifo_empty</obj_property>
+         <obj_property name="ObjectShortName">c_fifo_empty</obj_property>
+      </wvobject>
+      <wvobject fp_name="/engine_tb/engine_/c_fifo_rd_en" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">c_fifo_rd_en</obj_property>
+         <obj_property name="ObjectShortName">c_fifo_rd_en</obj_property>
+      </wvobject>
+      <wvobject fp_name="/engine_tb/engine_/c_fifo_valid" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">c_fifo_valid</obj_property>
+         <obj_property name="ObjectShortName">c_fifo_valid</obj_property>
+      </wvobject>
+      <wvobject fp_name="/engine_tb/engine_/\gencsum[0].c_ /data_ready" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">data_ready</obj_property>
+         <obj_property name="ObjectShortName">data_ready</obj_property>
+      </wvobject>
+      <wvobject fp_name="/engine_tb/engine_/csum_data_valid" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">csum_data_valid[7:0]</obj_property>
+         <obj_property name="ObjectShortName">csum_data_valid[7:0]</obj_property>
+      </wvobject>
+      <wvobject fp_name="/engine_tb/engine_/\gencsum[0].c_ /kernel_size" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">kernel_size[7:0]</obj_property>
+         <obj_property name="ObjectShortName">kernel_size[7:0]</obj_property>
          <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
       </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/cache_count" type="array" db_ref_id="1">
-         <obj_property name="ElementShortName">cache_count[2:0,7:0]</obj_property>
-         <obj_property name="ObjectShortName">cache_count[2:0,7:0]</obj_property>
+      <wvobject fp_name="/engine_tb/engine_/csum_" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">csum_[127:0]</obj_property>
+         <obj_property name="ObjectShortName">csum_[127:0]</obj_property>
+         <obj_property name="Radix">HEXRADIX</obj_property>
+      </wvobject>
+      <wvobject fp_name="/engine_tb/engine_/\gencsum[0].c_ /data" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">data[15:0]</obj_property>
+         <obj_property name="ObjectShortName">data[15:0]</obj_property>
+         <obj_property name="Radix">HEXRADIX</obj_property>
+      </wvobject>
+      <wvobject fp_name="/engine_tb/engine_/\gencsum[0].c_ /acc_/a" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">a[15:0]</obj_property>
+         <obj_property name="ObjectShortName">a[15:0]</obj_property>
+         <obj_property name="Radix">HEXRADIX</obj_property>
+      </wvobject>
+      <wvobject fp_name="/engine_tb/engine_/\gencsum[0].c_ /acc_/b" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">b[15:0]</obj_property>
+         <obj_property name="ObjectShortName">b[15:0]</obj_property>
+         <obj_property name="Radix">HEXRADIX</obj_property>
+      </wvobject>
+      <wvobject fp_name="/engine_tb/engine_/\gencsum[0].c_ /acc_/result" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">result[15:0]</obj_property>
+         <obj_property name="ObjectShortName">result[15:0]</obj_property>
+         <obj_property name="Radix">HEXRADIX</obj_property>
+      </wvobject>
+      <wvobject fp_name="/engine_tb/engine_/\gencsum[0].c_ /acc_ready" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">acc_ready</obj_property>
+         <obj_property name="ObjectShortName">acc_ready</obj_property>
+      </wvobject>
+      <wvobject fp_name="/engine_tb/engine_/\gencsum[0].c_ /result_acc" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">result_acc[15:0]</obj_property>
+         <obj_property name="ObjectShortName">result_acc[15:0]</obj_property>
+         <obj_property name="Radix">HEXRADIX</obj_property>
+      </wvobject>
+      <wvobject fp_name="/engine_tb/engine_/\gencsum[0].c_ /curr_state" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">curr_state[1:0]</obj_property>
+         <obj_property name="ObjectShortName">curr_state[1:0]</obj_property>
          <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
-         <wvobject fp_name="/engine_tb/engine_/cache_count[2]" type="array" db_ref_id="1">
-            <obj_property name="ElementShortName">[2,7:0]</obj_property>
-            <obj_property name="ObjectShortName">cache_count[2,7:0]</obj_property>
-            <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
-         </wvobject>
-         <wvobject fp_name="/engine_tb/engine_/cache_count[1]" type="array" db_ref_id="1">
-            <obj_property name="ElementShortName">[1,7:0]</obj_property>
-            <obj_property name="ObjectShortName">cache_count[1,7:0]</obj_property>
-            <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
-         </wvobject>
-         <wvobject fp_name="/engine_tb/engine_/cache_count[0]" type="array" db_ref_id="1">
-            <obj_property name="ElementShortName">[0,7:0]</obj_property>
-            <obj_property name="ObjectShortName">cache_count[0,7:0]</obj_property>
-            <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
-         </wvobject>
+      </wvobject>
+      <wvobject fp_name="/engine_tb/engine_/csum_ready" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">csum_ready[7:0]</obj_property>
+         <obj_property name="ObjectShortName">csum_ready[7:0]</obj_property>
+      </wvobject>
+      <wvobject fp_name="/engine_tb/engine_/\gencsum[0].c_ /count" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">count[7:0]</obj_property>
+         <obj_property name="ObjectShortName">count[7:0]</obj_property>
+         <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+      </wvobject>
+      <wvobject fp_name="/engine_tb/engine_/csum_result" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">csum_result[127:0]</obj_property>
+         <obj_property name="ObjectShortName">csum_result[127:0]</obj_property>
+         <obj_property name="Radix">HEXRADIX</obj_property>
       </wvobject>
       <wvobject fp_name="divider303" type="divider">
-         <obj_property name="label">SUM</obj_property>
+         <obj_property name="label">FSUM</obj_property>
          <obj_property name="DisplayName">label</obj_property>
          <obj_property name="BkColor">128 128 255</obj_property>
          <obj_property name="TextColor">230 230 230</obj_property>
       </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/cmac_ready" type="array" db_ref_id="1">
-         <obj_property name="ElementShortName">cmac_ready[7:0]</obj_property>
-         <obj_property name="ObjectShortName">cmac_ready[7:0]</obj_property>
-         <obj_property name="Radix">HEXRADIX</obj_property>
+      <wvobject fp_name="/engine_tb/engine_/f_fifo_wr_en" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">f_fifo_wr_en</obj_property>
+         <obj_property name="ObjectShortName">f_fifo_wr_en</obj_property>
       </wvobject>
       <wvobject fp_name="/engine_tb/engine_/output_count" type="array" db_ref_id="1">
          <obj_property name="ElementShortName">output_count[15:0]</obj_property>
          <obj_property name="ObjectShortName">output_count[15:0]</obj_property>
          <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
       </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/psum" type="array" db_ref_id="1">
-         <obj_property name="ElementShortName">psum[127:0]</obj_property>
-         <obj_property name="ObjectShortName">psum[127:0]</obj_property>
-         <obj_property name="Radix">HEXRADIX</obj_property>
-         <obj_property name="UseCustomSignalColor">true</obj_property>
-         <obj_property name="CustomSignalColor">#ffff00</obj_property>
-      </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/psum_count" type="array" db_ref_id="1">
-         <obj_property name="ElementShortName">psum_count[2:0,7:0]</obj_property>
-         <obj_property name="ObjectShortName">psum_count[2:0,7:0]</obj_property>
-         <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
-         <wvobject fp_name="/engine_tb/engine_/psum_count[2]" type="array" db_ref_id="1">
-            <obj_property name="ElementShortName">[2,7:0]</obj_property>
-            <obj_property name="ObjectShortName">psum_count[2,7:0]</obj_property>
-            <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
-         </wvobject>
-         <wvobject fp_name="/engine_tb/engine_/psum_count[1]" type="array" db_ref_id="1">
-            <obj_property name="ElementShortName">[1,7:0]</obj_property>
-            <obj_property name="ObjectShortName">psum_count[1,7:0]</obj_property>
-            <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
-         </wvobject>
-         <wvobject fp_name="/engine_tb/engine_/psum_count[0]" type="array" db_ref_id="1">
-            <obj_property name="ElementShortName">[0,7:0]</obj_property>
-            <obj_property name="ObjectShortName">psum_count[0,7:0]</obj_property>
-            <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
-         </wvobject>
-      </wvobject>
       <wvobject fp_name="/engine_tb/engine_/f_/bias" type="array" db_ref_id="1">
          <obj_property name="ElementShortName">bias[15:0]</obj_property>
          <obj_property name="ObjectShortName">bias[15:0]</obj_property>
          <obj_property name="Radix">HEXRADIX</obj_property>
-      </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/writes_en" type="logic" db_ref_id="1">
-         <obj_property name="ElementShortName">writes_en</obj_property>
-         <obj_property name="ObjectShortName">writes_en</obj_property>
       </wvobject>
       <wvobject fp_name="/engine_tb/engine_/ff_/empty" type="logic" db_ref_id="1">
          <obj_property name="ElementShortName">empty</obj_property>
@@ -554,32 +412,20 @@
          <obj_property name="ElementShortName">engine_valid</obj_property>
          <obj_property name="ObjectShortName">engine_valid</obj_property>
       </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/op_type" type="array" db_ref_id="1">
-         <obj_property name="ElementShortName">op_type[2:0]</obj_property>
-         <obj_property name="ObjectShortName">op_type[2:0]</obj_property>
-         <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
-      </wvobject>
       <wvobject fp_name="/engine_tb/engine_/curr_state" type="array" db_ref_id="1">
          <obj_property name="ElementShortName">curr_state[3:0]</obj_property>
          <obj_property name="ObjectShortName">curr_state[3:0]</obj_property>
          <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
       </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/dma_p2_reads_en" type="logic" db_ref_id="1">
-         <obj_property name="ElementShortName">dma_p2_reads_en</obj_property>
-         <obj_property name="ObjectShortName">dma_p2_reads_en</obj_property>
-      </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/dma_p2_ob_we" type="logic" db_ref_id="1">
-         <obj_property name="ElementShortName">dma_p2_ob_we</obj_property>
-         <obj_property name="ObjectShortName">dma_p2_ob_we</obj_property>
-      </wvobject>
       <wvobject fp_name="/engine_tb/engine_/dma_p2_ob_data" type="array" db_ref_id="1">
-         <obj_property name="ElementShortName">dma_p2_ob_data[15:0]</obj_property>
-         <obj_property name="ObjectShortName">dma_p2_ob_data[15:0]</obj_property>
-      </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/dbuf" type="array" db_ref_id="1">
-         <obj_property name="ElementShortName">dbuf[127:0]</obj_property>
-         <obj_property name="ObjectShortName">dbuf[127:0]</obj_property>
+         <obj_property name="ElementShortName">dma_p2_ob_data[127:0]</obj_property>
+         <obj_property name="ObjectShortName">dma_p2_ob_data[127:0]</obj_property>
          <obj_property name="Radix">HEXRADIX</obj_property>
+      </wvobject>
+      <wvobject fp_name="/engine_tb/engine_/d_fifo_read_addr" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">d_fifo_read_addr[9:0]</obj_property>
+         <obj_property name="ObjectShortName">d_fifo_read_addr[9:0]</obj_property>
+         <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
       </wvobject>
       <wvobject fp_name="/engine_tb/engine_/data" type="array" db_ref_id="1">
          <obj_property name="ElementShortName">data[127:0]</obj_property>
@@ -592,79 +438,82 @@
          <obj_property name="BkColor">128 128 255</obj_property>
          <obj_property name="TextColor">230 230 230</obj_property>
       </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/\gensacc[0].sacc_ /tmp_sum" type="array" db_ref_id="1">
-         <obj_property name="ElementShortName">tmp_sum[15:0]</obj_property>
-         <obj_property name="ObjectShortName">tmp_sum[15:0]</obj_property>
+      <wvobject fp_name="/engine_tb/engine_/avepool_enable" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">avepool_enable</obj_property>
+         <obj_property name="ObjectShortName">avepool_enable</obj_property>
+      </wvobject>
+      <wvobject fp_name="/engine_tb/engine_/kernel_size" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">kernel_size[7:0]</obj_property>
+         <obj_property name="ObjectShortName">kernel_size[7:0]</obj_property>
+         <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+      </wvobject>
+      <wvobject fp_name="/engine_tb/engine_/s_fifo_wr_en" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">s_fifo_wr_en</obj_property>
+         <obj_property name="ObjectShortName">s_fifo_wr_en</obj_property>
+      </wvobject>
+      <wvobject fp_name="/engine_tb/engine_/s_fifo_rd_en_mux" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">s_fifo_rd_en_mux[7:0]</obj_property>
+         <obj_property name="ObjectShortName">s_fifo_rd_en_mux[7:0]</obj_property>
+      </wvobject>
+      <wvobject fp_name="/engine_tb/engine_/s_fifo_rd_en" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">s_fifo_rd_en</obj_property>
+         <obj_property name="ObjectShortName">s_fifo_rd_en</obj_property>
+      </wvobject>
+      <wvobject fp_name="/engine_tb/engine_/ssum_data_valid" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">ssum_data_valid[7:0]</obj_property>
+         <obj_property name="ObjectShortName">ssum_data_valid[7:0]</obj_property>
+      </wvobject>
+      <wvobject fp_name="/engine_tb/engine_/\gensacc[0].s_ /data_valid" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">data_valid</obj_property>
+         <obj_property name="ObjectShortName">data_valid</obj_property>
+      </wvobject>
+      <wvobject fp_name="/engine_tb/engine_/\gensacc[0].s_ /reads_en" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">reads_en</obj_property>
+         <obj_property name="ObjectShortName">reads_en</obj_property>
+      </wvobject>
+      <wvobject fp_name="/engine_tb/engine_/ssum_ready" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">ssum_ready[7:0]</obj_property>
+         <obj_property name="ObjectShortName">ssum_ready[7:0]</obj_property>
+      </wvobject>
+      <wvobject fp_name="/engine_tb/engine_/ssum_" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">ssum_[127:0]</obj_property>
+         <obj_property name="ObjectShortName">ssum_[127:0]</obj_property>
          <obj_property name="Radix">HEXRADIX</obj_property>
       </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/\gensacc[0].sacc_ /data" type="array" db_ref_id="1">
-         <obj_property name="ElementShortName">data[15:0]</obj_property>
-         <obj_property name="ObjectShortName">data[15:0]</obj_property>
-         <obj_property name="Radix">HEXRADIX</obj_property>
+      <wvobject fp_name="/engine_tb/engine_/s_fifo_valid" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">s_fifo_valid</obj_property>
+         <obj_property name="ObjectShortName">s_fifo_valid</obj_property>
       </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/\gensacc[0].sacc_ /data_ready" type="logic" db_ref_id="1">
-         <obj_property name="ElementShortName">data_ready</obj_property>
-         <obj_property name="ObjectShortName">data_ready</obj_property>
-      </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/\gensacc[0].sacc_ /div_en" type="logic" db_ref_id="1">
+      <wvobject fp_name="/engine_tb/engine_/div_en" type="logic" db_ref_id="1">
          <obj_property name="ElementShortName">div_en</obj_property>
          <obj_property name="ObjectShortName">div_en</obj_property>
       </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/\gensacc[0].sacc_ /result_acc" type="array" db_ref_id="1">
-         <obj_property name="ElementShortName">result_acc[15:0]</obj_property>
-         <obj_property name="ObjectShortName">result_acc[15:0]</obj_property>
+      <wvobject fp_name="/engine_tb/engine_/\gensacc[0].div_ /operation_rfd" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">operation_rfd</obj_property>
+         <obj_property name="ObjectShortName">operation_rfd</obj_property>
+      </wvobject>
+      <wvobject fp_name="/engine_tb/engine_/\gensacc[0].div_ /operation_nd" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">operation_nd</obj_property>
+         <obj_property name="ObjectShortName">operation_nd</obj_property>
+      </wvobject>
+      <wvobject fp_name="/engine_tb/engine_/\gensacc[0].div_ /a" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">a[15:0]</obj_property>
+         <obj_property name="ObjectShortName">a[15:0]</obj_property>
          <obj_property name="Radix">HEXRADIX</obj_property>
       </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/\gensacc[0].sacc_ /acc_ready" type="logic" db_ref_id="1">
-         <obj_property name="ElementShortName">acc_ready</obj_property>
-         <obj_property name="ObjectShortName">acc_ready</obj_property>
-      </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/\gensacc[0].sacc_ /operation_nd_div" type="logic" db_ref_id="1">
-         <obj_property name="ElementShortName">operation_nd_div</obj_property>
-         <obj_property name="ObjectShortName">operation_nd_div</obj_property>
-      </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/\gensacc[0].sacc_ /a_div" type="array" db_ref_id="1">
-         <obj_property name="ElementShortName">a_div[15:0]</obj_property>
-         <obj_property name="ObjectShortName">a_div[15:0]</obj_property>
+      <wvobject fp_name="/engine_tb/engine_/\gensacc[0].div_ /b" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">b[15:0]</obj_property>
+         <obj_property name="ObjectShortName">b[15:0]</obj_property>
          <obj_property name="Radix">HEXRADIX</obj_property>
       </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/\gensacc[0].sacc_ /b_div" type="array" db_ref_id="1">
-         <obj_property name="ElementShortName">b_div[15:0]</obj_property>
-         <obj_property name="ObjectShortName">b_div[15:0]</obj_property>
-         <obj_property name="Radix">HEXRADIX</obj_property>
-      </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/\gensacc[0].sacc_ /result" type="array" db_ref_id="1">
+      <wvobject fp_name="/engine_tb/engine_/\gensacc[0].div_ /result" type="array" db_ref_id="1">
          <obj_property name="ElementShortName">result[15:0]</obj_property>
          <obj_property name="ObjectShortName">result[15:0]</obj_property>
          <obj_property name="Radix">HEXRADIX</obj_property>
       </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/tmp_result" type="array" db_ref_id="1">
-         <obj_property name="ElementShortName">tmp_result[127:0]</obj_property>
-         <obj_property name="ObjectShortName">tmp_result[127:0]</obj_property>
-         <obj_property name="Radix">HEXRADIX</obj_property>
-      </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/sacc_result" type="array" db_ref_id="1">
-         <obj_property name="ElementShortName">sacc_result[127:0]</obj_property>
-         <obj_property name="ObjectShortName">sacc_result[127:0]</obj_property>
-         <obj_property name="Radix">HEXRADIX</obj_property>
-      </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/sacc_tmp_sum" type="array" db_ref_id="1">
-         <obj_property name="ElementShortName">sacc_tmp_sum[127:0]</obj_property>
-         <obj_property name="ObjectShortName">sacc_tmp_sum[127:0]</obj_property>
-         <obj_property name="Radix">HEXRADIX</obj_property>
-      </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/\gensacc[0].sacc_ /result_div" type="array" db_ref_id="1">
-         <obj_property name="ElementShortName">result_div[15:0]</obj_property>
-         <obj_property name="ObjectShortName">result_div[15:0]</obj_property>
-         <obj_property name="Radix">HEXRADIX</obj_property>
-      </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/\gensacc[0].sacc_ /div_ready" type="logic" db_ref_id="1">
-         <obj_property name="ElementShortName">div_ready</obj_property>
-         <obj_property name="ObjectShortName">div_ready</obj_property>
-      </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/avepool_result" type="array" db_ref_id="1">
-         <obj_property name="ElementShortName">avepool_result[127:0]</obj_property>
-         <obj_property name="ObjectShortName">avepool_result[127:0]</obj_property>
+      <wvobject fp_name="/engine_tb/engine_/result_div" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">result_div[127:0]</obj_property>
+         <obj_property name="ObjectShortName">result_div[127:0]</obj_property>
          <obj_property name="Radix">HEXRADIX</obj_property>
       </wvobject>
       <wvobject fp_name="/engine_tb/engine_/sacc_ready" type="array" db_ref_id="1">
@@ -672,25 +521,43 @@
          <obj_property name="ObjectShortName">sacc_ready[7:0]</obj_property>
          <obj_property name="Radix">HEXRADIX</obj_property>
       </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/fsum_index" type="array" db_ref_id="1">
-         <obj_property name="ElementShortName">fsum_index[7:0]</obj_property>
-         <obj_property name="ObjectShortName">fsum_index[7:0]</obj_property>
+      <wvobject fp_name="/engine_tb/engine_/\gensacc[0].div_ /rdy" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">rdy</obj_property>
+         <obj_property name="ObjectShortName">rdy</obj_property>
+      </wvobject>
+      <wvobject fp_name="/engine_tb/engine_/s_fifo_empty" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">s_fifo_empty</obj_property>
+         <obj_property name="ObjectShortName">s_fifo_empty</obj_property>
+      </wvobject>
+      <wvobject fp_name="/engine_tb/engine_/ss_/valid" type="logic" db_ref_id="1">
+         <obj_property name="ElementShortName">valid</obj_property>
+         <obj_property name="ObjectShortName">valid</obj_property>
+      </wvobject>
+      <wvobject fp_name="/engine_tb/engine_/\gensacc[0].s_ /a_acc" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">a_acc[15:0]</obj_property>
+         <obj_property name="ObjectShortName">a_acc[15:0]</obj_property>
+         <obj_property name="Radix">HEXRADIX</obj_property>
+      </wvobject>
+      <wvobject fp_name="/engine_tb/engine_/\gensacc[0].s_ /b_acc" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">b_acc[15:0]</obj_property>
+         <obj_property name="ObjectShortName">b_acc[15:0]</obj_property>
+         <obj_property name="Radix">HEXRADIX</obj_property>
+      </wvobject>
+      <wvobject fp_name="/engine_tb/engine_/\gensacc[0].s_ /result_acc" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">result_acc[15:0]</obj_property>
+         <obj_property name="ObjectShortName">result_acc[15:0]</obj_property>
+         <obj_property name="Radix">HEXRADIX</obj_property>
+      </wvobject>
+      <wvobject fp_name="/engine_tb/engine_/\gensacc[0].s_ /count" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">count[7:0]</obj_property>
+         <obj_property name="ObjectShortName">count[7:0]</obj_property>
          <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
       </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/i_channel_count" type="array" db_ref_id="1">
-         <obj_property name="ElementShortName">i_channel_count[15:0]</obj_property>
-         <obj_property name="ObjectShortName">i_channel_count[15:0]</obj_property>
-         <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
-      </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/gemm_count" type="array" db_ref_id="1">
-         <obj_property name="ElementShortName">gemm_count[7:0]</obj_property>
-         <obj_property name="ObjectShortName">gemm_count[7:0]</obj_property>
-         <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
-      </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/o_channel_count" type="array" db_ref_id="1">
-         <obj_property name="ElementShortName">o_channel_count[15:0]</obj_property>
-         <obj_property name="ObjectShortName">o_channel_count[15:0]</obj_property>
-         <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+      <wvobject fp_name="divider329" type="divider">
+         <obj_property name="label">Writeback</obj_property>
+         <obj_property name="DisplayName">label</obj_property>
+         <obj_property name="BkColor">128 128 255</obj_property>
+         <obj_property name="TextColor">230 230 230</obj_property>
       </wvobject>
       <wvobject fp_name="/engine_tb/engine_/curr_state" type="array" db_ref_id="1">
          <obj_property name="ElementShortName">curr_state[3:0]</obj_property>
@@ -724,10 +591,6 @@
          <obj_property name="ObjectShortName">to_clear</obj_property>
       </wvobject>
    </wvobject>
-   <wvobject fp_name="/engine_tb/engine_/gemm_finish" type="logic" db_ref_id="1">
-      <obj_property name="ElementShortName">gemm_finish</obj_property>
-      <obj_property name="ObjectShortName">gemm_finish</obj_property>
-   </wvobject>
    <wvobject fp_name="group225" type="group">
       <obj_property name="label">maxpooling</obj_property>
       <obj_property name="DisplayName">label</obj_property>
@@ -743,22 +606,14 @@
          <obj_property name="ElementShortName">engine_valid</obj_property>
          <obj_property name="ObjectShortName">engine_valid</obj_property>
       </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/dma_p2_reads_en" type="logic" db_ref_id="1">
-         <obj_property name="ElementShortName">dma_p2_reads_en</obj_property>
-         <obj_property name="ObjectShortName">dma_p2_reads_en</obj_property>
-      </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/dma_p2_ob_we" type="logic" db_ref_id="1">
-         <obj_property name="ElementShortName">dma_p2_ob_we</obj_property>
-         <obj_property name="ObjectShortName">dma_p2_ob_we</obj_property>
-      </wvobject>
       <wvobject fp_name="/engine_tb/engine_/dma_p2_burst_cnt" type="array" db_ref_id="1">
          <obj_property name="ElementShortName">dma_p2_burst_cnt[7:0]</obj_property>
          <obj_property name="ObjectShortName">dma_p2_burst_cnt[7:0]</obj_property>
          <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
       </wvobject>
       <wvobject fp_name="/engine_tb/engine_/dma_p2_ob_data" type="array" db_ref_id="1">
-         <obj_property name="ElementShortName">dma_p2_ob_data[15:0]</obj_property>
-         <obj_property name="ObjectShortName">dma_p2_ob_data[15:0]</obj_property>
+         <obj_property name="ElementShortName">dma_p2_ob_data[127:0]</obj_property>
+         <obj_property name="ObjectShortName">dma_p2_ob_data[127:0]</obj_property>
          <obj_property name="Radix">HEXRADIX</obj_property>
       </wvobject>
       <wvobject fp_name="/engine_tb/engine_/maxpool_enable" type="logic" db_ref_id="1">
@@ -951,26 +806,5 @@
          <obj_property name="ElementShortName">to_clear</obj_property>
          <obj_property name="ObjectShortName">to_clear</obj_property>
       </wvobject>
-   </wvobject>
-   <wvobject fp_name="/engine_tb/engine_/rst" type="logic" db_ref_id="1">
-      <obj_property name="ElementShortName">rst</obj_property>
-      <obj_property name="ObjectShortName">rst</obj_property>
-   </wvobject>
-   <wvobject fp_name="/engine_tb/engine_/clk" type="logic" db_ref_id="1">
-      <obj_property name="ElementShortName">clk</obj_property>
-      <obj_property name="ObjectShortName">clk</obj_property>
-   </wvobject>
-   <wvobject fp_name="/engine_tb/engine_/engine_valid" type="logic" db_ref_id="1">
-      <obj_property name="ElementShortName">engine_valid</obj_property>
-      <obj_property name="ObjectShortName">engine_valid</obj_property>
-   </wvobject>
-   <wvobject fp_name="/engine_tb/engine_/gemm_finish" type="logic" db_ref_id="1">
-      <obj_property name="ElementShortName">gemm_finish</obj_property>
-      <obj_property name="ObjectShortName">gemm_finish</obj_property>
-   </wvobject>
-   <wvobject fp_name="/engine_tb/engine_/curr_state" type="array" db_ref_id="1">
-      <obj_property name="ElementShortName">curr_state[3:0]</obj_property>
-      <obj_property name="ObjectShortName">curr_state[3:0]</obj_property>
-      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
    </wvobject>
 </wave_config>

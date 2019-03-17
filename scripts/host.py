@@ -196,7 +196,7 @@ class host:
 				print("[INTERRUPT]", "Got Interrupt...")
 				break
 			if self.xem.GetWireOutValue(0x25) == 0x0001:
-				# print("[INTERRUPT]", "Got GEMM finish", 'timer = 0x%04x' % self.xem.GetWireOutValue(0x26), ', elapsed time = %f us' % (self.xem.GetWireOutValue(0x26)/100))
+				print("[INTERRUPT]", "Got GEMM finish", 'timer = 0x%04x' % self.xem.GetWireOutValue(0x26), ', elapsed time = %f us' % (self.xem.GetWireOutValue(0x26)/100))
 				break
 		return
 	
@@ -269,8 +269,8 @@ def main():
 						timestamp_engine = timestamp_engine + timestamp_2 - timestamp_1
 						tmp = dev.readOutput()
 						result.append(tmp)
-					# print(len(result))
 					print(result)
+					print(len(result))
 					output = np.stack(result, axis = 0)
 					result_layer.append(output)
 				layer_output = np.stack(result_layer, axis = 0)

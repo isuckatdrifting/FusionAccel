@@ -50,11 +50,11 @@
 bram_w32_d8192 your_instance_name (
   .clka(clka), // input clka
   .wea(wea), // input [0 : 0] wea
-  .addra(addra), // input [12 : 0] addra
-  .dina(dina), // input [15 : 0] dina
+  .addra(addra), // input [9 : 0] addra
+  .dina(dina), // input [127 : 0] dina
   .clkb(clkb), // input clkb
-  .addrb(addrb), // input [12 : 0] addrb
-  .doutb(doutb) // output [15 : 0] doutb
+  .addrb(addrb), // input [9 : 0] addrb
+  .doutb(doutb) // output [127 : 0] doutb
 );
 // INST_TAG_END ------ End INSTANTIATION Template ---------
 
