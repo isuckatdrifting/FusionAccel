@@ -21,14 +21,14 @@ module engine  // Instantiate 8CMACs for conv, 8SCMP for maxpool and 8SACC for a
 	output [15:0]   i_channel_count,
 	output 			engine_ready,
 //Command path engine->dma
-	output          dma_p0_writes_en,
+	output          output_en,
 	output [9:0]	d_ram_read_addr,
 	output [9:0]	w_ram_read_addr,
 //Data path dma->engine
-	input  [16*`BURST_LEN-1:0] 	dma_p2_ob_data,
-	input  [16*`BURST_LEN-1:0] 	dma_p3_ob_data,
+	input  [16*`BURST_LEN-1:0] 	input_data,
+	input  [16*`BURST_LEN-1:0] 	input_weig,
 //Data path engine->dma
-	output [15:0]	dma_p0_ib_data,
+	output [15:0]	output_data,
 	output [3:0]	curr_state,
 	output [31:0]   timer
 );
@@ -86,8 +86,9 @@ wire [15:0]				 fsum_result;
 wire					 fsum_ready;
 reg  [7:0]				 fsum_index;
 reg  [15:0] 			 i_channel_count;
-wire [16*`BURST_LEN-1:0] psum_;
+wire [16*`BURST_LEN-1:0] fsum_;
 wire 					 f_fifo_empty;
+wire					 f_fifo_valid;
 
 fifo_fsum ff_ (
 	.rst			(rst),			// input
@@ -96,12 +97,12 @@ fifo_fsum ff_ (
 	.din			(csum_result), 	// input
 	.wr_en			(f_fifo_wr_en),	// input
 	.rd_en			(f_fifo_rd_en),	// input
-	.dout			(psum_), 		// output
+	.dout			(fsum_), 		// output
 	.full			(),				// output
-	.empty			(fifo_empty),	// output
-	.valid			(valid));		// output
+	.empty			(f_fifo_empty),	// output
+	.valid			(f_fifo_valid));		// output
 
-fsum f_ (.clk(clk), .rst(rst), .fifo_empty(fifo_empty), .reads_en(f_fifo_rd_en), .bias(bias), .data(psum_), .valid(valid), .fsum_result(fsum_result), .i_channel_count(i_channel_count), .fsum_index(fsum_index), .ready(fsum_ready));
+fsum f_ (.clk(clk), .rst(rst), .fifo_empty(f_fifo_empty), .reads_en(f_fifo_rd_en), .bias(bias), .data(fsum_), .valid(f_fifo_valid), .fsum_result(fsum_result), .i_channel_count(i_channel_count), .fsum_index(fsum_index), .ready(fsum_ready));
 //==================== SCMP Wires and Registers ====================//
 reg 					 maxpool_enable;
 reg						 m_fifo_wr_en;
@@ -186,8 +187,8 @@ reg			gemm_finish, layer_finish;
 reg 		to_clear;
 reg 		engine_ready;
 reg  [9:0]  d_ram_read_addr, w_ram_read_addr;
-reg			dma_p0_writes_en;
-reg  [15:0] dma_p0_ib_data;
+reg			output_en;
+reg  [15:0] output_data;
 reg			p0_writeback_en;
 reg	 [7:0]	p0_writeback_count;
 reg	 [7:0]	writeback_num; // 1 for conv, `BURST_LEN for scmp and sacc
@@ -260,7 +261,7 @@ end
 always @ (posedge clk or posedge rst) begin
 	if(rst) begin
 		engine_ready <= 0;
-		dma_p0_writes_en <= 0; dma_p0_ib_data <= 16'h0000;
+		output_en <= 0; output_data <= 16'h0000;
 		data <= 'd0; weight <= 'd0;
 		//==================== Pipeline registers ====================
 		cmac_enable <= 0; cmac_data_ready <= 0; 
@@ -279,7 +280,7 @@ always @ (posedge clk or posedge rst) begin
 			//==================== Clear all registers except cross-channel registers ====================
 			idle: begin 
 				engine_ready <= 0;
-				dma_p0_writes_en <= 0; dma_p0_ib_data <= 16'h0000;
+				output_en <= 0; output_data <= 16'h0000;
 				data <= 'd0; weight <= 'd0;
 				//==================== Pipeline registers ====================
 				cmac_enable <= 0; cmac_data_ready <= 0; 
@@ -304,8 +305,8 @@ always @ (posedge clk or posedge rst) begin
 				end
 				if(cmac_enable) begin // STEP1: enable data read and weight read
 					if(cmac_data_valid == {`BURST_LEN{1'b1}}) begin
-						data <= dma_p2_ob_data;
-						weight <= dma_p3_ob_data;
+						data <= input_data;
+						weight <= input_weig;
 					end
 					cmac_data_ready <= 1;
 				end
@@ -338,7 +339,7 @@ always @ (posedge clk or posedge rst) begin
 				end
 				if(maxpool_enable) begin
 					m_fifo_wr_en <= 1;
-					data <= dma_p2_ob_data;
+					data <= input_data;
 				end
 				if(scmp_ready == {`BURST_LEN{1'b1}}) begin
 					to_clear <= 1;
@@ -359,7 +360,7 @@ always @ (posedge clk or posedge rst) begin
 				end
 				if(avepool_enable) begin
 					s_fifo_wr_en <= 1;
-					data <= dma_p2_ob_data;
+					data <= input_data;
 				end
 				if(ssum_ready == {`BURST_LEN{1'b1}}) begin 
 					a_div <= ssum_result;
@@ -405,17 +406,17 @@ always @ (posedge clk or posedge rst) begin
 		//==================== Write back logic and write address ====================
 		if(p0_writeback_en) begin
 			if(p0_writeback_count < writeback_num) begin
-				dma_p0_writes_en <= 1;
+				output_en <= 1;
 				p0_writeback_count <= p0_writeback_count + 1;
 			end else begin
 				p0_writeback_en <= 0;
 				p0_writeback_count <= 0;
-				dma_p0_writes_en <= 0;
+				output_en <= 0;
 			end
 			case(op_type)
-				CONV: dma_p0_ib_data <= fsum_result[15]? 16'h0000: fsum_result; //Notes: ReLu Activation
-				MPOOL: dma_p0_ib_data <= scmp_result[p0_writeback_count * 16 +: 16];
-				APOOL: dma_p0_ib_data <= result_div[p0_writeback_count * 16 +: 16];
+				CONV: output_data <= fsum_result[15]? 16'h0000: fsum_result; //Notes: ReLu Activation
+				MPOOL: output_data <= scmp_result[p0_writeback_count * 16 +: 16];
+				APOOL: output_data <= result_div[p0_writeback_count * 16 +: 16];
 			endcase
 		end 
 

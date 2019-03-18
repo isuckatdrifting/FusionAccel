@@ -110,13 +110,13 @@ engine engine_(
 	.i_channel_count		(i_channel_count),
 	.engine_ready			(engine_ready),
 //Command path engine->dma
-	.dma_p0_writes_en		(pipe_out_write),
-    .d_ram_read_addr       (d_ram_read_addr),
-    .w_ram_read_addr       (w_ram_read_addr),
+	.output_en				(pipe_out_write),
+    .d_ram_read_addr        (d_ram_read_addr),
+    .w_ram_read_addr        (w_ram_read_addr),
 //Data path dma->engine
-	.dma_p2_ob_data			(data_in_data),
-	.dma_p3_ob_data			(weig_in_data),
-	.dma_p0_ib_data			(pipe_out_data[15:0]),
+	.input_data				(data_in_data),
+	.input_weig				(weig_in_data),
+	.output_data			(pipe_out_data[15:0]),
 	.curr_state				(engine_state),
     .timer                  (timer)
 );
@@ -127,16 +127,14 @@ always @(posedge okClk) begin
 	// The count is compared against a reduced size to account for delays in
 	// FIFO count updates.
 	if(pipe_in_wr_count <= (FIFO_SIZE-BUFFER_HEADROOM-BLOCK_SIZE) ) begin
-	  pipe_in_ready <= 1'b1;
-	end
-	else begin
+	  	pipe_in_ready <= 1'b1;
+	end else begin
 		pipe_in_ready <= 1'b0;
 	end
 	
 	if(pipe_out_rd_count >= 0) begin
-	  pipe_out_ready <= 1'b1;
-	end
-	else begin
+	  	pipe_out_ready <= 1'b1;
+	end else begin
 		pipe_out_ready <= 1'b0;
 	end
 end
