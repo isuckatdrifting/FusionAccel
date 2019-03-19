@@ -183,15 +183,15 @@ class host:
 		bias = self.bias[layer][number:number+8].astype(dtype=np.float16)
 		tmp_bias = np.dstack((bias.reshape(-1), np.zeros_like(bias.reshape(-1)))).astype(dtype=np.float16) # pad 16-bit zero for fp16
 		bias_data = tmp_bias.reshape(-1).tobytes() + bytearray((int(len(tmp_bias.reshape(-1).tobytes())/512)+1)*512-int(len(tmp_bias.reshape(-1).tobytes())))
-		print("[MAGIC]", "Reshaped weight shape:", len(bias_data))
+		# print("[MAGIC]", "Reshaped weight shape:", len(bias_data))
 
-		print("[MAGIC]", "   Layer weight shape:", self.weight[layer].shape)
+		# print("[MAGIC]", "   Layer weight shape:", self.weight[layer].shape)
 		weight = self.weight[layer][number:number+8]
-		print("[MAGIC]", "    GEMM weight shape:", weight.shape)
+		# print("[MAGIC]", "    GEMM weight shape:", weight.shape)
 		weight = weight.transpose((0,1,3,2,4)) # transpose and get the first gemm
 		tmp_weight = np.dstack((weight.reshape(-1), np.zeros_like(weight.reshape(-1)))).astype(dtype=np.float16) # pad 16-bit zero for fp16
 		weight_data = tmp_weight.reshape(-1).tobytes() + bytearray((int(len(tmp_weight.reshape(-1).tobytes())/512)+1)*512-int(len(tmp_weight.reshape(-1).tobytes())))
-		print("[MAGIC]", "Reshaped weight shape:", len(weight_data))
+		# print("[MAGIC]", "Reshaped weight shape:", len(weight_data))
 		return bias_data, weight_data
 
 	def waitIrq(self):
@@ -201,15 +201,15 @@ class host:
 				print("[INTERRUPT]", "Got Interrupt...")
 				break
 			if self.xem.GetWireOutValue(0x25) == 0x0001:
-				print("[INTERRUPT]", "Got GEMM finish", 'timer = 0x%04x' % self.xem.GetWireOutValue(0x26), ', elapsed time = %f us' % (self.xem.GetWireOutValue(0x26)/100))
+				# print("[INTERRUPT]", "Got GEMM finish", 'timer = 0x%04x' % self.xem.GetWireOutValue(0x26), ', elapsed time = %f us' % (self.xem.GetWireOutValue(0x26)/100))
 				self.xem.SetWireInValue(0x00, 0x0000) # clear ep00wire
 				self.xem.UpdateWireIns()
 				break
 		return
 	
 	def readOutput(self):
-		print("[INTERRUPT]", 'rd_count = 0x%08x' % self.xem.GetWireOutValue(0x27))
-		print("[INTERRUPT]", 'wr_count = 0x%08x' % self.xem.GetWireOutValue(0x28))
+		# print("[INTERRUPT]", 'rd_count = 0x%08x' % self.xem.GetWireOutValue(0x27))
+		# print("[INTERRUPT]", 'wr_count = 0x%08x' % self.xem.GetWireOutValue(0x28))
 		count = self.xem.GetWireOutValue(0x27)
 		# print("[PARSING]", "Reading Output...")
 		self.xem.ReadFromBlockPipeOut(0xa0, self.blocksize, self.rbuf)
@@ -260,15 +260,15 @@ def main():
 			for layer in range(0, 1):
 				blob = output
 				result_layer = []
-				for number in range(0, 8, 8):
+				for number in range(0, o_channel, 8):
 					# print("[DEBUG]", blob.shape)
 					result = []
-					gemm_bias, gemm_weight = dev.wb_magic(layer=layer, number=number)
+					if op_type == 1:
+						gemm_bias, gemm_weight = dev.wb_magic(layer=layer, number=number)
+						dev.loadWeights_Bias(gemm_bias, gemm_weight)
 					for gemm in range(0, i_side-kernel+1, stride):
 						gemm_data = dev.gemm_magic(blob, gemm=gemm, kernel=kernel)
 						# load gemm data and gemm weight (whole channel), then start operation
-						if op_type == 1:
-							dev.loadWeights_Bias(gemm_bias, gemm_weight)
 						dev.loadGemm(gemm_data)
 						timestamp_1 = time.clock()
 						dev.waitIrq()
@@ -276,12 +276,13 @@ def main():
 						timestamp_engine = timestamp_engine + timestamp_2 - timestamp_1
 						tmp = dev.readOutput()
 						result.append(tmp)
-						print(tmp.shape)
+						# print(tmp.shape)
 					print(result)
-					print(len(result))
+					# print(len(result))
 					output = np.stack(result, axis = 0)
 					result_layer.append(output)
 				layer_output = np.stack(result_layer, axis = 0)
+				print(layer_output.shape)
 			timestamp_3 = time.clock()
 			# print(layer_output.shape)
 			# print(layer_output)
