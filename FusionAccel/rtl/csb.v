@@ -4,13 +4,13 @@ module csb
     input           clk,
     input           rst,
     input           op_en,
-    input           engine_ready,
+    input           load_next,
     //FIFO Interface
     input           valid,
     output          rd_en,
     input  [31:0]   cmd,
     input  [6:0]    cmd_size,   //total command size received from okHost after loading memory.
-
+    output [6:0]    done_cmd_count,
     output [2:0]    op_type,
     output [3:0]    stride,     //TODO: valid check: stride < padding < kernel
     output [3:0]    kernel,
@@ -133,7 +133,7 @@ always @ (posedge clk or posedge rst) begin
             op_run: begin
                 cmd_burst_count <= `CMD_BURST_LEN;
                 cmd_collect_done <= 0;
-                if(engine_ready) begin
+                if(load_next) begin
                     done_cmd_count <= done_cmd_count + 1;
                     op_done <= 1;
                 end

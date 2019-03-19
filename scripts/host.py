@@ -159,14 +159,23 @@ class host:
 		self.xem.UpdateWireIns()
 		
 	def startOp(self):
-		self.reset_result_fifo()
 		self.xem.SetWireInValue(0x00, 0x0008) #ep00wire[3], reset CSB
 		self.xem.UpdateWireIns()
 		self.xem.SetWireInValue(0x00, 0x0000) #clear ep00wire
+		self.xem.UpdateWireIns()
+		
+	def loadNextCommand(self):
 		print("[INITIAL]", "Starting Operation...")
+		self.reset_result_fifo()
 		self.xem.SetWireInValue(0x00, 0x0010) #ep00wire[4], op_en
 		self.xem.UpdateWireIns()
 		self.xem.SetWireInValue(0x00, 0x0000) #clear ep00wire
+		self.xem.UpdateWireIns()
+
+	def loadNext(self):
+		self.xem.SetWireInValue(0x00, 0x0020)
+		self.xem.UpdateWireIns()
+		self.xem.SetWireInValue(0x00, 0x0000)
 		self.xem.UpdateWireIns()
 	
 	def gemm_magic(self, data, gemm, kernel):
@@ -202,6 +211,7 @@ class host:
 				break
 			if self.xem.GetWireOutValue(0x25) == 0x0001:
 				# print("[INTERRUPT]", "Got GEMM finish", 'timer = 0x%04x' % self.xem.GetWireOutValue(0x26), ', elapsed time = %f us' % (self.xem.GetWireOutValue(0x26)/100))
+				# print("[INTERRUPT]", "Got GEMM finish", 'gemm_count = 0x%04x' % self.xem.GetWireOutValue(0x30))
 				self.xem.SetWireInValue(0x00, 0x0000) # clear ep00wire
 				self.xem.UpdateWireIns()
 				break
@@ -233,31 +243,34 @@ def main():
 		else:
 			# send all commands
 			dev.loadCommands()
-			# process, load all weights for this layer
 			dev.startOp()
+			# process, load all weights for this layer
 			# gemm magic, loop start
-			dev.xem.UpdateWireOuts()
-			command_0 = dev.xem.GetWireOutValue(0x21)
-			command_1 = dev.xem.GetWireOutValue(0x22)
-			op_type = (command_0 & 0x00000007)
-			stride = (command_0 & 0x000000f0) >> 4
-			kernel = (command_0 & 0x0000ff00) >> 8
-			i_side = (command_0 & 0x00ff0000) >> 16
-			o_side = (command_0 & 0xff000000) >> 24
-			i_channel = (command_1 & 0x0000ffff)
-			o_channel = (command_1 & 0xffff0000) >> 16
-			print("[COMMANDS]", "0x%08x" % command_0)
-			print("[COMMANDS]", "0x%08x" % command_1)
-			print("[COMMANDS]", "  op_type %d" % op_type)
-			print("[COMMANDS]", "    stide %d" % stride)
-			print("[COMMANDS]", "   kernel %d" % kernel)
-			print("[COMMANDS]", "   i_side %d" % i_side)
-			print("[COMMANDS]", "   o_side %d" % o_side)
-			print("[COMMANDS]", "i_channel %d" % i_channel)
-			print("[COMMANDS]", "o_channel %d" % o_channel)
 			timestamp_0 = time.clock()
 			timestamp_engine = 0
-			for layer in range(0, 1):
+			for layer in range(0, 2):
+				dev.loadNextCommand()
+				dev.xem.UpdateWireOuts()
+				command_0 = dev.xem.GetWireOutValue(0x21)
+				command_1 = dev.xem.GetWireOutValue(0x22)
+				done_count = dev.xem.GetWireOutValue(0x29)
+				op_type = (command_0 & 0x00000007)
+				stride = (command_0 & 0x000000f0) >> 4
+				kernel = (command_0 & 0x0000ff00) >> 8
+				i_side = (command_0 & 0x00ff0000) >> 16
+				o_side = (command_0 & 0xff000000) >> 24
+				i_channel = (command_1 & 0x0000ffff)
+				o_channel = (command_1 & 0xffff0000) >> 16
+				print("[COMMANDS]", "0x%08x" % command_0)
+				print("[COMMANDS]", "0x%08x" % command_1)
+				print("[COMMANDS]", "  op_type %d" % op_type)
+				print("[COMMANDS]", "    stide %d" % stride)
+				print("[COMMANDS]", "   kernel %d" % kernel)
+				print("[COMMANDS]", "   i_side %d" % i_side)
+				print("[COMMANDS]", "   o_side %d" % o_side)
+				print("[COMMANDS]", "i_channel %d" % i_channel)
+				print("[COMMANDS]", "o_channel %d" % o_channel)
+				print("[COMMANDS]", " done_cnt %d" % done_count)
 				blob = output
 				result_layer = []
 				for number in range(0, o_channel, 8):
@@ -277,12 +290,13 @@ def main():
 						tmp = dev.readOutput()
 						result.append(tmp)
 						# print(tmp.shape)
-					print(result)
+					# print(result)
 					# print(len(result))
 					output = np.stack(result, axis = 0)
 					result_layer.append(output)
 				layer_output = np.stack(result_layer, axis = 0)
 				print(layer_output.shape)
+				dev.loadNext()
 			timestamp_3 = time.clock()
 			# print(layer_output.shape)
 			# print(layer_output)

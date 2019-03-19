@@ -61,8 +61,8 @@ reg  [12:0] w_ram_write_addr;
 wire [9:0]  d_ram_read_addr, b_ram_read_addr;
 wire [12:0] w_ram_read_addr;
 //-------------------------LED Stage Monitor-------------------------------//
-wire 		gemm_finish, layer_finish;
-assign led = ~{csb_state[0], w_ram_wr_en, d_ram_wr_en, engine_state[0], engine_state[1], engine_state[2], gemm_finish, layer_finish};
+wire 		gemm_finish;
+assign led = ~{csb_state[0], w_ram_wr_en, d_ram_wr_en, engine_state[0], engine_state[1], engine_state[2], gemm_finish, engine_ready};
 
 wire [15:0] 			 i_channel_count;
 wire [31:0] 			 timer;
@@ -70,15 +70,19 @@ wire [16*`BURST_LEN-1:0] data_in_data, weig_in_data, bias_in_data;
 reg  [2:0] 				 d_ram_write_count, w_ram_write_count;
 reg  [16*`BURST_LEN-1:0] d_ram_data, w_ram_data, b_ram_data;
 wire 					 d_ram_wr_en, w_ram_wr_en, b_ram_wr_en;
+wire [6:0]				 done_cmd_count;
+wire [7:0]				 gemm_count;
+
 csb csb_(
     .clk					(sys_clk),
     .rst					(ep00wire[3]),
 	.op_en					(ep00wire[4]),		// A wire from ep
-	.engine_ready			(engine_ready),
+	.load_next				(ep00wire[5]),
 	.rd_en					(pipe_in_read),
 	.valid					(pipe_in_valid),
 	.cmd					(pipe_in_data),
 	.cmd_size				(cmd_size[6:0]),
+	.done_cmd_count			(done_cmd_count),
 	.op_type				(op_type),
 	.stride					(stride),
 	.kernel					(kernel),
@@ -108,7 +112,6 @@ engine engine_(
 	.bias					(bias_in_data[15:0]),
 //Response signals engine->csb
 	.gemm_finish			(gemm_finish),
-    .layer_finish           (layer_finish),
 	.i_channel_count		(i_channel_count),
 	.engine_ready			(engine_ready),
 //Command path engine->dma
@@ -121,7 +124,8 @@ engine engine_(
 	.input_weig				(weig_in_data),
 	.output_data			(pipe_out_data[15:0]),
 	.curr_state				(engine_state),
-    .timer                  (timer)
+    .timer                  (timer),
+	.gemm_count				(gemm_count)
 );
 
 //Block Throttle
@@ -144,7 +148,7 @@ end
 
 // PC Communication using Front Panel(TM)
 // Instantiate the okHost and connect endpoints.
-wire [65*14-1:0]  okEHx;
+wire [65*16-1:0]  okEHx;
 
 okHost okHI(
 	.okUH(okUH),
@@ -156,7 +160,7 @@ okHost okHI(
 	.okEH(okEH)
 );
 
-okWireOR # (.N(14)) wireOR (okEH, okEHx);
+okWireOR # (.N(16)) wireOR (okEH, okEHx);
 okWireIn      wi00  (.okHE(okHE),                             .ep_addr(8'h00), .ep_dataout(ep00wire));
 okWireIn	  cmdi  (.okHE(okHE),							  .ep_addr(8'h01), .ep_dataout(cmd_size));
 
@@ -169,12 +173,14 @@ okWireOut	  irq1 	(.okHE(okHE), .okEH(okEHx[ 5*65 +: 65 ]), .ep_addr(8'h25), .ep
 okWireOut	timer0 	(.okHE(okHE), .okEH(okEHx[ 6*65 +: 65 ]), .ep_addr(8'h26), .ep_datain(timer));
 okWireOut	count0 	(.okHE(okHE), .okEH(okEHx[ 7*65 +: 65 ]), .ep_addr(8'h27), .ep_datain({22'h00_0000, pipe_out_rd_count}));
 okWireOut	count1 	(.okHE(okHE), .okEH(okEHx[ 8*65 +: 65 ]), .ep_addr(8'h28), .ep_datain({22'h00_0000, pipe_out_wr_count}));
+okWireOut     done	(.okHE(okHE), .okEH(okEHx[ 9*65 +: 65 ]), .ep_addr(8'h29), .ep_datain({25'h00_0000, done_cmd_count}));
+okWireOut     gemm	(.okHE(okHE), .okEH(okEHx[ 10*65 +: 65 ]), .ep_addr(8'h30), .ep_datain({24'h00_0000, gemm_count}));
 
-okBTPipeIn     pi0  (.okHE(okHE), .okEH(okEHx[ 9*65 +: 65 ]), .ep_addr(8'h80), .ep_write(pi0_ep_write), .ep_blockstrobe(), .ep_dataout(pi0_ep_dataout), .ep_ready(pipe_in_ready));
-okBTPipeIn     pi1  (.okHE(okHE), .okEH(okEHx[ 10*65 +: 65 ]), .ep_addr(8'h81), .ep_write(pi1_ep_write), .ep_blockstrobe(), .ep_dataout(pi1_ep_dataout), .ep_ready(1));
-okBTPipeIn     pi2  (.okHE(okHE), .okEH(okEHx[ 11*65 +: 65 ]), .ep_addr(8'h82), .ep_write(pi2_ep_write), .ep_blockstrobe(), .ep_dataout(pi2_ep_dataout), .ep_ready(1));
-okBTPipeIn     pi3  (.okHE(okHE), .okEH(okEHx[ 12*65 +: 65 ]), .ep_addr(8'h83), .ep_write(pi3_ep_write), .ep_blockstrobe(), .ep_dataout(pi3_ep_dataout), .ep_ready(1));
-okBTPipeOut    po0  (.okHE(okHE), .okEH(okEHx[ 13*65 +: 65 ]), .ep_addr(8'ha0), .ep_read(po0_ep_read),   .ep_blockstrobe(), .ep_datain(po0_ep_datain),   .ep_ready(pipe_out_ready));
+okBTPipeIn     pi0  (.okHE(okHE), .okEH(okEHx[ 11*65 +: 65 ]), .ep_addr(8'h80), .ep_write(pi0_ep_write), .ep_blockstrobe(), .ep_dataout(pi0_ep_dataout), .ep_ready(pipe_in_ready));
+okBTPipeIn     pi1  (.okHE(okHE), .okEH(okEHx[ 12*65 +: 65 ]), .ep_addr(8'h81), .ep_write(pi1_ep_write), .ep_blockstrobe(), .ep_dataout(pi1_ep_dataout), .ep_ready(1));
+okBTPipeIn     pi2  (.okHE(okHE), .okEH(okEHx[ 13*65 +: 65 ]), .ep_addr(8'h82), .ep_write(pi2_ep_write), .ep_blockstrobe(), .ep_dataout(pi2_ep_dataout), .ep_ready(1));
+okBTPipeIn     pi3  (.okHE(okHE), .okEH(okEHx[ 14*65 +: 65 ]), .ep_addr(8'h83), .ep_write(pi3_ep_write), .ep_blockstrobe(), .ep_dataout(pi3_ep_dataout), .ep_ready(1));
+okBTPipeOut    po0  (.okHE(okHE), .okEH(okEHx[ 15*65 +: 65 ]), .ep_addr(8'ha0), .ep_read(po0_ep_read),   .ep_blockstrobe(), .ep_datain(po0_ep_datain),   .ep_ready(pipe_out_ready));
 
 fifo_w32_1024_r32_1024 cmd_fifo (
 	.rst			(ep00wire[2]),			// input

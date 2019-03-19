@@ -17,7 +17,6 @@ module engine  // Instantiate 8CMACs for conv, 8SCMP for maxpool and 8SACC for a
 	input [15:0]	bias,
 //Response signals engine->csb
 	output			gemm_finish,
-	output			layer_finish,
 	output [15:0]   i_channel_count,
 	output 			engine_ready,
 //Command path engine->dma
@@ -31,7 +30,8 @@ module engine  // Instantiate 8CMACs for conv, 8SCMP for maxpool and 8SACC for a
 //Data path engine->dma
 	output [15:0]	output_data,
 	output [3:0]	curr_state,
-	output [31:0]   timer
+	output [31:0]   timer,
+	output [7:0]  	gemm_count
 );
 
 localparam CONV = 1, MPOOL = 2, APOOL = 3;
@@ -185,11 +185,12 @@ always @(posedge clk) sacc_ready <= div_ready;
 //==================== Address registers ===========================//
 reg  [7:0]  gemm_count;
 reg  [15:0] o_channel_count;
-reg			gemm_finish, layer_finish;
+reg			gemm_finish;
 reg 		to_clear;
 reg 		engine_ready;
-reg  [9:0]  d_ram_read_addr, b_ram_read_addr, w_ram_read_offset, i_side_count;
-reg  [12:0] w_ram_read_addr;
+reg  [9:0]  d_ram_read_addr, b_ram_read_addr;
+reg	 [7:0]  o_side_count;
+reg  [12:0] w_ram_read_addr, w_ram_read_offset;
 reg			output_en;
 reg  [15:0] output_data;
 reg			p0_writeback_en;
@@ -244,8 +245,9 @@ always @ (*) begin
 			else next_state = sacc_busy;
 		end
 		clear: begin
-			if(o_channel_count == `BURST_LEN-1) next_state = wait_;
-			else next_state = idle;
+			if(o_channel_count == `BURST_LEN-1) begin
+				next_state = wait_;
+			end else next_state = idle;
 		end
 		wait_: begin
 			next_state = wait_;
@@ -274,10 +276,9 @@ always @ (posedge clk or posedge rst) begin
 		to_clear <= 0; writeback_num <= 8'h00;
 		gemm_finish <= 0;
 		//==================== Cross-channel registers ====================
-		d_ram_read_addr <= 'd0; w_ram_read_addr <= 'd0; b_ram_read_addr <= 0; w_ram_read_offset <= 'd0; i_side_count <= 'd0;
+		d_ram_read_addr <= 'd0; w_ram_read_addr <= 'd0; b_ram_read_addr <= 0; w_ram_read_offset <= 'd0; o_side_count <= 'd0;
 		i_channel_count <= 16'h0000; gemm_count <= 8'h00; o_channel_count <= 16'h0000;
 		p0_writeback_en <= 0; p0_writeback_count <= 8'h00; timer <= 0;
-		layer_finish <= 0;
 	end else begin
 		case (curr_state)
 			//==================== Clear all registers except cross-channel registers ====================
@@ -298,14 +299,14 @@ always @ (posedge clk or posedge rst) begin
 			gemm_busy: begin
 				timer <= timer + 1;
 				if(engine_valid) begin
-					if(i_side_count < o_side) begin
+					if(o_side_count < o_side) begin
 						if((w_ram_read_addr - w_ram_read_offset) + 1 < kernel_size) begin
 							d_ram_read_addr <= d_ram_read_addr + 1;
 							w_ram_read_addr <= w_ram_read_addr + 1;
 						end	else begin
 							d_ram_read_addr <= (d_ram_read_addr + stride2) - (kernel_size - 1);
 							w_ram_read_addr <= w_ram_read_offset;
-							i_side_count <= i_side_count + 1;
+							o_side_count <= o_side_count + 1;
 						end
 						cmac_enable <= 1;
 					end else cmac_enable <= 0;
@@ -335,14 +336,14 @@ always @ (posedge clk or posedge rst) begin
 // CMD = 2 ==================== MAXPOOLING: Process a line ====================//
 			scmp_busy: begin
 				if(engine_valid) begin
-					if(i_side_count < o_side) begin
+					if(o_side_count < o_side) begin
 						if(w_ram_read_addr + 1 < kernel_size) begin
 							d_ram_read_addr <= d_ram_read_addr + 1;
 							w_ram_read_addr <= w_ram_read_addr + 1;
 						end	else begin
 							d_ram_read_addr <= (d_ram_read_addr + stride2) - (kernel_size - 1);
 							w_ram_read_addr <= 0;
-							i_side_count <= i_side_count + 1;
+							o_side_count <= o_side_count + 1;
 						end
 						maxpool_enable <= 1;
 					end else maxpool_enable <= 0;
@@ -387,7 +388,7 @@ always @ (posedge clk or posedge rst) begin
 
 			//==================== Update cross-channel counters and read address ====================
 			clear: begin
-				i_side_count <= 0;
+				o_side_count <= 0;
 				if(i_channel_count + `BURST_LEN < i_channel) begin
 					i_channel_count <= i_channel_count + `BURST_LEN; // within channel operation the address is not updated
 				end else begin
@@ -405,17 +406,16 @@ always @ (posedge clk or posedge rst) begin
 					endcase
 					if(o_channel_count == `BURST_LEN-1) begin
 						gemm_finish <= 1;
-						gemm_count <= gemm_count + 1;
-					end
-					if(gemm_count + 1 == o_side) begin
-						gemm_count <= 0;
+						if(gemm_count + 1 == o_side) begin
+							gemm_count <= 0;
+							engine_ready <= 1;
+						end else begin
+							gemm_count <= gemm_count + 1;
+						end
 					end
 				end
 			end
-
 			finish: begin
-				layer_finish <= 0;
-				engine_ready <= 1;
 			end
 			default:;
 		endcase
