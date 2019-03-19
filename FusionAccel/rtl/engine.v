@@ -24,6 +24,7 @@ module engine  // Instantiate 8CMACs for conv, 8SCMP for maxpool and 8SACC for a
 	output          output_en,
 	output [9:0]	d_ram_read_addr,
 	output [9:0]	w_ram_read_addr,
+	output [9:0]	b_ram_read_addr,
 //Data path dma->engine
 	input  [16*`BURST_LEN-1:0] 	input_data,
 	input  [16*`BURST_LEN-1:0] 	input_weig,
@@ -63,15 +64,15 @@ wire [`BURST_LEN-1:0] 	 csum_ready;
 wire					 c_fifo_valid;
 wire [`BURST_LEN-1:0]	 csum_data_valid;
 fifo_fsum cc_(
-	.rst			(rst),			// input
-	.wr_clk			(clk),			// input
-	.rd_clk			(clk),			// input
-	.din			(cmac_result), 	// input
-	.wr_en			(c_fifo_wr_en),	// input
-	.rd_en			(c_fifo_rd_en),	// input
-	.dout			(csum_), 		// output
-	.full			(),				// output
-	.empty			(c_fifo_empty),	// output
+	.rst			(rst),			// i
+	.wr_clk			(clk),			// i
+	.rd_clk			(clk),			// i
+	.din			(cmac_result), 	// i
+	.wr_en			(c_fifo_wr_en),	// i
+	.rd_en			(c_fifo_rd_en),	// i
+	.dout			(csum_), 		// o
+	.full			(),				// o
+	.empty			(c_fifo_empty),	// o
 	.valid			(c_fifo_valid));
 genvar j;
 generate
@@ -91,18 +92,19 @@ wire 					 f_fifo_empty;
 wire					 f_fifo_valid;
 
 fifo_fsum ff_ (
-	.rst			(rst),			// input
-	.wr_clk			(clk),			// input
-	.rd_clk			(clk),			// input
-	.din			(csum_result), 	// input
-	.wr_en			(f_fifo_wr_en),	// input
-	.rd_en			(f_fifo_rd_en),	// input
-	.dout			(fsum_), 		// output
-	.full			(),				// output
-	.empty			(f_fifo_empty),	// output
-	.valid			(f_fifo_valid));		// output
+	.rst			(rst),			// i
+	.wr_clk			(clk),			// i
+	.rd_clk			(clk),			// i
+	.din			(csum_result), 	// i
+	.wr_en			(f_fifo_wr_en),	// i
+	.rd_en			(f_fifo_rd_en),	// i
+	.dout			(fsum_), 		// o
+	.full			(),				// o
+	.empty			(f_fifo_empty),	// o
+	.valid			(f_fifo_valid));// o
 
-fsum f_ (.clk(clk), .rst(rst), .fifo_empty(f_fifo_empty), .reads_en(f_fifo_rd_en), .bias(bias), .data(fsum_), .valid(f_fifo_valid), .fsum_result(fsum_result), .i_channel_count(i_channel_count), .fsum_index(fsum_index), .ready(fsum_ready));
+fsum f_ (.clk(clk), .rst(rst), .fifo_empty(f_fifo_empty), .reads_en(f_fifo_rd_en), .bias(bias), .data(fsum_), .valid(f_fifo_valid), .i_channel(i_channel), .fsum_result(fsum_result), .i_channel_count(i_channel_count), .fsum_index(fsum_index), .ready(fsum_ready));
+
 //==================== SCMP Wires and Registers ====================//
 reg 					 maxpool_enable;
 reg						 m_fifo_wr_en;
@@ -120,15 +122,15 @@ wire [`BURST_LEN-1:0] 	 cmp_ready;
 reg  [`BURST_LEN-1:0] 	 scmp_ready;
 
 fifo_fsum mm_(
-	.rst			(rst),			// input
-	.wr_clk			(clk),			// input
-	.rd_clk			(clk),			// input
-	.din			(data), 		// input
-	.wr_en			(m_fifo_wr_en),	// input
-	.rd_en			(m_fifo_rd_en),	// input
-	.dout			(scmp_), 		// output
-	.full			(),				// output
-	.empty			(m_fifo_empty),	// output
+	.rst			(rst),			// i
+	.wr_clk			(clk),			// i
+	.rd_clk			(clk),			// i
+	.din			(data), 		// i
+	.wr_en			(m_fifo_wr_en),	// i
+	.rd_en			(m_fifo_rd_en),	// i
+	.dout			(scmp_), 		// o
+	.full			(),				// o
+	.empty			(m_fifo_empty),	// o
 	.valid			(m_fifo_valid));
 
 genvar l;
@@ -155,15 +157,15 @@ wire [`BURST_LEN-1:0] 	 ssum_data_valid;
 reg  [`BURST_LEN-1:0] 	 sacc_ready;
 
 fifo_fsum ss_(
-	.rst			(rst),			// input
-	.wr_clk			(clk),			// input
-	.rd_clk			(clk),			// input
-	.din			(data), 		// input, Bus [31 : 0] 
-	.wr_en			(s_fifo_wr_en),	// input
-	.rd_en			(s_fifo_rd_en),		// input
-	.dout			(ssum_), 		// output, Bus [31 : 0] 
-	.full			(),				// output
-	.empty			(s_fifo_empty),	// output
+	.rst			(rst),			// i
+	.wr_clk			(clk),			// i
+	.rd_clk			(clk),			// i
+	.din			(data), 		// i
+	.wr_en			(s_fifo_wr_en),	// i
+	.rd_en			(s_fifo_rd_en),	// i
+	.dout			(ssum_), 		// o
+	.full			(),				// o
+	.empty			(s_fifo_empty),	// o
 	.valid			(s_fifo_valid));
 
 reg  [16*`BURST_LEN-1:0] a_div, b_div;
@@ -186,7 +188,7 @@ reg  [15:0] o_channel_count;
 reg			gemm_finish, layer_finish;
 reg 		to_clear;
 reg 		engine_ready;
-reg  [9:0]  d_ram_read_addr, w_ram_read_addr;
+reg  [9:0]  d_ram_read_addr, w_ram_read_addr, b_ram_read_addr, w_ram_read_offset, i_side_count;
 reg			output_en;
 reg  [15:0] output_data;
 reg			p0_writeback_en;
@@ -241,7 +243,7 @@ always @ (*) begin
 			else next_state = sacc_busy;
 		end
 		clear: begin
-			if(i_channel_count + `BURST_LEN >= i_channel) next_state = wait_;
+			if(o_channel_count == `BURST_LEN-1) next_state = wait_;
 			else next_state = idle;
 		end
 		wait_: begin
@@ -271,7 +273,7 @@ always @ (posedge clk or posedge rst) begin
 		to_clear <= 0; writeback_num <= 8'h00;
 		gemm_finish <= 0;
 		//==================== Cross-channel registers ====================
-		d_ram_read_addr <= 'd0; w_ram_read_addr <= 'd0;
+		d_ram_read_addr <= 'd0; w_ram_read_addr <= 'd0; b_ram_read_addr <= 0; w_ram_read_offset <= 'd0; i_side_count <= 'd0;
 		i_channel_count <= 16'h0000; gemm_count <= 8'h00; o_channel_count <= 16'h0000;
 		p0_writeback_en <= 0; p0_writeback_count <= 8'h00; timer <= 0;
 		layer_finish <= 0;
@@ -289,19 +291,23 @@ always @ (posedge clk or posedge rst) begin
 				c_fifo_wr_en <= 0; f_fifo_wr_en <= 0; s_fifo_wr_en <= 0; m_fifo_wr_en <= 0; fsum_index <= 8'h00;
 				to_clear <= 0; writeback_num <= 8'h00; 
 				gemm_finish <= 0;
+				w_ram_read_addr <= w_ram_read_offset;
 			end
 // CMD = 1 ==================== CONVOLUTION: Process a line ====================//
 			gemm_busy: begin
 				timer <= timer + 1;
 				if(engine_valid) begin
-					if(w_ram_read_addr + 1 < kernel_size) begin
-						d_ram_read_addr <= d_ram_read_addr + 1;
-						w_ram_read_addr <= w_ram_read_addr + 1;
-					end	else begin
-						d_ram_read_addr <= (d_ram_read_addr + stride2) - (kernel_size - 1);
-						w_ram_read_addr <= 0;
-					end
-					cmac_enable <= 1;
+					if(i_side_count < o_side) begin
+						if((w_ram_read_addr - w_ram_read_offset) + 1 < kernel_size) begin
+							d_ram_read_addr <= d_ram_read_addr + 1;
+							w_ram_read_addr <= w_ram_read_addr + 1;
+						end	else begin
+							d_ram_read_addr <= (d_ram_read_addr + stride2) - (kernel_size - 1);
+							w_ram_read_addr <= w_ram_read_offset;
+							i_side_count <= i_side_count + 1;
+						end
+						cmac_enable <= 1;
+					end else cmac_enable <= 0;
 				end
 				if(cmac_enable) begin // STEP1: enable data read and weight read
 					if(cmac_data_valid == {`BURST_LEN{1'b1}}) begin
@@ -309,10 +315,10 @@ always @ (posedge clk or posedge rst) begin
 						weight <= input_weig;
 					end
 					cmac_data_ready <= 1;
-				end
+				end else cmac_data_ready <= 0;
 				if(rdy_cmac == {`BURST_LEN{1'b1}}) begin // STEP2: channel sum
 					c_fifo_wr_en <= 1;
-				end
+				end else c_fifo_wr_en <= 0;
 				if(csum_ready == {`BURST_LEN{1'b1}}) begin //STEP3: full sum
 					f_fifo_wr_en <= 1;
 				end
@@ -325,22 +331,25 @@ always @ (posedge clk or posedge rst) begin
 				end
 			end
 
-// CMD = 4 ==================== MAXPOOLING: Process a line ====================//
+// CMD = 2 ==================== MAXPOOLING: Process a line ====================//
 			scmp_busy: begin
 				if(engine_valid) begin
-					if(w_ram_read_addr + 1 < kernel_size) begin
-						d_ram_read_addr <= d_ram_read_addr + 1;
-						w_ram_read_addr <= w_ram_read_addr + 1;
-					end	else begin
-						d_ram_read_addr <= (d_ram_read_addr + stride2) - (kernel_size - 1);
-						w_ram_read_addr <= 0;
-					end
-					maxpool_enable <= 1;
+					if(i_side_count < o_side) begin
+						if(w_ram_read_addr + 1 < kernel_size) begin
+							d_ram_read_addr <= d_ram_read_addr + 1;
+							w_ram_read_addr <= w_ram_read_addr + 1;
+						end	else begin
+							d_ram_read_addr <= (d_ram_read_addr + stride2) - (kernel_size - 1);
+							w_ram_read_addr <= 0;
+							i_side_count <= i_side_count + 1;
+						end
+						maxpool_enable <= 1;
+					end else maxpool_enable <= 0;
 				end
 				if(maxpool_enable) begin
 					m_fifo_wr_en <= 1;
 					data <= input_data;
-				end
+				end else m_fifo_wr_en <= 0;
 				if(scmp_ready == {`BURST_LEN{1'b1}}) begin
 					to_clear <= 1;
 					p0_writeback_en <= 1; //NOTES: Writeback all channels
@@ -348,7 +357,7 @@ always @ (posedge clk or posedge rst) begin
 				end
 			end
 
-// CMD = 5 ==================== AVEPOOLING: Process a line * surface ====================//
+// CMD = 3 ==================== AVEPOOLING: Process a line * surface ====================//
 			sacc_busy: begin
 				if(engine_valid) begin
 					if(d_ram_read_addr + 1 < kernel_size) begin
@@ -377,21 +386,28 @@ always @ (posedge clk or posedge rst) begin
 
 			//==================== Update cross-channel counters and read address ====================
 			clear: begin
-				i_channel_count <= i_channel_count + `BURST_LEN; // within channel operation the address is not updated
-				if(i_channel_count + `BURST_LEN >= i_channel) begin
+				i_side_count <= 0;
+				if(i_channel_count + `BURST_LEN < i_channel) begin
+					i_channel_count <= i_channel_count + `BURST_LEN; // within channel operation the address is not updated
+				end else begin
 					i_channel_count <= 0;
-					gemm_count <= gemm_count + 1; //NOTES: a gemm is finished
-					gemm_finish <= 1;
+					d_ram_read_addr <= 'd0;
+					b_ram_read_addr <= b_ram_read_addr + 1;
+					w_ram_read_offset <= w_ram_read_offset + kernel_size;
+					case(op_type)
+						CONV: begin 
+							o_channel_count <= o_channel_count + 1; 
+						end
+						MPOOL, APOOL: begin
+							o_channel_count <= o_channel_count + `BURST_LEN;
+						end
+					endcase
+					if(o_channel_count == `BURST_LEN-1) begin
+						gemm_finish <= 1;
+						gemm_count <= gemm_count + 1;
+					end
 					if(gemm_count + 1 == o_side) begin
 						gemm_count <= 0;
-						case(op_type)
-							CONV: begin o_channel_count <= o_channel_count + 1; end//NOTES: start the next weight group, o_channel should jump to load_bias
-							MPOOL, APOOL: o_channel_count <= o_channel_count + `BURST_LEN;
-							default:;
-						endcase
-						if(o_channel_count + 1 == o_channel) begin
-							layer_finish <= 1;
-						end
 					end
 				end
 			end

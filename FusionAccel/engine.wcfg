@@ -10,7 +10,7 @@
          </top_modules>
       </db_ref>
    </db_ref_list>
-   <WVObjectSize size="12" />
+   <WVObjectSize size="21" />
    <wvobject fp_name="/engine_tb/engine_/input_data" type="array" db_ref_id="1">
       <obj_property name="ElementShortName">input_data[127:0]</obj_property>
       <obj_property name="ObjectShortName">input_data[127:0]</obj_property>
@@ -21,17 +21,46 @@
       <obj_property name="ObjectShortName">input_weig[127:0]</obj_property>
       <obj_property name="Radix">HEXRADIX</obj_property>
    </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/d_ram_read_addr" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">d_ram_read_addr[9:0]</obj_property>
+      <obj_property name="ObjectShortName">d_ram_read_addr[9:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/w_ram_read_addr" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">w_ram_read_addr[9:0]</obj_property>
+      <obj_property name="ObjectShortName">w_ram_read_addr[9:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/w_ram_read_offset" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">w_ram_read_offset[9:0]</obj_property>
+      <obj_property name="ObjectShortName">w_ram_read_offset[9:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/i_side_count" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">i_side_count[9:0]</obj_property>
+      <obj_property name="ObjectShortName">i_side_count[9:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/clk" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">clk</obj_property>
+      <obj_property name="ObjectShortName">clk</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/rst" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">rst</obj_property>
+      <obj_property name="ObjectShortName">rst</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/engine_valid" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">engine_valid</obj_property>
+      <obj_property name="ObjectShortName">engine_valid</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/curr_state" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">curr_state[2:0]</obj_property>
+      <obj_property name="ObjectShortName">curr_state[2:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+   </wvobject>
    <wvobject fp_name="group313" type="group">
       <obj_property name="label">convolution</obj_property>
       <obj_property name="DisplayName">label</obj_property>
-      <wvobject fp_name="/engine_tb/engine_/clk" type="logic" db_ref_id="1">
-         <obj_property name="ElementShortName">clk</obj_property>
-         <obj_property name="ObjectShortName">clk</obj_property>
-      </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/rst" type="logic" db_ref_id="1">
-         <obj_property name="ElementShortName">rst</obj_property>
-         <obj_property name="ObjectShortName">rst</obj_property>
-      </wvobject>
       <wvobject fp_name="/engine_tb/engine_/data" type="array" db_ref_id="1">
          <obj_property name="ElementShortName">data[127:0]</obj_property>
          <obj_property name="ObjectShortName">data[127:0]</obj_property>
@@ -46,15 +75,6 @@
          <obj_property name="ElementShortName">bias[15:0]</obj_property>
          <obj_property name="ObjectShortName">bias[15:0]</obj_property>
          <obj_property name="Radix">HEXRADIX</obj_property>
-      </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/engine_valid" type="logic" db_ref_id="1">
-         <obj_property name="ElementShortName">engine_valid</obj_property>
-         <obj_property name="ObjectShortName">engine_valid</obj_property>
-      </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/curr_state" type="array" db_ref_id="1">
-         <obj_property name="ElementShortName">curr_state[2:0]</obj_property>
-         <obj_property name="ObjectShortName">curr_state[2:0]</obj_property>
-         <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
       </wvobject>
       <wvobject fp_name="/engine_tb/engine_/cmac_data_valid" type="array" db_ref_id="1">
          <obj_property name="ElementShortName">cmac_data_valid[7:0]</obj_property>
@@ -347,23 +367,6 @@
    <wvobject fp_name="group313" type="group">
       <obj_property name="label">avepooling</obj_property>
       <obj_property name="DisplayName">label</obj_property>
-      <wvobject fp_name="/engine_tb/engine_/clk" type="logic" db_ref_id="1">
-         <obj_property name="ElementShortName">clk</obj_property>
-         <obj_property name="ObjectShortName">clk</obj_property>
-      </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/rst" type="logic" db_ref_id="1">
-         <obj_property name="ElementShortName">rst</obj_property>
-         <obj_property name="ObjectShortName">rst</obj_property>
-      </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/engine_valid" type="logic" db_ref_id="1">
-         <obj_property name="ElementShortName">engine_valid</obj_property>
-         <obj_property name="ObjectShortName">engine_valid</obj_property>
-      </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/curr_state" type="array" db_ref_id="1">
-         <obj_property name="ElementShortName">curr_state[2:0]</obj_property>
-         <obj_property name="ObjectShortName">curr_state[2:0]</obj_property>
-         <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
-      </wvobject>
       <wvobject fp_name="/engine_tb/engine_/data" type="array" db_ref_id="1">
          <obj_property name="ElementShortName">data[127:0]</obj_property>
          <obj_property name="ObjectShortName">data[127:0]</obj_property>
@@ -490,18 +493,6 @@
    <wvobject fp_name="group225" type="group">
       <obj_property name="label">maxpooling</obj_property>
       <obj_property name="DisplayName">label</obj_property>
-      <wvobject fp_name="/engine_tb/engine_/clk" type="logic" db_ref_id="1">
-         <obj_property name="ElementShortName">clk</obj_property>
-         <obj_property name="ObjectShortName">clk</obj_property>
-      </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/rst" type="logic" db_ref_id="1">
-         <obj_property name="ElementShortName">rst</obj_property>
-         <obj_property name="ObjectShortName">rst</obj_property>
-      </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/engine_valid" type="logic" db_ref_id="1">
-         <obj_property name="ElementShortName">engine_valid</obj_property>
-         <obj_property name="ObjectShortName">engine_valid</obj_property>
-      </wvobject>
       <wvobject fp_name="/engine_tb/engine_/maxpool_enable" type="logic" db_ref_id="1">
          <obj_property name="ElementShortName">maxpool_enable</obj_property>
          <obj_property name="ObjectShortName">maxpool_enable</obj_property>
@@ -607,5 +598,9 @@
       <obj_property name="ElementShortName">output_data[15:0]</obj_property>
       <obj_property name="ObjectShortName">output_data[15:0]</obj_property>
       <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/gemm_finish" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">gemm_finish</obj_property>
+      <obj_property name="ObjectShortName">gemm_finish</obj_property>
    </wvobject>
 </wave_config>
