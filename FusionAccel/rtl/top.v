@@ -37,7 +37,7 @@ wire [112:0] okHE;
 wire [64:0]  okEH;
 
 wire        pipe_in_read;
-wire [31:0] pipe_in_data, data_in_data, weig_in_data;
+wire [31:0] pipe_in_data;
 wire [9:0]  pipe_in_rd_count;
 wire [9:0]  pipe_in_wr_count;
 wire        pipe_in_valid;
@@ -54,17 +54,22 @@ wire        pipe_out_empty;
 reg         pipe_out_ready;
 
 // Pipe Fifos
-wire        pi0_ep_write, po0_ep_read, pi1_ep_write, pi2_ep_write;
-wire [31:0] pi0_ep_dataout, po0_ep_datain, pi1_ep_dataout, pi2_ep_dataout;
-reg [12:0] d_fifo_write_addr, w_fifo_write_addr;
-wire [12:0] d_fifo_read_addr, w_fifo_read_addr;
+wire        pi0_ep_write, po0_ep_read, pi1_ep_write, pi2_ep_write, pi3_ep_write;
+wire [31:0] pi0_ep_dataout, po0_ep_datain, pi1_ep_dataout, pi2_ep_dataout, pi3_ep_dataout;
+reg  [9:0]  d_ram_write_addr, b_ram_write_addr;
+reg  [12:0] w_ram_write_addr;
+wire [9:0]  d_ram_read_addr, b_ram_read_addr;
+wire [12:0] w_ram_read_addr;
 //-------------------------LED Stage Monitor-------------------------------//
-wire gemm_finish, layer_finish;
-assign led = ~{csb_state[0], csb_state[1], csb_state[2], engine_state[0], engine_state[1], engine_state[2], gemm_finish, layer_finish};
+wire 		gemm_finish, layer_finish;
+assign led = ~{csb_state[0], w_ram_wr_en, d_ram_wr_en, engine_state[0], engine_state[1], engine_state[2], gemm_finish, layer_finish};
 
-wire [15:0] i_channel_count;
-wire [31:0] timer;
-
+wire [15:0] 			 i_channel_count;
+wire [31:0] 			 timer;
+wire [16*`BURST_LEN-1:0] data_in_data, weig_in_data, bias_in_data;
+reg  [2:0] 				 d_ram_write_count, w_ram_write_count;
+reg  [16*`BURST_LEN-1:0] d_ram_data, w_ram_data, b_ram_data;
+wire 					 d_ram_wr_en, w_ram_wr_en, b_ram_wr_en;
 csb csb_(
     .clk					(sys_clk),
     .rst					(ep00wire[3]),
@@ -100,20 +105,21 @@ engine engine_(
 	.o_channel				(o_channel),
 	.kernel_size			(kernel_size),
 	.stride2				(stride2),
-	.bias					(bias[15:0]),
+	.bias					(bias_in_data[15:0]),
 //Response signals engine->csb
 	.gemm_finish			(gemm_finish),
     .layer_finish           (layer_finish),
 	.i_channel_count		(i_channel_count),
 	.engine_ready			(engine_ready),
 //Command path engine->dma
-	.dma_p0_writes_en		(pipe_out_write),
-    .d_fifo_read_addr       (d_fifo_read_addr),
-    .w_fifo_read_addr       (w_fifo_read_addr),
+	.output_en				(pipe_out_write),
+    .d_ram_read_addr        (d_ram_read_addr),
+    .w_ram_read_addr        (w_ram_read_addr),
+	.b_ram_read_addr		(b_ram_read_addr),
 //Data path dma->engine
-	.dma_p2_ob_data			(data_in_data[15:0]),
-	.dma_p3_ob_data			(weig_in_data[15:0]),
-	.dma_p0_ib_data			(pipe_out_data[15:0]),
+	.input_data				(data_in_data),
+	.input_weig				(weig_in_data),
+	.output_data			(pipe_out_data[15:0]),
 	.curr_state				(engine_state),
     .timer                  (timer)
 );
@@ -124,23 +130,21 @@ always @(posedge okClk) begin
 	// The count is compared against a reduced size to account for delays in
 	// FIFO count updates.
 	if(pipe_in_wr_count <= (FIFO_SIZE-BUFFER_HEADROOM-BLOCK_SIZE) ) begin
-	  pipe_in_ready <= 1'b1;
-	end
-	else begin
+	  	pipe_in_ready <= 1'b1;
+	end else begin
 		pipe_in_ready <= 1'b0;
 	end
 	
 	if(pipe_out_rd_count >= 0) begin
-	  pipe_out_ready <= 1'b1;
-	end
-	else begin
+	  	pipe_out_ready <= 1'b1;
+	end else begin
 		pipe_out_ready <= 1'b0;
 	end
 end
 
 // PC Communication using Front Panel(TM)
 // Instantiate the okHost and connect endpoints.
-wire [65*13-1:0]  okEHx;
+wire [65*14-1:0]  okEHx;
 
 okHost okHI(
 	.okUH(okUH),
@@ -152,10 +156,9 @@ okHost okHI(
 	.okEH(okEH)
 );
 
-okWireOR # (.N(13)) wireOR (okEH, okEHx);
+okWireOR # (.N(14)) wireOR (okEH, okEHx);
 okWireIn      wi00  (.okHE(okHE),                             .ep_addr(8'h00), .ep_dataout(ep00wire));
 okWireIn	  cmdi  (.okHE(okHE),							  .ep_addr(8'h01), .ep_dataout(cmd_size));
-okWireIn   bias_in	(.okHE(okHE),							  .ep_addr(8'h02), .ep_dataout(bias));
 
 okWireOut	  irq0	(.okHE(okHE), .okEH(okEHx[ 0*65 +: 65 ]), .ep_addr(8'h20), .ep_datain({31'h0000_0000, irq}));
 okWireOut	  cmd0 	(.okHE(okHE), .okEH(okEHx[ 1*65 +: 65 ]), .ep_addr(8'h21), .ep_datain({o_side, i_side, kernel, stride, 1'b0, op_type}));
@@ -170,7 +173,8 @@ okWireOut	count1 	(.okHE(okHE), .okEH(okEHx[ 8*65 +: 65 ]), .ep_addr(8'h28), .ep
 okBTPipeIn     pi0  (.okHE(okHE), .okEH(okEHx[ 9*65 +: 65 ]), .ep_addr(8'h80), .ep_write(pi0_ep_write), .ep_blockstrobe(), .ep_dataout(pi0_ep_dataout), .ep_ready(pipe_in_ready));
 okBTPipeIn     pi1  (.okHE(okHE), .okEH(okEHx[ 10*65 +: 65 ]), .ep_addr(8'h81), .ep_write(pi1_ep_write), .ep_blockstrobe(), .ep_dataout(pi1_ep_dataout), .ep_ready(1));
 okBTPipeIn     pi2  (.okHE(okHE), .okEH(okEHx[ 11*65 +: 65 ]), .ep_addr(8'h82), .ep_write(pi2_ep_write), .ep_blockstrobe(), .ep_dataout(pi2_ep_dataout), .ep_ready(1));
-okBTPipeOut    po0  (.okHE(okHE), .okEH(okEHx[ 12*65 +: 65 ]), .ep_addr(8'ha0), .ep_read(po0_ep_read),   .ep_blockstrobe(), .ep_datain(po0_ep_datain),   .ep_ready(pipe_out_ready));
+okBTPipeIn     pi3  (.okHE(okHE), .okEH(okEHx[ 12*65 +: 65 ]), .ep_addr(8'h83), .ep_write(pi3_ep_write), .ep_blockstrobe(), .ep_dataout(pi3_ep_dataout), .ep_ready(1));
+okBTPipeOut    po0  (.okHE(okHE), .okEH(okEHx[ 13*65 +: 65 ]), .ep_addr(8'ha0), .ep_read(po0_ep_read),   .ep_blockstrobe(), .ep_datain(po0_ep_datain),   .ep_ready(pipe_out_ready));
 
 fifo_w32_1024_r32_1024 cmd_fifo (
 	.rst			(ep00wire[2]),			// input
@@ -186,31 +190,66 @@ fifo_w32_1024_r32_1024 cmd_fifo (
 	.rd_data_count	(pipe_in_rd_count), 	// output, Bus [9 : 0] 
 	.wr_data_count	(pipe_in_wr_count));	// output, Bus [9 : 0] 
 
-bram_w32_d8192 d_fifo (
+bram_w128_1024 d_bram (
     .clka           (okClk),
-    .wea            (pi1_ep_write), 
-    .addra          (d_fifo_write_addr),
-    .dina           (pi1_ep_dataout[15:0]),
+    .wea            (d_ram_wr_en), 
+    .addra          (d_ram_write_addr),
+    .dina           (d_ram_data),
     .clkb           (sys_clk),
-    .addrb          (d_fifo_read_addr),
-    .doutb          (data_in_data[15:0]));
+    .addrb          (d_ram_read_addr),
+    .doutb          (data_in_data));
 
-bram_w32_d8192 w_fifo (
+bram_w128_8192 w_bram (
     .clka           (okClk),
-    .wea            (pi2_ep_write), 
-    .addra          (w_fifo_write_addr),
-    .dina           (pi2_ep_dataout[15:0]),
+    .wea            (w_ram_wr_en), 
+    .addra          (w_ram_write_addr),
+    .dina           (w_ram_data),
     .clkb           (sys_clk),
-    .addrb          (w_fifo_read_addr),
-    .doutb          (weig_in_data[15:0]));
+    .addrb          (w_ram_read_addr),
+    .doutb          (weig_in_data));
 
+bram_w128_1024 b_bram (
+    .clka           (okClk),
+    .wea            (pi3_ep_write), 
+    .addra          (b_ram_write_addr),
+    .dina           (pi3_ep_dataout),
+    .clkb           (sys_clk),
+    .addrb          (b_ram_read_addr),
+    .doutb          (bias_in_data));
+
+assign d_ram_wr_en = (d_ram_write_count == `BURST_LEN-1)? 1: 0;
+assign w_ram_wr_en = (w_ram_write_count == `BURST_LEN-1)? 1: 0;
 always @ (posedge okClk) begin
     if(ep00wire[0]) begin
-        d_fifo_write_addr <= 0;
-        w_fifo_write_addr <= 0;
+        d_ram_write_addr <= 'd0;
+        w_ram_write_addr <= 'd0;
+        b_ram_write_addr <= 'd0;
+		d_ram_write_count <= 'd0;
+		w_ram_write_count <= 'd0;
+		d_ram_data <= 'd0;
+		w_ram_data <= 'd0;
     end else begin
-        if(pi1_ep_write) d_fifo_write_addr <= d_fifo_write_addr + 1;
-        if(pi2_ep_write) w_fifo_write_addr <= w_fifo_write_addr + 1;
+        if(pi1_ep_write) begin
+			if(d_ram_write_count == `BURST_LEN-1) begin
+				d_ram_write_count <= 'd0;
+				d_ram_write_addr <= d_ram_write_addr + 1;
+			end else begin
+				d_ram_write_count <= d_ram_write_count + 1;
+			end 
+			d_ram_data <= {pi1_ep_dataout[15:0], d_ram_data[16*`BURST_LEN-1: 16]};
+		end
+        if(pi2_ep_write) begin
+			if(w_ram_write_count == `BURST_LEN-1) begin
+				w_ram_write_count <= 'd0;
+				w_ram_write_addr <= w_ram_write_addr + 1;
+			end else begin
+				w_ram_write_count <= w_ram_write_count + 1;
+			end
+			w_ram_data <= {pi2_ep_dataout[15:0], w_ram_data[16*`BURST_LEN-1: 16]};
+		end
+		if(pi3_ep_write) begin
+			b_ram_write_addr <= b_ram_write_addr + 1;
+		end
     end
 end
 

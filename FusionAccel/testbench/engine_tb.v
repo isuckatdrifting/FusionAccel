@@ -23,14 +23,14 @@ reg	[15:0]  bias;
 wire		gemm_finish;
 wire 		engine_ready;
 //Command path engine->dma
-wire        dma_p0_writes_en;
-wire [12:0] d_fifo_read_addr;
-wire [12:0] w_fifo_read_addr;
+wire        output_en;
+wire [9:0]  d_ram_read_addr;
+wire [12:0] w_ram_read_addr;
 //Data path dma->engine
-reg [15:0] 	dma_p2_ob_data;
-reg [15:0] 	dma_p3_ob_data;
+reg [127:0] input_data;
+reg [127:0] input_weig;
 //Data path engine->dma
-wire [15:0]	dma_p0_ib_data;
+wire [15:0]	output_data;
 
 `ifdef CMAC
 	reg [15:0] data [0:216];
@@ -823,13 +823,13 @@ engine engine_(
 	.gemm_finish			(gemm_finish),
 	.engine_ready			(engine_ready),
 //Command path engine->dma
-	.dma_p0_writes_en		(dma_p0_writes_en),
-	.d_fifo_read_addr		(d_fifo_read_addr),
-	.w_fifo_read_addr		(w_fifo_read_addr),
+	.output_en		(output_en),
+	.d_ram_read_addr		(d_ram_read_addr),
+	.w_ram_read_addr		(w_ram_read_addr),
 //Data path dma->engine
-	.dma_p2_ob_data			(dma_p2_ob_data),
-	.dma_p3_ob_data			(dma_p3_ob_data),
-	.dma_p0_ib_data			(dma_p0_ib_data)
+	.input_data			(input_data),
+	.input_weig			(input_weig),
+	.output_data			(output_data)
 );
 
 always #5 clk = ~clk;
@@ -846,8 +846,8 @@ initial begin
     engine_valid = 0;
     op_type = 0; stride = 0; stride2 = 0;
 	kernel = 0; kernel_size = 0; i_channel = 0; o_channel = 0; i_side = 0; o_side = 0; 
-	dma_p2_ob_data = 16'h0000;
-	dma_p3_ob_data = 16'h0000;
+	input_data = 'd0;
+	input_weig = 'd0;
 	bias = 16'h0000;
     #20 rst = 1;
     #10 rst = 0;
@@ -872,43 +872,15 @@ initial begin
 end
 
 always @(posedge clk) begin
-	dma_p2_ob_data = data[d_fifo_read_addr];
-	dma_p3_ob_data = weight[w_fifo_read_addr];
-end
-/*
-always @(posedge clk) begin
-	if(engine_valid) begin
-		if(dma_p2_reads_en) begin 
-			dma_p2_ob_we <= 1;
 `ifdef CMAC
-			dma_p2_ob_data <= data[m]; 
-			m <= m + 1; 
+	input_data <= {data[d_ram_read_addr*8+7], data[d_ram_read_addr*8+6], data[d_ram_read_addr*8+5], data[d_ram_read_addr*8+4], data[d_ram_read_addr*8+3], data[d_ram_read_addr*8+2], data[d_ram_read_addr*8+1], data[d_ram_read_addr*8+0]};
+	input_weig <= {weight[w_ram_read_addr*8+7], weight[w_ram_read_addr*8+6], weight[w_ram_read_addr*8+5], weight[w_ram_read_addr*8+4], weight[w_ram_read_addr*8+3], weight[w_ram_read_addr*8+2], weight[w_ram_read_addr*8+1], weight[w_ram_read_addr*8+0]};
 `endif
 `ifdef SCMP
-			dma_p2_ob_data <= maxpooldata[m*16 +: 16];
-			offset <= offset + 1;
-			if(offset == 7) begin
-				m <= m + 1;
-				offset <= 0;
-			end
+	input_data <= {16{maxpooldata[d_ram_read_addr*16 +: 16]}};
 `endif
 `ifdef SACC
-			dma_p2_ob_data <= avepooldata[m*16 +: 16];
-			offset <= offset + 1;
-			if(offset == 7) begin
-				m <= m + 1;
-				offset <= 0;
-			end
+	input_data <= {16{avepooldata[d_ram_read_addr*16 +: 16]}};
 `endif
-		end else dma_p2_ob_we <= 0;
-`ifdef CMAC
-		if(dma_p3_reads_en) begin 
-			dma_p3_ob_we <= 1;
-			dma_p3_ob_data <= weight[n]; 
-			n <= n + 1; 
-		end else dma_p3_ob_we <= 0;
-`endif
-	end
-end*/
-
+end
 endmodule
