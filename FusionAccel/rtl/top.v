@@ -56,8 +56,10 @@ reg         pipe_out_ready;
 // Pipe Fifos
 wire        pi0_ep_write, po0_ep_read, pi1_ep_write, pi2_ep_write, pi3_ep_write;
 wire [31:0] pi0_ep_dataout, po0_ep_datain, pi1_ep_dataout, pi2_ep_dataout, pi3_ep_dataout;
-reg  [9:0]  d_ram_write_addr, w_ram_write_addr, b_ram_write_addr;
-wire [9:0]  d_ram_read_addr, w_ram_read_addr, b_ram_read_addr;
+reg  [9:0]  d_ram_write_addr, b_ram_write_addr;
+reg  [12:0] w_ram_write_addr;
+wire [9:0]  d_ram_read_addr, b_ram_read_addr;
+wire [12:0] w_ram_read_addr;
 //-------------------------LED Stage Monitor-------------------------------//
 wire 		gemm_finish, layer_finish;
 assign led = ~{csb_state[0], w_ram_wr_en, d_ram_wr_en, engine_state[0], engine_state[1], engine_state[2], gemm_finish, layer_finish};
@@ -188,7 +190,7 @@ fifo_w32_1024_r32_1024 cmd_fifo (
 	.rd_data_count	(pipe_in_rd_count), 	// output, Bus [9 : 0] 
 	.wr_data_count	(pipe_in_wr_count));	// output, Bus [9 : 0] 
 
-bram_w32_d8192 d_bram (
+bram_w128_1024 d_bram (
     .clka           (okClk),
     .wea            (d_ram_wr_en), 
     .addra          (d_ram_write_addr),
@@ -197,7 +199,7 @@ bram_w32_d8192 d_bram (
     .addrb          (d_ram_read_addr),
     .doutb          (data_in_data));
 
-bram_w32_d8192 w_bram (
+bram_w128_8192 w_bram (
     .clka           (okClk),
     .wea            (w_ram_wr_en), 
     .addra          (w_ram_write_addr),
@@ -206,7 +208,7 @@ bram_w32_d8192 w_bram (
     .addrb          (w_ram_read_addr),
     .doutb          (weig_in_data));
 
-bram_w32_d8192 b_bram (
+bram_w128_1024 b_bram (
     .clka           (okClk),
     .wea            (pi3_ep_write), 
     .addra          (b_ram_write_addr),

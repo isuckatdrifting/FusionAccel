@@ -23,7 +23,7 @@ module engine  // Instantiate 8CMACs for conv, 8SCMP for maxpool and 8SACC for a
 //Command path engine->dma
 	output          output_en,
 	output [9:0]	d_ram_read_addr,
-	output [9:0]	w_ram_read_addr,
+	output [12:0]	w_ram_read_addr,
 	output [9:0]	b_ram_read_addr,
 //Data path dma->engine
 	input  [16*`BURST_LEN-1:0] 	input_data,
@@ -188,7 +188,8 @@ reg  [15:0] o_channel_count;
 reg			gemm_finish, layer_finish;
 reg 		to_clear;
 reg 		engine_ready;
-reg  [9:0]  d_ram_read_addr, w_ram_read_addr, b_ram_read_addr, w_ram_read_offset, i_side_count;
+reg  [9:0]  d_ram_read_addr, b_ram_read_addr, w_ram_read_offset, i_side_count;
+reg  [12:0] w_ram_read_addr;
 reg			output_en;
 reg  [15:0] output_data;
 reg			p0_writeback_en;

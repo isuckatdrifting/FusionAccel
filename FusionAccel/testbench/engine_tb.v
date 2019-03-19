@@ -25,7 +25,7 @@ wire 		engine_ready;
 //Command path engine->dma
 wire        output_en;
 wire [9:0]  d_ram_read_addr;
-wire [9:0]  w_ram_read_addr;
+wire [12:0] w_ram_read_addr;
 //Data path dma->engine
 reg [127:0] input_data;
 reg [127:0] input_weig;
