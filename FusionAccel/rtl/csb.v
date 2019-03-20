@@ -82,7 +82,7 @@ always @ (*) begin
             else next_state = idle;
         end
         cmd_get: begin
-            if(cmd_collect_done) next_state = op_run;
+            if(cmd_burst_count + 1 == `CMD_BURST_LEN) next_state = op_run;
             else next_state = cmd_get;
         end
         op_run: begin
@@ -115,23 +115,25 @@ always @ (posedge clk or posedge rst) begin
     end else begin
         case (curr_state)
             idle: begin
-                cmd_burst_count <= `CMD_BURST_LEN;
+                cmd_burst_count <= 0;
             end
             cmd_get: begin
-                rd_en <= 1;
+                if(cmd_burst_count + 1 == `CMD_BURST_LEN) begin 
+                    rd_en <= 0;
+                end else rd_en <= 1;
                 op_done <= 0;
                 if(valid) begin
-                    cmd_burst_count <= cmd_burst_count - 1;
+                    cmd_burst_count <= cmd_burst_count + 1;
                     case (cmd_burst_count) //Split cmds from fifo into separate attributes
-                        4'd3: begin op_type <= cmd[2:0]; stride <= cmd[7:4]; kernel <= cmd[15:8]; i_side <= cmd[23:16]; o_side <= cmd[31:24]; end
-                        4'd2: begin i_channel <= cmd[15:0]; o_channel <= cmd[31:16]; end
-                        4'd1: begin kernel_size <= cmd[15:8]; stride2 <= cmd[31:16]; cmd_collect_done <= 1; rd_en <= 0; end
+                        4'd0: begin op_type <= cmd[2:0]; stride <= cmd[7:4]; kernel <= cmd[15:8]; i_side <= cmd[23:16]; o_side <= cmd[31:24]; end
+                        4'd1: begin i_channel <= cmd[15:0]; o_channel <= cmd[31:16]; rd_en <= 0; end
+                        4'd2: begin kernel_size <= cmd[15:8]; stride2 <= cmd[31:16]; cmd_collect_done <= 1; end
                         default: ;
                     endcase
                 end
             end
             op_run: begin
-                cmd_burst_count <= `CMD_BURST_LEN;
+                cmd_burst_count <= 0;
                 cmd_collect_done <= 0;
                 if(load_next) begin
                     done_cmd_count <= done_cmd_count + 1;

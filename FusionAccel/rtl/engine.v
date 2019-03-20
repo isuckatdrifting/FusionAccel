@@ -252,9 +252,6 @@ always @ (*) begin
 		wait_: begin
 			next_state = wait_;
 		end
-		finish: begin
-			next_state = finish;
-		end
         default:
             next_state = idle;
     endcase
@@ -414,8 +411,6 @@ always @ (posedge clk or posedge rst) begin
 						end
 					end
 				end
-			end
-			finish: begin
 			end
 			default:;
 		endcase

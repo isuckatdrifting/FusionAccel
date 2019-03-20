@@ -153,31 +153,7 @@ class host:
 		self.xem.UpdateWireIns()
 		self.xem.WriteToBlockPipeIn(0x81, self.blocksize, tmp) # Notes: Write buf must be times of blocksize
 		self.xem.UpdateWireOuts()
-		self.xem.SetWireInValue(0x00, 0x0040) # ep00wire[6], engine reset
-		self.xem.UpdateWireIns()
-		self.xem.SetWireInValue(0x00, 0x0080) # ep00wire[7], engine valid
-		self.xem.UpdateWireIns()
-		
-	def startOp(self):
-		self.xem.SetWireInValue(0x00, 0x0008) #ep00wire[3], reset CSB
-		self.xem.UpdateWireIns()
-		self.xem.SetWireInValue(0x00, 0x0000) #clear ep00wire
-		self.xem.UpdateWireIns()
-		
-	def loadNextCommand(self):
-		print("[INITIAL]", "Starting Operation...")
-		self.reset_result_fifo()
-		self.xem.SetWireInValue(0x00, 0x0010) #ep00wire[4], op_en
-		self.xem.UpdateWireIns()
-		self.xem.SetWireInValue(0x00, 0x0000) #clear ep00wire
-		self.xem.UpdateWireIns()
 
-	def loadNext(self):
-		self.xem.SetWireInValue(0x00, 0x0020)
-		self.xem.UpdateWireIns()
-		self.xem.SetWireInValue(0x00, 0x0000)
-		self.xem.UpdateWireIns()
-	
 	def gemm_magic(self, data, gemm, kernel):
 		# print("[MAGIC]", "      GEMM data shape:", data.shape)
 		tmp_data = data[gemm:gemm+kernel,:,:]
@@ -218,6 +194,7 @@ class host:
 		return
 	
 	def readOutput(self):
+		self.xem.UpdateWireOuts()
 		# print("[INTERRUPT]", 'rd_count = 0x%08x' % self.xem.GetWireOutValue(0x27))
 		# print("[INTERRUPT]", 'wr_count = 0x%08x' % self.xem.GetWireOutValue(0x28))
 		count = self.xem.GetWireOutValue(0x27)
@@ -243,13 +220,22 @@ def main():
 		else:
 			# send all commands
 			dev.loadCommands()
-			dev.startOp()
 			# process, load all weights for this layer
 			# gemm magic, loop start
 			timestamp_0 = time.clock()
 			timestamp_engine = 0
 			for layer in range(0, 2):
-				dev.loadNextCommand()
+				dev.xem.UpdateWireOuts()
+				print("[INTERRUPT]", 'rd_count = 0x%08x' % dev.xem.GetWireOutValue(0x31))
+				print("[INTERRUPT]", 'wr_count = 0x%08x' % dev.xem.GetWireOutValue(0x32))
+				dev.xem.SetWireInValue(0x00, 0x0008) #ep00wire[3], reset csb
+				dev.xem.UpdateWireIns()
+				dev.xem.SetWireInValue(0x00, 0x0000)
+				dev.xem.UpdateWireIns()
+				dev.xem.SetWireInValue(0x00, 0x0010) #ep00wire[4], op_en
+				dev.xem.UpdateWireIns()
+				dev.xem.SetWireInValue(0x00, 0x0000)
+				dev.xem.UpdateWireIns()
 				dev.xem.UpdateWireOuts()
 				command_0 = dev.xem.GetWireOutValue(0x21)
 				command_1 = dev.xem.GetWireOutValue(0x22)
@@ -273,30 +259,39 @@ def main():
 				print("[COMMANDS]", " done_cnt %d" % done_count)
 				blob = output
 				result_layer = []
+				
 				for number in range(0, o_channel, 8):
 					# print("[DEBUG]", blob.shape)
 					result = []
-					if op_type == 1:
-						gemm_bias, gemm_weight = dev.wb_magic(layer=layer, number=number)
-						dev.loadWeights_Bias(gemm_bias, gemm_weight)
 					for gemm in range(0, i_side-kernel+1, stride):
+						dev.xem.SetWireInValue(0x00, 0x0040) # ep00wire[6], engine reset
+						dev.xem.UpdateWireIns()
+						dev.xem.SetWireInValue(0x00, 0x0000)
+						dev.xem.UpdateWireIns()
+						if op_type == 1:
+							gemm_bias, gemm_weight = dev.wb_magic(layer=layer, number=number)
+							dev.loadWeights_Bias(gemm_bias, gemm_weight)
 						gemm_data = dev.gemm_magic(blob, gemm=gemm, kernel=kernel)
 						# load gemm data and gemm weight (whole channel), then start operation
 						dev.loadGemm(gemm_data)
+						dev.xem.SetWireInValue(0x00, 0x0080) # ep00wire[7], engine valid
+						dev.xem.UpdateWireIns()
 						timestamp_1 = time.clock()
 						dev.waitIrq()
+						dev.xem.SetWireInValue(0x00, 0x0000)
+						dev.xem.UpdateWireIns()
 						timestamp_2 = time.clock()
 						timestamp_engine = timestamp_engine + timestamp_2 - timestamp_1
 						tmp = dev.readOutput()
 						result.append(tmp)
+						# print(tmp)
 						# print(tmp.shape)
-					# print(result)
+					print(result)
 					# print(len(result))
 					output = np.stack(result, axis = 0)
 					result_layer.append(output)
 				layer_output = np.stack(result_layer, axis = 0)
 				print(layer_output.shape)
-				dev.loadNext()
 			timestamp_3 = time.clock()
 			# print(layer_output.shape)
 			# print(layer_output)

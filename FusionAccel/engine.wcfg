@@ -10,7 +10,7 @@
          </top_modules>
       </db_ref>
    </db_ref_list>
-   <WVObjectSize size="21" />
+   <WVObjectSize size="33" />
    <wvobject fp_name="/engine_tb/engine_/input_data" type="array" db_ref_id="1">
       <obj_property name="ElementShortName">input_data[127:0]</obj_property>
       <obj_property name="ObjectShortName">input_data[127:0]</obj_property>
@@ -27,18 +27,18 @@
       <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
    </wvobject>
    <wvobject fp_name="/engine_tb/engine_/w_ram_read_addr" type="array" db_ref_id="1">
-      <obj_property name="ElementShortName">w_ram_read_addr[9:0]</obj_property>
-      <obj_property name="ObjectShortName">w_ram_read_addr[9:0]</obj_property>
+      <obj_property name="ElementShortName">w_ram_read_addr[12:0]</obj_property>
+      <obj_property name="ObjectShortName">w_ram_read_addr[12:0]</obj_property>
       <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
    </wvobject>
    <wvobject fp_name="/engine_tb/engine_/w_ram_read_offset" type="array" db_ref_id="1">
-      <obj_property name="ElementShortName">w_ram_read_offset[9:0]</obj_property>
-      <obj_property name="ObjectShortName">w_ram_read_offset[9:0]</obj_property>
+      <obj_property name="ElementShortName">w_ram_read_offset[12:0]</obj_property>
+      <obj_property name="ObjectShortName">w_ram_read_offset[12:0]</obj_property>
       <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
    </wvobject>
-   <wvobject fp_name="/engine_tb/engine_/i_side_count" type="array" db_ref_id="1">
-      <obj_property name="ElementShortName">i_side_count[9:0]</obj_property>
-      <obj_property name="ObjectShortName">i_side_count[9:0]</obj_property>
+   <wvobject fp_name="/engine_tb/engine_/o_side_count" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">o_side_count[7:0]</obj_property>
+      <obj_property name="ObjectShortName">o_side_count[7:0]</obj_property>
       <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
    </wvobject>
    <wvobject fp_name="/engine_tb/engine_/clk" type="logic" db_ref_id="1">
@@ -57,6 +57,62 @@
       <obj_property name="ElementShortName">curr_state[2:0]</obj_property>
       <obj_property name="ObjectShortName">curr_state[2:0]</obj_property>
       <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/op_en" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">op_en</obj_property>
+      <obj_property name="ObjectShortName">op_en</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/rd_en" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">rd_en</obj_property>
+      <obj_property name="ObjectShortName">rd_en</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/valid" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">valid</obj_property>
+      <obj_property name="ObjectShortName">valid</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/valid" type="logic" db_ref_id="1">
+      <obj_property name="ElementShortName">valid</obj_property>
+      <obj_property name="ObjectShortName">valid</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/cmd_burst_count" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">cmd_burst_count[3:0]</obj_property>
+      <obj_property name="ObjectShortName">cmd_burst_count[3:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/v" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">v[31:0]</obj_property>
+      <obj_property name="ObjectShortName">v[31:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/cmd" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">cmd[31:0]</obj_property>
+      <obj_property name="ObjectShortName">cmd[31:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/op_type" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">op_type[2:0]</obj_property>
+      <obj_property name="ObjectShortName">op_type[2:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/stride" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">stride[3:0]</obj_property>
+      <obj_property name="ObjectShortName">stride[3:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/kernel" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">kernel[7:0]</obj_property>
+      <obj_property name="ObjectShortName">kernel[7:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/kernel_size" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">kernel_size[7:0]</obj_property>
+      <obj_property name="ObjectShortName">kernel_size[7:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/stride2" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">stride2[15:0]</obj_property>
+      <obj_property name="ObjectShortName">stride2[15:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
    </wvobject>
    <wvobject fp_name="group313" type="group">
       <obj_property name="label">convolution</obj_property>
@@ -354,10 +410,6 @@
       <wvobject fp_name="/engine_tb/engine_/gemm_finish" type="logic" db_ref_id="1">
          <obj_property name="ElementShortName">gemm_finish</obj_property>
          <obj_property name="ObjectShortName">gemm_finish</obj_property>
-      </wvobject>
-      <wvobject fp_name="/engine_tb/engine_/layer_finish" type="logic" db_ref_id="1">
-         <obj_property name="ElementShortName">layer_finish</obj_property>
-         <obj_property name="ObjectShortName">layer_finish</obj_property>
       </wvobject>
       <wvobject fp_name="/engine_tb/engine_/engine_ready" type="logic" db_ref_id="1">
          <obj_property name="ElementShortName">engine_ready</obj_property>
