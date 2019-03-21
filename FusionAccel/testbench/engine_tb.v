@@ -21,7 +21,6 @@ reg [7:0]   o_side;
 reg	[15:0]  bias;
 //Response signals engine->csb
 wire		gemm_finish;
-wire 		engine_ready;
 //Command path engine->dma
 wire        output_en;
 wire [9:0]  d_ram_read_addr;
@@ -798,9 +797,17 @@ bd82000051e50000526000000000000000000000000000000000000000000000
 	end
 `endif
 `ifdef SCMP
-	reg [9*16-1:0] maxpooldata;
+	reg [127:0] maxpooldata[0:18];
 	initial begin
-		maxpooldata = {16'h4880, 16'h4400, 16'h4600, 16'h4880, 16'h4200, 16'h4700, 16'h3c00, 16'h4000, 16'h4500}; //9,4,6,8,3,7,1,2,5
+		maxpooldata[0] = 128'hdeadbeef123456789012345678901234;
+		maxpooldata[1] = 128'hbeef123456789012345678901234dead;
+		maxpooldata[2] = 128'h123456789012345678901234deadbeef;
+		maxpooldata[3] = 128'h56789012345678901234deadbeef1234;
+		maxpooldata[4] = 128'h9012345678901234deadbeef12345678;
+		maxpooldata[5] = 128'h345678901234deadbeef123456789012;
+		maxpooldata[6] = 128'h78901234deadbeef1234567890123456;
+		maxpooldata[7] = 128'h1234deadbeef12345678901234567890;
+		maxpooldata[8] = 128'h1234deadbeef12345678901234567890;
 	end
 `endif
 
@@ -821,7 +828,6 @@ engine engine_(
 	.bias					(bias),
 //Response signals engine->csb
 	.gemm_finish			(gemm_finish),
-	.engine_ready			(engine_ready),
 //Command path engine->dma
 	.output_en		(output_en),
 	.d_ram_read_addr		(d_ram_read_addr),
@@ -857,7 +863,7 @@ initial begin
 `endif
 `ifdef SCMP
 	#100 op_type = 2; stride = 2; stride2 = 6;
-		kernel = 3; kernel_size = 9; i_channel = 8; o_channel = 1; i_side = 113; o_side = 56; bias = 16'h0000;
+		kernel = 3; kernel_size = 9; i_channel = 64; o_channel = 64; i_side = 113; o_side = 56; bias = 16'h0000;
 `endif
 `ifdef SACC
 	#100 op_type = 3; stride = 1; 
@@ -875,7 +881,7 @@ always @(posedge clk) begin
 	input_weig <= {weight[w_ram_read_addr*8+7], weight[w_ram_read_addr*8+6], weight[w_ram_read_addr*8+5], weight[w_ram_read_addr*8+4], weight[w_ram_read_addr*8+3], weight[w_ram_read_addr*8+2], weight[w_ram_read_addr*8+1], weight[w_ram_read_addr*8+0]};
 `endif
 `ifdef SCMP
-	input_data <= {16{maxpooldata[d_ram_read_addr*16 +: 16]}};
+	input_data <= maxpooldata[d_ram_read_addr];
 `endif
 `ifdef SACC
 	input_data <= {16{avepooldata[d_ram_read_addr*16 +: 16]}};

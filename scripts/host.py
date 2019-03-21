@@ -1,17 +1,10 @@
-'''
-Host Client for FusionAccel
-Functions:
-- Send FP16 Caffemodel and configs
-- Receive FP16 Output from FPGA
-'''
-
 import numpy as np
 import os
 import ok
 import struct
 import time
 
-# np.set_printoptions(precision=4)
+np.set_printoptions(suppress=True, precision=4, threshold=np.inf)
 
 bit_directory = 'C:/Users/shish/source/repos/FusionAccel/scripts/top.bit'
 command_directory = 'C:/Users/shish/source/repos/FusionAccel/scripts/tmp/command.txt'
@@ -66,24 +59,6 @@ class host:
 		
 		print("[INITIAL]", "FrontPanel support is available.")
 		return(True)
-	
-	def reset_cmd_fifo(self):
-		self.xem.SetWireInValue(0x00, 0x0004) #ep00wire[2], reset fifo
-		self.xem.UpdateWireIns()
-		self.xem.SetWireInValue(0x00, 0x0000) # clear ep00wire
-		self.xem.UpdateWireIns()
-	
-	def reset_blob_ram(self):
-		self.xem.SetWireInValue(0x00, 0x0001) #ep00wire[0], reset fifo
-		self.xem.UpdateWireIns()
-		self.xem.SetWireInValue(0x00, 0x0000) # clear ep00wire
-		self.xem.UpdateWireIns()
-
-	def reset_result_fifo(self):
-		self.xem.SetWireInValue(0x00, 0x0002) #ep00wire[1], reset fifo
-		self.xem.UpdateWireIns()
-		self.xem.SetWireInValue(0x00, 0x0000) # clear ep00wire
-		self.xem.UpdateWireIns()
 
 	def readBlob(self):
 		commandfile = open(command_directory, "r")
@@ -126,6 +101,24 @@ class host:
 		print("[INITIAL]", "layers of weight = %d" % len(self.weight))
 		print("[INITIAL]", "layers of bias = %d" % len(self.bias))
 		return 
+		
+	def reset_cmd_fifo(self):
+		self.xem.SetWireInValue(0x00, 0x0004) #ep00wire[2], reset fifo
+		self.xem.UpdateWireIns()
+		self.xem.SetWireInValue(0x00, 0x0000) # clear ep00wire
+		self.xem.UpdateWireIns()
+	
+	def reset_blob_ram(self):
+		self.xem.SetWireInValue(0x00, 0x0001) #ep00wire[0], reset fifo
+		self.xem.UpdateWireIns()
+		self.xem.SetWireInValue(0x00, 0x0000) # clear ep00wire
+		self.xem.UpdateWireIns()
+
+	def reset_result_fifo(self):
+		self.xem.SetWireInValue(0x00, 0x0002) #ep00wire[1], reset fifo
+		self.xem.UpdateWireIns()
+		self.xem.SetWireInValue(0x00, 0x0000) # clear ep00wire
+		self.xem.UpdateWireIns()
 
 	def loadCommands(self):
 		print("[INITIAL]", "Setting Commands...")
@@ -157,10 +150,32 @@ class host:
 	def gemm_magic(self, data, gemm, kernel):
 		# print("[MAGIC]", "      GEMM data shape:", data.shape)
 		tmp_data = data[gemm:gemm+kernel,:,:]
+		# if(gemm == 0):
+			# print("magic data: ", tmp_data)
+		# print(tmp_data.shape)
+
 		tmp_data = tmp_data.transpose((1,0,2)) # transpose and get the first gemm
+		# print(tmp_data.shape)
+		
 		tmp = np.dstack((tmp_data.reshape(-1), np.zeros_like(tmp_data.reshape(-1)))) # padding zero for fp16
+		# print(tmp.shape)
 		tmp = tmp.reshape(-1)
-		print(tmp.shape)
+		# print(tmp.shape)
+		gemm_data = tmp.tobytes() + bytearray((int(len(tmp.reshape(-1).tobytes())/512)+1)*512-int(len(tmp.reshape(-1).tobytes())))
+		# print("[MAGIC]", "  Reshaped data shape:", len(gemm_data))
+		return gemm_data
+
+	def planar_magic(self, data, gemm, kernel, num):
+		tmp_data = data[gemm:gemm+kernel,:,num:num+8]
+		# print(tmp_data.shape)
+		# print(tmp_data)
+		tmp_data = tmp_data.transpose((1,0,2)) # transpose and get the first gemm
+		print(tmp_data.shape)
+		print(tmp_data)
+		tmp = np.dstack((tmp_data.reshape(-1), np.zeros_like(tmp_data.reshape(-1)))) # padding zero for fp16
+		# print(tmp.shape)
+		tmp = tmp.reshape(-1)
+		# print(tmp.shape)
 		gemm_data = tmp.tobytes() + bytearray((int(len(tmp.reshape(-1).tobytes())/512)+1)*512-int(len(tmp.reshape(-1).tobytes())))
 		# print("[MAGIC]", "  Reshaped data shape:", len(gemm_data))
 		return gemm_data
@@ -183,13 +198,10 @@ class host:
 	def waitIrq(self):
 		while True:
 			self.xem.UpdateWireOuts()
-			print("[INTERRUPT]", 'wr_count = 0x%08x' % self.xem.GetWireOutValue(0x28))
-			if self.xem.GetWireOutValue(0x20) == 0x0001:
-				print("[INTERRUPT]", "Got Interrupt...")
-				break
+			# print("[INTERRUPT]", 'wr_count = 0x%08x' % self.xem.GetWireOutValue(0x28))
+			# print("[INTERRUPT]", 'gemmfinish = %d' % self.xem.GetWireOutValue(0x25))
 			if self.xem.GetWireOutValue(0x25) == 0x0001:
-				print("[INTERRUPT]", "Got GEMM finish", 'timer = 0x%04x' % self.xem.GetWireOutValue(0x26), ', elapsed time = %f us' % (self.xem.GetWireOutValue(0x26)/100))
-				# print("[INTERRUPT]", "Got GEMM finish", 'gemm_count = 0x%04x' % self.xem.GetWireOutValue(0x30))
+				# print("[INTERRUPT]", "Got GEMM finish", 'timer = 0x%04x' % self.xem.GetWireOutValue(0x26), ', elapsed time = %f us' % (self.xem.GetWireOutValue(0x26)/100))
 				self.xem.SetWireInValue(0x00, 0x0000) # clear ep00wire
 				self.xem.UpdateWireIns()
 				break
@@ -215,7 +227,7 @@ def main():
 	if test_mode == RUN:
 		# read blob and store layers of weights in list, store image in bytearray
 		dev.readBlob()
-		output = dev.image
+		layer_output = dev.image
 		# initialize device
 		if (False == dev.InitializeDevice()):
 			exit
@@ -251,45 +263,75 @@ def main():
 				print("[COMMANDS]", "0x%08x" % command_0)
 				print("[COMMANDS]", "0x%08x" % command_1)
 				print("[COMMANDS]", "  op_type %d" % op_type)
-				print("[COMMANDS]", "    stide %d" % stride)
+				print("[COMMANDS]", "   stride %d" % stride)
 				print("[COMMANDS]", "   kernel %d" % kernel)
 				print("[COMMANDS]", "   i_side %d" % i_side)
 				print("[COMMANDS]", "   o_side %d" % o_side)
 				print("[COMMANDS]", "i_channel %d" % i_channel)
 				print("[COMMANDS]", "o_channel %d" % o_channel)
-				blob = output
+				blob = layer_output
 				result_layer = []
 				
-				for number in range(0, o_channel, 8):
-					# print("[DEBUG]", blob.shape)
-					result = []
-					if op_type == 1:
+				if op_type == 1:
+					for number in range(0, o_channel, 8):
+						# print("[DEBUG]", blob.shape)
+						result = []
 						gemm_bias, gemm_weight = dev.wb_magic(layer=layer, number=number)
 						dev.loadWeights_Bias(gemm_bias, gemm_weight)
-					for gemm in range(0, i_side-kernel+1, stride):
-						gemm_data = dev.gemm_magic(blob, gemm=gemm, kernel=kernel)
-						print(len(gemm_data))
-						# load gemm data and gemm weight (whole channel), then start operation
-						dev.loadGemm(gemm_data)
-						dev.xem.SetWireInValue(0x00, 0x0040) # ep00wire[6], engine reset
-						dev.xem.UpdateWireIns()
-						dev.xem.SetWireInValue(0x00, 0x0000)
-						dev.xem.UpdateWireIns()
-						dev.xem.SetWireInValue(0x00, 0x0080) # ep00wire[7], engine valid
-						dev.xem.UpdateWireIns()
-						timestamp_1 = time.clock()
-						dev.waitIrq()
-						timestamp_2 = time.clock()
-						timestamp_engine = timestamp_engine + timestamp_2 - timestamp_1
-						tmp = dev.readOutput()
-						result.append(tmp)
-						# print(tmp)
-						# print(tmp.shape)
-					# print(result)
-					# print(len(result))
-					output = np.stack(result, axis = 0)
-					result_layer.append(output)
-				layer_output = np.stack(result_layer, axis = 0)
+						for gemm in range(0, i_side-kernel+1, stride):
+							# print(gemm)
+							gemm_data = dev.gemm_magic(blob, gemm=gemm, kernel=kernel)
+							# print(len(gemm_data))
+							# load gemm data and gemm weight (whole channel), then start operation
+							dev.loadGemm(gemm_data)
+							dev.xem.SetWireInValue(0x00, 0x0040) # ep00wire[6], engine reset
+							dev.xem.UpdateWireIns()
+							dev.xem.SetWireInValue(0x00, 0x0000)
+							dev.xem.UpdateWireIns()
+							dev.xem.SetWireInValue(0x00, 0x0080) # ep00wire[7], engine valid
+							dev.xem.UpdateWireIns()
+							timestamp_1 = time.clock()
+							dev.waitIrq()
+							timestamp_2 = time.clock()
+							timestamp_engine = timestamp_engine + timestamp_2 - timestamp_1
+							tmp = dev.readOutput()
+							result.append(tmp)
+							# print(tmp)
+							# print(tmp.shape)
+						# print(len(result))
+						output = np.stack(result, axis = 0)
+						if(gemm == 0):
+							print(output[0][0])
+						# print("shape", output.shape)
+						result_layer.append(output)
+					layer_output = np.concatenate(result_layer, axis = 2)
+				else:
+					for number in range(0, i_channel, 8):
+						result = []
+						for gemm in range(0, i_side-kernel+1, stride):
+							gemm_data = dev.planar_magic(blob, gemm=gemm, kernel=kernel, num=number)
+							# load gemm data and gemm weight (whole channel), then start operation
+							dev.loadGemm(gemm_data)
+							dev.xem.SetWireInValue(0x00, 0x0040) # ep00wire[6], engine reset
+							dev.xem.UpdateWireIns()
+							dev.xem.SetWireInValue(0x00, 0x0000)
+							dev.xem.UpdateWireIns()
+							dev.xem.SetWireInValue(0x00, 0x0080) # ep00wire[7], engine valid
+							dev.xem.UpdateWireIns()
+							timestamp_1 = time.clock()
+							dev.waitIrq()
+							timestamp_2 = time.clock()
+							timestamp_engine = timestamp_engine + timestamp_2 - timestamp_1
+							tmp = dev.readOutput()
+							result.append(tmp)
+							# print(tmp)
+							# print(tmp.shape)
+						print("number_result", result[0])
+						# print(len(result))
+						output = np.stack(result, axis = 0)
+						result_layer.append(output)
+					layer_output = np.concatenate(result_layer, axis = 2)
+							
 				print(layer_output.shape)
 			timestamp_3 = time.clock()
 			# print(layer_output.shape)

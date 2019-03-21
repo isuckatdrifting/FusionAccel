@@ -18,7 +18,6 @@ module engine  // Instantiate 8CMACs for conv, 8SCMP for maxpool and 8SACC for a
 //Response signals engine->csb
 	output			gemm_finish,
 	output [15:0]   i_channel_count,
-	output 			engine_ready,
 //Command path engine->dma
 	output          output_en,
 	output [9:0]	d_ram_read_addr,
@@ -186,7 +185,6 @@ always @(posedge clk) sacc_ready <= div_ready;
 reg  [15:0] o_channel_count;
 reg			gemm_finish;
 reg 		to_clear;
-reg 		engine_ready;
 reg  [9:0]  d_ram_read_addr, b_ram_read_addr;
 reg	 [7:0]  o_side_count;
 reg  [12:0] w_ram_read_addr, w_ram_read_offset;
@@ -264,7 +262,6 @@ end
 //    Output, non-blocking
 always @ (posedge clk or posedge rst) begin
 	if(rst) begin
-		engine_ready <= 0;
 		data <= 'd0; weight <= 'd0;
 		//==================== Pipeline registers ====================
 		cmac_enable <= 0; cmac_data_ready <= 0; 
@@ -282,7 +279,6 @@ always @ (posedge clk or posedge rst) begin
 		case (curr_state)
 			//==================== Clear all registers except cross-channel registers ====================
 			idle: begin 
-				engine_ready <= 0;
 				data <= 'd0; weight <= 'd0;
 				//==================== Pipeline registers ====================
 				cmac_enable <= 0; cmac_data_ready <= 0; 
@@ -329,8 +325,8 @@ always @ (posedge clk or posedge rst) begin
 					p0_writeback_en <= 1; 
 					writeback_num <= 1; 
 					fsum_index <= fsum_index + 1;
-					if(fsum_index + 1 == o_side) to_clear <= 1; 
 				end
+				if(fsum_index == o_side && p0_writeback_count == 1) to_clear <= 1; 
 			end
 
 // CMD = 2 ==================== MAXPOOLING: Process a line ====================//
@@ -356,8 +352,8 @@ always @ (posedge clk or posedge rst) begin
 					p0_writeback_en <= 1; //NOTES: Writeback all channels
 					writeback_num <= `BURST_LEN;
 					scmp_index <= scmp_index + 1;
-					if(scmp_index + 1 == o_side) to_clear <= 1;
 				end
+				if(scmp_index == o_side && p0_writeback_count + 1 == `BURST_LEN) to_clear <= 1;
 			end
 
 // CMD = 3 ==================== AVEPOOLING: Process a line * surface ====================//
@@ -390,24 +386,21 @@ always @ (posedge clk or posedge rst) begin
 			//==================== Update cross-channel counters and read address ====================
 			clear: begin
 				o_side_count <= 0;
-				if(i_channel_count + `BURST_LEN < i_channel) begin
-					i_channel_count <= i_channel_count + `BURST_LEN; // within channel operation the address is not updated
-				end else begin
-					i_channel_count <= 0;
-					d_ram_read_addr <= 'd0;
-					b_ram_read_addr <= b_ram_read_addr + 1;
-					w_ram_read_offset <= w_ram_read_offset + kernel_size;
-					case(op_type)
-						CONV: begin 
+				case(op_type)
+					CONV: begin
+						if(i_channel_count + `BURST_LEN < i_channel) begin
+							i_channel_count <= i_channel_count + `BURST_LEN;
+						end else begin
+							i_channel_count <= 0;
+							d_ram_read_addr <= 'd0;
+							b_ram_read_addr <= b_ram_read_addr + 1;
+							w_ram_read_offset <= w_ram_read_offset + kernel_size;
 							o_channel_count <= o_channel_count + 1; 
 							if(o_channel_count == `BURST_LEN-1) gemm_finish <= 1;
 						end
-						MPOOL, APOOL: begin
-							o_channel_count <= `BURST_LEN-1;
-							gemm_finish <= 1;
-						end
-					endcase
-				end
+					end
+					MPOOL, APOOL: gemm_finish <= 1;
+				endcase
 			end
 			default:;
 		endcase
