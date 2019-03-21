@@ -160,6 +160,7 @@ class host:
 		tmp_data = tmp_data.transpose((1,0,2)) # transpose and get the first gemm
 		tmp = np.dstack((tmp_data.reshape(-1), np.zeros_like(tmp_data.reshape(-1)))) # padding zero for fp16
 		tmp = tmp.reshape(-1)
+		print(tmp.shape)
 		gemm_data = tmp.tobytes() + bytearray((int(len(tmp.reshape(-1).tobytes())/512)+1)*512-int(len(tmp.reshape(-1).tobytes())))
 		# print("[MAGIC]", "  Reshaped data shape:", len(gemm_data))
 		return gemm_data
@@ -182,11 +183,12 @@ class host:
 	def waitIrq(self):
 		while True:
 			self.xem.UpdateWireOuts()
+			print("[INTERRUPT]", 'wr_count = 0x%08x' % self.xem.GetWireOutValue(0x28))
 			if self.xem.GetWireOutValue(0x20) == 0x0001:
 				print("[INTERRUPT]", "Got Interrupt...")
 				break
 			if self.xem.GetWireOutValue(0x25) == 0x0001:
-				# print("[INTERRUPT]", "Got GEMM finish", 'timer = 0x%04x' % self.xem.GetWireOutValue(0x26), ', elapsed time = %f us' % (self.xem.GetWireOutValue(0x26)/100))
+				print("[INTERRUPT]", "Got GEMM finish", 'timer = 0x%04x' % self.xem.GetWireOutValue(0x26), ', elapsed time = %f us' % (self.xem.GetWireOutValue(0x26)/100))
 				# print("[INTERRUPT]", "Got GEMM finish", 'gemm_count = 0x%04x' % self.xem.GetWireOutValue(0x30))
 				self.xem.SetWireInValue(0x00, 0x0000) # clear ep00wire
 				self.xem.UpdateWireIns()
@@ -204,7 +206,7 @@ class host:
 		# print("[PARSING]", 'rd_count = 0x%08x' % self.xem.GetWireOutValue(0x27))
 		# print("[PARSING]", 'wr_count = 0x%08x' % self.xem.GetWireOutValue(0x28))
 		self.reset_result_fifo()
-		result = np.copy(np.frombuffer(self.rbuf, dtype=np.float16)[0::2][0:count]).reshape(8,-1) # Return copy of results, otherwise will be changed
+		result = np.copy(np.frombuffer(self.rbuf, dtype=np.float16)[0::2][0:count]).reshape(8,-1).transpose(1,0) # Return copy of results, otherwise will be changed
 		return result
 
 def main():   
@@ -228,7 +230,7 @@ def main():
 				dev.xem.UpdateWireOuts()
 				print("[INTERRUPT]", 'rd_count = 0x%08x' % dev.xem.GetWireOutValue(0x31))
 				print("[INTERRUPT]", 'wr_count = 0x%08x' % dev.xem.GetWireOutValue(0x32))
-				dev.xem.SetWireInValue(0x00, 0x0008) #ep00wire[3], reset csb
+				dev.xem.SetWireInValue(0x00, 0x0008) #ep00wire[3], csb reset
 				dev.xem.UpdateWireIns()
 				dev.xem.SetWireInValue(0x00, 0x0000)
 				dev.xem.UpdateWireIns()
@@ -239,7 +241,6 @@ def main():
 				dev.xem.UpdateWireOuts()
 				command_0 = dev.xem.GetWireOutValue(0x21)
 				command_1 = dev.xem.GetWireOutValue(0x22)
-				done_count = dev.xem.GetWireOutValue(0x29)
 				op_type = (command_0 & 0x00000007)
 				stride = (command_0 & 0x000000f0) >> 4
 				kernel = (command_0 & 0x0000ff00) >> 8
@@ -256,7 +257,6 @@ def main():
 				print("[COMMANDS]", "   o_side %d" % o_side)
 				print("[COMMANDS]", "i_channel %d" % i_channel)
 				print("[COMMANDS]", "o_channel %d" % o_channel)
-				print("[COMMANDS]", " done_cnt %d" % done_count)
 				blob = output
 				result_layer = []
 				
@@ -267,26 +267,25 @@ def main():
 						gemm_bias, gemm_weight = dev.wb_magic(layer=layer, number=number)
 						dev.loadWeights_Bias(gemm_bias, gemm_weight)
 					for gemm in range(0, i_side-kernel+1, stride):
+						gemm_data = dev.gemm_magic(blob, gemm=gemm, kernel=kernel)
+						print(len(gemm_data))
+						# load gemm data and gemm weight (whole channel), then start operation
+						dev.loadGemm(gemm_data)
 						dev.xem.SetWireInValue(0x00, 0x0040) # ep00wire[6], engine reset
 						dev.xem.UpdateWireIns()
 						dev.xem.SetWireInValue(0x00, 0x0000)
 						dev.xem.UpdateWireIns()
-						gemm_data = dev.gemm_magic(blob, gemm=gemm, kernel=kernel)
-						# load gemm data and gemm weight (whole channel), then start operation
-						dev.loadGemm(gemm_data)
 						dev.xem.SetWireInValue(0x00, 0x0080) # ep00wire[7], engine valid
 						dev.xem.UpdateWireIns()
 						timestamp_1 = time.clock()
 						dev.waitIrq()
-						dev.xem.SetWireInValue(0x00, 0x0000)
-						dev.xem.UpdateWireIns()
 						timestamp_2 = time.clock()
 						timestamp_engine = timestamp_engine + timestamp_2 - timestamp_1
 						tmp = dev.readOutput()
 						result.append(tmp)
 						# print(tmp)
 						# print(tmp.shape)
-					print(result)
+					# print(result)
 					# print(len(result))
 					output = np.stack(result, axis = 0)
 					result_layer.append(output)

@@ -30,8 +30,7 @@ module engine  // Instantiate 8CMACs for conv, 8SCMP for maxpool and 8SACC for a
 //Data path engine->dma
 	output [15:0]	output_data,
 	output [3:0]	curr_state,
-	output [31:0]   timer,
-	output [7:0]  	gemm_count
+	output [31:0]   timer
 );
 
 localparam CONV = 1, MPOOL = 2, APOOL = 3;
@@ -184,7 +183,6 @@ endgenerate
 always @(posedge clk) sacc_ready <= div_ready;
 
 //==================== Address registers ===========================//
-reg  [7:0]  gemm_count;
 reg  [15:0] o_channel_count;
 reg			gemm_finish;
 reg 		to_clear;
@@ -267,19 +265,19 @@ end
 always @ (posedge clk or posedge rst) begin
 	if(rst) begin
 		engine_ready <= 0;
-		output_en <= 0; output_data <= 16'h0000;
 		data <= 'd0; weight <= 'd0;
 		//==================== Pipeline registers ====================
 		cmac_enable <= 0; cmac_data_ready <= 0; 
 		avepool_enable <= 0; div_data_ready <= 0; a_div <= 0; b_div <= {16{16'h3c00}};
 		maxpool_enable <= 0; 
 		c_fifo_wr_en <= 0; f_fifo_wr_en <= 0; s_fifo_wr_en <= 0; m_fifo_wr_en <= 0; fsum_index <= 8'h00; scmp_index <= 8'h00;
-		to_clear <= 0; writeback_num <= 8'h00;
+		to_clear <= 0; 
 		gemm_finish <= 0;
 		//==================== Cross-channel registers ====================
 		d_ram_read_addr <= 'd0; w_ram_read_addr <= 'd0; b_ram_read_addr <= 0; w_ram_read_offset <= 'd0; o_side_count <= 'd0;
-		i_channel_count <= 16'h0000; gemm_count <= 8'h00; o_channel_count <= 16'h0000;
+		i_channel_count <= 16'h0000; o_channel_count <= 16'h0000;
 		p0_writeback_en <= 0; p0_writeback_count <= 8'h00; timer <= 0;
+		output_en <= 0; output_data <= 16'h0000; writeback_num <= 8'h00;
 	end else begin
 		case (curr_state)
 			//==================== Clear all registers except cross-channel registers ====================
@@ -409,16 +407,6 @@ always @ (posedge clk or posedge rst) begin
 							gemm_finish <= 1;
 						end
 					endcase
-					/*
-					if(o_channel_count >= `BURST_LEN-1) begin
-						gemm_finish <= 1;
-						if(gemm_count + 1 == o_side) begin
-							gemm_count <= 0;
-							engine_ready <= 1;
-						end else begin
-							gemm_count <= gemm_count + 1;
-						end
-					end*/
 				end
 			end
 			default:;
