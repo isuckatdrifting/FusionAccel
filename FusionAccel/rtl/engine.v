@@ -120,6 +120,7 @@ wire [`BURST_LEN-1:0] 	 scmp_data_valid;
 
 wire [`BURST_LEN-1:0] 	 cmp_ready;
 reg  [`BURST_LEN-1:0] 	 scmp_ready;
+reg  [7:0]				 scmp_index;
 
 fifo_fsum mm_(
 	.rst			(rst),			// i
@@ -245,9 +246,12 @@ always @ (*) begin
 			else next_state = sacc_busy;
 		end
 		clear: begin
-			if(o_channel_count == `BURST_LEN-1) begin
-				next_state = wait_;
-			end else next_state = idle;
+			case(op_type)
+				CONV: if(o_channel_count == `BURST_LEN-1) begin
+						next_state = wait_;
+					  end else next_state = idle;
+				MPOOL, APOOL: next_state = wait_;
+			endcase
 		end
 		wait_: begin
 			next_state = wait_;
@@ -269,7 +273,7 @@ always @ (posedge clk or posedge rst) begin
 		cmac_enable <= 0; cmac_data_ready <= 0; 
 		avepool_enable <= 0; div_data_ready <= 0; a_div <= 0; b_div <= {16{16'h3c00}};
 		maxpool_enable <= 0; 
-		c_fifo_wr_en <= 0; f_fifo_wr_en <= 0; s_fifo_wr_en <= 0; m_fifo_wr_en <= 0; fsum_index <= 8'h00;
+		c_fifo_wr_en <= 0; f_fifo_wr_en <= 0; s_fifo_wr_en <= 0; m_fifo_wr_en <= 0; fsum_index <= 8'h00; scmp_index <= 8'h00;
 		to_clear <= 0; writeback_num <= 8'h00;
 		gemm_finish <= 0;
 		//==================== Cross-channel registers ====================
@@ -281,14 +285,13 @@ always @ (posedge clk or posedge rst) begin
 			//==================== Clear all registers except cross-channel registers ====================
 			idle: begin 
 				engine_ready <= 0;
-				output_en <= 0; output_data <= 16'h0000;
 				data <= 'd0; weight <= 'd0;
 				//==================== Pipeline registers ====================
 				cmac_enable <= 0; cmac_data_ready <= 0; 
 				avepool_enable <= 0; div_data_ready <= 0; a_div <= 0; b_div <= {16{16'h3c00}}; 
 				maxpool_enable <= 0; 
-				c_fifo_wr_en <= 0; f_fifo_wr_en <= 0; s_fifo_wr_en <= 0; m_fifo_wr_en <= 0; fsum_index <= 8'h00;
-				to_clear <= 0; writeback_num <= 8'h00; 
+				c_fifo_wr_en <= 0; f_fifo_wr_en <= 0; s_fifo_wr_en <= 0; m_fifo_wr_en <= 0; fsum_index <= 8'h00; scmp_index <= 8'h00;
+				to_clear <= 0;
 				gemm_finish <= 0;
 				w_ram_read_addr <= w_ram_read_offset;
 			end
@@ -306,7 +309,9 @@ always @ (posedge clk or posedge rst) begin
 							o_side_count <= o_side_count + 1;
 						end
 						cmac_enable <= 1;
-					end else cmac_enable <= 0;
+					end else begin
+						cmac_enable <= 0;
+					end
 				end
 				if(cmac_enable) begin // STEP1: enable data read and weight read
 					if(cmac_data_valid == {`BURST_LEN{1'b1}}) begin
@@ -350,9 +355,10 @@ always @ (posedge clk or posedge rst) begin
 					data <= input_data;
 				end else m_fifo_wr_en <= 0;
 				if(scmp_ready == {`BURST_LEN{1'b1}}) begin
-					to_clear <= 1;
 					p0_writeback_en <= 1; //NOTES: Writeback all channels
 					writeback_num <= `BURST_LEN;
+					scmp_index <= scmp_index + 1;
+					if(scmp_index + 1 == o_side) to_clear <= 1;
 				end
 			end
 
@@ -396,12 +402,15 @@ always @ (posedge clk or posedge rst) begin
 					case(op_type)
 						CONV: begin 
 							o_channel_count <= o_channel_count + 1; 
+							if(o_channel_count == `BURST_LEN-1) gemm_finish <= 1;
 						end
 						MPOOL, APOOL: begin
-							o_channel_count <= o_channel_count + `BURST_LEN;
+							o_channel_count <= `BURST_LEN-1;
+							gemm_finish <= 1;
 						end
 					endcase
-					if(o_channel_count == `BURST_LEN-1) begin
+					/*
+					if(o_channel_count >= `BURST_LEN-1) begin
 						gemm_finish <= 1;
 						if(gemm_count + 1 == o_side) begin
 							gemm_count <= 0;
@@ -409,7 +418,7 @@ always @ (posedge clk or posedge rst) begin
 						end else begin
 							gemm_count <= gemm_count + 1;
 						end
-					end
+					end*/
 				end
 			end
 			default:;

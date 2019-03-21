@@ -10,7 +10,7 @@
          </top_modules>
       </db_ref>
    </db_ref_list>
-   <WVObjectSize size="33" />
+   <WVObjectSize size="27" />
    <wvobject fp_name="/engine_tb/engine_/input_data" type="array" db_ref_id="1">
       <obj_property name="ElementShortName">input_data[127:0]</obj_property>
       <obj_property name="ObjectShortName">input_data[127:0]</obj_property>
@@ -41,6 +41,11 @@
       <obj_property name="ObjectShortName">o_side_count[7:0]</obj_property>
       <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
    </wvobject>
+   <wvobject fp_name="/engine_tb/o_side" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">o_side[7:0]</obj_property>
+      <obj_property name="ObjectShortName">o_side[7:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+   </wvobject>
    <wvobject fp_name="/engine_tb/engine_/clk" type="logic" db_ref_id="1">
       <obj_property name="ElementShortName">clk</obj_property>
       <obj_property name="ObjectShortName">clk</obj_property>
@@ -57,37 +62,6 @@
       <obj_property name="ElementShortName">curr_state[2:0]</obj_property>
       <obj_property name="ObjectShortName">curr_state[2:0]</obj_property>
       <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
-   </wvobject>
-   <wvobject fp_name="/engine_tb/engine_/op_en" type="logic" db_ref_id="1">
-      <obj_property name="ElementShortName">op_en</obj_property>
-      <obj_property name="ObjectShortName">op_en</obj_property>
-   </wvobject>
-   <wvobject fp_name="/engine_tb/engine_/rd_en" type="logic" db_ref_id="1">
-      <obj_property name="ElementShortName">rd_en</obj_property>
-      <obj_property name="ObjectShortName">rd_en</obj_property>
-   </wvobject>
-   <wvobject fp_name="/engine_tb/valid" type="logic" db_ref_id="1">
-      <obj_property name="ElementShortName">valid</obj_property>
-      <obj_property name="ObjectShortName">valid</obj_property>
-   </wvobject>
-   <wvobject fp_name="/engine_tb/engine_/valid" type="logic" db_ref_id="1">
-      <obj_property name="ElementShortName">valid</obj_property>
-      <obj_property name="ObjectShortName">valid</obj_property>
-   </wvobject>
-   <wvobject fp_name="/engine_tb/engine_/cmd_burst_count" type="array" db_ref_id="1">
-      <obj_property name="ElementShortName">cmd_burst_count[3:0]</obj_property>
-      <obj_property name="ObjectShortName">cmd_burst_count[3:0]</obj_property>
-      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
-   </wvobject>
-   <wvobject fp_name="/engine_tb/v" type="array" db_ref_id="1">
-      <obj_property name="ElementShortName">v[31:0]</obj_property>
-      <obj_property name="ObjectShortName">v[31:0]</obj_property>
-      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
-   </wvobject>
-   <wvobject fp_name="/engine_tb/engine_/cmd" type="array" db_ref_id="1">
-      <obj_property name="ElementShortName">cmd[31:0]</obj_property>
-      <obj_property name="ObjectShortName">cmd[31:0]</obj_property>
-      <obj_property name="Radix">HEXRADIX</obj_property>
    </wvobject>
    <wvobject fp_name="/engine_tb/engine_/op_type" type="array" db_ref_id="1">
       <obj_property name="ElementShortName">op_type[2:0]</obj_property>
@@ -611,6 +585,11 @@
          <obj_property name="ElementShortName">scmp_result[15:0]</obj_property>
          <obj_property name="ObjectShortName">scmp_result[15:0]</obj_property>
          <obj_property name="Radix">HEXRADIX</obj_property>
+      </wvobject>
+      <wvobject fp_name="/engine_tb/engine_/scmp_index" type="array" db_ref_id="1">
+         <obj_property name="ElementShortName">scmp_index[7:0]</obj_property>
+         <obj_property name="ObjectShortName">scmp_index[7:0]</obj_property>
+         <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
       </wvobject>
       <wvobject fp_name="/engine_tb/engine_/scmp_ready" type="array" db_ref_id="1">
          <obj_property name="ElementShortName">scmp_ready[7:0]</obj_property>

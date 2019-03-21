@@ -1,7 +1,7 @@
 `timescale 1ns/1ps
-`define CMAC
+// `define CMAC
 // `define SACC
-// `define SCMP
+`define SCMP
 
 module engine_tb;
 
@@ -853,13 +853,11 @@ initial begin
     #10 rst = 0;
 `ifdef CMAC
     #100 op_type = 1; stride = 2; stride2 = 6;
-    // #100 op_type = 1; stride = 1; stride2 = 1;
 		kernel = 3; kernel_size = 9; i_channel = 3; o_channel = 1; i_side = 227; o_side = 113; bias = 16'hA35C;
-		// kernel = 1; kernel_size = 1; i_channel = 3; o_channel = 1; i_side = 7; o_side = 4; bias = 16'hA35C;
 `endif
 `ifdef SCMP
 	#100 op_type = 2; stride = 2; stride2 = 6;
-		kernel = 3; kernel_size = 9; i_channel = 8; o_channel = 1; i_side = 3; o_side = 1; bias = 16'h0000;
+		kernel = 3; kernel_size = 9; i_channel = 8; o_channel = 1; i_side = 113; o_side = 56; bias = 16'h0000;
 `endif
 `ifdef SACC
 	#100 op_type = 3; stride = 1; 

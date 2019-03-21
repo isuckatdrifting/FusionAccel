@@ -263,14 +263,14 @@ def main():
 				for number in range(0, o_channel, 8):
 					# print("[DEBUG]", blob.shape)
 					result = []
+					if op_type == 1:
+						gemm_bias, gemm_weight = dev.wb_magic(layer=layer, number=number)
+						dev.loadWeights_Bias(gemm_bias, gemm_weight)
 					for gemm in range(0, i_side-kernel+1, stride):
 						dev.xem.SetWireInValue(0x00, 0x0040) # ep00wire[6], engine reset
 						dev.xem.UpdateWireIns()
 						dev.xem.SetWireInValue(0x00, 0x0000)
 						dev.xem.UpdateWireIns()
-						if op_type == 1:
-							gemm_bias, gemm_weight = dev.wb_magic(layer=layer, number=number)
-							dev.loadWeights_Bias(gemm_bias, gemm_weight)
 						gemm_data = dev.gemm_magic(blob, gemm=gemm, kernel=kernel)
 						# load gemm data and gemm weight (whole channel), then start operation
 						dev.loadGemm(gemm_data)

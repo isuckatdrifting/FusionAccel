@@ -82,7 +82,10 @@ always @ (posedge clk or posedge rst) begin
                         scmp_ready <= 1;
                     end
                 end
-                if(scmp_ready) scmp_result <= result_cmp? a_cmp: b_cmp;
+                if(scmp_ready) begin
+                    scmp_ready <= 0;
+                    scmp_result <= result_cmp? a_cmp: b_cmp;
+                end
             end
         endcase
     end
