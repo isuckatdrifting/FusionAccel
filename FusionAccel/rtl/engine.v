@@ -18,7 +18,6 @@ module engine  // Instantiate 8CMACs for conv, 8SCMP for maxpool and 8SACC for a
 //Response signals engine->csb
 	output			gemm_finish,
 	output [15:0]   i_channel_count,
-	output 			engine_ready,
 //Command path engine->dma
 	output          output_en,
 	output [9:0]	d_ram_read_addr,
@@ -31,13 +30,20 @@ module engine  // Instantiate 8CMACs for conv, 8SCMP for maxpool and 8SACC for a
 	output [15:0]	output_data,
 	output [3:0]	curr_state,
 	output [31:0]   timer,
-	output [7:0]  	gemm_count
+	output [31:0]	debug_dbb0,
+	output [31:0]	debug_dbb1,
+	output [31:0]	debug_dbb2,
+	output [31:0]	debug_dbb3
 );
 
 localparam CONV = 1, MPOOL = 2, APOOL = 3;
 
 reg  [16*`BURST_LEN-1:0] data; 			
-reg  [16*`BURST_LEN-1:0] weight; 		
+reg  [16*`BURST_LEN-1:0] weight; 
+reg	 [31:0] debug_dbb0;		
+reg	 [31:0] debug_dbb1;		
+reg	 [31:0] debug_dbb2;		
+reg	 [31:0] debug_dbb3;		
 
 //==================== CONV Wires and Registers ====================//
 reg  					 cmac_data_ready, cmac_enable;
@@ -120,6 +126,7 @@ wire [`BURST_LEN-1:0] 	 scmp_data_valid;
 
 wire [`BURST_LEN-1:0] 	 cmp_ready;
 reg  [`BURST_LEN-1:0] 	 scmp_ready;
+reg  [7:0]				 scmp_index;
 
 fifo_fsum mm_(
 	.rst			(rst),			// i
@@ -183,11 +190,9 @@ endgenerate
 always @(posedge clk) sacc_ready <= div_ready;
 
 //==================== Address registers ===========================//
-reg  [7:0]  gemm_count;
 reg  [15:0] o_channel_count;
 reg			gemm_finish;
 reg 		to_clear;
-reg 		engine_ready;
 reg  [9:0]  d_ram_read_addr, b_ram_read_addr;
 reg	 [7:0]  o_side_count;
 reg  [12:0] w_ram_read_addr, w_ram_read_offset;
@@ -245,15 +250,15 @@ always @ (*) begin
 			else next_state = sacc_busy;
 		end
 		clear: begin
-			if(o_channel_count == `BURST_LEN-1) begin
-				next_state = wait_;
-			end else next_state = idle;
+			case(op_type)
+				CONV: if(o_channel_count == `BURST_LEN-1) begin
+						next_state = wait_;
+					  end else next_state = idle;
+				MPOOL, APOOL: next_state = wait_;
+			endcase
 		end
 		wait_: begin
 			next_state = wait_;
-		end
-		finish: begin
-			next_state = finish;
 		end
         default:
             next_state = idle;
@@ -265,33 +270,30 @@ end
 //    Output, non-blocking
 always @ (posedge clk or posedge rst) begin
 	if(rst) begin
-		engine_ready <= 0;
-		output_en <= 0; output_data <= 16'h0000;
-		data <= 'd0; weight <= 'd0;
+		data <= 'd0; weight <= 'd0; debug_dbb0 <= 'd0; debug_dbb1 <= 'd0; debug_dbb2 <= 'd0; debug_dbb3 <= 'd0;
 		//==================== Pipeline registers ====================
 		cmac_enable <= 0; cmac_data_ready <= 0; 
 		avepool_enable <= 0; div_data_ready <= 0; a_div <= 0; b_div <= {16{16'h3c00}};
 		maxpool_enable <= 0; 
-		c_fifo_wr_en <= 0; f_fifo_wr_en <= 0; s_fifo_wr_en <= 0; m_fifo_wr_en <= 0; fsum_index <= 8'h00;
-		to_clear <= 0; writeback_num <= 8'h00;
+		c_fifo_wr_en <= 0; f_fifo_wr_en <= 0; s_fifo_wr_en <= 0; m_fifo_wr_en <= 0; fsum_index <= 8'h00; scmp_index <= 8'h00;
+		to_clear <= 0; 
 		gemm_finish <= 0;
 		//==================== Cross-channel registers ====================
 		d_ram_read_addr <= 'd0; w_ram_read_addr <= 'd0; b_ram_read_addr <= 0; w_ram_read_offset <= 'd0; o_side_count <= 'd0;
-		i_channel_count <= 16'h0000; gemm_count <= 8'h00; o_channel_count <= 16'h0000;
+		i_channel_count <= 16'h0000; o_channel_count <= 16'h0000;
 		p0_writeback_en <= 0; p0_writeback_count <= 8'h00; timer <= 0;
+		output_en <= 0; output_data <= 16'h0000; writeback_num <= 8'h00;
 	end else begin
 		case (curr_state)
 			//==================== Clear all registers except cross-channel registers ====================
 			idle: begin 
-				engine_ready <= 0;
-				output_en <= 0; output_data <= 16'h0000;
 				data <= 'd0; weight <= 'd0;
 				//==================== Pipeline registers ====================
 				cmac_enable <= 0; cmac_data_ready <= 0; 
 				avepool_enable <= 0; div_data_ready <= 0; a_div <= 0; b_div <= {16{16'h3c00}}; 
 				maxpool_enable <= 0; 
-				c_fifo_wr_en <= 0; f_fifo_wr_en <= 0; s_fifo_wr_en <= 0; m_fifo_wr_en <= 0; fsum_index <= 8'h00;
-				to_clear <= 0; writeback_num <= 8'h00; 
+				c_fifo_wr_en <= 0; f_fifo_wr_en <= 0; s_fifo_wr_en <= 0; m_fifo_wr_en <= 0; fsum_index <= 8'h00; scmp_index <= 8'h00;
+				to_clear <= 0;
 				gemm_finish <= 0;
 				w_ram_read_addr <= w_ram_read_offset;
 			end
@@ -309,7 +311,15 @@ always @ (posedge clk or posedge rst) begin
 							o_side_count <= o_side_count + 1;
 						end
 						cmac_enable <= 1;
-					end else cmac_enable <= 0;
+					end else begin
+						cmac_enable <= 0;
+					end
+				end
+				if(d_ram_read_addr == 0) begin
+					debug_dbb0 <= input_data[31:0];
+					debug_dbb1 <= input_data[63:32];
+					debug_dbb2 <= input_data[95:64];
+					debug_dbb3 <= input_data[127:96];
 				end
 				if(cmac_enable) begin // STEP1: enable data read and weight read
 					if(cmac_data_valid == {`BURST_LEN{1'b1}}) begin
@@ -329,8 +339,8 @@ always @ (posedge clk or posedge rst) begin
 					p0_writeback_en <= 1; 
 					writeback_num <= 1; 
 					fsum_index <= fsum_index + 1;
-					if(fsum_index + 1 == o_side) to_clear <= 1; 
 				end
+				if(fsum_index == o_side) to_clear <= 1; 
 			end
 
 // CMD = 2 ==================== MAXPOOLING: Process a line ====================//
@@ -348,15 +358,22 @@ always @ (posedge clk or posedge rst) begin
 						maxpool_enable <= 1;
 					end else maxpool_enable <= 0;
 				end
+				if(d_ram_read_addr == 0) begin
+					debug_dbb0 <= input_data[31:0];
+					debug_dbb1 <= input_data[63:32];
+					debug_dbb2 <= input_data[95:64];
+					debug_dbb3 <= input_data[127:96];
+				end
 				if(maxpool_enable) begin
 					m_fifo_wr_en <= 1;
 					data <= input_data;
 				end else m_fifo_wr_en <= 0;
 				if(scmp_ready == {`BURST_LEN{1'b1}}) begin
-					to_clear <= 1;
 					p0_writeback_en <= 1; //NOTES: Writeback all channels
 					writeback_num <= `BURST_LEN;
+					scmp_index <= scmp_index + 1;
 				end
+				if(scmp_index == o_side && p0_writeback_count + 1 == `BURST_LEN) to_clear <= 1;
 			end
 
 // CMD = 3 ==================== AVEPOOLING: Process a line * surface ====================//
@@ -389,53 +406,42 @@ always @ (posedge clk or posedge rst) begin
 			//==================== Update cross-channel counters and read address ====================
 			clear: begin
 				o_side_count <= 0;
-				if(i_channel_count + `BURST_LEN < i_channel) begin
-					i_channel_count <= i_channel_count + `BURST_LEN; // within channel operation the address is not updated
-				end else begin
-					i_channel_count <= 0;
-					d_ram_read_addr <= 'd0;
-					b_ram_read_addr <= b_ram_read_addr + 1;
-					w_ram_read_offset <= w_ram_read_offset + kernel_size;
-					case(op_type)
-						CONV: begin 
-							o_channel_count <= o_channel_count + 1; 
-						end
-						MPOOL, APOOL: begin
-							o_channel_count <= o_channel_count + `BURST_LEN;
-						end
-					endcase
-					if(o_channel_count == `BURST_LEN-1) begin
-						gemm_finish <= 1;
-						if(gemm_count + 1 == o_side) begin
-							gemm_count <= 0;
-							engine_ready <= 1;
+				case(op_type)
+					CONV: begin
+						if(i_channel_count + `BURST_LEN < i_channel) begin
+							i_channel_count <= i_channel_count + `BURST_LEN;
 						end else begin
-							gemm_count <= gemm_count + 1;
+							i_channel_count <= 0;
+							d_ram_read_addr <= 'd0;
+							b_ram_read_addr <= b_ram_read_addr + 1;
+							w_ram_read_offset <= w_ram_read_offset + kernel_size;
+							o_channel_count <= o_channel_count + 1; 
+							if(o_channel_count == `BURST_LEN-1) gemm_finish <= 1;
 						end
 					end
-				end
-			end
-			finish: begin
+					MPOOL, APOOL: gemm_finish <= 1;
+				endcase
 			end
 			default:;
 		endcase
 
 		//==================== Write back logic and write address ====================
 		if(p0_writeback_en) begin
-			if(p0_writeback_count < writeback_num) begin
-				output_en <= 1;
+			output_en <= 1;
+			if(p0_writeback_count + 1 < writeback_num) begin
 				p0_writeback_count <= p0_writeback_count + 1;
 			end else begin
 				p0_writeback_en <= 0;
 				p0_writeback_count <= 0;
-				output_en <= 0;
 			end
 			case(op_type)
 				CONV: output_data <= fsum_result[15]? 16'h0000: fsum_result; //Notes: ReLu Activation
 				MPOOL: output_data <= scmp_result[p0_writeback_count * 16 +: 16];
 				APOOL: output_data <= result_div[p0_writeback_count * 16 +: 16];
 			endcase
-		end 
+		end else begin
+			output_en <= 0;
+		end
 
 	end
 end

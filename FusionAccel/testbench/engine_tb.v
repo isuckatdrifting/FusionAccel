@@ -1,7 +1,7 @@
 `timescale 1ns/1ps
-`define CMAC
+// `define CMAC
 // `define SACC
-// `define SCMP
+`define SCMP
 
 module engine_tb;
 
@@ -21,7 +21,6 @@ reg [7:0]   o_side;
 reg	[15:0]  bias;
 //Response signals engine->csb
 wire		gemm_finish;
-wire 		engine_ready;
 //Command path engine->dma
 wire        output_en;
 wire [9:0]  d_ram_read_addr;
@@ -798,9 +797,17 @@ bd82000051e50000526000000000000000000000000000000000000000000000
 	end
 `endif
 `ifdef SCMP
-	reg [9*16-1:0] maxpooldata;
+	reg [127:0] maxpooldata[0:18];
 	initial begin
-		maxpooldata = {16'h4880, 16'h4400, 16'h4600, 16'h4880, 16'h4200, 16'h4700, 16'h3c00, 16'h4000, 16'h4500}; //9,4,6,8,3,7,1,2,5
+		maxpooldata[0] = 128'h47505861000000000000000000004167;
+		maxpooldata[1] = 128'h49045930000000000000000000004D86;
+		maxpooldata[2] = 128'h48A659B938184A1E0000477B45E24C9A;
+		maxpooldata[3] = 128'h4D10591D0000450D00000000482C0000;
+		maxpooldata[4] = 128'h4B67592E00004B7C0000000048E20000;
+		maxpooldata[5] = 128'h0000593B4269000000004A184B154B47;
+		maxpooldata[6] = 128'h4D2F595D000043F1000000004CBD0000;
+		maxpooldata[7] = 128'h00005900000000000000000000000000;
+		maxpooldata[8] = 128'h3F7858D341E500000000484043624C92;
 	end
 `endif
 
@@ -821,7 +828,6 @@ engine engine_(
 	.bias					(bias),
 //Response signals engine->csb
 	.gemm_finish			(gemm_finish),
-	.engine_ready			(engine_ready),
 //Command path engine->dma
 	.output_en		(output_en),
 	.d_ram_read_addr		(d_ram_read_addr),
@@ -833,16 +839,13 @@ engine engine_(
 );
 
 always #5 clk = ~clk;
-reg [7:0] count; initial count = 0;
 always @(posedge clk) begin
 	if(gemm_finish) engine_valid <= 0; // pull down engine_valid after the whole op is done
 end
 
-integer m,n,offset;
 initial begin
     rst = 1;
     clk = 0;
-    m = 0; n = 0; offset = 0;
     engine_valid = 0;
     op_type = 0; stride = 0; stride2 = 0;
 	kernel = 0; kernel_size = 0; i_channel = 0; o_channel = 0; i_side = 0; o_side = 0; 
@@ -853,13 +856,11 @@ initial begin
     #10 rst = 0;
 `ifdef CMAC
     #100 op_type = 1; stride = 2; stride2 = 6;
-    // #100 op_type = 1; stride = 1; stride2 = 1;
 		kernel = 3; kernel_size = 9; i_channel = 3; o_channel = 1; i_side = 227; o_side = 113; bias = 16'hA35C;
-		// kernel = 1; kernel_size = 1; i_channel = 3; o_channel = 1; i_side = 7; o_side = 4; bias = 16'hA35C;
 `endif
 `ifdef SCMP
 	#100 op_type = 2; stride = 2; stride2 = 6;
-		kernel = 3; kernel_size = 9; i_channel = 8; o_channel = 1; i_side = 3; o_side = 1; bias = 16'h0000;
+		kernel = 3; kernel_size = 9; i_channel = 64; o_channel = 64; i_side = 113; o_side = 56; bias = 16'h0000;
 `endif
 `ifdef SACC
 	#100 op_type = 3; stride = 1; 
@@ -877,7 +878,7 @@ always @(posedge clk) begin
 	input_weig <= {weight[w_ram_read_addr*8+7], weight[w_ram_read_addr*8+6], weight[w_ram_read_addr*8+5], weight[w_ram_read_addr*8+4], weight[w_ram_read_addr*8+3], weight[w_ram_read_addr*8+2], weight[w_ram_read_addr*8+1], weight[w_ram_read_addr*8+0]};
 `endif
 `ifdef SCMP
-	input_data <= {16{maxpooldata[d_ram_read_addr*16 +: 16]}};
+	input_data <= maxpooldata[d_ram_read_addr];
 `endif
 `ifdef SACC
 	input_data <= {16{avepooldata[d_ram_read_addr*16 +: 16]}};

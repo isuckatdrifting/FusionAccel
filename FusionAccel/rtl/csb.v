@@ -4,13 +4,11 @@ module csb
     input           clk,
     input           rst,
     input           op_en,
-    input           load_next,
     //FIFO Interface
     input           valid,
     output          rd_en,
     input  [31:0]   cmd,
     input  [6:0]    cmd_size,   //total command size received from okHost after loading memory.
-    output [6:0]    done_cmd_count,
     output [2:0]    op_type,
     output [3:0]    stride,     //TODO: valid check: stride < padding < kernel
     output [3:0]    kernel,
@@ -20,9 +18,7 @@ module csb
     output [15:0]   o_channel,
     output [7:0]    kernel_size,
     output [15:0]   stride2,    //kernel * stride
-    output [2:0]    curr_state,
-
-    output          irq
+    output [2:0]    curr_state
 );
 //Notes: CMD Fifo: WR clock domain: okclk, RD clock domain: sys_clk.
 //Notes: Use Img2col(MEC) Convolution
@@ -51,17 +47,11 @@ reg [7:0]   kernel;
 reg [15:0]  i_channel, o_channel, stride2;
 reg [7:0]   kernel_size, i_side, o_side;
 
-reg [6:0]   done_cmd_count;
-reg         irq;                        //Output, interrupt signal
-
 //State Machine
 localparam  idle = 3'b000;
 localparam  cmd_get = 3'b001;           //Get commands from USB
 localparam  op_run = 3'b011;            //Get done signals from engine
 localparam  finish = 3'b100;
-// State jump triggers
-reg         cmd_collect_done;
-reg         op_done;
 
 reg [2:0]   curr_state;
 reg [2:0]   next_state;
@@ -82,18 +72,11 @@ always @ (*) begin
             else next_state = idle;
         end
         cmd_get: begin
-            if(cmd_collect_done) next_state = op_run;
+            if(cmd_burst_count + 1 == `CMD_BURST_LEN) next_state = op_run;
             else next_state = cmd_get;
         end
         op_run: begin
-            if(op_done) begin
-                if(done_cmd_count == cmd_size) next_state = finish;
-                else next_state = idle;
-            end
-            else next_state = op_run;
-        end
-        finish: begin
-            next_state = finish;
+            next_state = op_run;
         end
         default: next_state = idle;
     endcase
@@ -108,39 +91,28 @@ always @ (posedge clk or posedge rst) begin
         i_side <= 8'h00; o_side <= 8'h00; kernel_size <= 8'h00; stride2 <= 16'h0000;
 
         cmd_burst_count <= 4'd0;
-        done_cmd_count <= 8'd0; 
-        cmd_collect_done <= 0; op_done <= 0;
         rd_en <= 0;
-        irq <= 0; 
     end else begin
         case (curr_state)
             idle: begin
-                cmd_burst_count <= `CMD_BURST_LEN;
+                cmd_burst_count <= 0;
             end
             cmd_get: begin
-                rd_en <= 1;
-                op_done <= 0;
+                if(cmd_burst_count + 1 == `CMD_BURST_LEN) begin 
+                    rd_en <= 0;
+                end else rd_en <= 1;
                 if(valid) begin
-                    cmd_burst_count <= cmd_burst_count - 1;
+                    cmd_burst_count <= cmd_burst_count + 1;
                     case (cmd_burst_count) //Split cmds from fifo into separate attributes
-                        4'd3: begin op_type <= cmd[2:0]; stride <= cmd[7:4]; kernel <= cmd[15:8]; i_side <= cmd[23:16]; o_side <= cmd[31:24]; end
-                        4'd2: begin i_channel <= cmd[15:0]; o_channel <= cmd[31:16]; end
-                        4'd1: begin kernel_size <= cmd[15:8]; stride2 <= cmd[31:16]; cmd_collect_done <= 1; rd_en <= 0; end
+                        4'd0: begin op_type <= cmd[2:0]; stride <= cmd[7:4]; kernel <= cmd[15:8]; i_side <= cmd[23:16]; o_side <= cmd[31:24]; end
+                        4'd1: begin i_channel <= cmd[15:0]; o_channel <= cmd[31:16]; rd_en <= 0; end
+                        4'd2: begin kernel_size <= cmd[15:8]; stride2 <= cmd[31:16]; end
                         default: ;
                     endcase
                 end
             end
             op_run: begin
-                cmd_burst_count <= `CMD_BURST_LEN;
-                cmd_collect_done <= 0;
-                if(load_next) begin
-                    done_cmd_count <= done_cmd_count + 1;
-                    op_done <= 1;
-                end
-            end
-            finish: begin
-                op_done <= 0;
-                irq <= 1;
+                cmd_burst_count <= 0;
             end
             default:  ;
         endcase
