@@ -839,16 +839,13 @@ engine engine_(
 );
 
 always #5 clk = ~clk;
-reg [7:0] count; initial count = 0;
 always @(posedge clk) begin
 	if(gemm_finish) engine_valid <= 0; // pull down engine_valid after the whole op is done
 end
 
-integer m,n,offset;
 initial begin
     rst = 1;
     clk = 0;
-    m = 0; n = 0; offset = 0;
     engine_valid = 0;
     op_type = 0; stride = 0; stride2 = 0;
 	kernel = 0; kernel_size = 0; i_channel = 0; o_channel = 0; i_side = 0; o_side = 0; 

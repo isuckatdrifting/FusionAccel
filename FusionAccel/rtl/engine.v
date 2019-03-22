@@ -29,13 +29,21 @@ module engine  // Instantiate 8CMACs for conv, 8SCMP for maxpool and 8SACC for a
 //Data path engine->dma
 	output [15:0]	output_data,
 	output [3:0]	curr_state,
-	output [31:0]   timer
+	output [31:0]   timer,
+	output [31:0]	debug_dbb0,
+	output [31:0]	debug_dbb1,
+	output [31:0]	debug_dbb2,
+	output [31:0]	debug_dbb3
 );
 
 localparam CONV = 1, MPOOL = 2, APOOL = 3;
 
 reg  [16*`BURST_LEN-1:0] data; 			
-reg  [16*`BURST_LEN-1:0] weight; 		
+reg  [16*`BURST_LEN-1:0] weight; 
+reg	 [31:0] debug_dbb0;		
+reg	 [31:0] debug_dbb1;		
+reg	 [31:0] debug_dbb2;		
+reg	 [31:0] debug_dbb3;		
 
 //==================== CONV Wires and Registers ====================//
 reg  					 cmac_data_ready, cmac_enable;
@@ -262,7 +270,7 @@ end
 //    Output, non-blocking
 always @ (posedge clk or posedge rst) begin
 	if(rst) begin
-		data <= 'd0; weight <= 'd0;
+		data <= 'd0; weight <= 'd0; debug_dbb0 <= 'd0; debug_dbb1 <= 'd0; debug_dbb2 <= 'd0; debug_dbb3 <= 'd0;
 		//==================== Pipeline registers ====================
 		cmac_enable <= 0; cmac_data_ready <= 0; 
 		avepool_enable <= 0; div_data_ready <= 0; a_div <= 0; b_div <= {16{16'h3c00}};
@@ -307,6 +315,12 @@ always @ (posedge clk or posedge rst) begin
 						cmac_enable <= 0;
 					end
 				end
+				if(d_ram_read_addr == 0) begin
+					debug_dbb0 <= input_data[31:0];
+					debug_dbb1 <= input_data[63:32];
+					debug_dbb2 <= input_data[95:64];
+					debug_dbb3 <= input_data[127:96];
+				end
 				if(cmac_enable) begin // STEP1: enable data read and weight read
 					if(cmac_data_valid == {`BURST_LEN{1'b1}}) begin
 						data <= input_data;
@@ -343,6 +357,12 @@ always @ (posedge clk or posedge rst) begin
 						end
 						maxpool_enable <= 1;
 					end else maxpool_enable <= 0;
+				end
+				if(d_ram_read_addr == 0) begin
+					debug_dbb0 <= input_data[31:0];
+					debug_dbb1 <= input_data[63:32];
+					debug_dbb2 <= input_data[95:64];
+					debug_dbb3 <= input_data[127:96];
 				end
 				if(maxpool_enable) begin
 					m_fifo_wr_en <= 1;

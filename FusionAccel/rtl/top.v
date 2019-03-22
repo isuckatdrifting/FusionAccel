@@ -69,7 +69,9 @@ wire [31:0] 			 timer;
 wire [16*`BURST_LEN-1:0] data_in_data, weig_in_data, bias_in_data;
 reg  [2:0] 				 d_ram_write_count, w_ram_write_count;
 reg  [16*`BURST_LEN-1:0] d_ram_data, w_ram_data, b_ram_data;
-wire 					 d_ram_wr_en, w_ram_wr_en, b_ram_wr_en;
+reg  					 d_ram_wr_en, w_ram_wr_en;
+
+wire [31:0] debug_dbb0, debug_dbb1, debug_dbb2, debug_dbb3;
 
 csb csb_(
     .clk					(sys_clk),
@@ -118,7 +120,11 @@ engine engine_(
 	.input_weig				(weig_in_data),
 	.output_data			(pipe_out_data[15:0]),
 	.curr_state				(engine_state),
-    .timer                  (timer)
+    .timer                  (timer),
+	.debug_dbb0				(debug_dbb0),
+	.debug_dbb1				(debug_dbb1),
+	.debug_dbb2				(debug_dbb2),
+	.debug_dbb3				(debug_dbb3)
 );
 
 //Block Throttle
@@ -141,7 +147,7 @@ end
 
 // PC Communication using Front Panel(TM)
 // Instantiate the okHost and connect endpoints.
-wire [65*15-1:0]  okEHx;
+wire [65*19-1:0]  okEHx;
 
 okHost okHI(
 	.okUH(okUH),
@@ -153,7 +159,7 @@ okHost okHI(
 	.okEH(okEH)
 );
 
-okWireOR # (.N(15)) wireOR (okEH, okEHx);
+okWireOR # (.N(19)) wireOR (okEH, okEHx);
 okWireIn      wi00  (.okHE(okHE),                             .ep_addr(8'h00), .ep_dataout(ep00wire));
 okWireIn	  cmdi  (.okHE(okHE),							  .ep_addr(8'h01), .ep_dataout(cmd_size));
 
@@ -167,12 +173,17 @@ okWireOut	count0 	(.okHE(okHE), .okEH(okEHx[ 6*65 +: 65 ]), .ep_addr(8'h27), .ep
 okWireOut	count1 	(.okHE(okHE), .okEH(okEHx[ 7*65 +: 65 ]), .ep_addr(8'h28), .ep_datain({22'h00_0000, pipe_out_wr_count}));
 okWireOut	count2 	(.okHE(okHE), .okEH(okEHx[ 8*65 +: 65 ]), .ep_addr(8'h31), .ep_datain({22'h00_0000, pipe_in_rd_count}));
 okWireOut	count3 	(.okHE(okHE), .okEH(okEHx[ 9*65 +: 65 ]), .ep_addr(8'h32), .ep_datain({22'h00_0000, pipe_in_wr_count}));
+okWireOut	debug0 	(.okHE(okHE), .okEH(okEHx[ 10*65 +: 65 ]), .ep_addr(8'h33), .ep_datain(debug_dbb0));
+okWireOut	debug1 	(.okHE(okHE), .okEH(okEHx[ 11*65 +: 65 ]), .ep_addr(8'h34), .ep_datain(debug_dbb1));
+okWireOut	debug2 	(.okHE(okHE), .okEH(okEHx[ 12*65 +: 65 ]), .ep_addr(8'h35), .ep_datain(debug_dbb2));
+okWireOut	debug3 	(.okHE(okHE), .okEH(okEHx[ 13*65 +: 65 ]), .ep_addr(8'h36), .ep_datain(debug_dbb3));
 
-okBTPipeIn     pi0  (.okHE(okHE), .okEH(okEHx[ 10*65 +: 65 ]), .ep_addr(8'h80), .ep_write(pi0_ep_write), .ep_blockstrobe(), .ep_dataout(pi0_ep_dataout), .ep_ready(pipe_in_ready));
-okBTPipeIn     pi1  (.okHE(okHE), .okEH(okEHx[ 11*65 +: 65 ]), .ep_addr(8'h81), .ep_write(pi1_ep_write), .ep_blockstrobe(), .ep_dataout(pi1_ep_dataout), .ep_ready(1));
-okBTPipeIn     pi2  (.okHE(okHE), .okEH(okEHx[ 12*65 +: 65 ]), .ep_addr(8'h82), .ep_write(pi2_ep_write), .ep_blockstrobe(), .ep_dataout(pi2_ep_dataout), .ep_ready(1));
-okBTPipeIn     pi3  (.okHE(okHE), .okEH(okEHx[ 13*65 +: 65 ]), .ep_addr(8'h83), .ep_write(pi3_ep_write), .ep_blockstrobe(), .ep_dataout(pi3_ep_dataout), .ep_ready(1));
-okBTPipeOut    po0  (.okHE(okHE), .okEH(okEHx[ 14*65 +: 65 ]), .ep_addr(8'ha0), .ep_read(po0_ep_read),   .ep_blockstrobe(), .ep_datain(po0_ep_datain),   .ep_ready(pipe_out_ready));
+
+okBTPipeIn     pi0  (.okHE(okHE), .okEH(okEHx[ 14*65 +: 65 ]), .ep_addr(8'h80), .ep_write(pi0_ep_write), .ep_blockstrobe(), .ep_dataout(pi0_ep_dataout), .ep_ready(pipe_in_ready));
+okBTPipeIn     pi1  (.okHE(okHE), .okEH(okEHx[ 15*65 +: 65 ]), .ep_addr(8'h81), .ep_write(pi1_ep_write), .ep_blockstrobe(), .ep_dataout(pi1_ep_dataout), .ep_ready(1));
+okBTPipeIn     pi2  (.okHE(okHE), .okEH(okEHx[ 16*65 +: 65 ]), .ep_addr(8'h82), .ep_write(pi2_ep_write), .ep_blockstrobe(), .ep_dataout(pi2_ep_dataout), .ep_ready(1));
+okBTPipeIn     pi3  (.okHE(okHE), .okEH(okEHx[ 17*65 +: 65 ]), .ep_addr(8'h83), .ep_write(pi3_ep_write), .ep_blockstrobe(), .ep_dataout(pi3_ep_dataout), .ep_ready(1));
+okBTPipeOut    po0  (.okHE(okHE), .okEH(okEHx[ 18*65 +: 65 ]), .ep_addr(8'ha0), .ep_read(po0_ep_read),   .ep_blockstrobe(), .ep_datain(po0_ep_datain),   .ep_ready(pipe_out_ready));
 
 fifo_w32_1024_r32_1024 cmd_fifo (
 	.rst			(ep00wire[2]),			// input
@@ -215,8 +226,8 @@ bram_w128_1024 b_bram (
     .addrb          (b_ram_read_addr),
     .doutb          (bias_in_data));
 
-assign d_ram_wr_en = (d_ram_write_count == `BURST_LEN-1)? 1: 0;
-assign w_ram_wr_en = (w_ram_write_count == `BURST_LEN-1)? 1: 0;
+// assign d_ram_wr_en = (d_ram_write_count == `BURST_LEN-1)? 1: 0;
+// assign w_ram_wr_en = (w_ram_write_count == `BURST_LEN-1)? 1: 0;
 always @ (posedge okClk) begin
     if(ep00wire[0]) begin
         d_ram_write_addr <= 'd0;
@@ -226,23 +237,29 @@ always @ (posedge okClk) begin
 		w_ram_write_count <= 'd0;
 		d_ram_data <= 'd0;
 		w_ram_data <= 'd0;
+		d_ram_wr_en <= 0;
+		w_ram_wr_en <= 0;
     end else begin
         if(pi1_ep_write) begin
 			if(d_ram_write_count == `BURST_LEN-1) begin
 				d_ram_write_count <= 'd0;
-				d_ram_write_addr <= d_ram_write_addr + 1;
+				d_ram_wr_en <= 1;
 			end else begin
 				d_ram_write_count <= d_ram_write_count + 1;
+				d_ram_wr_en <= 0;
 			end 
+			if(d_ram_wr_en) d_ram_write_addr <= d_ram_write_addr + 1;
 			d_ram_data <= {pi1_ep_dataout[15:0], d_ram_data[16*`BURST_LEN-1: 16]};
 		end
         if(pi2_ep_write) begin
 			if(w_ram_write_count == `BURST_LEN-1) begin
 				w_ram_write_count <= 'd0;
-				w_ram_write_addr <= w_ram_write_addr + 1;
+				w_ram_wr_en <= 1;
 			end else begin
 				w_ram_write_count <= w_ram_write_count + 1;
+				w_ram_wr_en <= 0;
 			end
+			if(w_ram_wr_en) w_ram_write_addr <= w_ram_write_addr + 1;
 			w_ram_data <= {pi2_ep_dataout[15:0], w_ram_data[16*`BURST_LEN-1: 16]};
 		end
 		if(pi3_ep_write) begin
