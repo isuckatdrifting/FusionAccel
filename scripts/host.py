@@ -156,8 +156,8 @@ class host:
 		return gemm_data
 
 	def planar_magic(self, data, gemm, kernel, num):
-		print("[PLANAR]", data.shape)
-		print(data)
+		# print("[PLANAR]", data.shape)
+		# print(data)
 		tmp_data = data[gemm:gemm+kernel,:,num:num+8]
 		# print(tmp_data.shape)
 		# print(tmp_data)
@@ -215,7 +215,9 @@ class host:
 		# print("[PARSING]", 'rd_count = 0x%08x' % self.xem.GetWireOutValue(0x27))
 		# print("[PARSING]", 'wr_count = 0x%08x' % self.xem.GetWireOutValue(0x28))
 		self.reset_result_fifo()
-		result = np.copy(np.frombuffer(self.rbuf, dtype=np.float16)[0::2][0:count]).reshape(8,-1).transpose(1,0) # Return copy of results, otherwise will be changed. CW -> WC
+		result = np.copy(np.frombuffer(self.rbuf, dtype=np.float16)[0::2][0:count])
+		print(result)
+		result = result.reshape(8,-1).transpose(1,0) # Return copy of results, otherwise will be changed. CW -> WC
 		# print("PARSING", result.shape)
 		# print(result)
 		return result
