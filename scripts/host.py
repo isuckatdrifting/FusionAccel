@@ -20,10 +20,8 @@ class host:
 		self.blocksize = 512
 		self.readsize = 4096
 		self.rbuf = bytearray(self.readsize)
-		# Run Parameters
 		self.image = np.ndarray(0)
 		self.command = bytearray()
-		self.layer_weight = bytearray()
 		self.bias = [] # list of numpy ndarrays
 		self.weight = [] # list of numpy ndarrays
 		return
@@ -76,7 +74,6 @@ class host:
 		weight = np.load(weight_directory)
 		for i in range(0,len(weight)):
 			name = 'arr_' + str(i)
-			self.layer_weight = bytearray()
 			# Weight layer
 			if i % 2 == 0:
 				shape = weight[name].shape # get shape of weight layer
@@ -129,10 +126,8 @@ class host:
 		self.xem.UpdateWireOuts()
 
 	def loadWeights_Bias(self, bias_bytes, weight_bytes): # bias: integer(hex), weight_bytes: bytes
-		tmp_weight = bytearray()
-		tmp_weight = tmp_weight + weight_bytes
-		tmp_bias = bytearray()
-		tmp_bias = tmp_bias + bias_bytes
+		tmp_weight = bytearray() + weight_bytes
+		tmp_bias = bytearray() + bias_bytes
 		self.reset_blob_ram()
 		self.xem.WriteToBlockPipeIn(0x82, self.blocksize, tmp_weight) # Notes: Write buf must be times of blocksize
 		self.xem.UpdateWireOuts()
@@ -140,8 +135,7 @@ class host:
 		self.xem.UpdateWireOuts()
 
 	def loadGemm(self, gemm_bytes):
-		tmp = bytearray()
-		tmp = tmp + gemm_bytes
+		tmp = bytearray() + gemm_bytes
 		self.reset_blob_ram()
 		self.xem.UpdateWireIns()
 		self.xem.WriteToBlockPipeIn(0x81, self.blocksize, tmp) # Notes: Write buf must be times of blocksize
@@ -150,9 +144,6 @@ class host:
 	def gemm_magic(self, data, gemm, kernel):
 		# print("[MAGIC]", "      GEMM data shape:", data.shape)
 		tmp_data = data[gemm:gemm+kernel,:,:]
-		# if(gemm == 0):
-			# print("magic data: ", tmp_data)
-		# print(tmp_data.shape)
 
 		tmp_data = tmp_data.transpose((1,0,2)) # transpose and get the first gemm
 		# print(tmp_data.shape)
@@ -161,7 +152,7 @@ class host:
 		# print(tmp.shape)
 		tmp = tmp.reshape(-1)
 		# print(tmp.shape)
-		gemm_data = tmp.tobytes() + bytearray((int(len(tmp.reshape(-1).tobytes())/512)+1)*512-int(len(tmp.reshape(-1).tobytes())))
+		gemm_data = tmp.tobytes() + bytearray((int(len(tmp.tobytes())/512)+1)*512-int(len(tmp.tobytes())))
 		# print("[MAGIC]", "  Reshaped data shape:", len(gemm_data))
 		return gemm_data
 
@@ -173,10 +164,11 @@ class host:
 		print(tmp_data.shape)
 		print(tmp_data)
 		tmp = np.dstack((tmp_data.reshape(-1), np.zeros_like(tmp_data.reshape(-1)))) # padding zero for fp16
+		print(tmp)
 		# print(tmp.shape)
 		tmp = tmp.reshape(-1)
 		# print(tmp.shape)
-		gemm_data = tmp.tobytes() + bytearray((int(len(tmp.reshape(-1).tobytes())/512)+1)*512-int(len(tmp.reshape(-1).tobytes())))
+		gemm_data = tmp.tobytes() + bytearray((int(len(tmp.tobytes())/512)+1)*512-int(len(tmp.tobytes())))
 		# print("[MAGIC]", "  Reshaped data shape:", len(gemm_data))
 		return gemm_data
 
@@ -324,9 +316,9 @@ def main():
 							timestamp_engine = timestamp_engine + timestamp_2 - timestamp_1
 							tmp = dev.readOutput()
 							result.append(tmp)
-							# print(tmp)
+							print(tmp)
 							# print(tmp.shape)
-						print("number_result", result[0])
+						# print("number_result", result[0])
 						# print(len(result))
 						output = np.stack(result, axis = 0)
 						result_layer.append(output)

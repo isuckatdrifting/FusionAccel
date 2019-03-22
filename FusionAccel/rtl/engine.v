@@ -326,7 +326,7 @@ always @ (posedge clk or posedge rst) begin
 					writeback_num <= 1; 
 					fsum_index <= fsum_index + 1;
 				end
-				if(fsum_index == o_side && p0_writeback_count == 1) to_clear <= 1; 
+				if(fsum_index == o_side) to_clear <= 1; 
 			end
 
 // CMD = 2 ==================== MAXPOOLING: Process a line ====================//
@@ -407,20 +407,21 @@ always @ (posedge clk or posedge rst) begin
 
 		//==================== Write back logic and write address ====================
 		if(p0_writeback_en) begin
-			if(p0_writeback_count < writeback_num) begin
-				output_en <= 1;
+			output_en <= 1;
+			if(p0_writeback_count + 1 < writeback_num) begin
 				p0_writeback_count <= p0_writeback_count + 1;
 			end else begin
 				p0_writeback_en <= 0;
 				p0_writeback_count <= 0;
-				output_en <= 0;
 			end
 			case(op_type)
 				CONV: output_data <= fsum_result[15]? 16'h0000: fsum_result; //Notes: ReLu Activation
 				MPOOL: output_data <= scmp_result[p0_writeback_count * 16 +: 16];
 				APOOL: output_data <= result_div[p0_writeback_count * 16 +: 16];
 			endcase
-		end 
+		end else begin
+			output_en <= 0;
+		end
 
 	end
 end
