@@ -231,7 +231,7 @@ def main():
 			exit
 		else:
 			dev.loadCommands() 																	# send all commands
-			for layer in range(0, 2):
+			for layer in range(0, 3):
 				op_type, stride, kernel, i_side, o_side, i_channel, o_channel = dev.loadLayer()
 				blob = layer_output
 				result_layer = []
