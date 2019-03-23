@@ -176,8 +176,12 @@ class host:
 		self.xem.UpdateWireOuts()
 
 	def gemm_magic(self, data, gemm, kernel): 													# CHW to CWH(W = kernel, MEC Algorithm)
-		tmp_data = data[gemm:gemm+kernel,:,:]
-		tmp_data = tmp_data.transpose((1,0,2)) 													# transpose 0,1 and get the first gemm
+		tmp_data = data[gemm:gemm+kernel,:,:] # TODO: slice the data by i_channel
+		print(tmp_data.shape)
+		tmp_data = np.stack(np.split(tmp_data, tmp_data.shape[2]/8, axis = 2), axis = 0) 		# create a new axis after splitting
+		print(tmp_data.shape)
+		tmp_data = tmp_data.transpose((0,2,1,3)) 													# transpose 0,1 and get the first gemm
+		print(tmp_data.shape)
 		tmp = np.dstack((tmp_data.reshape(-1), np.zeros_like(tmp_data.reshape(-1)))) 			# padding zero for fp16
 		tmp = tmp.reshape(-1)
 		gemm_data = tmp.tobytes() + bytearray((int(len(tmp.tobytes())/512)+1)*512-int(len(tmp.tobytes())))
@@ -197,6 +201,8 @@ class host:
 		bias_data = tmp_bias.reshape(-1).tobytes() + bytearray((int(len(tmp_bias.reshape(-1).tobytes())/512)+1)*512-int(len(tmp_bias.reshape(-1).tobytes())))
 		weight = self.weight[layer][number:number+8]
 		weight = weight.transpose((0,1,3,2,4)) 													# transpose 2,3 and get the first gemm
+		if(layer == 1):
+			print(weight)
 		tmp_weight = np.dstack((weight.reshape(-1), np.zeros_like(weight.reshape(-1)))).astype(dtype=np.float16) # pad 16-bit zero for fp16
 		weight_data = tmp_weight.reshape(-1).tobytes() + bytearray((int(len(tmp_weight.reshape(-1).tobytes())/512)+1)*512-int(len(tmp_weight.reshape(-1).tobytes())))
 		return bias_data, weight_data
@@ -231,6 +237,7 @@ def main():
 			exit
 		else:
 			dev.loadCommands() 																	# send all commands
+			weight_layer = 0
 			for layer in range(0, 3):
 				op_type, stride, kernel, i_side, o_side, i_channel, o_channel = dev.loadLayer()
 				blob = layer_output
@@ -240,7 +247,7 @@ def main():
 					for number in range(0, o_channel, 8):
 						# print("[DEBUG]", blob.shape)
 						result = []
-						gemm_bias, gemm_weight = dev.wb_magic(layer=layer, number=number)
+						gemm_bias, gemm_weight = dev.wb_magic(layer=weight_layer, number=number)
 						# load gemm data and gemm weight (whole channel), then start operation
 						dev.loadWeights_Bias(gemm_bias, gemm_weight)
 						for gemm in range(0, i_side-kernel+1, stride):
@@ -259,6 +266,7 @@ def main():
 						output = np.stack(result, axis = 0) 									#CWH. partial channel
 						result_layer.append(output)
 					layer_output = np.concatenate(result_layer, axis = 2) 						#CWH. full channel
+					weight_layer += 1
 				else:
 					for number in range(0, i_channel, 8):
 						result = []
@@ -271,7 +279,7 @@ def main():
 							tmp = dev.readOutput()												#CW. partial channel
 							# print(tmp)
 							tmp = tmp.reshape(-1, 8)
-							print(tmp)
+							# print(tmp)
 							result.append(tmp)
 						# print(len(result))
 						output = np.stack(result, axis = 0)										#CWH. partial channel
@@ -279,6 +287,7 @@ def main():
 					layer_output = np.concatenate(result_layer, axis = 2)						#CWH. full channel
 
 				print(layer_output.shape)
+				print(layer_output)
 			
 	if test_mode == SANITY:
 		dev.readBlob()
