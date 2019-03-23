@@ -36,6 +36,11 @@
       <obj_property name="ObjectShortName">w_ram_read_offset[12:0]</obj_property>
       <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
    </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/b_ram_read_addr" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">b_ram_read_addr[9:0]</obj_property>
+      <obj_property name="ObjectShortName">b_ram_read_addr[9:0]</obj_property>
+      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+   </wvobject>
    <wvobject fp_name="/engine_tb/engine_/o_side_count" type="array" db_ref_id="1">
       <obj_property name="ElementShortName">o_side_count[7:0]</obj_property>
       <obj_property name="ObjectShortName">o_side_count[7:0]</obj_property>
@@ -54,9 +59,9 @@
       <obj_property name="ObjectShortName">engine_valid</obj_property>
    </wvobject>
    <wvobject fp_name="/engine_tb/engine_/curr_state" type="array" db_ref_id="1">
-      <obj_property name="ElementShortName">curr_state[2:0]</obj_property>
-      <obj_property name="ObjectShortName">curr_state[2:0]</obj_property>
-      <obj_property name="Radix">UNSIGNEDDECRADIX</obj_property>
+      <obj_property name="ElementShortName">curr_state[5:0]</obj_property>
+      <obj_property name="ObjectShortName">curr_state[5:0]</obj_property>
+      <obj_property name="Radix">BINARYRADIX</obj_property>
    </wvobject>
    <wvobject fp_name="/engine_tb/engine_/op_type" type="array" db_ref_id="1">
       <obj_property name="ElementShortName">op_type[2:0]</obj_property>
@@ -185,6 +190,7 @@
       <wvobject fp_name="/engine_tb/engine_/cmac_result" type="array" db_ref_id="1">
          <obj_property name="ElementShortName">cmac_result[127:0]</obj_property>
          <obj_property name="ObjectShortName">cmac_result[127:0]</obj_property>
+         <obj_property name="Radix">HEXRADIX</obj_property>
       </wvobject>
       <wvobject fp_name="/engine_tb/engine_/\gencmac[0].cmac_ /mult_ready" type="logic" db_ref_id="1">
          <obj_property name="ElementShortName">mult_ready</obj_property>
@@ -620,10 +626,5 @@
    <wvobject fp_name="/engine_tb/engine_/gemm_finish" type="logic" db_ref_id="1">
       <obj_property name="ElementShortName">gemm_finish</obj_property>
       <obj_property name="ObjectShortName">gemm_finish</obj_property>
-   </wvobject>
-   <wvobject fp_name="/engine_tb/engine_/debug_dbb" type="array" db_ref_id="1">
-      <obj_property name="ElementShortName">debug_dbb[31:0]</obj_property>
-      <obj_property name="ObjectShortName">debug_dbb[31:0]</obj_property>
-      <obj_property name="Radix">HEXRADIX</obj_property>
    </wvobject>
 </wave_config>

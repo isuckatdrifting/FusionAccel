@@ -1,7 +1,7 @@
 `timescale 1ns/1ps
-// `define CMAC
+`define CMAC
 // `define SACC
-`define SCMP
+// `define SCMP
 
 module engine_tb;
 
@@ -35,6 +35,12 @@ wire [15:0]	output_data;
 	reg [15:0] data [0:216];
 	reg [15:0] weight [0:72];
 	initial begin
+	data[0] = 16'h4d86; data[1] = 16'h4cbd; data[2] = 16'h4a18; data[3] = 16'h0000; data[4] = 16'h4b7c; data[5] = 16'h4269; data[6] = 16'h59b9; data[7] = 16'h4d2f; data[8] = 16'h480c; data[9] = 16'h449a; data[10] = 16'h4e77; data[11] = 16'h37b9; data[12] = 16'h530a; data[13] = 16'h4d34; data[14] = 16'h4873; data[15] =
+16'h4cb6; data[16] = 16'h0000; data[17] = 16'h45ee; data[18] = 16'h4c48; data[19] = 16'h4bea; data[20] = 16'h4bd0; data[21] = 16'h0000; data[22] = 16'h0000; data[23] = 16'h4ae0; data[24] = 16'h4c07; data[25] = 16'h4df6; data[26] = 16'h52ae; data[27] = 16'h4262; data[28] = 16'h5403; data[29] = 16'h0000; data[30] = 16'h4a2d; data[31] = 16'h5170; data[32] = 16'h4d30; data[33] = 16'h0000; data[34] = 16'h4843; data[35] = 16'h0000; data[36] = 16'h4604; data[37] = 16'h2871; data[38] = 16'h0000; data[39] = 16'h0000; data[40] = 16'h4e4f; data[41] = 16'h4cb8; data[42] = 16'h4c8c; data[43] = 16'h504d; data[44] = 16'h4e9d; data[45] = 16'h3660; data[46] = 16'h0000; data[47] = 16'h4908; data[48] = 16'h4ef9; data[49] = 16'h53c6; data[50] = 16'h472a; data[51] = 16'h58e1; data[52] = 16'h4b5c; data[53] = 16'h4910; data[54] = 16'h5049; data[55] = 16'h5411; data[56] = 16'h0000; data[57] = 16'h4fdf; data[58] = 16'h48a0; data[59] = 16'h4a80; data[60] = 16'h4e60; data[61] = 16'h4ab3; data[62] = 16'h4caa; data[63] = 16'h514c;
+
+weight[0] = 16'h27ae; weight[1] = 16'had60; weight[2] = 16'h2dbf; weight[3] = 16'ha8b9; weight[4] = 16'h36db; weight[5] = 16'h2a8e; weight[6] = 16'h278d; weight[7] = 16'h3131; weight[8] = 16'hb2d8; weight[9] = 16'h2694; weight[10] = 16'hb4f5; weight[11] = 16'h35fd; weight[12] = 16'h26bc; weight[13] = 16'h28d0; weight[14] = 16'h2d8c; weight[15] = 16'hb44e; weight[16] = 16'h341c; weight[17] = 16'haef2; weight[18] = 16'h3420; weight[19] = 16'hb381; weight[20] = 16'h36e5; weight[21] = 16'h289f; weight[22] = 16'h2c19; weight[23] = 16'hac9a; weight[24]
+= 16'hb32f; weight[25] = 16'h37a3; weight[26] = 16'h2c55; weight[27] = 16'h360e; weight[28] = 16'ha8fe; weight[29] = 16'ha93f; weight[30] = 16'hacf6; weight[31] = 16'hb0a9; weight[32] = 16'hb61e; weight[33] = 16'h31a2; weight[34] = 16'hb10f; weight[35] = 16'h349e; weight[36] = 16'h31cf; weight[37] = 16'hb4e5; weight[38] = 16'h2b5f; weight[39] = 16'h1cb6; weight[40] = 16'hb75f; weight[41] = 16'hb497; weight[42] = 16'h3197; weight[43] = 16'hb5b3; weight[44] = 16'hb64d; weight[45] = 16'h3683; weight[46] = 16'hb630; weight[47] = 16'h2ebd; weight[48] = 16'h3867; weight[49] = 16'h3118; weight[50] = 16'h23c8; weight[51] = 16'h2e77; weight[52] = 16'haf54; weight[53] = 16'hb622; weight[54] = 16'hb3e9; weight[55] = 16'h3471; weight[56] = 16'haa2b; weight[57] = 16'h353f; weight[58] = 16'h2a81; weight[59] = 16'h352e; weight[60] = 16'h3049; weight[61] = 16'h38ed; weight[62] = 16'ha9c9; weight[63] = 16'hb64f;
+	/*
 	data[0] = 16'hce83; data[1] = 16'h4f98; data[2] = 16'h4e17; data[3] = 16'h0000; 
 	data[4] = 16'h0000; data[5] = 16'h0000; data[6] = 16'h0000; data[7] = 16'h0000; 
 	data[8] = 16'hce24; data[9] = 16'h5087; data[10] = 16'h4F8D; data[11] = 16'h0000; 
@@ -117,7 +123,7 @@ wire [15:0]	output_data;
 	weight[56] = 16'hAE46; weight[57] = 16'hB1E7; weight[58] = 16'hACF0; weight[59] = 16'h0000;
 	weight[60] = 16'h0000; weight[61] = 16'h0000; weight[62] = 16'h0000; weight[63] = 16'h0000;
 	weight[64] = 16'hB249; weight[65] = 16'hB72B; weight[66] = 16'hB338; weight[67] = 16'h0000;
-	weight[68] = 16'h0000; weight[69] = 16'h0000; weight[70] = 16'h0000; weight[71] = 16'h0000;
+	weight[68] = 16'h0000; weight[69] = 16'h0000; weight[70] = 16'h0000; weight[71] = 16'h0000;*/
 /*
 
 d1f000004d030000451a00000000000000000000000000000000000000000000
@@ -855,8 +861,12 @@ initial begin
     #20 rst = 1;
     #10 rst = 0;
 `ifdef CMAC
-    #100 op_type = 1; stride = 2; stride2 = 6;
-		kernel = 3; kernel_size = 9; i_channel = 3; o_channel = 1; i_side = 227; o_side = 113; bias = 16'hA35C;
+	//3x3
+    // #100 op_type = 1; stride = 2; stride2 = 6;
+		// kernel = 3; kernel_size = 9; i_channel = 3; o_channel = 1; i_side = 227; o_side = 113; bias = 16'hA35C;
+	//1x1
+	#100 op_type = 1; stride = 1; stride2 = 1;
+		kernel = 1; kernel_size = 1; i_channel = 64; o_channel = 16; i_side = 56; o_side = 56; bias = 16'hAC88;
 `endif
 `ifdef SCMP
 	#100 op_type = 2; stride = 2; stride2 = 6;

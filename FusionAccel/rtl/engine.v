@@ -198,16 +198,15 @@ reg  [31:0] timer;
 
 // NOTES: Generate accumulator for atom(1 * 1 * channel) and cube(k * k * channel), this data path is dedicated to convolution only.
 //State Machine
-localparam idle 		= 7'b0000001;
-localparam gemm_busy 	= 7'b0000010;
-localparam sacc_busy 	= 7'b0000100;
-localparam scmp_busy 	= 7'b0001000;
-localparam clear 		= 7'b0010000;
-localparam wait_		= 7'b0100000;
-localparam finish 		= 7'b1000000;
+localparam idle 		= 6'b0000001;
+localparam gemm_busy 	= 6'b0000010;
+localparam sacc_busy 	= 6'b0000100;
+localparam scmp_busy 	= 6'b0001000;
+localparam clear 		= 6'b0010000;
+localparam wait_		= 6'b0100000;
 
-reg [6:0] curr_state;
-reg [6:0] next_state;
+reg [5:0] curr_state;
+reg [5:0] next_state;
 
 //    Current State, non-blocking
 always @ (posedge clk or posedge rst)    begin
@@ -244,7 +243,7 @@ always @ (*) begin
 		end
 		clear: begin
 			case(op_type)
-				CONV: if(o_channel_count == `BURST_LEN-1) begin
+				CONV: if(o_channel_count == `BURST_LEN-1 && i_channel_count + `BURST_LEN >= i_channel) begin
 						next_state = wait_;
 					  end else next_state = idle;
 				MPOOL, APOOL: next_state = wait_;
@@ -323,8 +322,10 @@ always @ (posedge clk or posedge rst) begin
 				end
 				if(f_fifo_wr_en) f_fifo_wr_en <= 0;
 				if(fsum_ready) begin 
-					p0_writeback_en <= 1; 
-					writeback_num <= 1; 
+					if(i_channel_count + `BURST_LEN >= i_channel) begin
+						p0_writeback_en <= 1; 
+						writeback_num <= 1; 
+					end
 					fsum_index <= fsum_index + 1;
 				end
 				if(fsum_index == o_side) to_clear <= 1; 
@@ -391,13 +392,13 @@ always @ (posedge clk or posedge rst) begin
 				to_clear <= 0;
 				case(op_type)
 					CONV: begin
+						w_ram_read_offset <= w_ram_read_offset + kernel_size;
 						if(i_channel_count + `BURST_LEN < i_channel) begin
 							i_channel_count <= i_channel_count + `BURST_LEN;
 						end else begin
 							i_channel_count <= 0;
 							d_ram_read_addr <= 'd0;
 							b_ram_read_addr <= b_ram_read_addr + 1;
-							w_ram_read_offset <= w_ram_read_offset + kernel_size;
 							o_channel_count <= o_channel_count + 1; 
 							if(o_channel_count == `BURST_LEN-1) gemm_finish <= 1;
 						end

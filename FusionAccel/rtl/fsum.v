@@ -27,13 +27,6 @@ reg                      reads_en;
 wire operation_rfd_fsum, rdy_fsum;
 wire [15:0] result_fsum;
 
-integer a; // initialize buffer for cmac
-initial begin
-	for (a=0; a<`MAX_O_SIDE; a=a+1) begin
-		fsum[a] <= 16'h0000;
-	end
-end
-
 accum fsum_ (.a(fsum_a), .b(fsum_b), .clk(clk), .operation_nd(fsum_data_ready), .operation_rfd(operation_rfd_fsum), .result(result_fsum), .rdy(rdy_fsum));
 
 always @(posedge clk) fsum_data_valid <= operation_rfd_fsum;
@@ -70,9 +63,13 @@ always @ (*) begin
     endcase
 end
 
+integer a; // initialize buffer for cmac
 always @ (posedge clk or posedge rst) begin
 	if(rst) begin
         fsum_data_ready <= 0; fsum_a <= 16'h0000; fsum_b <= 16'h0000; fsum_count <= 8'h00; ready <= 0; reads_en <= 0;
+        for (a=0; a<`MAX_O_SIDE; a=a+1) begin
+            fsum[a] <= 16'h0000;
+        end
     end else begin
         case(curr_state)
             idle: begin
