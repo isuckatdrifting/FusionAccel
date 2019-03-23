@@ -10,7 +10,7 @@
          </top_modules>
       </db_ref>
    </db_ref_list>
-   <WVObjectSize size="28" />
+   <WVObjectSize size="29" />
    <wvobject fp_name="/engine_tb/engine_/input_data" type="array" db_ref_id="1">
       <obj_property name="ElementShortName">input_data[127:0]</obj_property>
       <obj_property name="ObjectShortName">input_data[127:0]</obj_property>
@@ -620,5 +620,10 @@
    <wvobject fp_name="/engine_tb/engine_/gemm_finish" type="logic" db_ref_id="1">
       <obj_property name="ElementShortName">gemm_finish</obj_property>
       <obj_property name="ObjectShortName">gemm_finish</obj_property>
+   </wvobject>
+   <wvobject fp_name="/engine_tb/engine_/debug_dbb" type="array" db_ref_id="1">
+      <obj_property name="ElementShortName">debug_dbb[31:0]</obj_property>
+      <obj_property name="ObjectShortName">debug_dbb[31:0]</obj_property>
+      <obj_property name="Radix">HEXRADIX</obj_property>
    </wvobject>
 </wave_config>
