@@ -127,6 +127,39 @@ class host:
 		self.xem.WriteToBlockPipeIn(0x80, self.blocksize, self.command) 						# Write buf must be times of blocksize
 		self.xem.UpdateWireOuts()
 
+	def loadLayer(self):
+		self.xem.UpdateWireOuts()
+		print("[INTERRUPT]", 'rd_count = 0x%08x' % self.xem.GetWireOutValue(0x31))
+		print("[INTERRUPT]", 'wr_count = 0x%08x' % self.xem.GetWireOutValue(0x32))
+		self.xem.SetWireInValue(0x00, 0x0008) 													# ep00wire[3], csb reset
+		self.xem.UpdateWireIns()
+		self.xem.SetWireInValue(0x00, 0x0000)
+		self.xem.UpdateWireIns()
+		self.xem.SetWireInValue(0x00, 0x0010) 													# ep00wire[4], op_en
+		self.xem.UpdateWireIns()
+		self.xem.SetWireInValue(0x00, 0x0000)
+		self.xem.UpdateWireIns()
+		self.xem.UpdateWireOuts()
+		command_0 = self.xem.GetWireOutValue(0x21)
+		command_1 = self.xem.GetWireOutValue(0x22)
+		op_type = (command_0 & 0x00000007)
+		stride = (command_0 & 0x000000f0) >> 4
+		kernel = (command_0 & 0x0000ff00) >> 8
+		i_side = (command_0 & 0x00ff0000) >> 16
+		o_side = (command_0 & 0xff000000) >> 24
+		i_channel = (command_1 & 0x0000ffff)
+		o_channel = (command_1 & 0xffff0000) >> 16
+		print("[COMMANDS]", "0x%08x" % command_0)
+		print("[COMMANDS]", "0x%08x" % command_1)
+		print("[COMMANDS]", "  op_type %d" % op_type)
+		print("[COMMANDS]", "   stride %d" % stride)
+		print("[COMMANDS]", "   kernel %d" % kernel)
+		print("[COMMANDS]", "   i_side %d" % i_side)
+		print("[COMMANDS]", "   o_side %d" % o_side)
+		print("[COMMANDS]", "i_channel %d" % i_channel)
+		print("[COMMANDS]", "o_channel %d" % o_channel)
+		return op_type, stride, kernel, i_side, o_side, i_channel, o_channel
+
 	def loadWeights_Bias(self, bias_bytes, weight_bytes): 
 		tmp_weight = bytearray() + weight_bytes
 		tmp_bias = bytearray() + bias_bytes
@@ -142,28 +175,28 @@ class host:
 		self.xem.WriteToBlockPipeIn(0x81, self.blocksize, tmp) 									# Write buf must be times of blocksize
 		self.xem.UpdateWireOuts()
 
-	def gemm_magic(self, data, gemm, kernel):
+	def gemm_magic(self, data, gemm, kernel): 													# CHW to CWH(W = kernel, MEC Algorithm)
 		tmp_data = data[gemm:gemm+kernel,:,:]
-		tmp_data = tmp_data.transpose((1,0,2)) 													# transpose and get the first gemm
+		tmp_data = tmp_data.transpose((1,0,2)) 													# transpose 0,1 and get the first gemm
 		tmp = np.dstack((tmp_data.reshape(-1), np.zeros_like(tmp_data.reshape(-1)))) 			# padding zero for fp16
 		tmp = tmp.reshape(-1)
 		gemm_data = tmp.tobytes() + bytearray((int(len(tmp.tobytes())/512)+1)*512-int(len(tmp.tobytes())))
 		return gemm_data
 
-	def planar_magic(self, data, gemm, kernel, num):
+	def planar_magic(self, data, gemm, kernel, num):											# CHW to CWH(W = kernel, MEC Algorithm)
 		tmp_data = data[gemm:gemm+kernel,:,num:num+8]
-		tmp_data = tmp_data.transpose((1,0,2)) 													# transpose and get the first gemm
+		tmp_data = tmp_data.transpose((1,0,2)) 													# transpose 0,1 and get the first gemm
 		tmp = np.dstack((tmp_data.reshape(-1), np.zeros_like(tmp_data.reshape(-1)))) 			# padding zero for fp16
 		tmp = tmp.reshape(-1)
 		gemm_data = tmp.tobytes() + bytearray((int(len(tmp.tobytes())/512)+1)*512-int(len(tmp.tobytes())))
 		return gemm_data
 
-	def wb_magic(self, layer, number):
+	def wb_magic(self, layer, number):															# CHW to CWH(W = kernel, Sliced, MEC Algorithm)
 		bias = self.bias[layer][number:number+8].astype(dtype=np.float16)
 		tmp_bias = np.dstack((bias.reshape(-1), np.zeros_like(bias.reshape(-1)))).astype(dtype=np.float16) # pad 16-bit zero for fp16
 		bias_data = tmp_bias.reshape(-1).tobytes() + bytearray((int(len(tmp_bias.reshape(-1).tobytes())/512)+1)*512-int(len(tmp_bias.reshape(-1).tobytes())))
 		weight = self.weight[layer][number:number+8]
-		weight = weight.transpose((0,1,3,2,4)) 													# transpose and get the first gemm
+		weight = weight.transpose((0,1,3,2,4)) 													# transpose 2,3 and get the first gemm
 		tmp_weight = np.dstack((weight.reshape(-1), np.zeros_like(weight.reshape(-1)))).astype(dtype=np.float16) # pad 16-bit zero for fp16
 		weight_data = tmp_weight.reshape(-1).tobytes() + bytearray((int(len(tmp_weight.reshape(-1).tobytes())/512)+1)*512-int(len(tmp_weight.reshape(-1).tobytes())))
 		return bias_data, weight_data
@@ -187,11 +220,7 @@ class host:
 		self.xem.ReadFromBlockPipeOut(0xa0, self.blocksize, self.rbuf)
 		self.xem.UpdateWireOuts()
 		self.reset_result_fifo()
-		result = np.copy(np.frombuffer(self.rbuf, dtype=np.float16)[0::2][0:count])
-		print(result)
-		result = result.reshape(8,-1).transpose(1,0) 												# Return copy of results to prevent being changed. CW -> WC
-		# print("PARSING", result.shape)
-		# print(result)
+		result = np.copy(np.frombuffer(self.rbuf, dtype=np.float16)[0::2][0:count])					# preserve dimension of result, return copy of results to prevent being changed
 		return result
 
 def main():   
@@ -204,36 +233,7 @@ def main():
 		else:
 			dev.loadCommands() 																		# send all commands
 			for layer in range(0, 2):
-				dev.xem.UpdateWireOuts()
-				print("[INTERRUPT]", 'rd_count = 0x%08x' % dev.xem.GetWireOutValue(0x31))
-				print("[INTERRUPT]", 'wr_count = 0x%08x' % dev.xem.GetWireOutValue(0x32))
-				dev.xem.SetWireInValue(0x00, 0x0008) 												# ep00wire[3], csb reset
-				dev.xem.UpdateWireIns()
-				dev.xem.SetWireInValue(0x00, 0x0000)
-				dev.xem.UpdateWireIns()
-				dev.xem.SetWireInValue(0x00, 0x0010) 												# ep00wire[4], op_en
-				dev.xem.UpdateWireIns()
-				dev.xem.SetWireInValue(0x00, 0x0000)
-				dev.xem.UpdateWireIns()
-				dev.xem.UpdateWireOuts()
-				command_0 = dev.xem.GetWireOutValue(0x21)
-				command_1 = dev.xem.GetWireOutValue(0x22)
-				op_type = (command_0 & 0x00000007)
-				stride = (command_0 & 0x000000f0) >> 4
-				kernel = (command_0 & 0x0000ff00) >> 8
-				i_side = (command_0 & 0x00ff0000) >> 16
-				o_side = (command_0 & 0xff000000) >> 24
-				i_channel = (command_1 & 0x0000ffff)
-				o_channel = (command_1 & 0xffff0000) >> 16
-				print("[COMMANDS]", "0x%08x" % command_0)
-				print("[COMMANDS]", "0x%08x" % command_1)
-				print("[COMMANDS]", "  op_type %d" % op_type)
-				print("[COMMANDS]", "   stride %d" % stride)
-				print("[COMMANDS]", "   kernel %d" % kernel)
-				print("[COMMANDS]", "   i_side %d" % i_side)
-				print("[COMMANDS]", "   o_side %d" % o_side)
-				print("[COMMANDS]", "i_channel %d" % i_channel)
-				print("[COMMANDS]", "o_channel %d" % o_channel)
+				op_type, stride, kernel, i_side, o_side, i_channel, o_channel = dev.loadLayer()
 				blob = layer_output
 				result_layer = []
 				
@@ -246,38 +246,38 @@ def main():
 						dev.loadWeights_Bias(gemm_bias, gemm_weight)
 						for gemm in range(0, i_side-kernel+1, stride):
 							# print(gemm)
-							gemm_data = dev.gemm_magic(blob, gemm=gemm, kernel=kernel) 				#HWC
-							# print(len(gemm_data))
+							gemm_data = dev.gemm_magic(blob, gemm=gemm, kernel=kernel) 				#CWH. full channel
 							dev.loadGemm(gemm_data)
 							dev.restart_engine()							
 							dev.waitIrq()
 							print("conv output", gemm, number)
-							tmp = dev.readOutput() 													#WC
+							tmp = dev.readOutput() 													#WC. partial channel
+							# print(tmp)
+							tmp = tmp.reshape(8, -1).transpose(1,0)									#CW. partial channel
+							# print(tmp)
 							result.append(tmp)
-							print(tmp)
-							# print(tmp.shape)
 						# print(len(result))
-						output = np.stack(result, axis = 0) 										#HWC
+						output = np.stack(result, axis = 0) 										#CWH. partial channel
 						result_layer.append(output)
-					layer_output = np.concatenate(result_layer, axis = 2) 							#HWC
+					layer_output = np.concatenate(result_layer, axis = 2) 							#CWH. full channel
 				else:
 					for number in range(0, i_channel, 8):
 						result = []
 						for gemm in range(0, i_side-kernel+1, stride):
-							gemm_data = dev.planar_magic(blob, gemm=gemm, kernel=kernel, num=number)
+							gemm_data = dev.planar_magic(blob, gemm=gemm, kernel=kernel, num=number)#CWH. partial channel
 							dev.loadGemm(gemm_data)
 							dev.restart_engine()
 							dev.waitIrq()
 							print("pool output", gemm, number)
-							tmp = dev.readOutput()
+							tmp = dev.readOutput()													#CW. partial channel
+							print(tmp)
+							tmp = tmp.reshape(-1, 8)
 							result.append(tmp)
 							print(tmp)
-							# print(tmp.shape)
-						# print("number_result", result[0])
 						# print(len(result))
-						output = np.stack(result, axis = 0)
+						output = np.stack(result, axis = 0)											#CWH. partial channel
 						result_layer.append(output)
-					layer_output = np.concatenate(result_layer, axis = 2)
+					layer_output = np.concatenate(result_layer, axis = 2)							#CWH. full channel
 
 				print(layer_output.shape)
 			
