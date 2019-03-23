@@ -29,7 +29,6 @@ module engine  // Instantiate 8CMACs for conv, 8SCMP for maxpool and 8SACC for a
 //Data path engine->dma
 	output [15:0]	output_data,
 	input  [9:0]	output_count,
-	output [7:0]	scmp_index,
 	output [3:0]	curr_state,
 	output [31:0]   timer
 );
