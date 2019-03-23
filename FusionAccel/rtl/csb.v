@@ -46,8 +46,8 @@ reg [7:0]   kernel_size, i_side, o_side;
 
 //State Machine
 localparam  idle = 3'b000;
-localparam  cmd_get = 3'b001;           //Get commands from USB
-localparam  op_run = 3'b011;            //Get done signals from engine
+localparam  cmd_get = 3'b010;           //Get commands from USB
+localparam  op_run = 3'b100;            //Get done signals from engine
 
 reg [2:0]   curr_state;
 reg [2:0]   next_state;

@@ -61,7 +61,7 @@ wire [9:0]  d_ram_read_addr, b_ram_read_addr;
 wire [12:0] w_ram_read_addr;
 //-------------------------LED Stage Monitor-------------------------------//
 wire 		gemm_finish;
-assign led = ~{csb_state[0], engine_state[0], engine_state[1], engine_state[2], w_ram_wr_en, d_ram_wr_en, gemm_finish, ep00wire[7]};
+assign led = ~{engine_state[0], engine_state[1], engine_state[2], w_ram_wr_en, d_ram_wr_en, gemm_finish, pipe_out_empty, pipe_out_full};
 
 wire [15:0] 			 i_channel_count;
 wire [31:0] 			 timer;
@@ -69,6 +69,7 @@ wire [16*`BURST_LEN-1:0] data_in_data, weig_in_data, bias_in_data;
 reg  [2:0] 				 d_ram_write_count, w_ram_write_count;
 reg  [16*`BURST_LEN-1:0] d_ram_data, w_ram_data, b_ram_data;
 reg  					 d_ram_wr_en, w_ram_wr_en;
+wire [7:0]				 scmp_index;
 
 csb csb_(
     .clk					(sys_clk),
@@ -115,6 +116,8 @@ engine engine_(
 	.input_data				(data_in_data),
 	.input_weig				(weig_in_data),
 	.output_data			(pipe_out_data[15:0]),
+	.output_count			(pipe_out_wr_count),
+	.scmp_index				(scmp_index),
 	.curr_state				(engine_state),
     .timer                  (timer)
 );

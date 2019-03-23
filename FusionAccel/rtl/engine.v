@@ -28,6 +28,8 @@ module engine  // Instantiate 8CMACs for conv, 8SCMP for maxpool and 8SACC for a
 	input  [16*`BURST_LEN-1:0] 	input_weig,
 //Data path engine->dma
 	output [15:0]	output_data,
+	input  [9:0]	output_count,
+	output [7:0]	scmp_index,
 	output [3:0]	curr_state,
 	output [31:0]   timer
 );
@@ -197,16 +199,16 @@ reg  [31:0] timer;
 
 // NOTES: Generate accumulator for atom(1 * 1 * channel) and cube(k * k * channel), this data path is dedicated to convolution only.
 //State Machine
-localparam idle 		= 0;
-localparam gemm_busy 	= 1;
-localparam sacc_busy 	= 2;
-localparam scmp_busy 	= 3;
-localparam clear 		= 4;
-localparam wait_		= 5;
-localparam finish 		= 6;
+localparam idle 		= 7'b0000001;
+localparam gemm_busy 	= 7'b0000010;
+localparam sacc_busy 	= 7'b0000100;
+localparam scmp_busy 	= 7'b0001000;
+localparam clear 		= 7'b0010000;
+localparam wait_		= 7'b0100000;
+localparam finish 		= 7'b1000000;
 
-reg [2:0] curr_state;
-reg [2:0] next_state;
+reg [6:0] curr_state;
+reg [6:0] next_state;
 
 //    Current State, non-blocking
 always @ (posedge clk or posedge rst)    begin
@@ -284,7 +286,7 @@ always @ (posedge clk or posedge rst) begin
 				cmac_enable <= 0; cmac_data_ready <= 0; 
 				avepool_enable <= 0; div_data_ready <= 0; a_div <= 0; b_div <= {16{16'h3c00}}; 
 				maxpool_enable <= 0; 
-				c_fifo_wr_en <= 0; f_fifo_wr_en <= 0; s_fifo_wr_en <= 0; m_fifo_wr_en <= 0; fsum_index <= 8'h00; scmp_index <= 8'h00;
+				c_fifo_wr_en <= 0; f_fifo_wr_en <= 0; s_fifo_wr_en <= 0; m_fifo_wr_en <= 0; fsum_index <= 8'h00;
 				to_clear <= 0;
 				gemm_finish <= 0;
 				w_ram_read_addr <= w_ram_read_offset;
@@ -353,7 +355,7 @@ always @ (posedge clk or posedge rst) begin
 					writeback_num <= `BURST_LEN;
 					scmp_index <= scmp_index + 1;
 				end
-				if(scmp_index == o_side && p0_writeback_count + 1 == `BURST_LEN) to_clear <= 1;
+				if(scmp_index == o_side && p0_writeback_count == `BURST_LEN-1) to_clear <= 1;
 			end
 
 // CMD = 3 ==================== AVEPOOLING: Process a line * surface ====================//
@@ -386,6 +388,8 @@ always @ (posedge clk or posedge rst) begin
 			//==================== Update cross-channel counters and read address ====================
 			clear: begin
 				o_side_count <= 0;
+				scmp_index <= 0;
+				to_clear <= 0;
 				case(op_type)
 					CONV: begin
 						if(i_channel_count + `BURST_LEN < i_channel) begin
@@ -402,6 +406,7 @@ always @ (posedge clk or posedge rst) begin
 					MPOOL, APOOL: gemm_finish <= 1;
 				endcase
 			end
+			// wait_: if(output_count == {o_side, 3'b000}) gemm_finish <= 1;
 			default:;
 		endcase
 

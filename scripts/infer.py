@@ -96,9 +96,14 @@ for layer_name, blob in net.blobs.items():
         print(net.blobs['pool1'].data.shape)
         print(net.blobs['pool1'].data[0].shape)
         print(net.blobs['pool1'].data[0][0][0])
-        print(net.blobs['pool1'].data[0][1][0])
-        print(net.blobs['pool1'].data[0][2][0])
-        print(net.blobs['pool1'].data[0][3][0])
+        print(net.blobs['pool1'].data[0][0][1])
+        print(net.blobs['pool1'].data[0][0][2])
+        print(net.blobs['pool1'].data[0][0][3])
+        print(net.blobs['pool1'].data[0][0][45])
+        print(net.blobs['pool1'].data[0][0][46])
+        print(net.blobs['pool1'].data[0][0][47])
+        print(net.blobs['pool1'].data[0][0][48])
+        
 
         # print(net.params['conv1'][0].data)
         # print(net.params['conv1'][1].data)

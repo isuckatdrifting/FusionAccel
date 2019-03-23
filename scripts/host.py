@@ -206,7 +206,7 @@ class host:
 			self.xem.UpdateWireOuts()
 			if self.xem.GetWireOutValue(0x25) == 0x0001:
 				# print("[INTERRUPT]", "Got GEMM finish", 'timer = 0x%04x' % self.xem.GetWireOutValue(0x26), ', elapsed time = %f us' % (self.xem.GetWireOutValue(0x26)/100))
-				self.xem.SetWireInValue(0x00, 0x0000) # clear ep00wire
+				self.xem.SetWireInValue(0x00, 0x0000) 											# clear ep00wire, reset engine valid
 				self.xem.UpdateWireIns()
 				break
 		return
@@ -214,13 +214,12 @@ class host:
 	def readOutput(self):
 		self.xem.UpdateWireOuts()
 		# print("[INTERRUPT]", 'rd_count = 0x%08x' % self.xem.GetWireOutValue(0x27))
-		# print("[INTERRUPT]", 'wr_count = 0x%08x' % self.xem.GetWireOutValue(0x28))
 		count = self.xem.GetWireOutValue(0x28)
-		# print("[PARSING]", "Reading Output...")
+		print("[INTERRUPT]", 'wr_count = 0x%08x' % count)
 		self.xem.ReadFromBlockPipeOut(0xa0, self.blocksize, self.rbuf)
 		self.xem.UpdateWireOuts()
 		self.reset_result_fifo()
-		result = np.copy(np.frombuffer(self.rbuf, dtype=np.float16)[0::2][0:count])					# preserve dimension of result, return copy of results to prevent being changed
+		result = np.copy(np.frombuffer(self.rbuf, dtype=np.float16)[0::2][0:count])				# preserve dimension of result, return copy of results to prevent being changed
 		return result
 
 def main():   
@@ -231,7 +230,7 @@ def main():
 		if (False == dev.InitializeDevice()):
 			exit
 		else:
-			dev.loadCommands() 																		# send all commands
+			dev.loadCommands() 																	# send all commands
 			for layer in range(0, 2):
 				op_type, stride, kernel, i_side, o_side, i_channel, o_channel = dev.loadLayer()
 				blob = layer_output
@@ -246,20 +245,20 @@ def main():
 						dev.loadWeights_Bias(gemm_bias, gemm_weight)
 						for gemm in range(0, i_side-kernel+1, stride):
 							# print(gemm)
-							gemm_data = dev.gemm_magic(blob, gemm=gemm, kernel=kernel) 				#CWH. full channel
+							gemm_data = dev.gemm_magic(blob, gemm=gemm, kernel=kernel) 			#CWH. full channel
 							dev.loadGemm(gemm_data)
 							dev.restart_engine()							
 							dev.waitIrq()
 							print("conv output", gemm, number)
-							tmp = dev.readOutput() 													#WC. partial channel
+							tmp = dev.readOutput() 												#WC. partial channel
 							# print(tmp)
-							tmp = tmp.reshape(8, -1).transpose(1,0)									#CW. partial channel
+							tmp = tmp.reshape(8, -1).transpose(1,0)								#CW. partial channel
 							# print(tmp)
 							result.append(tmp)
 						# print(len(result))
-						output = np.stack(result, axis = 0) 										#CWH. partial channel
+						output = np.stack(result, axis = 0) 									#CWH. partial channel
 						result_layer.append(output)
-					layer_output = np.concatenate(result_layer, axis = 2) 							#CWH. full channel
+					layer_output = np.concatenate(result_layer, axis = 2) 						#CWH. full channel
 				else:
 					for number in range(0, i_channel, 8):
 						result = []
@@ -269,15 +268,15 @@ def main():
 							dev.restart_engine()
 							dev.waitIrq()
 							print("pool output", gemm, number)
-							tmp = dev.readOutput()													#CW. partial channel
-							print(tmp)
+							tmp = dev.readOutput()												#CW. partial channel
+							# print(tmp)
 							tmp = tmp.reshape(-1, 8)
-							result.append(tmp)
 							print(tmp)
+							result.append(tmp)
 						# print(len(result))
-						output = np.stack(result, axis = 0)											#CWH. partial channel
+						output = np.stack(result, axis = 0)										#CWH. partial channel
 						result_layer.append(output)
-					layer_output = np.concatenate(result_layer, axis = 2)							#CWH. full channel
+					layer_output = np.concatenate(result_layer, axis = 2)						#CWH. full channel
 
 				print(layer_output.shape)
 			
