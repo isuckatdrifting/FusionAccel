@@ -31,7 +31,8 @@ module engine  // Instantiate 8CMACs for conv, 8SCMP for maxpool and 8SACC for a
 	output [15:0]	output_data,
 	input  [9:0]	output_count,
 	output [3:0]	curr_state,
-	output [31:0]   timer
+	output [31:0]   timer,
+	output [15:0]	b_div
 );
 
 localparam CONV = 1, MPOOL = 2, APOOL = 3;
@@ -169,7 +170,12 @@ fifo_fsum ss_(
 	.empty			(s_fifo_empty),	// o
 	.valid			(s_fifo_valid));
 
-reg  [16*`BURST_LEN-1:0] a_div, b_div;
+wire [15:0] 			 b_div;
+wire 					 i2f_ready;
+reg						 i2f_data_ready;
+int2fp16 i2f(.clk(clk), .a({1'b0, kernel_size}), .operation_nd(i2f_data_ready), .operation_rfd(), .result(b_div), .rdy(i2f_ready));
+
+reg  [16*`BURST_LEN-1:0] a_div;
 reg 					 div_data_ready;
 wire [16*`BURST_LEN-1:0] result_div;
 wire [`BURST_LEN-1:0]	 div_data_valid, div_ready;
@@ -178,7 +184,7 @@ genvar k;
 generate
 	for (k = 0; k < `BURST_LEN; k = k + 1) begin: gensacc
 		csum s_(.clk(clk), .rst(rst), .fifo_empty(s_fifo_empty), .reads_en(s_fifo_rd_en_mux[k]), .kernel_size(kernel_size), .data(ssum_[k*16 +: 16]), .data_ready(s_fifo_valid), .data_valid(ssum_data_valid[k]), .csum_result(ssum_result[k*16 +: 16]), .csum_ready(ssum_ready[k]));
-		divider div_(.a(a_div[k*16+:16]), .b(b_div[k*16+:16]), .clk(clk), .operation_nd(div_data_ready), .operation_rfd(div_data_valid[k]), .result(result_div[k*16 +:16]), .rdy(div_ready[k]));
+		divider div_(.a(a_div[k*16+:16]), .b(b_div), .clk(clk), .operation_nd(div_data_ready), .operation_rfd(div_data_valid[k]), .result(result_div[k*16 +:16]), .rdy(div_ready[k]));
 	end
 endgenerate
 always @(posedge clk) sacc_ready <= div_ready;
@@ -266,7 +272,7 @@ always @ (posedge clk or posedge rst) begin
 		data <= 'd0; weight <= 'd0;
 		//==================== Pipeline registers ====================
 		cmac_enable <= 0; cmac_data_ready <= 0; 
-		avepool_enable <= 0; div_data_ready <= 0; a_div <= 0; b_div <= {16{16'h3c00}};
+		avepool_enable <= 0; div_data_ready <= 0; a_div <= 0; i2f_data_ready <= 0;
 		maxpool_enable <= 0; 
 		c_fifo_wr_en <= 0; f_fifo_wr_en <= 0; s_fifo_wr_en <= 0; m_fifo_wr_en <= 0; fsum_index <= 8'h00; scmp_index <= 8'h00;
 		to_clear <= 0; 
@@ -283,7 +289,7 @@ always @ (posedge clk or posedge rst) begin
 				data <= 'd0; weight <= 'd0;
 				//==================== Pipeline registers ====================
 				cmac_enable <= 0; cmac_data_ready <= 0; 
-				avepool_enable <= 0; div_data_ready <= 0; a_div <= 0; b_div <= {16{16'h3c00}}; 
+				avepool_enable <= 0; div_data_ready <= 0; a_div <= 0;
 				maxpool_enable <= 0; 
 				c_fifo_wr_en <= 0; f_fifo_wr_en <= 0; s_fifo_wr_en <= 0; m_fifo_wr_en <= 0; fsum_index <= 8'h00;
 				to_clear <= 0;
@@ -372,6 +378,7 @@ always @ (posedge clk or posedge rst) begin
 							d_ram_read_addr <= d_ram_read_addr + 1;
 							avepool_enable <= 1;
 						end	else avepool_enable <= 0;
+						i2f_data_ready <= 1;
 				end
 				if(avepool_enable) begin
 					s_fifo_wr_en <= 1;
@@ -379,7 +386,6 @@ always @ (posedge clk or posedge rst) begin
 				end else s_fifo_wr_en <= 0;
 				if(ssum_ready == {`BURST_LEN{1'b1}}) begin 
 					a_div <= ssum_result;
-					b_div <= {16{16'h5A20}};
 					div_data_ready <= 1;
 				end
 				if(div_data_ready) div_data_ready <= 0;
