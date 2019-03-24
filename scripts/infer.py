@@ -107,12 +107,10 @@ for layer_name, blob in net.blobs.items():
         print(net.blobs['fire2/squeeze1x1'].data.shape)
         print(net.blobs['fire2/squeeze1x1'].data[0].shape)
         print(net.blobs['fire2/squeeze1x1'].data[0][0][0])
+        print(net.blobs['fire2/squeeze1x1'].data[0][0][1])
+        print(net.blobs['fire2/squeeze1x1'].data[0][0][2])
         print(net.params['fire2/squeeze1x1'][0].data.reshape(-1))        
-        print(net.blobs['pool1'].data[0][0][0])
-        print(net.blobs['pool1'].data[0][1][0])
 
-        # print(net.params['conv1'][0].data)
-        # print(net.params['conv1'][1].data)
     dat = filters.reshape(1, -1)[0][0:1].astype(dtype=np.float16) # get the first two of the layer output
     print(filters.size, dat)
     f.write(str(layer_name) + '\t')

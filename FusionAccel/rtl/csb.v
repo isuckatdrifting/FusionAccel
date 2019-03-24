@@ -15,7 +15,8 @@ module csb
     output [7:0]    o_side,
     output [15:0]   i_channel,
     output [15:0]   o_channel,
-    output [7:0]    padding,
+    output [3:0]    slot,
+    output [3:0]    padding,
     output [7:0]    kernel_size,
     output [15:0]   stride2,    //kernel * stride
     output [2:0]    curr_state
@@ -30,7 +31,8 @@ module csb
 //|    output side size:  8Bit |        |32 |-----------------|-----------|
 //|  input channel size: 16Bit |        |   
 //| output channel size: 16Bit |        |64 
-//|        padding size:  8Bit |        |
+//|                slot:  4Bit |        |
+//|        padding size:  4Bit |        |
 //|         kernel size:  8Bit |        |   
 //|             stride2: 16Bit |        |96 
 //|-------Totally  96Bit-------|--------|   
@@ -40,10 +42,10 @@ reg [3:0]   cmd_burst_count;
 
 //Output Command
 reg [2:0]   op_type;
-reg [3:0]   stride;
+reg [3:0]   stride, slot, padding;
 reg [7:0]   kernel;
 reg [15:0]  i_channel, o_channel, stride2;
-reg [7:0]   padding, kernel_size, i_side, o_side;
+reg [7:0]   kernel_size, i_side, o_side;
 
 //State Machine
 localparam  idle = 3'b000;
@@ -86,7 +88,7 @@ always @ (posedge clk or posedge rst) begin
         cmd_burst_count <= 4'd0;
         op_type <= 3'd0; stride <= 4'h0; kernel <= 8'h00;
         i_channel <= 16'h0000; o_channel <= 16'h0000;
-        i_side <= 8'h00; o_side <= 8'h00; padding <= 8'h00; kernel_size <= 8'h00; stride2 <= 16'h0000;
+        i_side <= 8'h00; o_side <= 8'h00; slot <= 4'b0000; padding <= 4'd0; kernel_size <= 8'h00; stride2 <= 16'h0000;
     end else begin
         case (curr_state)
             idle: begin
@@ -101,7 +103,7 @@ always @ (posedge clk or posedge rst) begin
                     case (cmd_burst_count) //Split cmds from fifo into separate attributes
                         4'd0: begin op_type <= cmd[2:0]; stride <= cmd[7:4]; kernel <= cmd[15:8]; i_side <= cmd[23:16]; o_side <= cmd[31:24]; end
                         4'd1: begin i_channel <= cmd[15:0]; o_channel <= cmd[31:16]; rd_en <= 0; end
-                        4'd2: begin padding <= cmd[7:0]; kernel_size <= cmd[15:8]; stride2 <= cmd[31:16]; end
+                        4'd2: begin padding <= cmd[3:0]; slot <= cmd[7:4]; kernel_size <= cmd[15:8]; stride2 <= cmd[31:16]; end
                         default: ;
                     endcase
                 end
