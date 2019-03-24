@@ -2,6 +2,8 @@ import os
 import struct
 import numpy as np
 import sys
+
+np.set_printoptions(suppress=True, precision=4, threshold=np.inf)
 '''
 buf = bytearray.fromhex("a1ff 9200 0000")
 print(buf)
@@ -85,7 +87,7 @@ w = np.frombuffer(mem, dtype=np.float16)
 print(mem.hex())
 print(w)
 '''
-
+'''
 mat0 = np.array([[[-26.05,    30.38,    24.36 ],
                     [-24.56,    36.22,    30.2],
                     [-19.73,    47.84,    38.94 ]],
@@ -154,7 +156,7 @@ print(np.sum((mat2*weight).reshape(-1))-0.01437416)
 print("==========            ===============")
 print(mat3*weight)
 print(np.sum((mat3*weight).reshape(-1))-0.01437416)
-'''
+
 print("==================================================================")
 mat4 = np.array([[[ -26.04759216,  -23.58161163,  -36.99021912],
    [ -24.55531311,  -31.67391205,  -42.52264404],
@@ -184,3 +186,27 @@ print(mat4*mat5)
 print(np.sum((mat4*mat5).reshape(-1))-0.01437416)
 print("==================================================================")
 '''
+print("squeeze")
+d = np.load("C:/Users/shish/source/repos/FusionAccel/scripts/tmp/gemm_data.npy")
+print(d)
+
+d = d.reshape(-1)
+
+w = np.load("C:/Users/shish/source/repos/FusionAccel/scripts/tmp/gemm_weight.npy")
+print(w)
+
+w = w.reshape(-1)
+'''
+print(d*w)
+print(np.sum((d*w).reshape(-1))-0.0708)
+'''
+num = 0
+
+for i in d.astype(dtype=np.float16):
+   print("data[%d] = 16'h"%num + str(hex(struct.unpack('H', i)[0])).replace('0x','').zfill(4), end='; ')
+   num += 1
+print("\n")
+num = 0
+for i in w.astype(dtype=np.float16):
+   print("weight[%d] = 16'h"%num + str(hex(struct.unpack('H', i)[0])).replace('0x','').zfill(4), end='; ')
+   num += 1

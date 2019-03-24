@@ -4,6 +4,8 @@ import caffe
 import struct
 import time
 
+np.set_printoptions(suppress=True, precision=4, threshold=np.inf)
+
 #######################Inference###########################
 start_0 = time.clock()
 caffe.set_mode_cpu()
@@ -69,7 +71,8 @@ for layer_name, blob in net.blobs.items():
     print(layer_name + '\t' + str(blob.data.shape))
     filters = net.blobs[layer_name].data # intermediate responses of the filters (first 36 only) 
                                          # output_channels, input_channels, filter_height, filter_width
-    # print(filters)
+    # print(filters[0][0][0])
+    
     if layer_name == 'data':
         print(filters.shape)
         # print(image)
@@ -103,10 +106,53 @@ for layer_name, blob in net.blobs.items():
         print(net.blobs['pool1'].data[0][0][46])
         print(net.blobs['pool1'].data[0][0][47])
         print(net.blobs['pool1'].data[0][0][48])
-        
+        print("===========================================================================")
+        print(net.blobs['fire2/squeeze1x1'].data.shape)
+        print(net.blobs['fire2/squeeze1x1'].data[0].shape)
+        print(net.blobs['fire2/squeeze1x1'].data[0][0][0])
+        print(net.blobs['fire2/squeeze1x1'].data[0][0][1])
+        print(net.blobs['fire2/squeeze1x1'].data[0][0][2])
+        print(net.params['fire2/squeeze1x1'][0].data.reshape(-1))        
+        print("===========================================================================")
+        print(net.blobs['fire2/expand1x1'].data.shape)
+        print(net.blobs['fire2/expand1x1'].data[0].shape)
+        print(net.blobs['fire2/expand1x1'].data[0][5][0])
+        print(net.blobs['fire2/expand1x1'].data[0][5][1])
+        print(net.blobs['fire2/expand1x1'].data[0][5][2])
+        print("===========================================================================")
+        print(net.blobs['fire2/expand3x3'].data[0][0][0])
+        print(net.blobs['fire2/expand3x3'].data[0][1][0])
+        print(net.blobs['fire2/expand3x3'].data[0][2][0])
+        print(net.blobs['fire2/expand3x3'].data[0][3][0])
+        print(net.blobs['fire2/expand3x3'].data[0][4][0])
+        print(net.blobs['fire2/expand3x3'].data[0][5][0])
+        print(net.blobs['fire2/expand3x3'].data[0][6][0])
+        print(net.blobs['fire2/expand3x3'].data[0][7][0])
+        print(net.blobs['fire2/expand3x3'].data[0][8][0])
+        print(net.blobs['fire2/expand3x3'].data[0][9][0])
+        print(net.blobs['fire2/expand3x3'].data[0][10][0])
+        print(net.blobs['fire2/expand3x3'].data[0][11][0])
+        print(net.blobs['fire2/expand3x3'].data[0][12][0])
+        print(net.blobs['fire2/expand3x3'].data[0][13][0])
+        print(net.blobs['fire2/expand3x3'].data[0][14][0])
+        print(net.blobs['fire2/expand3x3'].data[0][15][0])
+        print(net.blobs['fire2/expand3x3'].data[0][16][0])
+        print(net.blobs['fire2/expand3x3'].data[0][17][0])
+        print(net.params['fire2/expand3x3'][0].data.reshape(-1))
+        '''
+        print("CALCULATIONNNNNNNNNNNNNNNNNNNNNNN")
+        a = net.blobs['fire2/squeeze1x1'].data[0][:, 0:2, 0:2]
+        print(a)
+        b = net.params['fire2/expand3x3'][0].data[0][:, 1:3, 1:3]
+        print(b)
+        print("DOT")
+        print(a*b)
+        print(np.sum((a*b).reshape(-1))-0.0708)
+        '''
+        print(net.blobs['conv10'].data[0][0][0])
+        print(net.blobs['pool10'].data[0].reshape(-1))
+        print(net.blobs['prob'].data[0].reshape(-1))
 
-        # print(net.params['conv1'][0].data)
-        # print(net.params['conv1'][1].data)
     dat = filters.reshape(1, -1)[0][0:1].astype(dtype=np.float16) # get the first two of the layer output
     print(filters.size, dat)
     f.write(str(layer_name) + '\t')

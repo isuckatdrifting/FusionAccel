@@ -14,7 +14,7 @@ module top
 wire [31:0] bias;
 // Command wires
 wire [2:0] 	op_type;
-wire [3:0]  stride;
+wire [3:0]  stride, slot, padding;
 wire [15:0] stride2;
 wire [7:0]  kernel, kernel_size;
 wire [15:0] i_channel, o_channel;
@@ -69,7 +69,6 @@ wire [16*`BURST_LEN-1:0] data_in_data, weig_in_data, bias_in_data;
 reg  [2:0] 				 d_ram_write_count, w_ram_write_count;
 reg  [16*`BURST_LEN-1:0] d_ram_data, w_ram_data, b_ram_data;
 reg  					 d_ram_wr_en, w_ram_wr_en;
-wire [7:0]				 scmp_index;
 
 csb csb_(
     .clk					(sys_clk),
@@ -85,6 +84,8 @@ csb csb_(
 	.o_side					(o_side),
 	.i_channel				(i_channel),
 	.o_channel				(o_channel),
+	.slot					(slot),
+	.padding				(padding),
 	.kernel_size			(kernel_size),
 	.stride2				(stride2),
 	.curr_state				(csb_state));
@@ -103,6 +104,7 @@ engine engine_(
 	.o_channel				(o_channel),
 	.kernel_size			(kernel_size),
 	.stride2				(stride2),
+	.padding				(padding),
 	.bias					(bias_in_data[15:0]),
 //Response signals engine->csb
 	.gemm_finish			(gemm_finish),
@@ -117,7 +119,6 @@ engine engine_(
 	.input_weig				(weig_in_data),
 	.output_data			(pipe_out_data[15:0]),
 	.output_count			(pipe_out_wr_count),
-	.scmp_index				(scmp_index),
 	.curr_state				(engine_state),
     .timer                  (timer)
 );
@@ -159,7 +160,7 @@ okWireIn      wi00  (.okHE(okHE),                             .ep_addr(8'h00), .
 
 okWireOut	  cmd0 	(.okHE(okHE), .okEH(okEHx[ 0*65 +: 65 ]), .ep_addr(8'h21), .ep_datain({o_side, i_side, kernel, stride, 1'b0, op_type}));
 okWireOut	  cmd1 	(.okHE(okHE), .okEH(okEHx[ 1*65 +: 65 ]), .ep_addr(8'h22), .ep_datain({o_channel, i_channel}));
-okWireOut	  cmd2 	(.okHE(okHE), .okEH(okEHx[ 2*65 +: 65 ]), .ep_addr(8'h23), .ep_datain({stride2, kernel_size, 8'h00}));
+okWireOut	  cmd2 	(.okHE(okHE), .okEH(okEHx[ 2*65 +: 65 ]), .ep_addr(8'h23), .ep_datain({stride2, kernel_size, slot, padding}));
 okWireOut	  ich 	(.okHE(okHE), .okEH(okEHx[ 3*65 +: 65 ]), .ep_addr(8'h24), .ep_datain({16'h0000, i_channel_count}));
 okWireOut	  irq1 	(.okHE(okHE), .okEH(okEHx[ 4*65 +: 65 ]), .ep_addr(8'h25), .ep_datain({31'h0000_0000, gemm_finish}));
 okWireOut	timer0 	(.okHE(okHE), .okEH(okEHx[ 5*65 +: 65 ]), .ep_addr(8'h26), .ep_datain(timer));

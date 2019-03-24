@@ -14,6 +14,7 @@ module engine  // Instantiate 8CMACs for conv, 8SCMP for maxpool and 8SACC for a
 	input [15:0]	o_channel,
 	input [7:0]		kernel_size,
 	input [15:0]	stride2,	//kernel * stride
+	input [3:0] 	padding,
 	input [15:0]	bias,
 //Response signals engine->csb
 	output			gemm_finish,
@@ -29,7 +30,6 @@ module engine  // Instantiate 8CMACs for conv, 8SCMP for maxpool and 8SACC for a
 //Data path engine->dma
 	output [15:0]	output_data,
 	input  [9:0]	output_count,
-	output [7:0]	scmp_index,
 	output [3:0]	curr_state,
 	output [31:0]   timer
 );
@@ -199,16 +199,15 @@ reg  [31:0] timer;
 
 // NOTES: Generate accumulator for atom(1 * 1 * channel) and cube(k * k * channel), this data path is dedicated to convolution only.
 //State Machine
-localparam idle 		= 7'b0000001;
-localparam gemm_busy 	= 7'b0000010;
-localparam sacc_busy 	= 7'b0000100;
-localparam scmp_busy 	= 7'b0001000;
-localparam clear 		= 7'b0010000;
-localparam wait_		= 7'b0100000;
-localparam finish 		= 7'b1000000;
+localparam idle 		= 6'b0000001;
+localparam gemm_busy 	= 6'b0000010;
+localparam sacc_busy 	= 6'b0000100;
+localparam scmp_busy 	= 6'b0001000;
+localparam clear 		= 6'b0010000;
+localparam wait_		= 6'b0100000;
 
-reg [6:0] curr_state;
-reg [6:0] next_state;
+reg [5:0] curr_state;
+reg [5:0] next_state;
 
 //    Current State, non-blocking
 always @ (posedge clk or posedge rst)    begin
@@ -245,7 +244,7 @@ always @ (*) begin
 		end
 		clear: begin
 			case(op_type)
-				CONV: if(o_channel_count == `BURST_LEN-1) begin
+				CONV: if(o_channel_count == `BURST_LEN-1 && i_channel_count + `BURST_LEN >= i_channel) begin
 						next_state = wait_;
 					  end else next_state = idle;
 				MPOOL, APOOL: next_state = wait_;
@@ -300,7 +299,10 @@ always @ (posedge clk or posedge rst) begin
 							d_ram_read_addr <= d_ram_read_addr + 1;
 							w_ram_read_addr <= w_ram_read_addr + 1;
 						end	else begin
-							d_ram_read_addr <= (d_ram_read_addr + stride2) - (kernel_size - 1);
+							if(o_side_count + 1 < o_side)
+								d_ram_read_addr <= (d_ram_read_addr + stride2) - (kernel_size - 1);
+							else
+								d_ram_read_addr <= d_ram_read_addr + 1;
 							w_ram_read_addr <= w_ram_read_offset;
 							o_side_count <= o_side_count + 1;
 						end
@@ -324,8 +326,10 @@ always @ (posedge clk or posedge rst) begin
 				end
 				if(f_fifo_wr_en) f_fifo_wr_en <= 0;
 				if(fsum_ready) begin 
-					p0_writeback_en <= 1; 
-					writeback_num <= 1; 
+					if(i_channel_count + `BURST_LEN >= i_channel) begin
+						p0_writeback_en <= 1; 
+						writeback_num <= 1; 
+					end
 					fsum_index <= fsum_index + 1;
 				end
 				if(fsum_index == o_side) to_clear <= 1; 
@@ -339,7 +343,10 @@ always @ (posedge clk or posedge rst) begin
 							d_ram_read_addr <= d_ram_read_addr + 1;
 							w_ram_read_addr <= w_ram_read_addr + 1;
 						end	else begin
-							d_ram_read_addr <= (d_ram_read_addr + stride2) - (kernel_size - 1);
+							if(o_side_count + 1 < o_side)
+								d_ram_read_addr <= (d_ram_read_addr + stride2) - (kernel_size - 1);
+							else
+								d_ram_read_addr <= d_ram_read_addr + 1;
 							w_ram_read_addr <= 0;
 							o_side_count <= o_side_count + 1;
 						end
@@ -361,28 +368,26 @@ always @ (posedge clk or posedge rst) begin
 // CMD = 3 ==================== AVEPOOLING: Process a line * surface ====================//
 			sacc_busy: begin
 				if(engine_valid) begin
-					if(d_ram_read_addr + 1 < kernel_size) begin
-						d_ram_read_addr <= d_ram_read_addr + 1;
-					end	else begin
-						d_ram_read_addr <= 0;
-					end
-					avepool_enable <= 1;
+						if(d_ram_read_addr + 1 <= kernel_size) begin
+							d_ram_read_addr <= d_ram_read_addr + 1;
+							avepool_enable <= 1;
+						end	else avepool_enable <= 0;
 				end
 				if(avepool_enable) begin
 					s_fifo_wr_en <= 1;
 					data <= input_data;
-				end
+				end else s_fifo_wr_en <= 0;
 				if(ssum_ready == {`BURST_LEN{1'b1}}) begin 
 					a_div <= ssum_result;
-					b_div <= {16{16'h5948}};
+					b_div <= {16{16'h5A20}};
 					div_data_ready <= 1;
 				end
 				if(div_data_ready) div_data_ready <= 0;
 				if(sacc_ready == {`BURST_LEN{1'b1}}) begin
-					to_clear <= 1;
 					p0_writeback_en <= 1; //NOTES: Writeback all channels
 					writeback_num <= `BURST_LEN;
 				end
+				if(p0_writeback_count == `BURST_LEN-1) to_clear <= 1;
 			end
 
 			//==================== Update cross-channel counters and read address ====================
@@ -392,13 +397,13 @@ always @ (posedge clk or posedge rst) begin
 				to_clear <= 0;
 				case(op_type)
 					CONV: begin
+						w_ram_read_offset <= w_ram_read_offset + kernel_size;
 						if(i_channel_count + `BURST_LEN < i_channel) begin
 							i_channel_count <= i_channel_count + `BURST_LEN;
 						end else begin
 							i_channel_count <= 0;
 							d_ram_read_addr <= 'd0;
 							b_ram_read_addr <= b_ram_read_addr + 1;
-							w_ram_read_offset <= w_ram_read_offset + kernel_size;
 							o_channel_count <= o_channel_count + 1; 
 							if(o_channel_count == `BURST_LEN-1) gemm_finish <= 1;
 						end
@@ -406,7 +411,6 @@ always @ (posedge clk or posedge rst) begin
 					MPOOL, APOOL: gemm_finish <= 1;
 				endcase
 			end
-			// wait_: if(output_count == {o_side, 3'b000}) gemm_finish <= 1;
 			default:;
 		endcase
 

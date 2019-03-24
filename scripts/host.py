@@ -3,7 +3,8 @@ import os
 import ok
 import struct
 import time
-np.set_printoptions(suppress=True, precision=4, threshold=np.inf)
+import sys
+np.set_printoptions(suppress=True, precision=4, threshold=sys.maxsize)
 
 bit_directory = 'C:/Users/shish/source/repos/FusionAccel/scripts/top.bit'
 command_directory = 'C:/Users/shish/source/repos/FusionAccel/scripts/tmp/command.txt'
@@ -82,11 +83,11 @@ class host:
 					padded_dat = np.pad(weight[name], ((0,0),(0,pad),(0,0),(0,0)), 'constant') 	# pad at channel axis
 				else:
 					padded_dat = weight[name]
-				print("[INITIAL]", "padded shape:\t", str(padded_dat.shape))
+				print("[INITIAL]", "padded shape:\t", padded_dat.shape)
 				tmp = padded_dat.transpose((0,2,3,1)) 											# move channel axis to the inner most
-				print("[INITIAL]", "trans shape:\t", str(tmp.shape))
+				print("[INITIAL]", "trans shape:\t", tmp.shape)
 				sliced_dat = np.stack(np.split(tmp, tmp.shape[3]/8, axis = 3), axis = 1) 		# create a new axis after splitting
-				print("[INITIAL]", "sliced shape:\t", str(sliced_dat.shape))
+				print("[INITIAL]", "sliced shape:\t", sliced_dat.shape)
 				
 				self.weight.append(sliced_dat.astype(dtype=np.float16)) 						# byteappend all weights
 			if i % 2 == 1: 																		# Bias layer
@@ -128,9 +129,9 @@ class host:
 		self.xem.UpdateWireOuts()
 
 	def loadLayer(self):
-		self.xem.UpdateWireOuts()
-		print("[INTERRUPT]", 'rd_count = 0x%08x' % self.xem.GetWireOutValue(0x31))
-		print("[INTERRUPT]", 'wr_count = 0x%08x' % self.xem.GetWireOutValue(0x32))
+		# self.xem.UpdateWireOuts()
+		# print("[INTERRUPT]", 'rd_count = 0x%08x' % self.xem.GetWireOutValue(0x31))
+		# print("[INTERRUPT]", 'wr_count = 0x%08x' % self.xem.GetWireOutValue(0x32))
 		self.xem.SetWireInValue(0x00, 0x0008) 													# ep00wire[3], csb reset
 		self.xem.UpdateWireIns()
 		self.xem.SetWireInValue(0x00, 0x0000)
@@ -142,6 +143,7 @@ class host:
 		self.xem.UpdateWireOuts()
 		command_0 = self.xem.GetWireOutValue(0x21)
 		command_1 = self.xem.GetWireOutValue(0x22)
+		command_2 = self.xem.GetWireOutValue(0x23)
 		op_type = (command_0 & 0x00000007)
 		stride = (command_0 & 0x000000f0) >> 4
 		kernel = (command_0 & 0x0000ff00) >> 8
@@ -149,16 +151,22 @@ class host:
 		o_side = (command_0 & 0xff000000) >> 24
 		i_channel = (command_1 & 0x0000ffff)
 		o_channel = (command_1 & 0xffff0000) >> 16
-		print("[COMMANDS]", "0x%08x" % command_0)
-		print("[COMMANDS]", "0x%08x" % command_1)
-		print("[COMMANDS]", "  op_type %d" % op_type)
-		print("[COMMANDS]", "   stride %d" % stride)
-		print("[COMMANDS]", "   kernel %d" % kernel)
-		print("[COMMANDS]", "   i_side %d" % i_side)
-		print("[COMMANDS]", "   o_side %d" % o_side)
-		print("[COMMANDS]", "i_channel %d" % i_channel)
-		print("[COMMANDS]", "o_channel %d" % o_channel)
-		return op_type, stride, kernel, i_side, o_side, i_channel, o_channel
+		id = (command_2 & 0x000000c0) >> 6
+		total = (command_2 & 0x00000030) >> 4
+		padding = (command_2 & 0x0000000f)
+		# print("[COMMANDS]", "0x%08x" % command_0)
+		# print("[COMMANDS]", "0x%08x" % command_1)
+		# print("[COMMANDS]", "  op_type %d" % op_type)
+		# print("[COMMANDS]", "   stride %d" % stride)
+		# print("[COMMANDS]", "   kernel %d" % kernel)
+		# print("[COMMANDS]", "   i_side %d" % i_side)
+		# print("[COMMANDS]", "   o_side %d" % o_side)
+		# print("[COMMANDS]", "i_channel %d" % i_channel)
+		# print("[COMMANDS]", "o_channel %d" % o_channel)
+		# print("[COMMANDS]", "  slot id %d" % id)
+		# print("[COMMANDS]", "    total %d" % total)
+		# print("[COMMANDS]", "  padding %d" % padding)
+		return op_type, stride, kernel, i_side, o_side, i_channel, o_channel, id, total, padding
 
 	def loadWeights_Bias(self, bias_bytes, weight_bytes): 
 		tmp_weight = bytearray() + weight_bytes
@@ -177,7 +185,9 @@ class host:
 
 	def gemm_magic(self, data, gemm, kernel): 													# CHW to CWH(W = kernel, MEC Algorithm)
 		tmp_data = data[gemm:gemm+kernel,:,:]
-		tmp_data = tmp_data.transpose((1,0,2)) 													# transpose 0,1 and get the first gemm
+		# print("GEMM DEBUG", tmp_data.shape)
+		tmp_data = np.stack(np.split(tmp_data, tmp_data.shape[2]/8, axis = 2), axis = 0) 		# slice the data by i_channel/8, create a new axis after splitting
+		tmp_data = tmp_data.transpose((0,2,1,3)) 												# transpose 0,1 and get the first gemm
 		tmp = np.dstack((tmp_data.reshape(-1), np.zeros_like(tmp_data.reshape(-1)))) 			# padding zero for fp16
 		tmp = tmp.reshape(-1)
 		gemm_data = tmp.tobytes() + bytearray((int(len(tmp.tobytes())/512)+1)*512-int(len(tmp.tobytes())))
@@ -215,11 +225,11 @@ class host:
 		self.xem.UpdateWireOuts()
 		# print("[INTERRUPT]", 'rd_count = 0x%08x' % self.xem.GetWireOutValue(0x27))
 		count = self.xem.GetWireOutValue(0x28)
-		print("[INTERRUPT]", 'wr_count = 0x%08x' % count)
+		# print("[INTERRUPT]", 'wr_count = 0x%08x' % count)
 		self.xem.ReadFromBlockPipeOut(0xa0, self.blocksize, self.rbuf)
 		self.xem.UpdateWireOuts()
 		self.reset_result_fifo()
-		result = np.copy(np.frombuffer(self.rbuf, dtype=np.float16)[0::2][0:count])				# preserve dimension of result, return copy of results to prevent being changed
+		result = np.array(np.frombuffer(self.rbuf, dtype=np.float16)[0::2][0:count])				# preserve dimension of result, return copy of results to prevent being changed
 		return result
 
 def main():   
@@ -231,54 +241,92 @@ def main():
 			exit
 		else:
 			dev.loadCommands() 																	# send all commands
-			for layer in range(0, 2):
-				op_type, stride, kernel, i_side, o_side, i_channel, o_channel = dev.loadLayer()
-				blob = layer_output
+			weight_layer = 0
+			slot = []
+			timestamp_engine = 0
+			timestamp_0 = time.clock()
+			for layer in range(0, 30):
+				op_type, stride, kernel, i_side, o_side, i_channel, o_channel, id, total, padding = dev.loadLayer()
+				if padding > 0:
+					# print("padding debug")
+					# print(layer_output)
+					blob = np.pad(layer_output, ((padding, padding), (padding, padding), (0,0)), 'constant')
+					# print("padding debug")
+					# print(blob)
+				else:
+					blob = layer_output
 				result_layer = []
 				
+				print("Forwarding Layer", layer)
 				if op_type == 1:
 					for number in range(0, o_channel, 8):
-						# print("[DEBUG]", blob.shape)
 						result = []
-						gemm_bias, gemm_weight = dev.wb_magic(layer=layer, number=number)
-						# load gemm data and gemm weight (whole channel), then start operation
-						dev.loadWeights_Bias(gemm_bias, gemm_weight)
-						for gemm in range(0, i_side-kernel+1, stride):
-							# print(gemm)
-							gemm_data = dev.gemm_magic(blob, gemm=gemm, kernel=kernel) 			#CWH. full channel
+						gemm_bias, gemm_weight = dev.wb_magic(layer=weight_layer, number=number)
+						dev.loadWeights_Bias(gemm_bias, gemm_weight)							# load gemm data and gemm weight (whole channel), then start operation
+						for gemm in range(0, i_side-kernel+2*padding+stride, stride):
+							gemm_data = dev.gemm_magic(blob, gemm=gemm, kernel=kernel) 			# CWH. full channel
 							dev.loadGemm(gemm_data)
 							dev.restart_engine()							
 							dev.waitIrq()
-							print("conv output", gemm, number)
-							tmp = dev.readOutput() 												#WC. partial channel
+							# print("conv output", gemm, number)
+							timestamp_1 = time.clock()
+							tmp = dev.readOutput() 												# WC. partial channel
+							timestamp_2 = time.clock()
+							timestamp_engine = timestamp_engine + timestamp_2 - timestamp_1
 							# print(tmp)
-							tmp = tmp.reshape(8, -1).transpose(1,0)								#CW. partial channel
+							tmp = tmp.reshape(8, -1).transpose(1,0)								# CW. partial channel
 							# print(tmp)
 							result.append(tmp)
-						# print(len(result))
-						output = np.stack(result, axis = 0) 									#CWH. partial channel
+						output = np.stack(result, axis = 0) 									# CWH. partial channel
 						result_layer.append(output)
-					layer_output = np.concatenate(result_layer, axis = 2) 						#CWH. full channel
+					slot_output = np.concatenate(result_layer, axis = 2) 						# CWH. full channel
+					weight_layer += 1
+					print("Layer Forwarding Time: ", timestamp_engine)
 				else:
 					for number in range(0, i_channel, 8):
 						result = []
-						for gemm in range(0, i_side-kernel+1, stride):
-							gemm_data = dev.planar_magic(blob, gemm=gemm, kernel=kernel, num=number)#CWH. partial channel
+						for gemm in range(0, i_side-kernel+2*padding+stride, stride):
+							gemm_data = dev.planar_magic(blob, gemm=gemm, kernel=kernel, num=number)# CWH. partial channel
 							dev.loadGemm(gemm_data)
 							dev.restart_engine()
 							dev.waitIrq()
-							print("pool output", gemm, number)
-							tmp = dev.readOutput()												#CW. partial channel
+							# print("pool output", gemm, number)
+							timestamp_1 = time.clock()
+							tmp = dev.readOutput()												# CW. partial channel
+							timestamp_2 = time.clock()
+							timestamp_engine = timestamp_engine + timestamp_2 - timestamp_1
 							# print(tmp)
 							tmp = tmp.reshape(-1, 8)
-							print(tmp)
+							# print(tmp)
 							result.append(tmp)
-						# print(len(result))
-						output = np.stack(result, axis = 0)										#CWH. partial channel
+						output = np.stack(result, axis = 0)										# CWH. partial channel
 						result_layer.append(output)
-					layer_output = np.concatenate(result_layer, axis = 2)						#CWH. full channel
+					slot_output = np.concatenate(result_layer, axis = 2)						# CWH. full channel
+					print("Layer Forwarding Time: ", timestamp_engine)
+				# print(slot_output)
+				# print(slot_output.shape)
+				slot.append(slot_output)
+				if id == total:
+					layer_output = np.concatenate(slot, axis = 2)
+					slot = []
+					# if layer >= 28:
+					# 	print(layer_output.shape)
+					# 	print(layer_output)
+			timestamp_3 = time.clock()
+			print("[PARSING]", "Engine elapsed", timestamp_engine)
+			print("[PARSING]", "Host elapsed", str(timestamp_3-timestamp_0))
+		layer_output = layer_output.reshape(-1).astype(dtype=np.float)
+		output_prob = np.exp(layer_output)/sum(np.exp(layer_output))
+		print(output_prob)
+		print('predicted class is: ', output_prob.argmax())
+		# load ImageNet Labels
+		labels_file = 'C:/Users/shish/source/repos/FusionAccel/scripts/synset_words.txt'
 
-				print(layer_output.shape)
+		labels = np.loadtxt(labels_file, str, delimiter = '\t')
+
+		print('output label:', labels[output_prob.argmax()])
+
+		top_inds = np.argsort(-output_prob.reshape(-1))[0:5] # reverse sort and take five largest items
 			
 	if test_mode == SANITY:
 		dev.readBlob()
