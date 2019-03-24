@@ -3,7 +3,8 @@ import os
 import ok
 import struct
 import time
-np.set_printoptions(suppress=True, precision=4, threshold=np.inf)
+import sys
+np.set_printoptions(suppress=True, precision=4, threshold=sys.maxsize)
 
 bit_directory = 'C:/Users/shish/source/repos/FusionAccel/scripts/top.bit'
 command_directory = 'C:/Users/shish/source/repos/FusionAccel/scripts/tmp/command.txt'
@@ -82,11 +83,11 @@ class host:
 					padded_dat = np.pad(weight[name], ((0,0),(0,pad),(0,0),(0,0)), 'constant') 	# pad at channel axis
 				else:
 					padded_dat = weight[name]
-				print("[INITIAL]", "padded shape:\t", str(padded_dat.shape))
+				print("[INITIAL]", "padded shape:\t", padded_dat.shape)
 				tmp = padded_dat.transpose((0,2,3,1)) 											# move channel axis to the inner most
-				print("[INITIAL]", "trans shape:\t", str(tmp.shape))
+				print("[INITIAL]", "trans shape:\t", tmp.shape)
 				sliced_dat = np.stack(np.split(tmp, tmp.shape[3]/8, axis = 3), axis = 1) 		# create a new axis after splitting
-				print("[INITIAL]", "sliced shape:\t", str(sliced_dat.shape))
+				print("[INITIAL]", "sliced shape:\t", sliced_dat.shape)
 				
 				self.weight.append(sliced_dat.astype(dtype=np.float16)) 						# byteappend all weights
 			if i % 2 == 1: 																		# Bias layer
@@ -183,12 +184,13 @@ class host:
 		self.xem.UpdateWireOuts()
 
 	def gemm_magic(self, data, gemm, kernel): 													# CHW to CWH(W = kernel, MEC Algorithm)
-		tmp_data = data[gemm:gemm+kernel,:,:] # TODO: slice the data by i_channel
-		print(tmp_data.shape)
-		tmp_data = np.stack(np.split(tmp_data, tmp_data.shape[2]/8, axis = 2), axis = 0) 		# create a new axis after splitting
-		print(tmp_data.shape)
-		tmp_data = tmp_data.transpose((0,2,1,3)) 													# transpose 0,1 and get the first gemm
-		print(tmp_data.shape)
+		tmp_data = data[gemm:gemm+kernel,:,:]
+		# print("GEMM DEBUG", tmp_data.shape)
+		tmp_data = np.stack(np.split(tmp_data, tmp_data.shape[2]/8, axis = 2), axis = 0) 		# slice the data by i_channel/8, create a new axis after splitting
+		# print("GEMM DEBUG", tmp_data.shape)
+		tmp_data = tmp_data.transpose((0,2,1,3)) 												# transpose 0,1 and get the first gemm
+		# print("GEMM DEBUG", tmp_data.shape)
+		# print(tmp_data)
 		tmp = np.dstack((tmp_data.reshape(-1), np.zeros_like(tmp_data.reshape(-1)))) 			# padding zero for fp16
 		tmp = tmp.reshape(-1)
 		gemm_data = tmp.tobytes() + bytearray((int(len(tmp.tobytes())/512)+1)*512-int(len(tmp.tobytes())))
@@ -206,10 +208,14 @@ class host:
 		bias = self.bias[layer][number:number+8].astype(dtype=np.float16)
 		tmp_bias = np.dstack((bias.reshape(-1), np.zeros_like(bias.reshape(-1)))).astype(dtype=np.float16) # pad 16-bit zero for fp16
 		bias_data = tmp_bias.reshape(-1).tobytes() + bytearray((int(len(tmp_bias.reshape(-1).tobytes())/512)+1)*512-int(len(tmp_bias.reshape(-1).tobytes())))
+		# print("WB DEBUG", self.weight[layer].shape)
 		weight = self.weight[layer][number:number+8]
+		print("WB DEBUG", weight.shape)
 		weight = weight.transpose((0,1,3,2,4)) 													# transpose 2,3 and get the first gemm
-		if(layer == 1):
-			print(weight)
+		print("WB DEBUG", weight.shape)
+		# if(layer == 3):
+			# print("pivot")
+			# print(weight)
 		tmp_weight = np.dstack((weight.reshape(-1), np.zeros_like(weight.reshape(-1)))).astype(dtype=np.float16) # pad 16-bit zero for fp16
 		weight_data = tmp_weight.reshape(-1).tobytes() + bytearray((int(len(tmp_weight.reshape(-1).tobytes())/512)+1)*512-int(len(tmp_weight.reshape(-1).tobytes())))
 		return bias_data, weight_data
@@ -228,7 +234,7 @@ class host:
 		self.xem.UpdateWireOuts()
 		# print("[INTERRUPT]", 'rd_count = 0x%08x' % self.xem.GetWireOutValue(0x27))
 		count = self.xem.GetWireOutValue(0x28)
-		print("[INTERRUPT]", 'wr_count = 0x%08x' % count)
+		# print("[INTERRUPT]", 'wr_count = 0x%08x' % count)
 		self.xem.ReadFromBlockPipeOut(0xa0, self.blocksize, self.rbuf)
 		self.xem.UpdateWireOuts()
 		self.reset_result_fifo()
@@ -245,59 +251,64 @@ def main():
 		else:
 			dev.loadCommands() 																	# send all commands
 			weight_layer = 0
-			for layer in range(0, 3):
+			slot = []
+			for layer in range(0, 5):
 				op_type, stride, kernel, i_side, o_side, i_channel, o_channel, id, total, padding = dev.loadLayer()
 				if padding > 0:
+					print("padding debug")
+					print(layer_output)
 					blob = np.pad(layer_output, ((padding, padding), (padding, padding), (0,0)), 'constant')
+					print("padding debug")
+					print(blob)
 				else:
 					blob = layer_output
 				result_layer = []
 				
 				if op_type == 1:
 					for number in range(0, o_channel, 8):
-						# print("[DEBUG]", blob.shape)
 						result = []
 						gemm_bias, gemm_weight = dev.wb_magic(layer=weight_layer, number=number)
-						# load gemm data and gemm weight (whole channel), then start operation
-						dev.loadWeights_Bias(gemm_bias, gemm_weight)
-						for gemm in range(0, i_side-kernel+1, stride):
-							# print(gemm)
-							gemm_data = dev.gemm_magic(blob, gemm=gemm, kernel=kernel) 			#CWH. full channel
+						dev.loadWeights_Bias(gemm_bias, gemm_weight)							# load gemm data and gemm weight (whole channel), then start operation
+						for gemm in range(0, i_side-kernel+2*padding+stride, stride):
+							gemm_data = dev.gemm_magic(blob, gemm=gemm, kernel=kernel) 			# CWH. full channel
 							dev.loadGemm(gemm_data)
 							dev.restart_engine()							
 							dev.waitIrq()
-							print("conv output", gemm, number)
-							tmp = dev.readOutput() 												#WC. partial channel
+							# print("conv output", gemm, number)
+							tmp = dev.readOutput() 												# WC. partial channel
 							# print(tmp)
-							tmp = tmp.reshape(8, -1).transpose(1,0)								#CW. partial channel
+							tmp = tmp.reshape(8, -1).transpose(1,0)								# CW. partial channel
 							# print(tmp)
 							result.append(tmp)
-						# print(len(result))
-						output = np.stack(result, axis = 0) 									#CWH. partial channel
+						output = np.stack(result, axis = 0) 									# CWH. partial channel
 						result_layer.append(output)
-					layer_output = np.concatenate(result_layer, axis = 2) 						#CWH. full channel
+					slot_output = np.concatenate(result_layer, axis = 2) 						# CWH. full channel
 					weight_layer += 1
 				else:
 					for number in range(0, i_channel, 8):
 						result = []
-						for gemm in range(0, i_side-kernel+1, stride):
-							gemm_data = dev.planar_magic(blob, gemm=gemm, kernel=kernel, num=number)#CWH. partial channel
+						for gemm in range(0, i_side-kernel+2*padding+stride, stride):
+							gemm_data = dev.planar_magic(blob, gemm=gemm, kernel=kernel, num=number)# CWH. partial channel
 							dev.loadGemm(gemm_data)
 							dev.restart_engine()
 							dev.waitIrq()
-							print("pool output", gemm, number)
-							tmp = dev.readOutput()												#CW. partial channel
+							# print("pool output", gemm, number)
+							tmp = dev.readOutput()												# CW. partial channel
 							# print(tmp)
 							tmp = tmp.reshape(-1, 8)
 							# print(tmp)
 							result.append(tmp)
-						# print(len(result))
-						output = np.stack(result, axis = 0)										#CWH. partial channel
+						output = np.stack(result, axis = 0)										# CWH. partial channel
 						result_layer.append(output)
-					layer_output = np.concatenate(result_layer, axis = 2)						#CWH. full channel
-
-				print(layer_output.shape)
-				print(layer_output)
+					slot_output = np.concatenate(result_layer, axis = 2)						# CWH. full channel
+				print(slot_output)
+				print(slot_output.shape)
+				slot.append(slot_output)
+				if id == total:
+					layer_output = np.concatenate(slot, axis = 2)
+					slot = []
+					# print(layer_output.shape)
+					# print(layer_output)
 			
 	if test_mode == SANITY:
 		dev.readBlob()

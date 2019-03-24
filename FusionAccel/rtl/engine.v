@@ -14,6 +14,7 @@ module engine  // Instantiate 8CMACs for conv, 8SCMP for maxpool and 8SACC for a
 	input [15:0]	o_channel,
 	input [7:0]		kernel_size,
 	input [15:0]	stride2,	//kernel * stride
+	input [3:0] 	padding,
 	input [15:0]	bias,
 //Response signals engine->csb
 	output			gemm_finish,
@@ -406,7 +407,6 @@ always @ (posedge clk or posedge rst) begin
 					MPOOL, APOOL: gemm_finish <= 1;
 				endcase
 			end
-			// wait_: if(output_count == {o_side, 3'b000}) gemm_finish <= 1;
 			default:;
 		endcase
 

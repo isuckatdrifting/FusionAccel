@@ -104,6 +104,7 @@ engine engine_(
 	.o_channel				(o_channel),
 	.kernel_size			(kernel_size),
 	.stride2				(stride2),
+	.padding				(padding),
 	.bias					(bias_in_data[15:0]),
 //Response signals engine->csb
 	.gemm_finish			(gemm_finish),
