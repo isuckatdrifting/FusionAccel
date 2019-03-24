@@ -183,7 +183,7 @@ class host:
 		self.xem.WriteToBlockPipeIn(0x81, self.blocksize, tmp) 									# Write buf must be times of blocksize
 		self.xem.UpdateWireOuts()
 
-	def gemm_magic(self, data, gemm, kernel): 													# CHW to CWH(W = kernel, MEC Algorithm)
+	def gemm_magic(self, data, gemm, kernel, layer): 													# CHW to CWH(W = kernel, MEC Algorithm)
 		tmp_data = data[gemm:gemm+kernel,:,:]
 		# print("GEMM DEBUG", tmp_data.shape)
 		tmp_data = np.stack(np.split(tmp_data, tmp_data.shape[2]/8, axis = 2), axis = 0) 		# slice the data by i_channel/8, create a new axis after splitting
@@ -191,6 +191,8 @@ class host:
 		tmp_data = tmp_data.transpose((0,2,1,3)) 												# transpose 0,1 and get the first gemm
 		# print("GEMM DEBUG", tmp_data.shape)
 		# print(tmp_data)
+		# if(layer == 3 and gemm == 0):
+			# np.save("gemm_data.npy", tmp_data)
 		tmp = np.dstack((tmp_data.reshape(-1), np.zeros_like(tmp_data.reshape(-1)))) 			# padding zero for fp16
 		tmp = tmp.reshape(-1)
 		gemm_data = tmp.tobytes() + bytearray((int(len(tmp.tobytes())/512)+1)*512-int(len(tmp.tobytes())))
@@ -210,12 +212,11 @@ class host:
 		bias_data = tmp_bias.reshape(-1).tobytes() + bytearray((int(len(tmp_bias.reshape(-1).tobytes())/512)+1)*512-int(len(tmp_bias.reshape(-1).tobytes())))
 		# print("WB DEBUG", self.weight[layer].shape)
 		weight = self.weight[layer][number:number+8]
-		print("WB DEBUG", weight.shape)
+		# print("WB DEBUG", weight.shape)
 		weight = weight.transpose((0,1,3,2,4)) 													# transpose 2,3 and get the first gemm
-		print("WB DEBUG", weight.shape)
-		# if(layer == 3):
-			# print("pivot")
-			# print(weight)
+		# print("WB DEBUG", weight.shape)
+		# if(layer == 3 and number == 0):
+			# np.save("gemm_weight.npy", weight)
 		tmp_weight = np.dstack((weight.reshape(-1), np.zeros_like(weight.reshape(-1)))).astype(dtype=np.float16) # pad 16-bit zero for fp16
 		weight_data = tmp_weight.reshape(-1).tobytes() + bytearray((int(len(tmp_weight.reshape(-1).tobytes())/512)+1)*512-int(len(tmp_weight.reshape(-1).tobytes())))
 		return bias_data, weight_data
@@ -252,14 +253,14 @@ def main():
 			dev.loadCommands() 																	# send all commands
 			weight_layer = 0
 			slot = []
-			for layer in range(0, 5):
+			for layer in range(0, 30):
 				op_type, stride, kernel, i_side, o_side, i_channel, o_channel, id, total, padding = dev.loadLayer()
 				if padding > 0:
-					print("padding debug")
-					print(layer_output)
+					# print("padding debug")
+					# print(layer_output)
 					blob = np.pad(layer_output, ((padding, padding), (padding, padding), (0,0)), 'constant')
-					print("padding debug")
-					print(blob)
+					# print("padding debug")
+					# print(blob)
 				else:
 					blob = layer_output
 				result_layer = []
@@ -270,7 +271,7 @@ def main():
 						gemm_bias, gemm_weight = dev.wb_magic(layer=weight_layer, number=number)
 						dev.loadWeights_Bias(gemm_bias, gemm_weight)							# load gemm data and gemm weight (whole channel), then start operation
 						for gemm in range(0, i_side-kernel+2*padding+stride, stride):
-							gemm_data = dev.gemm_magic(blob, gemm=gemm, kernel=kernel) 			# CWH. full channel
+							gemm_data = dev.gemm_magic(blob, gemm=gemm, kernel=kernel, layer=weight_layer) 			# CWH. full channel
 							dev.loadGemm(gemm_data)
 							dev.restart_engine()							
 							dev.waitIrq()
@@ -301,14 +302,27 @@ def main():
 						output = np.stack(result, axis = 0)										# CWH. partial channel
 						result_layer.append(output)
 					slot_output = np.concatenate(result_layer, axis = 2)						# CWH. full channel
-				print(slot_output)
-				print(slot_output.shape)
+				# print(slot_output)
+				# print(slot_output.shape)
 				slot.append(slot_output)
 				if id == total:
 					layer_output = np.concatenate(slot, axis = 2)
 					slot = []
-					# print(layer_output.shape)
-					# print(layer_output)
+					if layer >= 28:
+						print(layer_output.shape)
+						print(layer_output)
+		layer_output = layer_output.reshape(-1).astype(dtype=np.float)
+		output_prob = np.exp(layer_output)/sum(np.exp(layer_output))
+		print(output_prob)
+		print('predicted class is: ', output_prob.argmax())
+		# load ImageNet Labels
+		labels_file = 'C:/Users/shish/source/repos/FusionAccel/scripts/synset_words.txt'
+
+		labels = np.loadtxt(labels_file, str, delimiter = '\t')
+
+		print('output label:', labels[output_prob.argmax()])
+
+		top_inds = np.argsort(-output_prob.reshape(-1))[0:5] # reverse sort and take five largest items
 			
 	if test_mode == SANITY:
 		dev.readBlob()

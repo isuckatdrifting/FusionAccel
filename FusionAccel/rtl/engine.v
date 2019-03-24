@@ -299,7 +299,10 @@ always @ (posedge clk or posedge rst) begin
 							d_ram_read_addr <= d_ram_read_addr + 1;
 							w_ram_read_addr <= w_ram_read_addr + 1;
 						end	else begin
-							d_ram_read_addr <= (d_ram_read_addr + stride2) - (kernel_size - 1);
+							if(o_side_count + 1 < o_side)
+								d_ram_read_addr <= (d_ram_read_addr + stride2) - (kernel_size - 1);
+							else
+								d_ram_read_addr <= d_ram_read_addr + 1;
 							w_ram_read_addr <= w_ram_read_offset;
 							o_side_count <= o_side_count + 1;
 						end
@@ -340,7 +343,10 @@ always @ (posedge clk or posedge rst) begin
 							d_ram_read_addr <= d_ram_read_addr + 1;
 							w_ram_read_addr <= w_ram_read_addr + 1;
 						end	else begin
-							d_ram_read_addr <= (d_ram_read_addr + stride2) - (kernel_size - 1);
+							if(o_side_count + 1 < o_side)
+								d_ram_read_addr <= (d_ram_read_addr + stride2) - (kernel_size - 1);
+							else
+								d_ram_read_addr <= d_ram_read_addr + 1;
 							w_ram_read_addr <= 0;
 							o_side_count <= o_side_count + 1;
 						end
@@ -362,28 +368,26 @@ always @ (posedge clk or posedge rst) begin
 // CMD = 3 ==================== AVEPOOLING: Process a line * surface ====================//
 			sacc_busy: begin
 				if(engine_valid) begin
-					if(d_ram_read_addr + 1 < kernel_size) begin
-						d_ram_read_addr <= d_ram_read_addr + 1;
-					end	else begin
-						d_ram_read_addr <= 0;
-					end
-					avepool_enable <= 1;
+						if(d_ram_read_addr + 1 <= kernel_size) begin
+							d_ram_read_addr <= d_ram_read_addr + 1;
+							avepool_enable <= 1;
+						end	else avepool_enable <= 0;
 				end
 				if(avepool_enable) begin
 					s_fifo_wr_en <= 1;
 					data <= input_data;
-				end
+				end else s_fifo_wr_en <= 0;
 				if(ssum_ready == {`BURST_LEN{1'b1}}) begin 
 					a_div <= ssum_result;
-					b_div <= {16{16'h5948}};
+					b_div <= {16{16'h5A20}};
 					div_data_ready <= 1;
 				end
 				if(div_data_ready) div_data_ready <= 0;
 				if(sacc_ready == {`BURST_LEN{1'b1}}) begin
-					to_clear <= 1;
 					p0_writeback_en <= 1; //NOTES: Writeback all channels
 					writeback_num <= `BURST_LEN;
 				end
+				if(p0_writeback_count == `BURST_LEN-1) to_clear <= 1;
 			end
 
 			//==================== Update cross-channel counters and read address ====================
