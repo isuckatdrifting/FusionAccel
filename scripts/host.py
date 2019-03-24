@@ -142,6 +142,7 @@ class host:
 		self.xem.UpdateWireOuts()
 		command_0 = self.xem.GetWireOutValue(0x21)
 		command_1 = self.xem.GetWireOutValue(0x22)
+		command_2 = self.xem.GetWireOutValue(0x23)
 		op_type = (command_0 & 0x00000007)
 		stride = (command_0 & 0x000000f0) >> 4
 		kernel = (command_0 & 0x0000ff00) >> 8
@@ -149,6 +150,9 @@ class host:
 		o_side = (command_0 & 0xff000000) >> 24
 		i_channel = (command_1 & 0x0000ffff)
 		o_channel = (command_1 & 0xffff0000) >> 16
+		id = (command_2 & 0x000000c0) >> 6
+		total = (command_2 & 0x00000030) >> 4
+		padding = (command_2 & 0x0000000f)
 		print("[COMMANDS]", "0x%08x" % command_0)
 		print("[COMMANDS]", "0x%08x" % command_1)
 		print("[COMMANDS]", "  op_type %d" % op_type)
@@ -158,7 +162,10 @@ class host:
 		print("[COMMANDS]", "   o_side %d" % o_side)
 		print("[COMMANDS]", "i_channel %d" % i_channel)
 		print("[COMMANDS]", "o_channel %d" % o_channel)
-		return op_type, stride, kernel, i_side, o_side, i_channel, o_channel
+		print("[COMMANDS]", "  slot id %d" % id)
+		print("[COMMANDS]", "    total %d" % total)
+		print("[COMMANDS]", "  padding %d" % padding)
+		return op_type, stride, kernel, i_side, o_side, i_channel, o_channel, id, total, padding
 
 	def loadWeights_Bias(self, bias_bytes, weight_bytes): 
 		tmp_weight = bytearray() + weight_bytes
@@ -239,8 +246,11 @@ def main():
 			dev.loadCommands() 																	# send all commands
 			weight_layer = 0
 			for layer in range(0, 3):
-				op_type, stride, kernel, i_side, o_side, i_channel, o_channel = dev.loadLayer()
-				blob = layer_output
+				op_type, stride, kernel, i_side, o_side, i_channel, o_channel, id, total, padding = dev.loadLayer()
+				if padding > 0:
+					blob = np.pad(layer_output, ((padding, padding), (padding, padding), (0,0)), 'constant')
+				else:
+					blob = layer_output
 				result_layer = []
 				
 				if op_type == 1:
