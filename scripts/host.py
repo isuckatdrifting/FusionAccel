@@ -183,16 +183,11 @@ class host:
 		self.xem.WriteToBlockPipeIn(0x81, self.blocksize, tmp) 									# Write buf must be times of blocksize
 		self.xem.UpdateWireOuts()
 
-	def gemm_magic(self, data, gemm, kernel, layer): 													# CHW to CWH(W = kernel, MEC Algorithm)
+	def gemm_magic(self, data, gemm, kernel): 													# CHW to CWH(W = kernel, MEC Algorithm)
 		tmp_data = data[gemm:gemm+kernel,:,:]
 		# print("GEMM DEBUG", tmp_data.shape)
 		tmp_data = np.stack(np.split(tmp_data, tmp_data.shape[2]/8, axis = 2), axis = 0) 		# slice the data by i_channel/8, create a new axis after splitting
-		# print("GEMM DEBUG", tmp_data.shape)
 		tmp_data = tmp_data.transpose((0,2,1,3)) 												# transpose 0,1 and get the first gemm
-		# print("GEMM DEBUG", tmp_data.shape)
-		# print(tmp_data)
-		# if(layer == 3 and gemm == 0):
-			# np.save("gemm_data.npy", tmp_data)
 		tmp = np.dstack((tmp_data.reshape(-1), np.zeros_like(tmp_data.reshape(-1)))) 			# padding zero for fp16
 		tmp = tmp.reshape(-1)
 		gemm_data = tmp.tobytes() + bytearray((int(len(tmp.tobytes())/512)+1)*512-int(len(tmp.tobytes())))
@@ -210,13 +205,8 @@ class host:
 		bias = self.bias[layer][number:number+8].astype(dtype=np.float16)
 		tmp_bias = np.dstack((bias.reshape(-1), np.zeros_like(bias.reshape(-1)))).astype(dtype=np.float16) # pad 16-bit zero for fp16
 		bias_data = tmp_bias.reshape(-1).tobytes() + bytearray((int(len(tmp_bias.reshape(-1).tobytes())/512)+1)*512-int(len(tmp_bias.reshape(-1).tobytes())))
-		# print("WB DEBUG", self.weight[layer].shape)
 		weight = self.weight[layer][number:number+8]
-		# print("WB DEBUG", weight.shape)
 		weight = weight.transpose((0,1,3,2,4)) 													# transpose 2,3 and get the first gemm
-		# print("WB DEBUG", weight.shape)
-		# if(layer == 3 and number == 0):
-			# np.save("gemm_weight.npy", weight)
 		tmp_weight = np.dstack((weight.reshape(-1), np.zeros_like(weight.reshape(-1)))).astype(dtype=np.float16) # pad 16-bit zero for fp16
 		weight_data = tmp_weight.reshape(-1).tobytes() + bytearray((int(len(tmp_weight.reshape(-1).tobytes())/512)+1)*512-int(len(tmp_weight.reshape(-1).tobytes())))
 		return bias_data, weight_data
@@ -239,7 +229,7 @@ class host:
 		self.xem.ReadFromBlockPipeOut(0xa0, self.blocksize, self.rbuf)
 		self.xem.UpdateWireOuts()
 		self.reset_result_fifo()
-		result = np.copy(np.frombuffer(self.rbuf, dtype=np.float16)[0::2][0:count])				# preserve dimension of result, return copy of results to prevent being changed
+		result = np.array(np.frombuffer(self.rbuf, dtype=np.float16)[0::2][0:count])				# preserve dimension of result, return copy of results to prevent being changed
 		return result
 
 def main():   
@@ -274,7 +264,7 @@ def main():
 						gemm_bias, gemm_weight = dev.wb_magic(layer=weight_layer, number=number)
 						dev.loadWeights_Bias(gemm_bias, gemm_weight)							# load gemm data and gemm weight (whole channel), then start operation
 						for gemm in range(0, i_side-kernel+2*padding+stride, stride):
-							gemm_data = dev.gemm_magic(blob, gemm=gemm, kernel=kernel, layer=weight_layer) 			# CWH. full channel
+							gemm_data = dev.gemm_magic(blob, gemm=gemm, kernel=kernel) 			# CWH. full channel
 							dev.loadGemm(gemm_data)
 							dev.restart_engine()							
 							dev.waitIrq()
