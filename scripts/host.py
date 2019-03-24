@@ -129,9 +129,9 @@ class host:
 		self.xem.UpdateWireOuts()
 
 	def loadLayer(self):
-		self.xem.UpdateWireOuts()
-		print("[INTERRUPT]", 'rd_count = 0x%08x' % self.xem.GetWireOutValue(0x31))
-		print("[INTERRUPT]", 'wr_count = 0x%08x' % self.xem.GetWireOutValue(0x32))
+		# self.xem.UpdateWireOuts()
+		# print("[INTERRUPT]", 'rd_count = 0x%08x' % self.xem.GetWireOutValue(0x31))
+		# print("[INTERRUPT]", 'wr_count = 0x%08x' % self.xem.GetWireOutValue(0x32))
 		self.xem.SetWireInValue(0x00, 0x0008) 													# ep00wire[3], csb reset
 		self.xem.UpdateWireIns()
 		self.xem.SetWireInValue(0x00, 0x0000)
@@ -154,18 +154,18 @@ class host:
 		id = (command_2 & 0x000000c0) >> 6
 		total = (command_2 & 0x00000030) >> 4
 		padding = (command_2 & 0x0000000f)
-		print("[COMMANDS]", "0x%08x" % command_0)
-		print("[COMMANDS]", "0x%08x" % command_1)
-		print("[COMMANDS]", "  op_type %d" % op_type)
-		print("[COMMANDS]", "   stride %d" % stride)
-		print("[COMMANDS]", "   kernel %d" % kernel)
-		print("[COMMANDS]", "   i_side %d" % i_side)
-		print("[COMMANDS]", "   o_side %d" % o_side)
-		print("[COMMANDS]", "i_channel %d" % i_channel)
-		print("[COMMANDS]", "o_channel %d" % o_channel)
-		print("[COMMANDS]", "  slot id %d" % id)
-		print("[COMMANDS]", "    total %d" % total)
-		print("[COMMANDS]", "  padding %d" % padding)
+		# print("[COMMANDS]", "0x%08x" % command_0)
+		# print("[COMMANDS]", "0x%08x" % command_1)
+		# print("[COMMANDS]", "  op_type %d" % op_type)
+		# print("[COMMANDS]", "   stride %d" % stride)
+		# print("[COMMANDS]", "   kernel %d" % kernel)
+		# print("[COMMANDS]", "   i_side %d" % i_side)
+		# print("[COMMANDS]", "   o_side %d" % o_side)
+		# print("[COMMANDS]", "i_channel %d" % i_channel)
+		# print("[COMMANDS]", "o_channel %d" % o_channel)
+		# print("[COMMANDS]", "  slot id %d" % id)
+		# print("[COMMANDS]", "    total %d" % total)
+		# print("[COMMANDS]", "  padding %d" % padding)
 		return op_type, stride, kernel, i_side, o_side, i_channel, o_channel, id, total, padding
 
 	def loadWeights_Bias(self, bias_bytes, weight_bytes): 
@@ -253,6 +253,8 @@ def main():
 			dev.loadCommands() 																	# send all commands
 			weight_layer = 0
 			slot = []
+			timestamp_engine = 0
+			timestamp_0 = time.clock()
 			for layer in range(0, 30):
 				op_type, stride, kernel, i_side, o_side, i_channel, o_channel, id, total, padding = dev.loadLayer()
 				if padding > 0:
@@ -265,6 +267,7 @@ def main():
 					blob = layer_output
 				result_layer = []
 				
+				print("Forwarding Layer", layer)
 				if op_type == 1:
 					for number in range(0, o_channel, 8):
 						result = []
@@ -276,7 +279,10 @@ def main():
 							dev.restart_engine()							
 							dev.waitIrq()
 							# print("conv output", gemm, number)
+							timestamp_1 = time.clock()
 							tmp = dev.readOutput() 												# WC. partial channel
+							timestamp_2 = time.clock()
+							timestamp_engine = timestamp_engine + timestamp_2 - timestamp_1
 							# print(tmp)
 							tmp = tmp.reshape(8, -1).transpose(1,0)								# CW. partial channel
 							# print(tmp)
@@ -285,6 +291,7 @@ def main():
 						result_layer.append(output)
 					slot_output = np.concatenate(result_layer, axis = 2) 						# CWH. full channel
 					weight_layer += 1
+					print("Layer Forwarding Time: ", timestamp_engine)
 				else:
 					for number in range(0, i_channel, 8):
 						result = []
@@ -294,7 +301,10 @@ def main():
 							dev.restart_engine()
 							dev.waitIrq()
 							# print("pool output", gemm, number)
+							timestamp_1 = time.clock()
 							tmp = dev.readOutput()												# CW. partial channel
+							timestamp_2 = time.clock()
+							timestamp_engine = timestamp_engine + timestamp_2 - timestamp_1
 							# print(tmp)
 							tmp = tmp.reshape(-1, 8)
 							# print(tmp)
@@ -302,15 +312,19 @@ def main():
 						output = np.stack(result, axis = 0)										# CWH. partial channel
 						result_layer.append(output)
 					slot_output = np.concatenate(result_layer, axis = 2)						# CWH. full channel
+					print("Layer Forwarding Time: ", timestamp_engine)
 				# print(slot_output)
 				# print(slot_output.shape)
 				slot.append(slot_output)
 				if id == total:
 					layer_output = np.concatenate(slot, axis = 2)
 					slot = []
-					if layer >= 28:
-						print(layer_output.shape)
-						print(layer_output)
+					# if layer >= 28:
+					# 	print(layer_output.shape)
+					# 	print(layer_output)
+			timestamp_3 = time.clock()
+			print("[PARSING]", "Engine elapsed", timestamp_engine)
+			print("[PARSING]", "Host elapsed", str(timestamp_3-timestamp_0))
 		layer_output = layer_output.reshape(-1).astype(dtype=np.float)
 		output_prob = np.exp(layer_output)/sum(np.exp(layer_output))
 		print(output_prob)
