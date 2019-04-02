@@ -135,3 +135,7 @@ Memory access time: width = 32, depth = 32, time = 32 * 30 + 10 = 970ns.
 //lrn lrn_(); //Local response normalization Cores
 
 Dropout Layer is disabled in test.
+
+4167 c93b cd24 4871
+
+average fanout 4.40->3.59
