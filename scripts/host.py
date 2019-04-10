@@ -327,7 +327,10 @@ def main():
 		print('output label:', labels[output_prob.argmax()])
 
 		top_inds = np.argsort(-output_prob.reshape(-1))[0:5] # reverse sort and take five largest items
-			
+		
+		print('probabilities and labels:')
+		for i in top_inds:
+			print(str(output_prob[i]) + '\t' + str(labels[i]))	
 	if test_mode == SANITY:
 		dev.readBlob()
 		dev.gemm_magic(dev.image, 0, 3, 0, 0)

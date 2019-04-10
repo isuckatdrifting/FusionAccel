@@ -189,19 +189,13 @@ print("==================================================================")
 print("squeeze")
 d = np.load("C:/Users/shish/source/repos/FusionAccel/scripts/tmp/gemm_data.npy")
 print(d)
-
 d = d.reshape(-1)
 
 w = np.load("C:/Users/shish/source/repos/FusionAccel/scripts/tmp/gemm_weight.npy")
 print(w)
-
 w = w.reshape(-1)
-'''
-print(d*w)
-print(np.sum((d*w).reshape(-1))-0.0708)
-'''
-num = 0
 
+num = 0
 for i in d.astype(dtype=np.float16):
    print("data[%d] = 16'h"%num + str(hex(struct.unpack('H', i)[0])).replace('0x','').zfill(4), end='; ')
    num += 1
