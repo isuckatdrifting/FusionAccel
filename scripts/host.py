@@ -6,10 +6,10 @@ import time
 import sys
 np.set_printoptions(suppress=True, precision=4, threshold=sys.maxsize)
 
-bit_directory = 'C:/Users/shish/source/repos/FusionAccel/scripts/top.bit'
-command_directory = 'C:/Users/shish/source/repos/FusionAccel/scripts/tmp/command.txt'
-weight_directory = 'C:/Users/shish/source/repos/FusionAccel/scripts/tmp/weight.npz'
-image_directory = 'C:/Users/shish/source/repos/FusionAccel/scripts/tmp/data.npy'
+bit_directory = 'C:/Users/palad/source/repos/FusionAccel/scripts/top.bit'
+command_directory = 'C:/Users/palad/source/repos/FusionAccel/scripts/tmp/command.txt'
+weight_directory = 'C:/Users/palad/source/repos/FusionAccel/scripts/tmp/weight.npz'
+image_directory = 'C:/Users/palad/source/repos/FusionAccel/scripts/tmp/data.npy'
 RUN = 0
 SANITY = 1
 test_mode = RUN
@@ -320,14 +320,17 @@ def main():
 		print(output_prob)
 		print('predicted class is: ', output_prob.argmax())
 		# load ImageNet Labels
-		labels_file = 'C:/Users/shish/source/repos/FusionAccel/scripts/synset_words.txt'
+		labels_file = 'C:/Users/palad/source/repos/FusionAccel/scripts/synset_words.txt'
 
 		labels = np.loadtxt(labels_file, str, delimiter = '\t')
 
 		print('output label:', labels[output_prob.argmax()])
 
 		top_inds = np.argsort(-output_prob.reshape(-1))[0:5] # reverse sort and take five largest items
-			
+		
+		print('probabilities and labels:')
+		for i in top_inds:
+			print(str(output_prob[i]) + '\t' + str(labels[i]))	
 	if test_mode == SANITY:
 		dev.readBlob()
 		dev.gemm_magic(dev.image, 0, 3, 0, 0)

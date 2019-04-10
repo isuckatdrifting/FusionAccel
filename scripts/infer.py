@@ -77,6 +77,7 @@ for layer_name, blob in net.blobs.items():
         print(filters.shape)
         # print(image)
         # print(net.blobs[layer_name].data)
+        '''
         print(net.blobs['conv1'].data.shape)
         print(net.blobs['conv1'].data[0].shape)
         print(net.blobs['conv1'].data[0][0].shape)
@@ -139,6 +140,7 @@ for layer_name, blob in net.blobs.items():
         print(net.blobs['fire2/expand3x3'].data[0][16][0])
         print(net.blobs['fire2/expand3x3'].data[0][17][0])
         print(net.params['fire2/expand3x3'][0].data.reshape(-1))
+        '''
         '''
         print("CALCULATIONNNNNNNNNNNNNNNNNNNNNNN")
         a = net.blobs['fire2/squeeze1x1'].data[0][:, 0:2, 0:2]
