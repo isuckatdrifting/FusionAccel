@@ -6,10 +6,10 @@ import time
 import sys
 np.set_printoptions(suppress=True, precision=4, threshold=sys.maxsize)
 
-bit_directory = 'C:/Users/shish/source/repos/FusionAccel/scripts/top.bit'
-command_directory = 'C:/Users/shish/source/repos/FusionAccel/scripts/tmp/command.txt'
-weight_directory = 'C:/Users/shish/source/repos/FusionAccel/scripts/tmp/weight.npz'
-image_directory = 'C:/Users/shish/source/repos/FusionAccel/scripts/tmp/data.npy'
+bit_directory = 'C:/Users/palad/source/repos/FusionAccel/scripts/top.bit'
+command_directory = 'C:/Users/palad/source/repos/FusionAccel/scripts/tmp/command.txt'
+weight_directory = 'C:/Users/palad/source/repos/FusionAccel/scripts/tmp/weight.npz'
+image_directory = 'C:/Users/palad/source/repos/FusionAccel/scripts/tmp/data.npy'
 RUN = 0
 SANITY = 1
 test_mode = RUN
@@ -320,7 +320,7 @@ def main():
 		print(output_prob)
 		print('predicted class is: ', output_prob.argmax())
 		# load ImageNet Labels
-		labels_file = 'C:/Users/shish/source/repos/FusionAccel/scripts/synset_words.txt'
+		labels_file = 'C:/Users/palad/source/repos/FusionAccel/scripts/synset_words.txt'
 
 		labels = np.loadtxt(labels_file, str, delimiter = '\t')
 
