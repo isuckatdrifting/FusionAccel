@@ -1,5 +1,5 @@
 # FusionAccel
-RTL-level Neural Network Accelerator Implementation on Xilinx Spartan6
+RTL-level Neural Network Accelerator Implementation on Xilinx Spartan6. Evaluation for Scalability.
 
 ## 1 Network Support
 [Current_Support] Any network with convolution, ReLu activation, average pooling, max pooling and concatenation only.
@@ -14,7 +14,7 @@ RTL-level Neural Network Accelerator Implementation on Xilinx Spartan6
 - SqueezeNet v1.1
 
 ## 2 IO Interface
-- USB3.0 loading CaffeModels & return outputs
+- USB3.0 loading CaffeModels & return outputs (FrontPanel SDK)
 
 ## 3 Modern Acceleration, Performance & Resource Strategy
 - SRAM
