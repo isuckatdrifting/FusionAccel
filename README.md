@@ -1,37 +1,35 @@
 # FusionAccel
-RTL-level Neural Network Accelerator Implementation on Xilinx Spartan6. Evaluation for Scalability.
+RTL-level Neural Network Accelerator Implementation on Xilinx Spartan 6. Evaluation for Scalability. This is a source code repo for the following article:
+
+FusionAccel: A General Re-configurable Deep Learning Inference Accelerator on FPGA for Convolutional Neural Networks. https://arxiv.org/abs/1907.02217.
+
+I am not currenly developing this repo due to limited time, but I am ready to answer questions under this repo. Please submit an issue if necessary. You may visit this [Youtube Video Link](https://youtu.be/SMSY97nOUzo) for more details.
 
 ## 1 Network Support
-[Current_Support] Any network with convolution, ReLu activation, average pooling, max pooling and concatenation only.
+[Current_Support] SqueezeNet v1.1, since the network structure is extremely simple.
 
-- AlexNet
-- GoogLeNet
-- VGGNet
-- LeNet
-- ResNet50/101
-- Fully Convolutional Network
-- Deep Convolutional Network
-- SqueezeNet v1.1
+Theoretically any network with convolution, ReLu activation, average pooling, max pooling and concatenation only are supported, like `AlexNet, GoogLeNet, VGGNet, LeNet, ResNet50/101, Fully Convolutional Network, Deep Convolutional Network`, but you may write your own conv core with optimization algorithms.
 
 ## 2 IO Interface
-- USB3.0 loading CaffeModels & return outputs (FrontPanel SDK)
+USB 3.0 loading CaffeModels & return outputs (FrontPanel SDK library required -- chose this for light weight dependency concerns). Though the bandwidth of USB 3 is high, the latency is considerable. Meanwhile with restricted on-chip resources, split blobs have to be moved piece by piece, which increases the latency even more.
 
-## 3 Modern Acceleration, Performance & Resource Strategy
-- SRAM
+## 3 Reference
+- Lukas Cavigelli. Origami: A 803 GOp/s/W Convolutional Network Accelerator. 2015.
+- Clement Farabet. NeuFlow: A Runtime Reconfigurable Dataflow Processor for Vision.
+- Clement Farabet. CNP:AN FPGA-BASED PROCESSOR FOR CONVOLUTIONAL NETWORKS.
+- Vinayak Gokhale. Nn-X - a hardware accerlerator for convolutional neural networks.
+- Song Han. Efficient Methods and Hardware for Deep Learning.
+- Any other articles mentioned in the reference of the article.
+
+## 4 Modern Acceleration, Performance & Resource Strategy
+- SRAM (BRAM in FPGA) size
 - DMA (if there was CPU)
 - Number representation: INT8/INT16/INT32/FP16/FP32
     - Half precision floating point (FP16) for each engine, i.e. conv3x3, conv7x7
 - How to define signed numbers in verilog logic
 - Fully connected layers may be executed on host -- too many weights
 
-## 4 Reference
-- Lukas Cavigelli. Origami: A 803 GOp/s/W Convolutional Network Accelerator. 2015.
-- Clement Farabet. NeuFlow: A Runtime Reconfigurable Dataflow Processor for Vision.
-- Clement Farabet. CNP:AN FPGA-BASED PROCESSOR FOR CONVOLUTIONAL NETWORKS.
-- Vinayak Gokhale. Nn-X - a hardware accerlerator for convolutional neural networks.
-- Song Han. Efficient Methods and Hardware for Deep Learning.
-
-## 5 NOTES
+## 5 NOTES & Developing Drafts
 Draw Network Flowcharts
 
 `sudo python3 ./draw_net.py ../../SqueezeNet/SqueezeNet_v1.1/deploy.prototxt ./squeezenet.png --rankdir=TB`
