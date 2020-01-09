@@ -8,7 +8,7 @@ I am not currenly developing this repo due to limited time, but I am ready to an
 ## 1 Network Support
 [Current_Support] SqueezeNet v1.1, since the network structure is extremely simple.
 
-Theoretically any network with convolution, ReLu activation, average pooling, max pooling and concatenation only are supported, like `AlexNet, GoogLeNet, VGGNet, LeNet, ResNet50/101, Fully Convolutional Network, Deep Convolutional Network`, but you may write your own conv core with optimization algorithms.
+Theoretically any network with convolution, ReLu activation, average pooling, max pooling and concatenation only are supported, like `AlexNet, GoogLeNet, VGGNet, LeNet, ResNet50/101, Fully Convolutional Network, Deep Convolutional Network`, but you have to write your own conv core with optimization algorithms.
 
 ## 2 IO Interface
 USB 3.0 loading CaffeModels & return outputs (FrontPanel SDK library required -- chose this for light weight dependency concerns). Though the bandwidth of USB 3 is high, the latency is considerable. Meanwhile with restricted on-chip resources, split blobs have to be moved piece by piece, which increases the latency even more.
@@ -49,30 +49,17 @@ fp_mult aresetn must be asserted for minimum 2 cycles, fp mult takes 7 cycles.
 
 Maybe RCB or CRB is better than BRC or BCR, since it stores different channels on different banks
 
-| Conventional Unit | Cycle | 
-| ---- | ----- |
-| Mult |   8   |
-| Sum  |   11   |
-| Compare |   5   |
-| Divide |  26  |
-| Conv 1x1 | Mult + 1 = 9 |
+| Unit | Conventional Unit Cycle |  MEC Unit Cycle |
+| ---- | ----- | ----- |
+| Mult |   8   |   8   |
+| Sum  |   11   |   11   |
+| Compare |   5   |   5   |
+| Divide |  26  |  26  |
+| Conv 1x1 | Mult + 1 = 9 |  Mult + 1 + Sum = 20 (Conv Single) |
 | Conv 3x3 | Mult + 1 + Sum * 3 = 42 |
-| Pool 3x3 | Compare * 7 = 35 |
-| Pool 13x13 | Sum * 10 + Divide = 136 |
+| Pool 3x3 | Compare * 7 = 35 | Compare * 7 = 35 |
+| Pool 13x13 | Sum * 10 + Divide = 136 | Sum * 10 + Divide = 136 |
 
-| MEC Unit | Cycle | 
-| ---- | ----- |
-| Mult |   8   |
-| Sum  |   11   |
-| Compare |   5   |
-| Divide |  26  |
-| Conv_single | Mult + 1 + Sum = 20 |
-| Pool 3x3 | Compare * 7 = 35 |
-| Pool 13x13 | Sum * 10 + Divide = 136 |
+Memory access time: width = 32, depth = 32, time = 32 * 30 + 10 = 970ns. 64 per 970ns.
 
-Memory access time: width = 32, depth = 32, time = 32 * 30 + 10 = 970ns.
-64 per 970ns.
-
-Dropout Layer is disabled in test.
-
-Average fanout 4.40->3.59
+Dropout Layer is disabled in test. Average fanout 4.40->3.59
